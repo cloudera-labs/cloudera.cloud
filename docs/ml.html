@@ -1,0 +1,788 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ml -- Create or Destroy CDP Machine Learning Workspaces &mdash; cloudera.cloud 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/width.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="ml_info – Gather information about CDP ML Workspaces" href="ml_info.html" />
+    <link rel="prev" title="iam_user_info – Gather information about CDP Public IAM users" href="iam_user_info.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> cloudera.cloud
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Module APIs</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="account_auth.html">account_auth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="account_auth_info.html">account_auth_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="account_cred_info.html">account_cred_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datahub_cluster.html">datahub_cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datahub_cluster_info.html">datahub_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_cred.html">env_cred</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_cred_info.html">env_cred_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_idbroker.html">env_idbroker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_idbroker_info.html">env_idbroker_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_info.html">env_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_proxy.html">env_proxy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_proxy_info.html">env_proxy_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_telemetry.html">env_telemetry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_user_sync.html">env_user_sync</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_user_sync_info.html">env_user_sync_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iam_group.html">iam_group</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iam_group_info.html">iam_group_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iam_resource_role_info.html">iam_resource_role_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iam_user_info.html">iam_user_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ml</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ml_info.html">ml_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opdb.html">opdb</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opdb_info.html">opdb_info</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">cloudera.cloud</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>ml -- Create or Destroy CDP Machine Learning Workspaces</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/ml.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="ml-module"></span><div class="section" id="ml-create-or-destroy-cdp-machine-learning-workspaces">
+<h1>ml – Create or Destroy CDP Machine Learning Workspaces<a class="headerlink" href="#ml-create-or-destroy-cdp-machine-learning-workspaces" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
+<li><p><a class="reference internal" href="#requirements" id="id2">Requirements</a></p></li>
+<li><p><a class="reference internal" href="#parameters" id="id3">Parameters</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id4">Examples</a></p></li>
+<li><p><a class="reference internal" href="#return-values" id="id5">Return Values</a></p></li>
+<li><p><a class="reference internal" href="#status" id="id6">Status</a></p></li>
+</ul>
+</div>
+<div class="section" id="synopsis">
+<h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Create or Destroy CDP Machine Learning Workspaces</p></li>
+</ul>
+</div>
+<div class="section" id="requirements">
+<h2><a class="toc-backref" href="#id2">Requirements</a><a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<p>The below requirements are needed on the host that executes this module.</p>
+<ul class="simple">
+<li><p>cdpy</p></li>
+</ul>
+</div>
+<div class="section" id="parameters">
+<h2><a class="toc-backref" href="#id3">Parameters</a><a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 20%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>Parameter</strong></p></td>
+<td><p><strong>Choices/Defaults</strong></p></td>
+<td><p><strong>Comments</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>name</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><br /></p>
+<p><em>Required</em></p>
+</td>
+<td></td>
+<td><p>The name of the ML Workspace</p>
+<p><br /></p>
+<p><em>Aliases: workspace</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>environment</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><br /></p>
+<p><em>Required</em></p>
+</td>
+<td></td>
+<td><p>The name of the Environment for the ML Workspace</p>
+<p><br /></p>
+<p><em>Aliases: env</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>state</strong></p>
+<p><br /></p>
+</td>
+<td><dl class="simple">
+<dt><strong>Choices:</strong></dt><dd><ul class="simple">
+<li><p><strong>present</strong> ↞</p></li>
+<li><p>absent</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+<td><p>The declarative state of the ML Workspace</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>tls</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>The flag to manage TLS for the ML Workspace.</p>
+<p><br /></p>
+<p><em>Aliases: enable_tls</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>monitoring</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>The flag to manage monitoring for the ML Workspace.</p>
+<p><br /></p>
+<p><em>Aliases: enable_monitoring</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>database</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td></td>
+<td><p>Configuration for exporting model metrics to an existing Postgres database.</p>
+<p><br /></p>
+<p><em>Aliases: existing_database, database_config</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>nfs</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>An existing NFS mount (hostname and desired path).
+Applicable to <em>Azure</em> and <em>Private Cloud</em> deployments only.</p>
+<p><br /></p>
+<p><em>Aliases: existing_nfs</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>nfs_version</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>The NFS Protocol version of the NFS server as declared in <code class="docutils literal notranslate"><span class="pre">nfs</span></code>.
+Applicable to <em>Azure</em> and <em>Private Cloud</em> deployments only.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>k8s_request</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td></td>
+<td><p>Configuration for the Kubernetes provisioning of the ML Workspace.</p>
+<p><br /></p>
+<p><em>Aliases: provision_k8s</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>ip_addresses</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+</td>
+<td></td>
+<td><p>List of allowed CIDR blocks for the load balancer.</p>
+<p><br /></p>
+<p><em>Aliases: loadbalancer_access_ips</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>public_loadbalancer</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to manage the usage of a public load balancer.</p>
+<p><br /></p>
+<p><em>Aliases: enable_public_loadbalancer</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>force</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to force delete a workspace even if errors occur during deletion.
+Force delete removes the guarantee that the cloud provider resources are destroyed.
+Applicable to <code class="docutils literal notranslate"><span class="pre">state=absent</span></code> only.</p>
+<p><br /></p>
+<p><em>Aliases: force_delete</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>storage</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to delete the ML Workspace backing storage during delete operations.
+Applicable to <code class="docutils literal notranslate"><span class="pre">state=absent</span></code> only.</p>
+<p><br /></p>
+<p><em>Aliases: remove_storage</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>wait</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to enable internal polling to wait for the ML Workspace to achieve the declared state.
+If set to FALSE, the module will return immediately.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>delay</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The internal polling interval (in seconds) while the module waits for the ML Workspace to achieve the declared state.</p>
+<p><br /></p>
+<p><em>Aliases: polling_delay</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>timeout</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The internal polling timeout (in seconds) while the module waits for the ML Workspace to achieve the declared state.</p>
+<p><br /></p>
+<p><em>Aliases: polling_timeout</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>verify_tls</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Verify the TLS certificates for the CDP endpoint.</p>
+<p><br /></p>
+<p><em>Aliases: tls</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>debug</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Capture the CDP SDK debug log.</p>
+<p><br /></p>
+<p><em>Aliases: debug_endpoints</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>profile</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>If provided, the CDP SDK will use this value as its profile.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
+
+<span class="c1"># Create a ML Workspace with TLS turned off and wait for setup completion</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.ml</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ml-example</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cdp-env</span>
+    <span class="nt">tls</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">no</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+
+<span class="c1"># Create a ML Workspace (in AWS) with a custom Kubernetes request configuration</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.ml</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ml-k8s-example</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cdp-env</span>
+    <span class="nt">k8s_request</span><span class="p">:</span>
+      <span class="nt">environmentName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cdp-env</span>
+      <span class="nt">instanceGroups</span><span class="p">:</span>
+        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">default_settings</span>
+          <span class="nt">autoscaling</span><span class="p">:</span>
+            <span class="nt">maxInstances</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+            <span class="nt">minInstances</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+          <span class="nt">instanceType</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">m5.2xlarge</span>
+        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cpu_settings</span>
+          <span class="nt">autoscaling</span><span class="p">:</span>
+            <span class="nt">maxInstances</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+            <span class="nt">minInstances</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+          <span class="nt">instanceCount</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+          <span class="nt">instanceTier</span><span class="p">:</span> <span class="s">&quot;ON_DEMAND&quot;</span>
+          <span class="nt">instanceType</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">m5.2xlarge</span>
+          <span class="nt">rootVolume</span><span class="p">:</span>
+            <span class="nt">size</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">60</span>
+        <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">gpu_settings</span>
+          <span class="nt">autoscaling</span><span class="p">:</span>
+            <span class="nt">maxInstances</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+            <span class="nt">minInstances</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+          <span class="nt">instanceCount</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+          <span class="nt">instanceTier</span><span class="p">:</span> <span class="s">&quot;ON_DEMAND&quot;</span>
+          <span class="nt">instanceType</span><span class="p">:</span> <span class="s">&quot;p2.8xlarge&quot;</span>
+          <span class="nt">rootVolume</span><span class="p">:</span>
+            <span class="nt">size</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">40</span>
+      <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+
+<span class="c1"># Remove a ML Workspace, but return immediately</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.ml</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ml-example</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cdp-env</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">absent</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">no</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="return-values">
+<h2><a class="toc-backref" href="#id5">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
+<p>Common return values are documented here, the following are fields unique to this module.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 8%" />
+<col style="width: 19%" />
+<col style="width: 10%" />
+<col style="width: 6%" />
+<col style="width: 46%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td colspan="4"><p><strong>Key</strong></p></td>
+<td><p><strong>Returned</strong></p></td>
+<td><p><strong>Description</strong></p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p><strong>workspace</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td><p>on success</p></td>
+<td><p>The information about the ML Workspace</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>instanceName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The name of the workspace.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>environmentName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The name of the workspace’s environment.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>instanceStatus</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The workspace’s current status.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>instanceUrl</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>URL of the workspace’s user interface.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>environmentCrn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>CRN of the environment.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>crn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The CRN of the workspace.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>k8sClusterName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The Kubernetes cluster name.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>creatorCrn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The CRN of the creator of the workspace.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>version</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The version of Cloudera Machine Learning that  was  installed on the workspace.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>httpsEnabled</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Indicates   if   HTTPs  communication  was  enabled  on  this workspace when provisioned.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>filesystemID</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>A filesystem ID referencing the filesystem that  was  created on the cloud provider environment that this workspace uses.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>cloudPlatform</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The cloud platform of the environment that was used to create this workspace.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>monitoringEnabled</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>If usage monitoring is enabled or not on this workspace.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>loadBalancerIPWhitelists</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The whitelist of ips for loadBalancer.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>creationDate</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Creation date of workspace.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>failureMessage</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>during failure</p></td>
+<td><p>Failure  message  from  the  most  recent  failure  that  has occurred during workspace provisioning.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>healthInfoLists</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+</td>
+<td></td>
+<td><p>The health info information of the workspace.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td colspan="2"><p><strong>HealthInfo</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Healthinfo  object  contains  the health information of a resource.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>resourceName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The resource name being checked.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>isHealthy</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The boolean that indicates the health status.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>updatedAt</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The unix timestamp for the heartbeat.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>message</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The message to show for the health info.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>details</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The detail of the health info.</p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p><strong>sdk_out</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when supported</p></td>
+<td><p>Returns the captured CDP SDK log.</p></td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p><strong>sdk_out_lines</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+</td>
+<td><p>when supported</p></td>
+<td><p>Returns a list of each line of the captured CDP SDK log.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="status">
+<h2><a class="toc-backref" href="#id6">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>This module is not guaranteed to have a backwards compatible interface. <em>[preview]</em></p></li>
+<li><p>This module is maintained by community.</p></li>
+</ul>
+<div class="section" id="authors">
+<h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Webster Mudge (&#64;wmudge)</p></li>
+<li><p>Dan Chaffelson (&#64;chaffelson)</p></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ml_info.html" class="btn btn-neutral float-right" title="ml_info – Gather information about CDP ML Workspaces" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="iam_user_info.html" class="btn btn-neutral float-left" title="iam_user_info – Gather information about CDP Public IAM users" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2021, Cloudera
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

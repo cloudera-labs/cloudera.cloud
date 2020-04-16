@@ -1,0 +1,103 @@
+cloudera.cloud Ansible Collection
+Copyright 2021 Cloudera Inc.  All Rights Reserved.
+
+
+OVERVIEW
+Items appearing in the following notices are provided for the notification and
+guidance of the recipient in accordance with the listed license.  The listing
+may include various dependencies applicable only to development, testing, and
+evaluation, which may not be included in the distribution and may have been
+deprecated in favor of alternatives.  Accordingly, this listing should not be
+construed as an admission that the listed component appears in the distribution
+nor in the manner indicated.  Similarly, fulfilling a license’s compliance
+requirements for a particular form of distribution is not an admission that the
+software is in fact distributed in that form.  Distributions and packaging vary
+and not all third party components are relied upon in the same manner or degree.
+In addition, some compliance documentation, such as embedded notices files in 
+source code, may be found within the distribution itself rather than below.
+“Third Party Software” and “Separately Licensed Code” as defined in the
+applicable Cloudera or Hortonworks agreement, respectively, have the same
+meaning for the purposes of this notice.
+
+MOST PERMISSIVE LICENSE APPLIES TO THIRD PARTY SOFTWARE
+Where the Third Party Software contains dual or multiple licensing options, the
+most permissive license compatible with your Cloudera software license applies.
+
+CONTAINERIZED OPERATING SYSTEM
+The Cloudera software runs on certain operating systems, such as the Linux
+operating system, which may be delivered to you with a containerized
+installation of the operating system for your convenience. Cloudera software
+constitutes a separate and independent work from the operating system, and the
+provided container is an aggregation of the operating system and the Cloudera
+software. 
+
+NO WARRANTY; NO LIABILITY; NO INDEMNIFICATION/HOLD HARMLESS
+Notwithstanding any agreement recipient may have with Cloudera: (A) CLOUDERA
+PROVIDES THRID PARTY SOFTWARE TO RECIPIENT WITHOUT WARRANTIES OF ANY KIND; (B)
+CLOUDERA DISCLAIMS ANY AND ALL EXPRESS AND IMPLIED WARRANTIES WITH RESPECT TO
+THIRD PARTY SOFTWARE, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF TITLE,
+NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE; (C)
+CLOUDERA IS NOT LIABLE TO RECIPIENT, AND WILL NOT DEFEND, INDEMNIFY, NOR HOLD
+RECIPIENT HARMLESS FOR ANY CLAIMS ARISING FROM OR RELATED TO THIRD PARTY
+SOFTWARE; AND (D) WITH RESPECT TO THE THIRD PARTY SOFTWARE, CLOUDERA IS NOT
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE OR
+CONSEQUENTIAL DAMAGES INCLUDING, BUT NOT LIMITED TO, DAMAGES RELATED TO LOST
+REVENUE, LOST PROFITS, LOSS OF INCOME, LOSS OF BUSINESS ADVANTAGE OR
+UNAVAILABILITY, LOSS OR CORRUPTION OF DATA.
+
+SOURCE CODE OFFER
+To the extent required by the licenses associated with the Third Party Software,
+Cloudera, Inc. will provide a copy of the Third Party Software’s source code
+upon request and at a reasonable fee.  All requests for source code should be
+made in a letter clearly identifying the components for which the source code
+is requested, and mailed to “Cloudera, Inc., ATTN: Legal Dept., 5470 Great
+America Pkwy, Santa Clara, CA 95054"
+
+Further, to the extent Cloudera delivers a containerized installation of an
+operating system, such operating system contains open source software
+constituting Third Party Software, including software licensed under the GNU
+General Public License (GPL).  Such Third Party Software may or may not be
+identified separately in the notices below.  To the extent required by the GPL
+or other licenses associated with the Third Party Software under which you
+receive only binaries, Cloudera will provide a copy of the Third Party
+Software’s source code upon request and at a reasonable fee.  All requests for
+source code should be made in a letter clearly identifying the components for
+which the source code is requested, typically sent within three (3) years from
+the date you received the covered binary, and mailed to “Cloudera, Inc., ATTN:
+Legal Dept., 5470 Great America Pkwy, Santa Clara, CA 95054”.  Your written
+request should include: (i) the name and version number of the covered binary,
+(ii) the version number of the Cloudera product containing the covered binary,
+(iii) your name, (iv) your company or organization name (if applicable), (v) the
+license under which the source code must be provided, and (vi) your return
+mailing and email address (if available).
+
+Components: 
+
+rtfd/sphinx_rtd_theme 0.5.0 : MIT License
+
+Licenses: 
+
+MIT License
+(rtfd/sphinx_rtd_theme 0.5.0)
+
+The MIT License (MIT)
+
+Copyright (c) 2013-2018 Dave Snider, Read the Docs, Inc. & contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
+
