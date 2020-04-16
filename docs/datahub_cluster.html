@@ -1,0 +1,876 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>datahub_cluster -- Manage CDP Datahubs &mdash; cloudera.cloud 0.1.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/width.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="datahub_cluster_info – Gather information about CDP Datahubs" href="datahub_cluster_info.html" />
+    <link rel="prev" title="datalake_runtime_info – Gather information about CDP Datalake Runtimes" href="datalake_runtime_info.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> cloudera.cloud
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Module APIs</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="account_auth.html">account_auth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="account_auth_info.html">account_auth_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="account_cred_info.html">account_cred_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">datahub_cluster</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="datahub_cluster_info.html">datahub_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_cred.html">env_cred</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_cred_info.html">env_cred_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_idbroker.html">env_idbroker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_idbroker_info.html">env_idbroker_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_info.html">env_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_proxy.html">env_proxy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_proxy_info.html">env_proxy_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_telemetry.html">env_telemetry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_user_sync.html">env_user_sync</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_user_sync_info.html">env_user_sync_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iam_group.html">iam_group</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iam_group_info.html">iam_group_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iam_resource_role_info.html">iam_resource_role_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="iam_user_info.html">iam_user_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml.html">ml</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml_info.html">ml_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opdb.html">opdb</a></li>
+<li class="toctree-l1"><a class="reference internal" href="opdb_info.html">opdb_info</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">cloudera.cloud</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content style-external-links">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>datahub_cluster -- Manage CDP Datahubs</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/datahub_cluster.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="datahub-cluster-module"></span><div class="section" id="datahub-cluster-manage-cdp-datahubs">
+<h1>datahub_cluster – Manage CDP Datahubs<a class="headerlink" href="#datahub-cluster-manage-cdp-datahubs" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
+<li><p><a class="reference internal" href="#requirements" id="id2">Requirements</a></p></li>
+<li><p><a class="reference internal" href="#parameters" id="id3">Parameters</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id4">Examples</a></p></li>
+<li><p><a class="reference internal" href="#return-values" id="id5">Return Values</a></p></li>
+<li><p><a class="reference internal" href="#status" id="id6">Status</a></p></li>
+</ul>
+</div>
+<div class="section" id="synopsis">
+<h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Create and delete CDP Datahubs.</p></li>
+</ul>
+</div>
+<div class="section" id="requirements">
+<h2><a class="toc-backref" href="#id2">Requirements</a><a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<p>The below requirements are needed on the host that executes this module.</p>
+<ul class="simple">
+<li><p>cdpy</p></li>
+</ul>
+</div>
+<div class="section" id="parameters">
+<h2><a class="toc-backref" href="#id3">Parameters</a><a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 20%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>Parameter</strong></p></td>
+<td><p><strong>Choices/Defaults</strong></p></td>
+<td><p><strong>Comments</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>name</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><br /></p>
+<p><em>Required</em></p>
+</td>
+<td></td>
+<td><p>The name of the datahub.
+This name must be unique, must have between 5 and 100 characters, and must contain only lowercase letters, numbers, and hyphens.
+Names are case-sensitive.</p>
+<p><br /></p>
+<p><em>Aliases: datahub</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>state</strong></p>
+<p><br /></p>
+</td>
+<td><dl class="simple">
+<dt><strong>Choices:</strong></dt><dd><ul class="simple">
+<li><p><strong>present</strong> ↞</p></li>
+<li><p>absent</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+<td><p>The declarative state of the datahub.
+If creating a datahub, the associate Environment and Datalake must be started as well.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>environment</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>The CDP environment name or CRN to which the datahub will be attached.</p>
+<p><br /></p>
+<p><em>Aliases: env</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>definition</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>The name or CRN of the cluster definition to use for cluster creation.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>template</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>Name or CRN of the cluster template to use for cluster creation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>subnet</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>The subnet ID in AWS, or the Subnet Name on Azure or GCP</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>image</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>ID of the image used for cluster instances</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>catalog</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>Name of the image catalog to use for cluster instances</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>groups</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+</td>
+<td></td>
+<td><p>Instance group details.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>tags</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td></td>
+<td><p>Tags associated with the datahub and its resources.</p>
+<p><br /></p>
+<p><em>Aliases: datahub_tags</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>force</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag indicating if the datahub should be force deleted.
+This option can be used when cluster deletion fails.
+This removes the entry from Cloudera Datahub service.
+Any lingering resources have to be deleted from the cloud provider manually.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>wait</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to enable internal polling to wait for the datahub to achieve the declared state.
+If set to FALSE, the module will return immediately.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>delay</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The internal polling interval (in seconds) while the module waits for the datahub to achieve the declared state.</p>
+<p><br /></p>
+<p><em>Aliases: polling_delay</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>timeout</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The internal polling timeout (in seconds) while the module waits for the datahub to achieve the declared state.</p>
+<p><br /></p>
+<p><em>Aliases: polling_timeout</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>verify_tls</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Verify the TLS certificates for the CDP endpoint.</p>
+<p><br /></p>
+<p><em>Aliases: tls</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>debug</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Capture the CDP SDK debug log.</p>
+<p><br /></p>
+<p><em>Aliases: debug_endpoints</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>profile</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>If provided, the CDP SDK will use this value as its profile.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="examples">
+<h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
+
+<span class="c1"># Create a datahub (and do not wait for status change)</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub_cluster</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">datahub-name</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">name-or-crn</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">present</span>
+    <span class="nt">subnet</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">subnet-id-for-cloud-provider</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">image-uuid-from-catalog</span>
+    <span class="nt">catalog</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">name-of-catalog-for-image</span>
+    <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">template-name</span>
+    <span class="nt">groups</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">nodeCount</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+        <span class="nt">instanceGroupName</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">master</span>
+        <span class="nt">instanceGroupType</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">GATEWAY</span>
+        <span class="nt">instanceType</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">instance-type-for-cloud-provider</span>
+        <span class="nt">rootVolumeSize</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+        <span class="nt">recoveryMode</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MANUAL</span>
+        <span class="nt">recipeNames</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+        <span class="nt">attachedVolumeConfiguration</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="nt">volumeSize</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+            <span class="nt">volumeCount</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+            <span class="nt">volumeType</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">volume-type-for-cloud-provider</span>
+    <span class="nt">tags</span><span class="p">:</span>
+      <span class="nt">project</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Arbitrary content</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">no</span>
+
+<span class="c1"># Delete the datahub (and wait for status change)</span>
+  <span class="nt">cloudera.cloud.datahub</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-datahub</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">absent</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="return-values">
+<h2><a class="toc-backref" href="#id5">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
+<p>Common return values are documented here, the following are fields unique to this module.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 10%" />
+<col style="width: 24%" />
+<col style="width: 10%" />
+<col style="width: 8%" />
+<col style="width: 34%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td colspan="4"><p><strong>Key</strong></p></td>
+<td><p><strong>Returned</strong></p></td>
+<td><p><strong>Description</strong></p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p><strong>datahub</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td><p>on success</p></td>
+<td><p>The information about the Datahub</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>clusterName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>crn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>creationDate</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>status</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>clusterStatus</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>nodeCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>instanceGroups</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td colspan="2"><p><strong>instanceGroup</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>name</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>id</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>state</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>privateIp</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>publicIp</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>fqdn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>status</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>workdloadType</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>cloudPlatform</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>imageDetails</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td colspan="2"><p><strong>name</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td colspan="2"><p><strong>id</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>This is the unique ID generated by the cloud provider for the image</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td colspan="2"><p><strong>catalogUrl</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td colspan="2"><p><strong>catalogName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>environmentCrn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>credentialCrn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>datalakeCrn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>clusterTemplateCrn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>statusReason</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>clouderaManager</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td colspan="2"><p><strong>version</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td colspan="2"><p><strong>platformVersion</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>endpoints</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td colspan="2"><p><strong>endpoint</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>serviceName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>serviceUrl</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>displayName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>knoxService</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>mode</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>open</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>tktk</p></td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p><strong>sdk_out</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when supported</p></td>
+<td><p>Returns the captured CDP SDK log.</p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p><strong>sdk_out_lines</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+</td>
+<td><p>when supported</p></td>
+<td><p>Returns a list of each line of the captured CDP SDK log.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="status">
+<h2><a class="toc-backref" href="#id6">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>This module is not guaranteed to have a backwards compatible interface. <em>[preview]</em></p></li>
+<li><p>This module is maintained by community.</p></li>
+</ul>
+<div class="section" id="authors">
+<h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Webster Mudge (&#64;wmudge)</p></li>
+<li><p>Daniel Chaffelson (&#64;chaffelson)</p></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="datahub_cluster_info.html" class="btn btn-neutral float-right" title="datahub_cluster_info – Gather information about CDP Datahubs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="datalake_runtime_info.html" class="btn btn-neutral float-left" title="datalake_runtime_info – Gather information about CDP Datalake Runtimes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2021, Cloudera
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
