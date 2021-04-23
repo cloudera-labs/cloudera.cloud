@@ -73,7 +73,7 @@ class CdpModule(object):
 
     def _cdp_module_throw_error(self, error: 'CdpError'):
         """Error handler for CDPy SDK"""
-        self.module.fail_json(msg=str(error.__dict__))
+        self.module.fail_json(msg=str(error.message), error=str(error.__dict__))
 
     def _cdp_module_throw_warning(self, warning: 'CdpWarning'):
         """Warning handler for CDPy SDK"""
