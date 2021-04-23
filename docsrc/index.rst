@@ -35,6 +35,7 @@ cloudera.cloud Ansible Collection
    iam_user_info <iam_user_info>
    ml <ml>
    ml_info <ml_info>
+   ml_workspace_access <ml_workspace_access>
    opdb <opdb>
    opdb_info <opdb_info>
 
