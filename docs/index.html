@@ -114,6 +114,7 @@
 <li class="toctree-l1"><a class="reference internal" href="iam_user_info.html">iam_user_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ml.html">ml</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ml_info.html">ml_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml_workspace_access.html">ml_workspace_access</a></li>
 <li class="toctree-l1"><a class="reference internal" href="opdb.html">opdb</a></li>
 <li class="toctree-l1"><a class="reference internal" href="opdb_info.html">opdb_info</a></li>
 </ul>
@@ -198,7 +199,8 @@ Management Console</a>.</p>
 <p>The CDP collection requires the <a class="reference external" href="https://github.com/cloudera-labs/cdpy">cdpy</a> Python library, which is a simple Pythonic wrapper to the
 <a class="reference external" href="https://pypi.org/project/cdpcli/">CDP CLI/SDK</a> Python library. You also need to have an <a class="reference external" href="https://docs.cloudera.com/management-console/cloud/user-management/topics/mc-generating-an-api-access-key.html">API access key</a> for your CDP
 account. The collection also assumes that you have provisioned the necessary cloud provider resources used by the
-various CDP functions (see <a class="reference external" href="https://docs.cloudera.com/management-console/cloud/requirements-aws/topics/mc-requirements-aws.html">AWS Requirements</a> and <a class="reference external" href="https://docs.cloudera.com/management-console/cloud/requirements-azure/topics/mc-azure-requirements.html">Azure Requirements</a>).</p>
+various CDP functions (see <a class="reference external" href="https://docs.cloudera.com/management-console/cloud/requirements-aws/topics/mc-requirements-aws.html">AWS Requirements</a> and <a class="reference external" href="https://docs.cloudera.com/management-console/cloud/requirements-azure/topics/mc-azure-requirements.html">Azure Requirements</a>);
+this collection will not provision these cloud resources.</p>
 </div>
 <div class="section" id="installing-the-collection-from-github">
 <h2>Installing the collection from GitHub<a class="headerlink" href="#installing-the-collection-from-github" title="Permalink to this headline">¶</a></h2>
@@ -220,6 +222,10 @@ various CDP functions (see <a class="reference external" href="https://docs.clou
 <p>This collection requires the <a class="reference external" href="https://github.com/cloudera-labs/cdpy">cdpy</a> to interact with the CDP endpoint APIs. You can install it
 using:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install cdpy
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> file declares this library. You can install it via <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install -r requirements.txt
 </pre></div>
 </div>
 </div>

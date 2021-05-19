@@ -25,7 +25,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: ml
+module: ml_workspace_access
 short_description: Grant and revoke user access to CDP Machine Learning Workspaces
 description:
     - Grant and revoke user access to CDP Machine Learning Workspaces

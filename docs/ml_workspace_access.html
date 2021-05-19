@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>env_auth_info -- Gather information about CDP environment authentication details &mdash; cloudera.cloud 0.1.0 documentation</title>
+  <title>ml_workspace_access -- Grant and revoke user access to CDP Machine Learning Workspaces &mdash; cloudera.cloud 0.1.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="env_cred – Create, update, and destroy CDP credentials" href="env_cred.html" />
-    <link rel="prev" title="env_auth – Set authentication details for the current CDP user" href="env_auth.html" /> 
+    <link rel="next" title="opdb – Create or destroy CDP OpDB Databases" href="opdb.html" />
+    <link rel="prev" title="ml_info – Gather information about CDP ML Workspaces" href="ml_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -98,15 +98,7 @@
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">env_auth_info</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred.html">env_cred</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred_info.html">env_cred_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_idbroker.html">env_idbroker</a></li>
@@ -123,7 +115,15 @@
 <li class="toctree-l1"><a class="reference internal" href="iam_user_info.html">iam_user_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ml.html">ml</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ml_info.html">ml_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ml_workspace_access.html">ml_workspace_access</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ml_workspace_access</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="opdb.html">opdb</a></li>
 <li class="toctree-l1"><a class="reference internal" href="opdb_info.html">opdb_info</a></li>
 </ul>
@@ -172,13 +172,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>env_auth_info -- Gather information about CDP environment authentication details</li>
+      <li>ml_workspace_access -- Grant and revoke user access to CDP Machine Learning Workspaces</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/env_auth_info.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/ml_workspace_access.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -191,8 +191,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="env-auth-info-module"></span><div class="section" id="env-auth-info-gather-information-about-cdp-environment-authentication-details">
-<h1>env_auth_info – Gather information about CDP environment authentication details<a class="headerlink" href="#env-auth-info-gather-information-about-cdp-environment-authentication-details" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="ml-workspace-access-module"></span><div class="section" id="ml-workspace-access-grant-and-revoke-user-access-to-cdp-machine-learning-workspaces">
+<h1>ml_workspace_access – Grant and revoke user access to CDP Machine Learning Workspaces<a class="headerlink" href="#ml-workspace-access-grant-and-revoke-user-access-to-cdp-machine-learning-workspaces" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
@@ -206,8 +206,7 @@
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Gather information about CDP environment authentication details, notably the FreeIPA root certificate and user keytabs.</p></li>
-<li><p>The module supports check_mode.</p></li>
+<li><p>Grant and revoke user access to CDP Machine Learning Workspaces</p></li>
 </ul>
 </div>
 <div class="section" id="requirements">
@@ -232,46 +231,53 @@
 </tr>
 <tr class="row-even"><td><p><strong>name</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><br /></p>
+<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>A target list of environments or a single environment string.
-If no environments are specified, all environments are targeted.</p>
+<td><p>The name of the ML Workspace</p>
 <p><br /></p>
-<p><em>Aliases: environment</em></p>
+<p><em>Aliases: workspace</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>root_certificate</strong></p>
+<tr class="row-odd"><td><p><strong>environment</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><br /></p>
+<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>A flag indicating whether to retrieve the given environment’s FreeIPA root certificate.</p>
+<td><p>The name of the Environment for the ML Workspace</p>
 <p><br /></p>
-<p><em>Aliases: root_ca, cert</em></p>
+<p><em>Aliases: env</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>keytab</strong></p>
+<tr class="row-even"><td><p><strong>user</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><br /></p>
+<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>A flag to retrieve the keytabs for the given environment or environments, governed by the value of <code class="docutils literal notranslate"><span class="pre">user</span></code>.
-If no environments are declared, all environments will be queried.</p>
+<td><p>The cloud provider identifier for the user.
+For <code class="docutils literal notranslate"><span class="pre">AWS</span></code>, this is the User ARN.</p>
 <p><br /></p>
-<p><em>Aliases: keytabs, user_keytabs</em></p>
+<p><em>Aliases: identifier</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>user</strong></p>
+<tr class="row-odd"><td><p><strong>state</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td></td>
-<td><p>A list of user IDs or a single user ID for retrieving the keytabs from the specified environment(s).
-If no user ID is declared, the current CDP user will be used.</p>
-<p><br /></p>
-<p><em>Aliases: users</em></p>
+<td><dl class="simple">
+<dt><strong>Choices:</strong></dt><dd><ul class="simple">
+<li><p><strong>present</strong> ↞</p></li>
+<li><p>absent</p></li>
+</ul>
+</dd>
+</dl>
 </td>
+<td><p>The declarative state of the ML Workspace</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
@@ -307,38 +313,19 @@ If no user ID is declared, the current CDP user will be used.</p>
 <h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># Retrieve only the root certificate for a single environment</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_auth_info</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">the-environment</span>
-    <span class="nt">root_certificate</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
-    <span class="nt">keytab</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">no</span>
+<span class="c1"># Grant access for user (and register the output to capture the kubeconfig)</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.ml_workspace_access</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ml-example</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cdp-env</span>
+    <span class="nt">user</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">some-cloud-provider-specific-id</span>
+  <span class="nt">register</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">access_output</span>
 
-<span class="c1"># Retrieve the root certificate for multiple environments</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_auth_info</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">one-environment</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">two-environment</span>
-    <span class="nt">root_certificate</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
-    <span class="nt">keytab</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">no</span>
-
-<span class="c1"># Retrieve the keytab details for the current CDP user for selected environments</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_auth_info</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">one-environment</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">two-environment</span>
-    <span class="nt">keytab</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
-    <span class="nt">root_certificate</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">no</span>
-
-<span class="c1"># Retrieve the keytab details for the specified users for selected environments</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_auth_info</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">one-environment</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">two-environment</span>
-    <span class="nt">user</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">UserA</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">UserB</span>
-    <span class="nt">keytab</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
-    <span class="nt">root_certificate</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">no</span>
+<span class="c1"># Revoke access for user</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.ml_workspace_acces</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ml-k8s-example</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cdp-env</span>
+    <span class="nt">user</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">some-cloud-provider-specific-id</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">absent</span>
 </pre></div>
 </div>
 </div>
@@ -347,77 +334,39 @@ If no user ID is declared, the current CDP user will be used.</p>
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 14%" />
-<col style="width: 10%" />
-<col style="width: 24%" />
-<col style="width: 11%" />
-<col style="width: 8%" />
-<col style="width: 33%" />
+<col style="width: 19%" />
+<col style="width: 12%" />
+<col style="width: 31%" />
+<col style="width: 38%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td colspan="4"><p><strong>Key</strong></p></td>
+<tr class="row-odd"><td colspan="2"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="4"><p><strong>authentication</strong></p>
+<tr class="row-even"><td colspan="2"><p><strong>workspace</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
 </td>
-<td><p>always</p></td>
-<td><p>Returns a dictionary of the environment authentication details.</p></td>
+<td><p>on success</p></td>
+<td><p>The information about the user’s access to the ML Workspace</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>certificates</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
-</td>
-<td><p>when supported</p></td>
-<td><p>A dictionary of environment-to-FreeIPA root certificate</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="2"><p><strong>_environment name_</strong></p>
+<td><p><strong>kubeconfig</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The FreeIPA root certificate for the environment</p></td>
+<td><p>The kubeconfig file as a string</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>keytabs</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
-</td>
-<td><p>when supported</p></td>
-<td><p>A dictionary of the keytabs for each specified environment by user.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="2"><p><strong>_workload username_</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The user’s workload username.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td><p><strong>_environment name_</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The keytab for the environment. The keytab is encoded in base64.</p></td>
-</tr>
-<tr class="row-even"><td colspan="4"><p><strong>sdk_out</strong></p>
+<tr class="row-even"><td colspan="2"><p><strong>sdk_out</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>when supported</p></td>
 <td><p>Returns the captured CDP SDK log.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="4"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-odd"><td colspan="2"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -437,7 +386,6 @@ If no user ID is declared, the current CDP user will be used.</p>
 <h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Webster Mudge (&#64;wmudge)</p></li>
-<li><p>Dan Chaffelson (&#64;chaffelson)</p></li>
 </ul>
 </div>
 </div>
@@ -451,10 +399,10 @@ If no user ID is declared, the current CDP user will be used.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="env_cred.html" class="btn btn-neutral float-right" title="env_cred – Create, update, and destroy CDP credentials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="opdb.html" class="btn btn-neutral float-right" title="opdb – Create or destroy CDP OpDB Databases" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="env_auth.html" class="btn btn-neutral float-left" title="env_auth – Set authentication details for the current CDP user" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="ml_info.html" class="btn btn-neutral float-left" title="ml_info – Gather information about CDP ML Workspaces" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
