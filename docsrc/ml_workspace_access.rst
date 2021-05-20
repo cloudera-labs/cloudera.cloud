@@ -85,7 +85,7 @@ Parameters
    |                 |                       |                                                              |
    |                 |                       | *Aliases: identifier*                                        |
    +-----------------+-----------------------+--------------------------------------------------------------+
-   | **state**       | **Choices:**          | The declarative state of the ML Workspace                    |
+   | **state**       | **Choices:**          | The declarative state of the access to the ML Workspace      |
    |                 |  - **present** |larr| |                                                              |
    | |br|            |  - absent             |                                                              |
    +-----------------+-----------------------+--------------------------------------------------------------+
