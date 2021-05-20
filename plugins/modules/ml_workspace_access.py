@@ -58,7 +58,7 @@ options:
       - identifier
   state:
     description:
-      - The declarative state of the ML Workspace
+      - The declarative state of the access to the ML Workspace
     type: str
     required: False
     default: present
