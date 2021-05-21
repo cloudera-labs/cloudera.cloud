@@ -1004,7 +1004,7 @@ def main():
         # TODO: Update for Azure
         required_if=[
             ['state', 'present', ('cloud', 'credential'), True],
-            ['cloud', 'aws', ('public_key', 'public_key_id'), True],
+            ['cloud', 'aws', ('public_key_text', 'public_key_id'), True],
             ['cloud', 'aws', ('network_cidr', 'vpc_id'), True],
             ['cloud', 'aws', ('inbound_cidr', 'default_sg', 'knox_sg'), True]
         ],
@@ -1014,7 +1014,7 @@ def main():
         mutually_exclusive=[
             ['network_cidr', 'vpc_id'],
             ['network_cidr', 'subnet_ids'],
-            ['public_key', 'public_key_id', 'public_key_text'],
+            ['public_key_id', 'public_key_text'],
             ['inbound_cidr', 'default_sg'],
             ['inbound_cidr', 'knox_sg']
         ],
