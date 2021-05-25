@@ -31,6 +31,7 @@ modules employ the underlying SDK contained within the `cdpy` Python package.
 | [env_telemetry](./modules/env_telemetry.py) | Set CDP Environment telemetry |
 | [env_user_sync](./modules/env_user_sync.py) | Manage CDP User and Group synchronization events |
 | [env_user_sync_info](./modules/env_user_sync_info.py) | Gather information about CDP User and Group synchronization events |
+| [freeipa_info](./modules/freipa_info.py) | Gather information about FreeIPA |
 | [iam_group](./modules/iam_group.py) | Create, manage, and destroy CDP IAM groups |
 | [iam_group_info](./modules/iam_group_info.py) | Gather information about CDP IAM Groups |
 | [iam_resource_role_info](./modules/iam_resource_role_info.py) | Gather information about CDP IAM resource roles |
