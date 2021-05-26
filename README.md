@@ -1,12 +1,16 @@
 # cloudera.cloud - Cloudera Data Platform (CDP) for Public and Private Cloud
 
-Readme last updated: 2021-05-03
+Readme last updated: 2021-05-25
 
 # Quickstart
 
 1. [Install the collection](#installation)
 2. [Install the requirements](#requirements)
 3. [Use the collection](#using-the-collection)
+
+# API
+
+See the [API documentation](https://cloudera-labs.github.io/cloudera.cloud/) for details for each module within the collection. 
 
 # Installation
 
