@@ -22,7 +22,6 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
 
-# TODO: Docs
 DOCUMENTATION = r'''
 ---
 module: df
@@ -34,6 +33,44 @@ author:
 requirements:
   - cdpy
 options:
+  name:
+    description: The name of the Dataflow Service
+    type: str
+    required: True
+    aliases:
+      - crn
+      - env_crn
+  nodes_min:
+    description: The minimum number of kubernetes nodes needed for the environment. Note that the lowest minimum is 3 nodes.
+    type: int
+    default: 3
+    required: False
+    aliases:
+      - min_k8s_node_count
+  nodes_max:
+    description: The maximum number of  kubernetes  nodes that environment may scale up under high-demand situations.
+    type: int
+    default: 3
+    required: False
+    aliases:
+      - max_k8s_node_count
+  public_loadbalancer:
+    description: Indicates whether or not to use a public load balancer when deploying dependencies stack, such as Nginx Ingress Controller
+    type: bool
+    required: False
+    aliases:
+      - use_public_load_balancer
+  ip_ranges:
+    description: The IP ranges authorized to connect to the Kubernetes API server
+    type: list
+    required: False
+    aliases:
+      - authorised_ip_ranges
+  persist:
+    description: Whether or not to retain the database records of related entities during removal.
+    type: bool
+    required: False
+    default: False
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
