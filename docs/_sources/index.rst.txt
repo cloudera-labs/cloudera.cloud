@@ -29,6 +29,7 @@ cloudera.cloud Ansible Collection
    env_telemetry <env_telemetry>
    env_user_sync <env_user_sync>
    env_user_sync_info <env_user_sync_info>
+   freeipa_info <freeipa_info>
    iam_group <iam_group>
    iam_group_info <iam_group_info>
    iam_resource_role_info <iam_resource_role_info>

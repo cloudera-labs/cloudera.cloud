@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>env_idbroker_info -- Gather information about CDP ID Broker &mdash; cloudera.cloud 1.1.0 documentation</title>
+  <title>freeipa_info -- Gather information about FreeIPA &mdash; cloudera.cloud 1.1.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="env_info – Gather information about CDP Environments" href="env_info.html" />
-    <link rel="prev" title="env_idbroker – Update ID Broker for CDP Environments" href="env_idbroker.html" /> 
+    <link rel="next" title="iam_group – Create, update, or destroy CDP IAM Groups" href="iam_group.html" />
+    <link rel="prev" title="env_user_sync_info – Get the status of a CDP Users and Groups sync" href="env_user_sync_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -102,7 +102,14 @@
 <li class="toctree-l1"><a class="reference internal" href="env_cred.html">env_cred</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred_info.html">env_cred_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_idbroker.html">env_idbroker</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">env_idbroker_info</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="env_idbroker_info.html">env_idbroker_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_info.html">env_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_proxy.html">env_proxy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_proxy_info.html">env_proxy_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_telemetry.html">env_telemetry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_user_sync.html">env_user_sync</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_user_sync_info.html">env_user_sync_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">freeipa_info</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
@@ -111,13 +118,6 @@
 <li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="env_info.html">env_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="env_proxy.html">env_proxy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="env_proxy_info.html">env_proxy_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="env_telemetry.html">env_telemetry</a></li>
-<li class="toctree-l1"><a class="reference internal" href="env_user_sync.html">env_user_sync</a></li>
-<li class="toctree-l1"><a class="reference internal" href="env_user_sync_info.html">env_user_sync_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="freeipa_info.html">freeipa_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="iam_group.html">iam_group</a></li>
 <li class="toctree-l1"><a class="reference internal" href="iam_group_info.html">iam_group_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="iam_resource_role_info.html">iam_resource_role_info</a></li>
@@ -173,13 +173,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>env_idbroker_info -- Gather information about CDP ID Broker</li>
+      <li>freeipa_info -- Gather information about FreeIPA</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/env_idbroker_info.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/freeipa_info.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -192,8 +192,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="env-idbroker-info-module"></span><div class="section" id="env-idbroker-info-gather-information-about-cdp-id-broker">
-<h1>env_idbroker_info – Gather information about CDP ID Broker<a class="headerlink" href="#env-idbroker-info-gather-information-about-cdp-id-broker" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="freeipa-info-module"></span><div class="section" id="freeipa-info-gather-information-about-freeipa">
+<h1>freeipa_info – Gather information about FreeIPA<a class="headerlink" href="#freeipa-info-gather-information-about-freeipa" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
@@ -207,8 +207,7 @@
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Gather information about the ID Broker mappings for a CDP Environment.</p></li>
-<li><p>The module supports check_mode.</p></li>
+<li><p>Gather information about FreeIPA</p></li>
 </ul>
 </div>
 <div class="section" id="requirements">
@@ -238,10 +237,7 @@
 <p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>The name of the Environment.</p>
-<p><br /></p>
-<p><em>Aliases: environment</em></p>
-</td>
+<td><p>The FreeIPA environment specified will be described</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
@@ -277,8 +273,8 @@
 <h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># Gather information about the ID Broker mappings</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_idbroker_info</span><span class="p">:</span>
+<span class="c1"># List FreeIPA information about a named Environment</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.freeipa_info</span><span class="p">:</span>
     <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-environment</span>
 </pre></div>
 </div>
@@ -288,211 +284,99 @@
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 10%" />
-<col style="width: 7%" />
 <col style="width: 17%" />
-<col style="width: 0%" />
-<col style="width: 10%" />
-<col style="width: 5%" />
-<col style="width: 51%" />
+<col style="width: 11%" />
+<col style="width: 29%" />
+<col style="width: 8%" />
+<col style="width: 35%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td colspan="5"><p><strong>Key</strong></p></td>
+<tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="5"><p><strong>idbroker</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>environments</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
 </td>
-<td><p>when supported</p></td>
-<td><p>Returns the mappings and sync status for the ID Broker for the Environment.</p></td>
+<td><p>on success</p></td>
+<td><p>The information about the named Environment or Environments</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="4"><p><strong>mappingsVersion</strong></p>
+<td colspan="2"><p><strong>environmentCrn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The version of the mappings.</p>
+<td><p>CDP CRN value for the Environment.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>environmentName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Name of the Environment.</p>
 <p><br /></p>
 <p><strong>Sample:</strong></p>
-<p>AWS</p>
+<p>a-cdp-environment-name</p>
 </td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="4"><p><strong>dataAccessRole</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The cloud provider role to which data access services will be mapped (e.g. an ARN in AWS, a Resource ID in Azure).</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="4"><p><strong>rangerAuditRole</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The cloud provider role to which services that write to Ranger audit logs will be mapped (e.g. an ARN in AWS, a Resource ID in Azure).
-Note that some data access services also write to Ranger audit logs; such services will be mapped to the ‘dataAccessRole’, not the ‘rangerAuditRole’.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="4"><p><strong>rangerCloudAccessAuthorizerRole</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>when supported</p></td>
-<td><p>The cloud provider role to which the Ranger RAZ service will be mapped (e.g. an ARN in AWS, a Resource ID in Azure).</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="4"><p><strong>mappings</strong></p>
+<td colspan="2"><p><strong>instances</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td><p>when supported</p></td>
-<td><p>ID Broker mappings for individual actors and groups. Does not include mappings for data access services.</p></td>
+<td><p>always</p></td>
+<td><p>Details about the instances.</p></td>
 </tr>
 <tr class="row-even"><td></td>
 <td></td>
-<td colspan="3"><p><strong>accessorCrn</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>on success</p></td>
-<td><p>The CRN of the actor (group or user) mapped to the cloud provider role.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>role</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>on success</p></td>
-<td><p>The cloud provider identitier for the role.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="4"><p><strong>syncStatus</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
-</td>
-<td><p>when supported</p></td>
-<td><p>The status of the most recent ID Broker mappings sync operation, if any. Not present if there is no Datalake associated with the Environment.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>globalStatus</strong></p>
+<td><p><strong>id</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The overall mappings sync status for all Datalake clusters in the Environment.</p>
+<td><p>The identifier of the instance.</p>
 <p><br /></p>
 <p><strong>Sample:</strong></p>
-<p>NEVER_RUN</p>
-<p>REQUESTED</p>
-<p>REJECTED</p>
-<p>RUNNING</p>
-<p>COMPLETED</p>
-<p>FAILED</p>
-<p>TIMEDOUT</p>
+<p>i-00b58f27be</p>
 </td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>syncNeeded</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Flag indicating whether a sync is needed to bring in-cluster mappings up-to-date.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
 <td></td>
-<td colspan="3"><p><strong>statuses</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Map of Datalake cluster CRN-to-mappings sync status for each Datalake cluster in the environment.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td colspan="2"><p><strong>__datalake CRN__</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The Datalake cluster CRN</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>endDate</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>when supported</p></td>
-<td><p>The date when the mappings sync completed or was terminated. Omitted if status is NEVER_RUN or RUNNING.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>errorDetail</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>when supported</p></td>
-<td><p>The detail of the error. Omitted if status is not FAILED.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>startDate</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>when supported</p></td>
-<td><p>The date when the mappings sync started executing. Omitted if status is NEVER_RUN.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>status</strong></p>
+<td><p><strong>state</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The mappings sync summary status.</p>
+<td><p>The state of the instance.</p>
 <p><br /></p>
 <p><strong>Sample:</strong></p>
-<p>NEVER_RUN</p>
-<p>REQUESTED</p>
-<p>REJECTED</p>
-<p>RUNNING</p>
-<p>COMPLETED</p>
-<p>FAILED</p>
-<p>TIMEDOUT</p>
+<p>CREATED</p>
 </td>
 </tr>
-<tr class="row-odd"><td colspan="5"><p><strong>sdk_out</strong></p>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>hostname</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td><p>when supported</p></td>
-<td><p>Returns the captured CDP SDK log.</p></td>
+<td><p>always</p></td>
+<td><p>The hostname of the instance.</p>
+<p><br /></p>
+<p><strong>Sample:</strong></p>
+<p>ipaserver0.a-cdp-environment-name.example.site</p>
+</td>
 </tr>
-<tr class="row-even"><td colspan="5"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p><strong>issues</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td><p>when supported</p></td>
-<td><p>Returns a list of each line of the captured CDP SDK log.</p></td>
+<td><p>always</p></td>
+<td><p>Details of any issues encountered with server.</p></td>
 </tr>
 </tbody>
 </table>
@@ -507,7 +391,7 @@ Note that some data access services also write to Ranger audit logs; such servic
 <h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Webster Mudge (&#64;wmudge)</p></li>
-<li><p>Dan Chaffelson (&#64;chaffelson)</p></li>
+<li><p>Jim Enright (&#64;jenright)</p></li>
 </ul>
 </div>
 </div>
@@ -521,10 +405,10 @@ Note that some data access services also write to Ranger audit logs; such servic
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="env_info.html" class="btn btn-neutral float-right" title="env_info – Gather information about CDP Environments" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="iam_group.html" class="btn btn-neutral float-right" title="iam_group – Create, update, or destroy CDP IAM Groups" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="env_idbroker.html" class="btn btn-neutral float-left" title="env_idbroker – Update ID Broker for CDP Environments" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="env_user_sync_info.html" class="btn btn-neutral float-left" title="env_user_sync_info – Get the status of a CDP Users and Groups sync" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
