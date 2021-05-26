@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FAMILY=('account' 'datahub' 'datalake' 'dw' 'env' 'iam' 'ml' 'opdb')
+FAMILY=('account' 'datahub' 'datalake' 'dw' 'env' 'freeipa' 'iam' 'ml' 'opdb')
 
 for f in "${FAMILY[@]}"; do
   for i in "../plugins/modules/$f*"; do
