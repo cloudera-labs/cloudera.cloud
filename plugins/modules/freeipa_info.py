@@ -30,7 +30,7 @@ description:
     - Gather information about FreeIPA
 author:
   - "Webster Mudge (@wmudge)"
-  - "Jim Enright (@jenright)
+  - "Jim Enright (@jenright)"
 requirements:
   - cdpy
 options:
