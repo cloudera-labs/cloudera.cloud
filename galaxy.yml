@@ -16,7 +16,7 @@
 
 namespace: cloudera
 name: cloud
-version: 1.0.0
+version: 1.1.0
 readme: README.md
 authors:
 - Webster Mudge <wmudge@cloudera.com>
@@ -36,8 +36,7 @@ tags:
 dependencies: {}
 
 repository: https://github.com/cloudera-labs/cloudera.cloud
-# TODO: Confirm documentation URL
-documentation: https://github.com/pages/cloudera-labs/cloudera.cloud
+documentation: https://cloudera-labs.github.io/cloudera.cloud
 homepage: https://github.com/cloudera-labs/cloudera.cloud
 issues: https://github.com/cloudera-labs/cloudera.cloud/issues
 
