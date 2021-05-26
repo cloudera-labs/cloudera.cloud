@@ -65,7 +65,7 @@ options:
     type: list
     required: False
     aliases:
-      - authorised_ip_ranges
+      - authorized_ip_ranges
   persist:
     description: Whether or not to retain the database records of related entities during removal.
     type: bool
@@ -208,6 +208,7 @@ class DFService(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
+        self.name = self.cdpy.environments.resolve_environment_crn(self.name)
         self.target = self.cdpy.df.describe_environment(env_crn=self.name)
 
         if self.target is not None:
@@ -244,7 +245,7 @@ class DFService(CdpModule):
                 if not self.module.check_mode:
                     self.service = self.cdpy.df.enable_environment(
                         env_crn=self.name,
-                        authorised_ips=self.ip_ranges,
+                        authorized_ips=self.ip_ranges,
                         min_nodes=self.nodes_min,
                         max_nodes=self.nodes_max,
                         enable_public_ip=self.public_loadbalancer
@@ -257,14 +258,14 @@ class DFService(CdpModule):
 
     def _wait_for_enabled(self):
         return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.df.describe_environment, params=dict(name=self.name),
+            describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.name),
             field=['status', 'state'], state=self.cdpy.sdk.STARTED_STATES,
             delay=self.delay, timeout=self.timeout
         )
 
     def _wait_for_disabled(self):
         return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.df.describe_environment, params=dict(name=self.name), state=None,
+            describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.name), state=None,
             delay=self.delay, timeout=self.timeout
         )
 
@@ -277,8 +278,12 @@ def main():
             nodes_max=dict(required=False, type='int', default=3, aliases=['max_k8s_node_count']),
             public_loadbalancer=dict(required=False, type='bool', default=False, aliases=['use_public_load_balancer']),
             ip_ranges=dict(required=False, type='list', elements='str', default=list(),
-                           aliases=['authorised_ip_ranges']),
-            persist=dict(required=False, type='bool', default=False)
+                           aliases=['authorized_ip_ranges']),
+            persist=dict(required=False, type='bool', default=False),
+            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
+            wait=dict(required=False, type='bool', default=True),
+            delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
+            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
         ),
         supports_check_mode=True,
     )
