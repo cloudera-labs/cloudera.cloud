@@ -33,15 +33,27 @@ author:
 requirements:
   - cdpy
 options:
-  name:
-    description: The name of the Dataflow Service
+  crn:
+    description: The name or crn of the CDP Environment to host the Dataflow Service
     type: str
     required: True
     aliases:
-      - crn
+      - name
       - env_crn
+  state:
+    description:
+      - The declarative state of the Dataflow Service
+    type: str
+    required: False
+    default: present
+    choices:
+      - present
+      - enabled
+      - absent
+      - disabled
   nodes_min:
-    description: The minimum number of kubernetes nodes needed for the environment. Note that the lowest minimum is 3 nodes.
+    description: The minimum number of kubernetes nodes needed for the environment.
+      Note that the lowest minimum is 3 nodes.
     type: int
     default: 3
     required: False
@@ -55,7 +67,7 @@ options:
     aliases:
       - max_k8s_node_count
   public_loadbalancer:
-    description: Indicates whether or not to use a public load balancer when deploying dependencies stack, such as Nginx Ingress Controller
+    description: Indicates whether or not to use a public load balancer when deploying dependencies stack.
     type: bool
     required: False
     aliases:
@@ -71,6 +83,31 @@ options:
     type: bool
     required: False
     default: False
+  wait:
+    description:
+      - Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
+      - If set to FALSE, the module will return immediately.
+    type: bool
+    required: False
+    default: True
+  delay:
+    description:
+      - The internal polling interval (in seconds) while the module waits for the Dataflow Service to achieve the 
+        declared state.
+    type: int
+    required: False
+    default: 15
+    aliases:
+      - polling_delay
+  timeout:
+    description:
+      - The internal polling timeout (in seconds) while the module waits for the Dataflow Service to achieve the 
+        declared state.
+    type: int
+    required: False
+    default: 3600
+    aliases:
+      - polling_timeout
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -79,16 +116,26 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
-# List basic information about all DataFlow Services
-- cloudera.cloud.df_info:
+# Create a Dataflow Service
+- cloudera.cloud.df:
+    name: my-service
+    nodes_min: 3
+    nodes_max: 10
+    public_loadbalancer: True
+    ip_ranges: ['192.168.0.1/24']
+    state: present
+    wait: yes
 
-# Gather detailed information about a named DataFlow Service using a name
-- cloudera.cloud.df_info:
-    name: example-service
+# Remove a Dataflow Service with Async wait
+- cloudera.cloud.df:
+    name: my-service
+    persist: False
+    state: absent
+    wait: yes
+  async: 3600
+  poll: 0
+  register: __my_teardown_request
 
-# Gather detailed information about a named DataFlow Service using a CRN
-- cloudera.cloud.df_info:
-    crn: example-service-crn
 '''
 
 RETURN = r'''
@@ -120,11 +167,11 @@ environments:
       returned: always
       type: str
     minK8sNodeCount:
-      description: The  minimum  number  of Kubernetes nodes that need to be provisioned in the environment.
+      description: The  minimum number of Kubernetes nodes that need to be provisioned in the environment.
       returned: always
       type: int
     maxK8sNodeCount:
-      description:  The maximum number of  kubernetes  nodes  that  environment  may scale up under high-demand situations.
+      description:  The maximum number of kubernetes nodes that environment may scale up under high-demand situations.
       returned: always
       type: str
     status:
@@ -141,11 +188,11 @@ environments:
           returned: always
           type: str
     k8sNodeCount:
-      description: The  number of kubernetes nodes currently in use by DataFlow for this environment.
+      description: The number of kubernetes nodes currently in use by DataFlow for this environment.
       returned: always
       type: int
     instanceType:
-      description: The instance type of the kubernetes nodes currently  in  use  by DataFlow for this environment.
+      description: The instance type of the kubernetes nodes currently in use by DataFlow for this environment.
       returned: always
       type: str
     dfLocalUrl:
@@ -153,7 +200,7 @@ environments:
       returned: always
       type: str
     authorizedIpRanges:
-      description:  The authorized IP Ranges.
+      description: The authorized IP Ranges.
       returned: always
       type: list
     activeWarningAlertCount:
@@ -213,7 +260,7 @@ class DFService(CdpModule):
 
         if self.target is not None:
             # DF Database Entry exists
-            if self.state == 'absent':
+            if self.state in ['absent', 'disabled']:
                 if self.module.check_mode:
                     self.service = self.target
                 else:
@@ -226,10 +273,10 @@ class DFService(CdpModule):
                             self.service = self._wait_for_disabled()
                         else:
                             self.service = self.target
-            elif self.state == 'present':
+            elif self.state in ['present', 'enabled']:
                 self.module.warn(
-                    "Dataflow Service already present and configuration validation and reconciliation is not supported;" +
-                    "to change a Dataflow Service, explicitly destroy and recreate the Workspace or use the UI")
+                    "Dataflow Service already enabled and configuration validation and reconciliation is not supported;" +
+                    "to change a Dataflow Service, explicitly disable and recreate the Service or use the UI")
                 if self.wait:
                     self.service = self._wait_for_enabled()
             else:
@@ -237,10 +284,10 @@ class DFService(CdpModule):
                     msg="State %s is not valid for this module" % self.state)
         else:
             # Environment does not have DF database entry, and probably doesn't exist
-            if self.state == 'absent':
+            if self.state in ['absent', 'disabled']:
                 self.module.log(
-                    "Dataflow Service %s already absent in Environment %s" % (self.name, self.env))
-            elif self.state == 'present':
+                    "Dataflow Service %s already disabled in CDP Environment %s" % (self.name, self.env))
+            elif self.state in ['present', 'enabled']:
                 # create DF Service
                 if not self.module.check_mode:
                     self.service = self.cdpy.df.enable_environment(
@@ -280,7 +327,8 @@ def main():
             ip_ranges=dict(required=False, type='list', elements='str', default=list(),
                            aliases=['authorized_ip_ranges']),
             persist=dict(required=False, type='bool', default=False),
-            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
+            state=dict(required=False, type='str', choices=['present', 'enabled', 'absent', 'disabled'],
+                       default='present'),
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
