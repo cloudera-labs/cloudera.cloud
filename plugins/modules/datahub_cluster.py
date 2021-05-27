@@ -194,6 +194,7 @@ EXAMPLES = r'''
     name: datahub-name
     env: name-or-crn
     state: present
+    definition: definition-name
     subnet: subnet-id-for-cloud-provider
     image: image-uuid-from-catalog
     catalog: name-of-catalog-for-image
@@ -484,12 +485,15 @@ class DatahubCluster(CdpModule):
     def _configure_payload(self):
         payload = dict(
             clusterName=self.name,
-            environmentName=self.environment,
-            clusterDefinitionName=self.definition,
-            image={"id": self.image_id, "catalogName": self.image_catalog},
-            clusterTemplateName=self.template,
-            instanceGroups=self.groups
+            environmentName=self.environment
         )
+
+        if self.definition is not None:
+          payload["clusterDefinitionName"]=self.definition
+        else:
+          payload["image"]={"id": self.image_id, "catalogName": self.image_catalog}
+          payload["clusterTemplateName"]=self.template
+          payload["instanceGroups"]=self.groups
 
         if self.host_env['cloudPlatform'] == 'GCP':
             payload['subnetName'] = self.subnet
@@ -549,10 +553,11 @@ def main():
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
         ),
-        supports_check_mode=True,
-        required_together=[
-            ['subnet', 'image', 'catalog', 'template', 'groups', 'environment'],
-        ]
+        supports_check_mode=True
+        #Punting on additional checks here. There are a variety of supporting datahub invocations that can make this more complex
+        #required_together=[
+        #    ['subnet', 'image', 'catalog', 'template', 'groups', 'environment'],
+        #]
     )
 
     result = DatahubCluster(module)
