@@ -195,6 +195,7 @@ EXAMPLES = r'''
     name: datahub-name
     env: name-or-crn
     state: present
+    definition: definition-name
     subnet: subnet-id-for-cloud-provider
     image: image-uuid-from-catalog
     catalog: name-of-catalog-for-image
