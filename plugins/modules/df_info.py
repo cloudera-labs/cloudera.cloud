@@ -41,6 +41,8 @@ options:
     required: False
     aliases:
       - crn
+notes:
+  - This feature this module is for is in Technical Preview
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options

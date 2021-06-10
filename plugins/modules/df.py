@@ -108,6 +108,8 @@ options:
     default: 3600
     aliases:
       - polling_timeout
+notes:
+  - This feature this module is for is in Technical Preview
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -260,7 +262,7 @@ class DFService(CdpModule):
 
         if self.target is not None:
             # DF Database Entry exists
-            if self.state in ['absent', 'disabled']:
+            if self.state in ['absent']:
                 if self.module.check_mode:
                     self.service = self.target
                 else:
@@ -273,7 +275,7 @@ class DFService(CdpModule):
                             self.service = self._wait_for_disabled()
                         else:
                             self.service = self.target
-            elif self.state in ['present', 'enabled']:
+            elif self.state in ['present']:
                 self.module.warn(
                     "Dataflow Service already enabled and configuration validation and reconciliation is not supported;" +
                     "to change a Dataflow Service, explicitly disable and recreate the Service or use the UI")
@@ -284,10 +286,10 @@ class DFService(CdpModule):
                     msg="State %s is not valid for this module" % self.state)
         else:
             # Environment does not have DF database entry, and probably doesn't exist
-            if self.state in ['absent', 'disabled']:
+            if self.state in ['absent']:
                 self.module.log(
                     "Dataflow Service %s already disabled in CDP Environment %s" % (self.name, self.env))
-            elif self.state in ['present', 'enabled']:
+            elif self.state in ['present']:
                 # create DF Service
                 if not self.module.check_mode:
                     self.service = self.cdpy.df.enable_environment(
@@ -327,7 +329,7 @@ def main():
             ip_ranges=dict(required=False, type='list', elements='str', default=list(),
                            aliases=['authorized_ip_ranges']),
             persist=dict(required=False, type='bool', default=False),
-            state=dict(required=False, type='str', choices=['present', 'enabled', 'absent', 'disabled'],
+            state=dict(required=False, type='str', choices=['present', 'absent'],
                        default='present'),
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
