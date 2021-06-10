@@ -14,6 +14,8 @@ cloudera.cloud Ansible Collection
    datahub_cluster <datahub_cluster>
    datahub_cluster_info <datahub_cluster_info>
    datahub_template_info <datahub_template_info>
+   df <df>
+   df_info <df_info>
    dw_cluster <dw_cluster>
    dw_cluster_info <dw_cluster_info>
    env <env>
