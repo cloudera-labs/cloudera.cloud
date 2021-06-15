@@ -29,6 +29,7 @@ short_description: Gather information about CDP Datahub Cluster Definitions
 description:
     - Gather information about CDP Datahub Cluster Definitions
 author:
+  - "Chris Perro (@cmperro)"
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
   - "Chris Perro (@cmperro)"
@@ -37,13 +38,20 @@ requirements:
 options:
   name:
     description:
-      - If a name is provided, that Definition will be described.
-      - If a crn is provided, that Definition will be described.
-      - If no name provided, all Definitions will be listed.
+      - If a name or CRN is provided, that Definition will be described.
+      - If no name or CRN is provided, all Definitions will be listed.
     type: str
     required: False
     aliases:
       - definition
+      - crn
+  content:
+    description: Flag dictating if the workload template content of the cluster definition is returned
+    type: bool
+    required: False
+    default: False
+    aliases:
+     - definition_content
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -73,38 +81,40 @@ definitions:
       returned: always
       type: str
     crn:
-      description:  The CRN of the cluster definition.
+      description: The CRN of the cluster definition.
+      returned: always
+      type: str
+    type:
+      description: The type of cluster definition.
+      returned: always
+      type: str
+      sample:
+        - DATAENGINEERING
+        - DATAMART
+        - DISCOVERY_DATA_AND_EXPLORATION
+        - FLOW_MANAGEMENT
+        - OPERATIONALDATABASE
+        - STREAMING
+    nodeCount:
+      description: The node count of the cluster definition.
+      returned: always
+      type: str
+    cloudPlatform:
+      description: The cloud provider of the cluster definition.
+      returned: always
+      type: str
+    productVersion:
+      description: The product version of the cluster definition.
       returned: always
       type: str
     description:
       description: The description of the cluster definition.
       returned: always
       type: str
-    productVersion:
-      description: The product version.
-      returned: always
+    workloadTemplate:
+      description: The workload template of the cluster definition, in JSON.
+      returned: when specified
       type: str
-    instanceGroupCount:
-      description: The instance group count of the cluster.
-      returned: always
-      type: str
-    status:
-      description: The status of the cluster definition.
-      returned: always
-      type: str
-    tags:
-      description: Tags added to the cluster definition
-      type: dict
-      returned: always
-      contains:
-        key:
-          description: The key of the tag.
-          returned: always
-          type: str
-        value:
-          description: The value of the tag.
-          returned: always
-          type: str
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
@@ -123,6 +133,10 @@ class DatahubDefinitionInfo(CdpModule):
 
         # Set variables
         self.name = self._get_param('name')
+        self.content = self._get_param('content')
+
+        # Initialize internal values
+        self.all_definitions = []
 
         # Initialize return values
         self.definitions = []
@@ -132,18 +146,38 @@ class DatahubDefinitionInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.name:  # Note that both None and '' will trigger this
-            definition_single = self.cdpy.datahub.describe_definition(self.name)
-            if definition_single is not None:
-                self.definitions.append(definition_single)
+        self.all_definitions = self.cdpy.datahub.list_cluster_definitions()
+        if self.name:
+            short_desc = next((d for d in self.all_definitions if d['crn'] == self.name or 
+                               d['clusterDefinitionName']== self.name), None)
+            if short_desc is not None:
+                if self.content:
+                    self.definitions.append(self._describe_definition(short_desc))
+                else:
+                    self.definitions.append(short_desc)                          
+            else:
+                self.module.warn("Definition not found, '%s'" % self.name)    
         else:
-            self.definitions = self.cdpy.datahub.list_cluster_definitions()
+            if self.content:
+                for short_desc in self.all_definitions:
+                    self.definitions.append(self._describe_definition(short_desc))
+            else:
+                self.definitions = self.all_definitions
 
+    def _describe_definition(self, short_desc):
+      full_desc = self.cdpy.datahub.describe_cluster_definition(short_desc['crn'])
+      if full_desc is not None:
+          full_desc.update(productVersion=short_desc['productVersion'], nodeCount=short_desc['nodeCount'])
+          return full_desc
+      else:
+        self.module.fail_json(msg="Failed to retrieve Cluster Definition content, '%s'" % 
+                              short_desc['clusterDefinitionName'])
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['definition'])
+            name=dict(required=False, type='str', aliases=['definition', 'crn']),
+            content=dict(required=False, type='bool', default=False, aliases=['definition_content'])
         ),
         supports_check_mode=True
     )
