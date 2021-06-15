@@ -32,6 +32,7 @@ author:
   - "Chris Perro (@cmperro)"
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Chris Perro (@cmperro)"
 requirements:
   - cdpy
 options:
