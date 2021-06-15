@@ -13,6 +13,7 @@ cloudera.cloud Ansible Collection
    datalake_runtime_info <datalake_runtime_info>
    datahub_cluster <datahub_cluster>
    datahub_cluster_info <datahub_cluster_info>
+   datahub_definition_info <datahub_definition_info>
    datahub_template_info <datahub_template_info>
    df <df>
    df_info <df_info>

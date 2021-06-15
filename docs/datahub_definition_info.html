@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>env_proxy_info -- Gather information about CDP Environment Proxies &mdash; cloudera.cloud 1.1.0 documentation</title>
+  <title>datahub_definition_info -- Gather information about CDP Datahub Cluster Definitions &mdash; cloudera.cloud 1.1.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="env_telemetry – Set CDP environment telemetry" href="env_telemetry.html" />
-    <link rel="prev" title="env_proxy – Create, update, or destroy CDP Environment Proxies" href="env_proxy.html" /> 
+    <link rel="next" title="datahub_template_info – Gather information about CDP Datahub Cluster Templates" href="datahub_template_info.html" />
+    <link rel="prev" title="datahub_cluster_info – Gather information about CDP Datahubs" href="datahub_cluster_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -93,7 +93,15 @@
 <li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster.html">datahub_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster_info.html">datahub_cluster_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datahub_definition_info.html">datahub_definition_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">datahub_definition_info</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df.html">df</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_info.html">df_info</a></li>
@@ -108,15 +116,7 @@
 <li class="toctree-l1"><a class="reference internal" href="env_idbroker_info.html">env_idbroker_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_info.html">env_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_proxy.html">env_proxy</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">env_proxy_info</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="env_proxy_info.html">env_proxy_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_telemetry.html">env_telemetry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_user_sync.html">env_user_sync</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_user_sync_info.html">env_user_sync_info</a></li>
@@ -176,13 +176,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>env_proxy_info -- Gather information about CDP Environment Proxies</li>
+      <li>datahub_definition_info -- Gather information about CDP Datahub Cluster Definitions</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/env_proxy_info.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/datahub_definition_info.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -195,8 +195,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="env-proxy-info-module"></span><div class="section" id="env-proxy-info-gather-information-about-cdp-environment-proxies">
-<h1>env_proxy_info – Gather information about CDP Environment Proxies<a class="headerlink" href="#env-proxy-info-gather-information-about-cdp-environment-proxies" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="datahub-definition-info-module"></span><div class="section" id="datahub-definition-info-gather-information-about-cdp-datahub-cluster-definitions">
+<h1>datahub_definition_info – Gather information about CDP Datahub Cluster Definitions<a class="headerlink" href="#datahub-definition-info-gather-information-about-cdp-datahub-cluster-definitions" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
@@ -210,7 +210,7 @@
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Gather information about CDP Environment Proxy Configurations</p></li>
+<li><p>Gather information about CDP Datahub Cluster Definitions</p></li>
 </ul>
 </div>
 <div class="section" id="requirements">
@@ -238,10 +238,23 @@
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>If a name is provided, that proxy configuration will be described
-If no name is provided, all proxy configurations will be listed</p></td>
+<td><p>If a name or CRN is provided, that Definition will be described.
+If no name or CRN is provided, all Definitions will be listed.</p>
+<p><br /></p>
+<p><em>Aliases: definition, crn</em></p>
+</td>
 </tr>
-<tr class="row-odd"><td><p><strong>verify_tls</strong></p>
+<tr class="row-odd"><td><p><strong>content</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag dictating if the workload template content of the cluster definition is returned</p>
+<p><br /></p>
+<p><em>Aliases: definition_content</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -251,7 +264,7 @@ If no name is provided, all proxy configurations will be listed</p></td>
 <p><em>Aliases: tls</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>debug</strong></p>
+<tr class="row-odd"><td><p><strong>debug</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -261,7 +274,7 @@ If no name is provided, all proxy configurations will be listed</p></td>
 <p><em>Aliases: debug_endpoints</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>profile</strong></p>
+<tr class="row-even"><td><p><strong>profile</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
@@ -275,12 +288,12 @@ If no name is provided, all proxy configurations will be listed</p></td>
 <h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># List basic information about all Proxy Configurations</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_proxy_info</span><span class="p">:</span>
+<span class="c1"># List basic information about all Datahubs</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub_definition_info</span><span class="p">:</span>
 
-<span class="c1"># Gather detailed information about a named Proxy Configuration</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_proxy_info</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-proxy</span>
+<span class="c1"># Gather detailed information about a named Datahub</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub_definition_info</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-definition</span>
 </pre></div>
 </div>
 </div>
@@ -289,115 +302,104 @@ If no name is provided, all proxy configurations will be listed</p></td>
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 14%" />
-<col style="width: 9%" />
-<col style="width: 23%" />
-<col style="width: 54%" />
+<col style="width: 19%" />
+<col style="width: 13%" />
+<col style="width: 31%" />
+<col style="width: 37%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td colspan="2"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="2"><p><strong>proxies</strong></p>
+<tr class="row-even"><td colspan="2"><p><strong>definitions</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
 <td><p>on success</p></td>
-<td><p>Details on the proxies.</p></td>
+<td><p>The information about the named Definition or Definitions</p></td>
 </tr>
 <tr class="row-odd"><td></td>
+<td><p><strong>clusterDefinitionName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The name of the cluster definition.</p></td>
+</tr>
+<tr class="row-even"><td></td>
 <td><p><strong>crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The CRN of the proxy config.</p>
+<td><p>The CRN of the cluster definition.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p><strong>type</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The type of cluster definition.</p>
 <p><br /></p>
 <p><strong>Sample:</strong></p>
-<p>crn:cdp:environments:us-west-1:558bc1d2-8867-4357-8524-311d51259233:credential:eb6c5fc8-38fe-4c3c-8194-1a0f05edc010</p>
+<p>DATAENGINEERING</p>
+<p>DATAMART</p>
+<p>DISCOVERY_DATA_AND_EXPLORATION</p>
+<p>FLOW_MANAGEMENT</p>
+<p>OPERATIONALDATABASE</p>
+<p>STREAMING</p>
 </td>
 </tr>
 <tr class="row-even"><td></td>
+<td><p><strong>nodeCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The node count of the cluster definition.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td><p><strong>cloudPlatform</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The cloud provider of the cluster definition.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td><p><strong>productVersion</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The product version of the cluster definition.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
 <td><p><strong>description</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td><p>when supported</p></td>
-<td><p>A description for the proxy config.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>Example proxy configuration</p>
-</td>
-</tr>
-<tr class="row-odd"><td></td>
-<td><p><strong>host</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
 <td><p>always</p></td>
-<td><p>The proxy host.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>example.cloudera.com</p>
-</td>
+<td><p>The description of the cluster definition.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td><p><strong>port</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The proxy port.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>8443</p>
-</td>
-</tr>
-<tr class="row-odd"><td></td>
-<td><p><strong>protocol</strong></p>
+<td><p><strong>workloadTemplate</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td><p>always</p></td>
-<td><p>The proxy protocol.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>https</p>
-</td>
+<td><p>when specified</p></td>
+<td><p>The workload template of the cluster definition, in JSON.</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td><p><strong>proxyConfigName</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The name of the proxy config.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>example-proxy-config</p>
-</td>
-</tr>
-<tr class="row-odd"><td></td>
-<td><p><strong>user</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>when supported</p></td>
-<td><p>The proxy user.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>proxy_username</p>
-</td>
-</tr>
-<tr class="row-even"><td colspan="2"><p><strong>sdk_out</strong></p>
+<tr class="row-odd"><td colspan="2"><p><strong>sdk_out</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>when supported</p></td>
 <td><p>Returns the captured CDP SDK log.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="2"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-even"><td colspan="2"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -416,6 +418,7 @@ If no name is provided, all proxy configurations will be listed</p></td>
 <div class="section" id="authors">
 <h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
+<li><p>Chris Perro (&#64;cmperro)</p></li>
 <li><p>Webster Mudge (&#64;wmudge)</p></li>
 <li><p>Dan Chaffelson (&#64;chaffelson)</p></li>
 </ul>
@@ -431,10 +434,10 @@ If no name is provided, all proxy configurations will be listed</p></td>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="env_telemetry.html" class="btn btn-neutral float-right" title="env_telemetry – Set CDP environment telemetry" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="datahub_template_info.html" class="btn btn-neutral float-right" title="datahub_template_info – Gather information about CDP Datahub Cluster Templates" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="env_proxy.html" class="btn btn-neutral float-left" title="env_proxy – Create, update, or destroy CDP Environment Proxies" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="datahub_cluster_info.html" class="btn btn-neutral float-left" title="datahub_cluster_info – Gather information about CDP Datahubs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
