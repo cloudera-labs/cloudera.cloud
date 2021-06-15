@@ -32,13 +32,20 @@ author:
   - "Chris Perro (@cmperro)"
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Chris Perro (@cmperro)"
 requirements:
   - cdpy
 options:
   name:
     description:
+<<<<<<< HEAD
       - If a name or CRN is provided, that Definition will be described.
       - If no name or CRN is provided, all Definitions will be listed.
+=======
+      - If a name is provided, that Definition will be described.
+      - If a crn is provided, that Definition will be described.
+      - If no name provided, all Definitions will be listed.
+>>>>>>> Updates for PR comments. Add authorship. Update some docs. etc.
     type: str
     required: False
     aliases:
