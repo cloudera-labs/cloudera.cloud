@@ -31,6 +31,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Daniel Chaffelson (@chaffelson)"
+  - "Chris Perro (@cmperro)"
 requirements:
   - cdpy
 options:
@@ -189,12 +190,11 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
-# Create a datahub (and do not wait for status change)
+# Create a datahub specifying instance group details (and do not wait for status change)
 - cloudera.cloud.datahub_cluster:
     name: datahub-name
     env: name-or-crn
     state: present
-    definition: definition-name
     subnet: subnet-id-for-cloud-provider
     image: image-uuid-from-catalog
     catalog: name-of-catalog-for-image
@@ -211,6 +211,15 @@ EXAMPLES = r'''
           - volumeSize: 100
             volumeCount: 1
             volumeType: volume-type-for-cloud-provider
+    tags:
+      project: Arbitrary content
+    wait: no
+
+# Create a datahub specifying only a definition name
+- cloudera.cloud.datahub_cluster:
+    name: datahub-name
+    env: name-or-crn
+    definition: definition-name
     tags:
       project: Arbitrary content
     wait: no

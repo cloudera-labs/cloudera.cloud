@@ -31,12 +31,14 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Chris Perro (@cmperro)"
 requirements:
   - cdpy
 options:
   name:
     description:
       - If a name is provided, that Definition will be described.
+      - If a crn is provided, that Definition will be described.
       - If no name provided, all Definitions will be listed.
     type: str
     required: False
@@ -131,7 +133,7 @@ class DatahubDefinitionInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         if self.name:  # Note that both None and '' will trigger this
-            definition_single = self.cdpy.datahub.describe_defintion(self.name)
+            definition_single = self.cdpy.datahub.describe_definition(self.name)
             if definition_single is not None:
                 self.definitions.append(definition_single)
         else:
