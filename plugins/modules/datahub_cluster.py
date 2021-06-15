@@ -31,6 +31,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Daniel Chaffelson (@chaffelson)"
+  - "Chris Perro (@cmperro)"
 requirements:
   - cdpy
 options:
@@ -189,7 +190,7 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
-# Create a datahub (and do not wait for status change)
+# Create a datahub specifying instance group details (and do not wait for status change)
 - cloudera.cloud.datahub_cluster:
     name: datahub-name
     env: name-or-crn
@@ -210,6 +211,15 @@ EXAMPLES = r'''
           - volumeSize: 100
             volumeCount: 1
             volumeType: volume-type-for-cloud-provider
+    tags:
+      project: Arbitrary content
+    wait: no
+
+# Create a datahub specifying only a definition name
+- cloudera.cloud.datahub_cluster:
+    name: datahub-name
+    env: name-or-crn
+    definition: definition-name
     tags:
       project: Arbitrary content
     wait: no
@@ -484,12 +494,15 @@ class DatahubCluster(CdpModule):
     def _configure_payload(self):
         payload = dict(
             clusterName=self.name,
-            environmentName=self.environment,
-            clusterDefinitionName=self.definition,
-            image={"id": self.image_id, "catalogName": self.image_catalog},
-            clusterTemplateName=self.template,
-            instanceGroups=self.groups
+            environmentName=self.environment
         )
+
+        if self.definition is not None:
+          payload["clusterDefinitionName"]=self.definition
+        else:
+          payload["image"]={"id": self.image_id, "catalogName": self.image_catalog}
+          payload["clusterTemplateName"]=self.template
+          payload["instanceGroups"]=self.groups
 
         if self.host_env['cloudPlatform'] == 'GCP':
             payload['subnetName'] = self.subnet
@@ -549,10 +562,11 @@ def main():
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
         ),
-        supports_check_mode=True,
-        required_together=[
-            ['subnet', 'image', 'catalog', 'template', 'groups', 'environment'],
-        ]
+        supports_check_mode=True
+        #Punting on additional checks here. There are a variety of supporting datahub invocations that can make this more complex
+        #required_together=[
+        #    ['subnet', 'image', 'catalog', 'template', 'groups', 'environment'],
+        #]
     )
 
     result = DatahubCluster(module)
