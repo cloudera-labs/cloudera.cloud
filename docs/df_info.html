@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>env_proxy_info -- Gather information about CDP Environment Proxies &mdash; cloudera.cloud 1.1.0 documentation</title>
+  <title>df_info -- Gather information about CDP DataFlow Services &mdash; cloudera.cloud 1.1.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="env_telemetry – Set CDP environment telemetry" href="env_telemetry.html" />
-    <link rel="prev" title="env_proxy – Create, update, or destroy CDP Environment Proxies" href="env_proxy.html" /> 
+    <link rel="next" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" href="dw_cluster.html" />
+    <link rel="prev" title="df – Enable or Disable CDP DataFlow Services" href="df.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -96,7 +96,16 @@
 <li class="toctree-l1"><a class="reference internal" href="datahub_definition_info.html">datahub_definition_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df.html">df</a></li>
-<li class="toctree-l1"><a class="reference internal" href="df_info.html">df_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">df_info</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#notes">Notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
@@ -108,15 +117,7 @@
 <li class="toctree-l1"><a class="reference internal" href="env_idbroker_info.html">env_idbroker_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_info.html">env_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_proxy.html">env_proxy</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">env_proxy_info</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="env_proxy_info.html">env_proxy_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_telemetry.html">env_telemetry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_user_sync.html">env_user_sync</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_user_sync_info.html">env_user_sync_info</a></li>
@@ -176,13 +177,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>env_proxy_info -- Gather information about CDP Environment Proxies</li>
+      <li>df_info -- Gather information about CDP DataFlow Services</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/env_proxy_info.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/df_info.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -195,22 +196,23 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="env-proxy-info-module"></span><div class="section" id="env-proxy-info-gather-information-about-cdp-environment-proxies">
-<h1>env_proxy_info – Gather information about CDP Environment Proxies<a class="headerlink" href="#env-proxy-info-gather-information-about-cdp-environment-proxies" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="df-info-module"></span><div class="section" id="df-info-gather-information-about-cdp-dataflow-services">
+<h1>df_info – Gather information about CDP DataFlow Services<a class="headerlink" href="#df-info-gather-information-about-cdp-dataflow-services" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
 <li><p><a class="reference internal" href="#requirements" id="id2">Requirements</a></p></li>
 <li><p><a class="reference internal" href="#parameters" id="id3">Parameters</a></p></li>
-<li><p><a class="reference internal" href="#examples" id="id4">Examples</a></p></li>
-<li><p><a class="reference internal" href="#return-values" id="id5">Return Values</a></p></li>
-<li><p><a class="reference internal" href="#status" id="id6">Status</a></p></li>
+<li><p><a class="reference internal" href="#notes" id="id4">Notes</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id5">Examples</a></p></li>
+<li><p><a class="reference internal" href="#return-values" id="id6">Return Values</a></p></li>
+<li><p><a class="reference internal" href="#status" id="id7">Status</a></p></li>
 </ul>
 </div>
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Gather information about CDP Environment Proxy Configurations</p></li>
+<li><p>Gather information about CDP DataFlow Services</p></li>
 </ul>
 </div>
 <div class="section" id="requirements">
@@ -238,8 +240,10 @@
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>If a name is provided, that proxy configuration will be described
-If no name is provided, all proxy configurations will be listed</p></td>
+<td><p>If a name is provided, that DataFlow Service will be described.</p>
+<p><br /></p>
+<p><em>Aliases: crn</em></p>
+</td>
 </tr>
 <tr class="row-odd"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
@@ -271,133 +275,201 @@ If no name is provided, all proxy configurations will be listed</p></td>
 </tbody>
 </table>
 </div>
+<div class="section" id="notes">
+<h2><a class="toc-backref" href="#id4">Notes</a><a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>This feature this module is for is in Technical Preview</p></li>
+</ul>
+</div>
+</div>
 <div class="section" id="examples">
-<h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># List basic information about all Proxy Configurations</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_proxy_info</span><span class="p">:</span>
+<span class="c1"># List basic information about all DataFlow Services</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
 
-<span class="c1"># Gather detailed information about a named Proxy Configuration</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_proxy_info</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-proxy</span>
+<span class="c1"># Gather detailed information about a named DataFlow Service using a name</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-service</span>
+
+<span class="c1"># Gather detailed information about a named DataFlow Service using a CRN</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
+    <span class="nt">crn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-service-crn</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="return-values">
-<h2><a class="toc-backref" href="#id5">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id6">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
 <col style="width: 14%" />
 <col style="width: 9%" />
 <col style="width: 23%" />
-<col style="width: 54%" />
+<col style="width: 7%" />
+<col style="width: 48%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td colspan="2"><p><strong>Key</strong></p></td>
+<tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="2"><p><strong>proxies</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>environments</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td><p>on success</p></td>
-<td><p>Details on the proxies.</p></td>
+<td><p>always</p></td>
+<td><p>The information about the named DataFlow Service or DataFlow Services</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td><p><strong>crn</strong></p>
+<td colspan="2"><p><strong>crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The CRN of the proxy config.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>crn:cdp:environments:us-west-1:558bc1d2-8867-4357-8524-311d51259233:credential:eb6c5fc8-38fe-4c3c-8194-1a0f05edc010</p>
-</td>
+<td><p>The DataFlow Service’s parent environment CRN.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td><p><strong>description</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>when supported</p></td>
-<td><p>A description for the proxy config.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>Example proxy configuration</p>
-</td>
-</tr>
-<tr class="row-odd"><td></td>
-<td><p><strong>host</strong></p>
+<td colspan="2"><p><strong>name</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The proxy host.</p>
+<td><p>The DataFlow Service’s parent environment name.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>cloudPlatform</strong></p>
 <p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>example.cloudera.com</p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
+<td><p>always</p></td>
+<td><p>The cloud platform of the environment.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td><p><strong>port</strong></p>
+<td colspan="2"><p><strong>region</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The region of the environment.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>deploymentCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The deployment count.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>minK8sNodeCount</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The proxy port.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>8443</p>
-</td>
+<td><p>The  minimum  number  of Kubernetes nodes that need to be provisioned in the environment.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td><p><strong>protocol</strong></p>
+<td colspan="2"><p><strong>maxK8sNodeCount</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The proxy protocol.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>https</p>
-</td>
+<td><p>The maximum number of  kubernetes  nodes  that  environment  may scale up under high-demand situations.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td><p><strong>proxyConfigName</strong></p>
+<td colspan="2"><p><strong>status</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The status of a DataFlow enabled environment.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p><strong>state</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The name of the proxy config.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>example-proxy-config</p>
-</td>
+<td><p>The state of the environment.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td><p><strong>user</strong></p>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>message</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td><p>when supported</p></td>
-<td><p>The proxy user.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>proxy_username</p>
-</td>
+<td><p>always</p></td>
+<td><p>A status message for the environment.</p></td>
 </tr>
-<tr class="row-even"><td colspan="2"><p><strong>sdk_out</strong></p>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>k8sNodeCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The  number of kubernetes nodes currently in use by DataFlow for this environment.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>instanceType</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The instance type of the kubernetes nodes currently  in  use  by DataFlow for this environment.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>dfLocalUrl</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The URL of the environment local DataFlow application.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>authorizedIpRanges</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The authorized IP Ranges.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>activeWarningAlertCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Current count of active alerts classified as a warning.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>activeErrorAlertCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Current count of active alerts classified as an error.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>clusterId</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>if enabled</p></td>
+<td><p>Cluster id of the environment.</p></td>
+</tr>
+<tr class="row-even"><td colspan="3"><p><strong>sdk_out</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>when supported</p></td>
 <td><p>Returns the captured CDP SDK log.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="2"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-odd"><td colspan="3"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -408,7 +480,7 @@ If no name is provided, all proxy configurations will be listed</p></td>
 </table>
 </div>
 <div class="section" id="status">
-<h2><a class="toc-backref" href="#id6">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>This module is not guaranteed to have a backwards compatible interface. <em>[preview]</em></p></li>
 <li><p>This module is maintained by community.</p></li>
@@ -431,10 +503,10 @@ If no name is provided, all proxy configurations will be listed</p></td>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="env_telemetry.html" class="btn btn-neutral float-right" title="env_telemetry – Set CDP environment telemetry" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="dw_cluster.html" class="btn btn-neutral float-right" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="env_proxy.html" class="btn btn-neutral float-left" title="env_proxy – Create, update, or destroy CDP Environment Proxies" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="df.html" class="btn btn-neutral float-left" title="df – Enable or Disable CDP DataFlow Services" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

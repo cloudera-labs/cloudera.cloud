@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>datahub_cluster_info -- Gather information about CDP Datahubs &mdash; cloudera.cloud 1.1.0 documentation</title>
+  <title>df -- Enable or Disable CDP DataFlow Services &mdash; cloudera.cloud 1.1.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="datahub_definition_info – Gather information about CDP Datahub Cluster Definitions" href="datahub_definition_info.html" />
-    <link rel="prev" title="datahub_cluster – Manage CDP Datahubs" href="datahub_cluster.html" /> 
+    <link rel="next" title="df_info – Gather information about CDP DataFlow Services" href="df_info.html" />
+    <link rel="prev" title="datahub_template_info – Gather information about CDP Datahub Cluster Templates" href="datahub_template_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -92,18 +92,19 @@
 <li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster.html">datahub_cluster</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">datahub_cluster_info</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="datahub_cluster_info.html">datahub_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datahub_definition_info.html">datahub_definition_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">df</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#notes">Notes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="datahub_definition_info.html">datahub_definition_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="df.html">df</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_info.html">df_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
@@ -176,13 +177,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>datahub_cluster_info -- Gather information about CDP Datahubs</li>
+      <li>df -- Enable or Disable CDP DataFlow Services</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/datahub_cluster_info.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/df.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -195,22 +196,23 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="datahub-cluster-info-module"></span><div class="section" id="datahub-cluster-info-gather-information-about-cdp-datahubs">
-<h1>datahub_cluster_info – Gather information about CDP Datahubs<a class="headerlink" href="#datahub-cluster-info-gather-information-about-cdp-datahubs" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="df-module"></span><div class="section" id="df-enable-or-disable-cdp-dataflow-services">
+<h1>df – Enable or Disable CDP DataFlow Services<a class="headerlink" href="#df-enable-or-disable-cdp-dataflow-services" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
 <li><p><a class="reference internal" href="#requirements" id="id2">Requirements</a></p></li>
 <li><p><a class="reference internal" href="#parameters" id="id3">Parameters</a></p></li>
-<li><p><a class="reference internal" href="#examples" id="id4">Examples</a></p></li>
-<li><p><a class="reference internal" href="#return-values" id="id5">Return Values</a></p></li>
-<li><p><a class="reference internal" href="#status" id="id6">Status</a></p></li>
+<li><p><a class="reference internal" href="#notes" id="id4">Notes</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id5">Examples</a></p></li>
+<li><p><a class="reference internal" href="#return-values" id="id6">Return Values</a></p></li>
+<li><p><a class="reference internal" href="#status" id="id7">Status</a></p></li>
 </ul>
 </div>
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Gather information about CDP Datahub Clusters</p></li>
+<li><p>Enable or Disable CDP DataFlow Services</p></li>
 </ul>
 </div>
 <div class="section" id="requirements">
@@ -233,25 +235,107 @@
 <td><p><strong>Choices/Defaults</strong></p></td>
 <td><p><strong>Comments</strong></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>name</strong></p>
+<tr class="row-even"><td><p><strong>crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><br /></p>
+<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>If a name is provided, that Datahub will be described.
-If no name provided, all Datahubs will be listed and (optionally) constrained by the <code class="docutils literal notranslate"><span class="pre">environment</span></code> parameter.</p>
+<td><p>The name or crn of the CDP Environment to host the Dataflow Service</p>
 <p><br /></p>
-<p><em>Aliases: datahub</em></p>
+<p><em>Aliases: name, env_crn</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>environment</strong></p>
+<tr class="row-odd"><td><p><strong>state</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>The name of the Environment in which to find and describe the Datahubs.</p>
+<td><dl class="simple">
+<dt><strong>Choices:</strong></dt><dd><ul class="simple">
+<li><p><strong>present</strong> ↞</p></li>
+<li><p>enabled</p></li>
+<li><p>absent</p></li>
+<li><p>disabled</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+<td><p>The declarative state of the Dataflow Service</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>nodes_min</strong></p>
 <p><br /></p>
-<p><em>Aliases: env</em></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The minimum number of kubernetes nodes needed for the environment. Note that the lowest minimum is 3 nodes.</p>
+<p><br /></p>
+<p><em>Aliases: min_k8s_node_count</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>nodes_max</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The maximum number of  kubernetes  nodes that environment may scale up under high-demand situations.</p>
+<p><br /></p>
+<p><em>Aliases: max_k8s_node_count</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>public_loadbalancer</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Indicates whether or not to use a public load balancer when deploying dependencies stack.</p>
+<p><br /></p>
+<p><em>Aliases: use_public_load_balancer</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>ip_ranges</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+</td>
+<td></td>
+<td><p>The IP ranges authorized to connect to the Kubernetes API server</p>
+<p><br /></p>
+<p><em>Aliases: authorized_ip_ranges</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>persist</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Whether or not to retain the database records of related entities during removal.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>wait</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
+If set to FALSE, the module will return immediately.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>delay</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The internal polling interval (in seconds) while the module waits for the Dataflow Service to achieve the declared state.</p>
+<p><br /></p>
+<p><em>Aliases: polling_delay</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>timeout</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The internal polling timeout (in seconds) while the module waits for the Dataflow Service to achieve the declared state.</p>
+<p><br /></p>
+<p><em>Aliases: polling_timeout</em></p>
 </td>
 </tr>
 <tr class="row-even"><td><p><strong>verify_tls</strong></p>
@@ -284,440 +368,210 @@ If no name provided, all Datahubs will be listed and (optionally) constrained by
 </tbody>
 </table>
 </div>
+<div class="section" id="notes">
+<h2><a class="toc-backref" href="#id4">Notes</a><a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>This feature this module is for is in Technical Preview</p></li>
+</ul>
+</div>
+</div>
 <div class="section" id="examples">
-<h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># List basic information about all Datahubs</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub_cluster_info</span><span class="p">:</span>
+<span class="c1"># Create a Dataflow Service</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-service</span>
+    <span class="nt">nodes_min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+    <span class="nt">nodes_max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+    <span class="nt">public_loadbalancer</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+    <span class="nt">ip_ranges</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&#39;192.168.0.1/24&#39;</span><span class="p p-Indicator">]</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">present</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
 
-<span class="c1"># Gather detailed information about a named Datahub</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub_cluster_info</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-datahub</span>
-
-<span class="c1"># Gather detailed information about a Datahub in an Environment</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub_cluster_info</span><span class="p">:</span>
-    <span class="nt">environment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-env-name</span>
+<span class="c1"># Remove a Dataflow Service with Async wait</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-service</span>
+    <span class="nt">persist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">absent</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+  <span class="nt">async</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3600</span>
+  <span class="nt">poll</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="nt">register</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">__my_teardown_request</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="return-values">
-<h2><a class="toc-backref" href="#id5">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id6">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 15%" />
-<col style="width: 10%" />
-<col style="width: 24%" />
-<col style="width: 0%" />
-<col style="width: 10%" />
-<col style="width: 8%" />
-<col style="width: 33%" />
+<col style="width: 14%" />
+<col style="width: 9%" />
+<col style="width: 23%" />
+<col style="width: 7%" />
+<col style="width: 46%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td colspan="5"><p><strong>Key</strong></p></td>
+<tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="5"><p><strong>datahubs</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>environments</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td><p>on success</p></td>
-<td><p>The information about the named Datahub or Datahubs</p></td>
+<td><p>always</p></td>
+<td><p>The information about the named DataFlow Service or DataFlow Services</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="4"><p><strong>datahub</strong></p>
+<td colspan="2"><p><strong>crn</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td><p>on success</p></td>
-<td><p>The information about the Datahub</p></td>
+<td><p>always</p></td>
+<td><p>The DataFlow Service’s parent environment CRN.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>clusterName</strong></p>
+<td colspan="2"><p><strong>name</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The DataFlow Service’s parent environment name.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>crn</strong></p>
+<td colspan="2"><p><strong>cloudPlatform</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The cloud platform of the environment.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>creationDate</strong></p>
+<td colspan="2"><p><strong>region</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The region of the environment.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>status</strong></p>
+<td colspan="2"><p><strong>deploymentCount</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The deployment count.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>clusterStatus</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>nodeCount</strong></p>
+<td colspan="2"><p><strong>minK8sNodeCount</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>instanceGroups</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The  minimum number of Kubernetes nodes that need to be provisioned in the environment.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td colspan="2"><p><strong>instanceGroup</strong></p>
+<td colspan="2"><p><strong>maxK8sNodeCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The maximum number of kubernetes nodes that environment may scale up under high-demand situations.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>status</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>name</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The status of a DataFlow enabled environment.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>id</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
 <td></td>
 <td><p><strong>state</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>privateIp</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The state of the environment.</p></td>
 </tr>
 <tr class="row-even"><td></td>
 <td></td>
-<td></td>
-<td></td>
-<td><p><strong>publicIp</strong></p>
+<td><p><strong>message</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>A status message for the environment.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>fqdn</strong></p>
+<td colspan="2"><p><strong>k8sNodeCount</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The number of kubernetes nodes currently in use by DataFlow for this environment.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>status</strong></p>
+<td colspan="2"><p><strong>instanceType</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The instance type of the kubernetes nodes currently in use by DataFlow for this environment.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>workdloadType</strong></p>
+<td colspan="2"><p><strong>dfLocalUrl</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The URL of the environment local DataFlow application.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>cloudPlatform</strong></p>
+<td colspan="2"><p><strong>authorizedIpRanges</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>The authorized IP Ranges.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>imageDetails</strong></p>
+<td colspan="2"><p><strong>activeWarningAlertCount</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>Current count of active alerts classified as a warning.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td colspan="2"><p><strong>name</strong></p>
+<td colspan="2"><p><strong>activeErrorAlertCount</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
-<td></td>
-<td><p>tktk</p></td>
+<td><p>always</p></td>
+<td><p>Current count of active alerts classified as an error.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td colspan="2"><p><strong>id</strong></p>
+<td colspan="2"><p><strong>clusterId</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>This is the unique ID generated by the cloud provider for the image</p></td>
+<td><p>if enabled</p></td>
+<td><p>Cluster id of the environment.</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td colspan="2"><p><strong>catalogUrl</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td colspan="2"><p><strong>catalogName</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>environmentCrn</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>credentialCrn</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>datalakeCrn</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>clusterTemplateCrn</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>statusReason</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td colspan="3"><p><strong>clouderaManager</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td colspan="2"><p><strong>version</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td colspan="2"><p><strong>platformVersion</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="3"><p><strong>endpoints</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td colspan="2"><p><strong>endpoint</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>serviceName</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>serviceUrl</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>displayName</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>knoxService</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>mode</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p><strong>open</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
-</td>
-<td></td>
-<td><p>tktk</p></td>
-</tr>
-<tr class="row-even"><td colspan="5"><p><strong>sdk_out</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>sdk_out</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>when supported</p></td>
 <td><p>Returns the captured CDP SDK log.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="5"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-odd"><td colspan="3"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -728,7 +582,7 @@ If no name provided, all Datahubs will be listed and (optionally) constrained by
 </table>
 </div>
 <div class="section" id="status">
-<h2><a class="toc-backref" href="#id6">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>This module is not guaranteed to have a backwards compatible interface. <em>[preview]</em></p></li>
 <li><p>This module is maintained by community.</p></li>
@@ -736,7 +590,6 @@ If no name provided, all Datahubs will be listed and (optionally) constrained by
 <div class="section" id="authors">
 <h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Webster Mudge (&#64;wmudge)</p></li>
 <li><p>Dan Chaffelson (&#64;chaffelson)</p></li>
 </ul>
 </div>
@@ -751,10 +604,10 @@ If no name provided, all Datahubs will be listed and (optionally) constrained by
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="datahub_definition_info.html" class="btn btn-neutral float-right" title="datahub_definition_info – Gather information about CDP Datahub Cluster Definitions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="df_info.html" class="btn btn-neutral float-right" title="df_info – Gather information about CDP DataFlow Services" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="datahub_cluster.html" class="btn btn-neutral float-left" title="datahub_cluster – Manage CDP Datahubs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="datahub_template_info.html" class="btn btn-neutral float-left" title="datahub_template_info – Gather information about CDP Datahub Cluster Templates" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

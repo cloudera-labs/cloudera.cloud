@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" href="dw_cluster.html" />
-    <link rel="prev" title="datahub_cluster_info – Gather information about CDP Datahubs" href="datahub_cluster_info.html" /> 
+    <link rel="next" title="df – Enable or Disable CDP DataFlow Services" href="df.html" />
+    <link rel="prev" title="datahub_definition_info – Gather information about CDP Datahub Cluster Definitions" href="datahub_definition_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -93,6 +93,7 @@
 <li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster.html">datahub_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster_info.html">datahub_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datahub_definition_info.html">datahub_definition_info</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">datahub_template_info</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
@@ -102,6 +103,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="df.html">df</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_info.html">df_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
@@ -241,7 +244,17 @@ If no name provided, all Templates will be listed.</p>
 <p><em>Aliases: template</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>verify_tls</strong></p>
+<tr class="row-odd"><td><p><strong>return_content</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag dictating if cluster template content is returned</p>
+<p><br /></p>
+<p><em>Aliases: template_content, content</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -251,7 +264,7 @@ If no name provided, all Templates will be listed.</p>
 <p><em>Aliases: tls</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>debug</strong></p>
+<tr class="row-odd"><td><p><strong>debug</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -261,7 +274,7 @@ If no name provided, all Templates will be listed.</p>
 <p><em>Aliases: debug_endpoints</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>profile</strong></p>
+<tr class="row-even"><td><p><strong>profile</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
@@ -281,6 +294,11 @@ If no name provided, all Templates will be listed.</p>
 <span class="c1"># Gather detailed information about a named Datahub</span>
 <span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub_template_info</span><span class="p">:</span>
     <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-template</span>
+
+<span class="c1"># Gather detailed information about a named Datahub, including the template contents in JSON</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub_template_info</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-template</span>
+    <span class="nt">return_content</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
 </pre></div>
 </div>
 </div>
@@ -353,9 +371,22 @@ If no name provided, all Templates will be listed.</p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The status of the cluster template.</p></td>
+<td><p>The status of the cluster template.</p>
+<p><br /></p>
+<p><strong>Sample:</strong></p>
+<p>DEFAULT</p>
+<p>USER_MANAGED</p>
+</td>
 </tr>
 <tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>clusterTemplateContent</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when specified</p></td>
+<td><p>The cluster template contents, in JSON.</p></td>
+</tr>
+<tr class="row-even"><td></td>
 <td colspan="2"><p><strong>tags</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -363,7 +394,7 @@ If no name provided, all Templates will be listed.</p>
 <td><p>always</p></td>
 <td><p>Tags added to the cluster template</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td><p><strong>key</strong></p>
 <p><br /></p>
@@ -372,7 +403,7 @@ If no name provided, all Templates will be listed.</p>
 <td><p>always</p></td>
 <td><p>The key of the tag.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td><p><strong>value</strong></p>
 <p><br /></p>
@@ -381,14 +412,14 @@ If no name provided, all Templates will be listed.</p>
 <td><p>always</p></td>
 <td><p>The value of the tag.</p></td>
 </tr>
-<tr class="row-even"><td colspan="3"><p><strong>sdk_out</strong></p>
+<tr class="row-odd"><td colspan="3"><p><strong>sdk_out</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>when supported</p></td>
 <td><p>Returns the captured CDP SDK log.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="3"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -422,10 +453,10 @@ If no name provided, all Templates will be listed.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="dw_cluster.html" class="btn btn-neutral float-right" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="df.html" class="btn btn-neutral float-right" title="df – Enable or Disable CDP DataFlow Services" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="datahub_cluster_info.html" class="btn btn-neutral float-left" title="datahub_cluster_info – Gather information about CDP Datahubs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="datahub_definition_info.html" class="btn btn-neutral float-left" title="datahub_definition_info – Gather information about CDP Datahub Cluster Definitions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

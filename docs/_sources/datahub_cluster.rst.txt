@@ -189,7 +189,7 @@ Examples
   
   # Note: These examples do not set authentication details.
 
-  # Create a datahub (and do not wait for status change)
+  # Create a datahub specifying instance group details (and do not wait for status change)
   - cloudera.cloud.datahub_cluster:
       name: datahub-name
       env: name-or-crn
@@ -210,6 +210,15 @@ Examples
             - volumeSize: 100
               volumeCount: 1
               volumeType: volume-type-for-cloud-provider
+      tags:
+        project: Arbitrary content
+      wait: no
+
+  # Create a datahub specifying only a definition name
+  - cloudera.cloud.datahub_cluster:
+      name: datahub-name
+      env: name-or-crn
+      definition: definition-name
       tags:
         project: Arbitrary content
       wait: no
@@ -500,4 +509,5 @@ Authors
 
 - Webster Mudge (@wmudge)
 - Daniel Chaffelson (@chaffelson)
+- Chris Perro (@cmperro)
 
