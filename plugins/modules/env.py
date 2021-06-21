@@ -877,7 +877,7 @@ class Environment(CdpModule):
                 payload['securityAccess'] = dict(defaultSecurityGroupId=self.default_sg,
                                                  securityGroupIdForKnox=self.knox_sg)
 
-            if self.endpointAccessGatewayScheme == 'PUBLIC':
+            if self.endpoint_access_scheme == 'PUBLIC':
                 payload['endpointAccessGatewayScheme'] = self.endpoint_access_scheme
                 payload['endpointAccessGatewaySubnetIds'] = self.endpoint_access_subnets
         elif self.cloud == 'gcp':
