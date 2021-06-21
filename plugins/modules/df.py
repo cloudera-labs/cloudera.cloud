@@ -288,7 +288,7 @@ class DFService(CdpModule):
             # Environment does not have DF database entry, and probably doesn't exist
             if self.state in ['absent']:
                 self.module.log(
-                    "Dataflow Service %s already disabled in CDP Environment %s" % (self.name, self.env))
+                    "Dataflow Service %s already disabled in CDP Environment" % self.name)
             elif self.state in ['present']:
                 # create DF Service
                 if not self.module.check_mode:
