@@ -240,6 +240,7 @@ class DFService(CdpModule):
         self.public_loadbalancer = self._get_param('public_loadbalancer')
         self.ip_ranges = self._get_param('ip_ranges')
         self.persist = self._get_param('persist')
+        self.force = self._get_param('force')
 
         self.state = self._get_param('state')
         self.wait = self._get_param('wait')
@@ -268,16 +269,16 @@ class DFService(CdpModule):
                 if self.module.check_mode:
                     self.service = self.target
                 else:
-                    disable_valid_states = self.cdpy.sdk.TERMINATION_STATES + self.cdpy.sdk.STOPPED_STATES
-                    if self.target['status']['state'] not in disable_valid_states:
+                    if self.target['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
                         self.service = self.cdpy.df.disable_environment(
                             env_crn=self.env_crn,
-                            persist=self.persist
+                            persist=self.persist,
+                            force=self.force
                         )
                     if self.wait:
                         self.service = self._wait_for_disabled()
                     else:
-                        self.service = self.target
+                        self.service = self.cdpy.df.describe_environment(env_crn=self.name)
             elif self.state in ['present']:
                 self.module.warn(
                     "Dataflow Service already enabled and configuration validation and reconciliation is not supported;" +
@@ -337,6 +338,7 @@ def main():
             persist=dict(required=False, type='bool', default=False),
             state=dict(required=False, type='str', choices=['present', 'absent'],
                        default='present'),
+            force=dict(required=False, type='bool', default=False, aliases=['force_delete']),
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
