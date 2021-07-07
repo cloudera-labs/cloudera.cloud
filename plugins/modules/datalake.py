@@ -415,38 +415,35 @@ class Datalake(CdpModule):
                     if existing['status'] in self.cdpy.sdk.FAILED_STATES:
                         self.module.fail_json(msg='Attempting to restart a failed datalake')
 
-                    # Warn if attempting to start an datalake amidst the creation cycle
-                    elif existing['status'] in self.cdpy.sdk.CREATION_STATES:
+                    # Check for Datalake actions during create or started
+                    elif existing['status'] in self.cdpy.sdk.CREATION_STATES + self.cdpy.sdk.STARTED_STATES:
                         # Reconcile and error if specifying invalid cloud parameters
                         if self.environment is not None:
                             env = self.cdpy.environments.describe_environment(self.environment)
-
                             if env['crn'] != existing['environmentCrn']:
                                 self.module.fail_json(
                                     msg="Datalake exists in a different Environment: %s" % existing['environmentCrn'])
-
-                            # Check for changes
-                            mismatch = self._reconcile_existing_state(existing)
-                            if mismatch:
-                                msg = ''
-                                for m in mismatch:
-                                    msg += "Parameter '%s' found to be '%s'\n" % (m[0], m[1])
-                                self.module.fail_json(
-                                    msg='Datalake exists and differs from expected:\n' + msg, violations=mismatch)
+                        # Check for changes
+                        mismatch = self._reconcile_existing_state(existing)
+                        if mismatch:
+                            msg = ''
+                            for m in mismatch:
+                                msg += "Parameter '%s' found to be '%s'\n" % (m[0], m[1])
+                            self.module.fail_json(
+                                msg='Datalake exists and differs from expected:\n' + msg, violations=mismatch)
+                        # Wait
+                        if not self.wait:
+                            self.module.warn('Datalake already creating or started, changes may not be possible')
                         else:
-                            if not self.wait:
-                                self.module.warn('Attempting to modify a datalake during its creation cycle')
-
-                            else:
-                                # Wait for creation to complete if previously requested and still running
-                                self.datalake = self.cdpy.sdk.wait_for_state(
-                                    describe_func=self.cdpy.datalake.describe_datalake,
-                                    params=dict(name=self.name),
-                                    field='status',
-                                    state='RUNNING',
-                                    delay=self.delay,
-                                    timeout=self.timeout
-                                )
+                            # Wait for creation to complete if previously requested and still running
+                            self.datalake = self.cdpy.sdk.wait_for_state(
+                                describe_func=self.cdpy.datalake.describe_datalake,
+                                params=dict(name=self.name),
+                                field='status',
+                                state='RUNNING',
+                                delay=self.delay,
+                                timeout=self.timeout
+                            )
             # Else create the datalake if not exists already
             else:
                 if self.environment is not None:
@@ -550,16 +547,16 @@ class Datalake(CdpModule):
     def _reconcile_existing_state(self, existing):
         mismatched = list()
 
-        if existing['cloudPlatform'] == 'AWS':
+        if 'cloudPlatform' in existing and existing['cloudPlatform'] == 'AWS':
             if self.instance_profile is not None and \
                     self.instance_profile != existing['awsConfiguration']['instanceProfile']:
                 mismatched.append(['instance_profile', existing['awsConfiguration']['instanceProfile']])
 
-            if self.storage is not None:
-                self.module.warn("Updating an existing Datalake's 'storage'"
-                                 "directly is not supported at this time. If "
-                                 "you need to change the storage, explicitly "
-                                 "delete and recreate the Datalake.")
+        if self.storage is not None:
+            self.module.warn("Updating an existing Datalake's 'storage' "
+                             "directly is not supported at this time. If "
+                             "you need to change the storage, explicitly "
+                             "delete and recreate the Datalake.")
 
         if self.runtime:
             self.module.warn("Updating an existing Datalake's 'runtime' "
