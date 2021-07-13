@@ -253,10 +253,13 @@ options:
       - (AWS)The scheme for the workload endpoint gateway. PUBLIC creates an external endpoint that can be accessed over the Internet. 
         Defaults to PRIVATE which restricts the traffic to be internal to the VPC / Vnet. Relevant in Private Networks.
     type: str
+    choices:
+      - PRIVATE
+      - PUBLIC
     required: False
   endpoint_access_subnets:
     description:
-      - (AWS) The subnets to use for endpoint access gateway.
+      - (AWS) The list of subnet IDs to use for endpoint access gateway.
     type: list
     elements: str
     required: False
@@ -1020,7 +1023,7 @@ def main():
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
             endpoint_access_subnets=dict(required=False, type='list', elements='str'),
-            endpoint_access_scheme=dict(required=False, type='str')
+            endpoint_access_scheme=dict(required=False, type='str', choices=['PUBLIC', 'PRIVATE'])
 
         ),
         # TODO: Update for Azure
