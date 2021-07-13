@@ -248,6 +248,21 @@ options:
     aliases:
       - s3_guard
       - s3_guard_table_name
+  endpoint_access_scheme:
+    description:
+      - (AWS)The scheme for the workload endpoint gateway. PUBLIC creates an external endpoint that can be accessed over the Internet. 
+        Defaults to PRIVATE which restricts the traffic to be internal to the VPC / Vnet. Relevant in Private Networks.
+    type: str
+    choices:
+      - PRIVATE
+      - PUBLIC
+    required: False
+  endpoint_access_subnets:
+    description:
+      - (AWS) The list of subnet IDs to use for endpoint access gateway.
+    type: list
+    elements: str
+    required: False
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -655,6 +670,9 @@ class Environment(CdpModule):
         self.cascade = self._get_param('cascade', False)
         self.wait = self._get_param('wait', False)
 
+        self.endpoint_access_scheme = self._get_param('endpoint_access_scheme')
+        self.endpoint_access_subnets = self._get_param('endpoint_access_subnets')
+
         # Initialize the return values
         self.environment = dict()
 
@@ -861,6 +879,10 @@ class Environment(CdpModule):
             else:
                 payload['securityAccess'] = dict(defaultSecurityGroupId=self.default_sg,
                                                  securityGroupIdForKnox=self.knox_sg)
+
+            if self.endpoint_access_scheme == 'PUBLIC':
+                payload['endpointAccessGatewayScheme'] = self.endpoint_access_scheme
+                payload['endpointAccessGatewaySubnetIds'] = self.endpoint_access_subnets
         elif self.cloud == 'gcp':
             payload['publicKey'] = self.public_key_text
             payload['existingNetworkParams'] = dict(
@@ -999,7 +1021,10 @@ def main():
             force=dict(required=False, type='bool', default=False),
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
+            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
+            endpoint_access_subnets=dict(required=False, type='list', elements='str'),
+            endpoint_access_scheme=dict(required=False, type='str', choices=['PUBLIC', 'PRIVATE'])
+
         ),
         # TODO: Update for Azure
         required_if=[
