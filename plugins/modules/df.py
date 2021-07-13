@@ -240,6 +240,7 @@ class DFService(CdpModule):
         self.public_loadbalancer = self._get_param('public_loadbalancer')
         self.ip_ranges = self._get_param('ip_ranges')
         self.persist = self._get_param('persist')
+        self.force = self._get_param('force')
 
         self.state = self._get_param('state')
         self.wait = self._get_param('wait')
@@ -251,14 +252,16 @@ class DFService(CdpModule):
 
         # Initialize internal values
         self.target = None
+        self.env_crn = None
 
         # Execute logic process
         self.process()
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.name = self.cdpy.environments.resolve_environment_crn(self.name)
-        self.target = self.cdpy.df.describe_environment(env_crn=self.name)
+        self.env_crn = self.cdpy.environments.resolve_environment_crn(self.name)
+        if self.env_crn is not None:
+            self.target = self.cdpy.df.describe_environment(env_crn=self.name)
 
         if self.target is not None:
             # DF Database Entry exists
@@ -266,15 +269,16 @@ class DFService(CdpModule):
                 if self.module.check_mode:
                     self.service = self.target
                 else:
-                    if self.target['status']['state'] != 'NOT_ENABLED':
+                    if self.target['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
                         self.service = self.cdpy.df.disable_environment(
-                            env_crn=self.name,
-                            persist=self.persist
+                            env_crn=self.env_crn,
+                            persist=self.persist,
+                            force=self.force
                         )
-                        if self.wait:
-                            self.service = self._wait_for_disabled()
-                        else:
-                            self.service = self.target
+                    if self.wait:
+                        self.service = self._wait_for_disabled()
+                    else:
+                        self.service = self.cdpy.df.describe_environment(env_crn=self.name)
             elif self.state in ['present']:
                 self.module.warn(
                     "Dataflow Service already enabled and configuration validation and reconciliation is not supported;" +
@@ -288,33 +292,36 @@ class DFService(CdpModule):
             # Environment does not have DF database entry, and probably doesn't exist
             if self.state in ['absent']:
                 self.module.log(
-                    "Dataflow Service %s already disabled in CDP Environment" % self.name)
+                    "Dataflow Service %s already disabled in CDP Environment %s" % (self.name, self.env_crn))
             elif self.state in ['present']:
-                # create DF Service
-                if not self.module.check_mode:
-                    self.service = self.cdpy.df.enable_environment(
-                        env_crn=self.name,
-                        authorized_ips=self.ip_ranges,
-                        min_nodes=self.nodes_min,
-                        max_nodes=self.nodes_max,
-                        enable_public_ip=self.public_loadbalancer
-                    )
-                    if self.wait:
-                        self.service = self._wait_for_enabled()
+                if self.env_crn is None:
+                    self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % self.env)
+                else:
+                    # create DF Service
+                    if not self.module.check_mode:
+                        self.service = self.cdpy.df.enable_environment(
+                            env_crn=self.env_crn,
+                            authorized_ips=self.ip_ranges,
+                            min_nodes=self.nodes_min,
+                            max_nodes=self.nodes_max,
+                            enable_public_ip=self.public_loadbalancer
+                        )
+                        if self.wait:
+                            self.service = self._wait_for_enabled()
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state)
 
     def _wait_for_enabled(self):
         return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.name),
+            describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.env_crn),
             field=['status', 'state'], state=self.cdpy.sdk.STARTED_STATES,
             delay=self.delay, timeout=self.timeout
         )
 
     def _wait_for_disabled(self):
         return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.name), state=None,
+            describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.env_crn), field=None,
             delay=self.delay, timeout=self.timeout
         )
 
@@ -331,6 +338,7 @@ def main():
             persist=dict(required=False, type='bool', default=False),
             state=dict(required=False, type='str', choices=['present', 'absent'],
                        default='present'),
+            force=dict(required=False, type='bool', default=False, aliases=['force_delete']),
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
