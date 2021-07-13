@@ -570,19 +570,6 @@ sdk_out_lines:
   elements: str
 '''
 
-STARTING_STATES = [
-    'provision:started',
-    'installation:started'
-]
-
-ACTIVE_STATES = [
-    'installation:finished'
-]
-
-TERMINATING_STATES = [
-    'deprovision:started'
-]
-
 
 class MLWorkspace(CdpModule):
     def __init__(self, module):
@@ -632,9 +619,9 @@ class MLWorkspace(CdpModule):
                 if self.module.check_mode:
                     self.workspace = self.target
                 else:
-                    if self.target['instanceStatus'] in ACTIVE_STATES:
+                    if self.target['instanceStatus'] in self.cdpy.sdk.REMOVABLE_STATES:
                         self._delete_workspace()
-                    elif self.target['instanceStatus'] in TERMINATING_STATES:
+                    elif self.target['instanceStatus'] in self.cdpy.sdk.TERMINATION_STATES:
                         self.module.log(
                             "ML Workspace already performing Delete operation: %s" % self.target['instanceStatus'])
                     else:
@@ -717,7 +704,7 @@ class MLWorkspace(CdpModule):
         return self.cdpy.sdk.wait_for_state(
             describe_func=self.cdpy.ml.describe_workspace,
             params=dict(name=self.name, env=self.env),
-            field=None, delay=self.delay, timeout=self.timeout
+            field=None, delay=self.delay, timeout=self.timeout, ignore_failures=self.force
         )
 
     @staticmethod
