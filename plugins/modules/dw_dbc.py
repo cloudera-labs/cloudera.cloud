@@ -25,7 +25,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: dw_dbc
-short_description: Create CDP Database Catalog
+short_description: Create CDP Data Warehouse Database Catalog
 description:
     - Create CDP Database Catalog
 author:

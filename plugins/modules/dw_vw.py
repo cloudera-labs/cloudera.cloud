@@ -25,7 +25,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: dw_vw
-short_description: Create CDP Virtual Warehouse
+short_description: Create CDP Data Warehouse Virtual Warehouse
 description:
     - Create CDP Virtual Warehouse
 author:
