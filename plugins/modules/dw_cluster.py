@@ -47,6 +47,16 @@ options:
     aliases:
       - environment
       - env_crn
+  overlay:
+    description: Set it to true to save IP addresses in the VPC by using a private IP address range for Pods in the cluster.
+    type: bool
+    required: False
+    default: False    
+  private_load_balancer:
+    description: Set up load balancer in private subnets.
+    type: bool
+    required: False
+    default: False    
   aws_public_subnets:
     description: List of zero or more Public AWS Subnet IDs to deploy to
     type: list
@@ -131,7 +141,7 @@ clusters:
   elements: complex
   contains:
     cluster:
-      tyoe: dict
+      type: dict
       contains:
         name:
           description: The name of the cluster.
@@ -194,6 +204,7 @@ class DwCluster(CdpModule):
         self.name = self._get_param('name')
         self.env = self._get_param('env')
         self.overlay = self._get_param('overlay')
+        self.private_load_balancer = self._get_param('private_load_balancer')
         self.az_subnet = self._get_param('az_subnet')
         self.az_enable_az = self._get_param('az_enable_az')
         self.aws_public_subnets = self._get_param('aws_public_subnets')
@@ -281,9 +292,9 @@ class DwCluster(CdpModule):
                         self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % self.env)
                     else:
                         self.name = self.cdpy.dw.create_cluster(
-                            env_crn=env_crn, overlay=self.overlay, aws_public_subnets=self.aws_public_subnets,
-                            aws_private_subnets=self.aws_private_subnets, az_subnet=self.az_subnet,
-                            az_enable_az=self.az_enable_az
+                            env_crn=env_crn, overlay=self.overlay, private_load_balancer=self.private_load_balancer,
+                            aws_public_subnets=self.aws_public_subnets, aws_private_subnets=self.aws_private_subnets,
+                            az_subnet=self.az_subnet, az_enable_az=self.az_enable_az
                         )
                         if self.wait:
                             self.target = self.cdpy.sdk.wait_for_state(
@@ -304,6 +315,7 @@ def main():
             name=dict(required=False, type='str', aliases=['id']),
             env=dict(required=False, type='str', aliases=['environment', 'env_crn']),
             overlay=dict(required=False, type='bool', default=False),
+            private_load_balancer=dict(required=False, type='bool', default=False),
             az_subnet=dict(required=False, type='str', default=None),
             az_enable_az=dict(required=False, type='bool', default=None),
             aws_public_subnets=dict(required=False, type='list', default=None),
