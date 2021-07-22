@@ -269,16 +269,7 @@ class DFService(CdpModule):
                 if self.module.check_mode:
                     self.service = self.target
                 else:
-                    if self.target['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
-                        self.service = self.cdpy.df.disable_environment(
-                            env_crn=self.env_crn,
-                            persist=self.persist,
-                            force=self.force
-                        )
-                    if self.wait:
-                        self.service = self._wait_for_disabled()
-                    else:
-                        self.service = self.cdpy.df.describe_environment(env_crn=self.name)
+                    self._disable_df()
             elif self.state in ['present']:
                 self.module.warn(
                     "Dataflow Service already enabled and configuration validation and reconciliation is not supported;" +
@@ -319,11 +310,40 @@ class DFService(CdpModule):
             delay=self.delay, timeout=self.timeout
         )
 
-    def _wait_for_disabled(self):
-        return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.env_crn), field=None,
-            delay=self.delay, timeout=self.timeout
-        )
+    def _disable_df(self):
+        # Attempt clean Disable, which also ensures we have tried at least once before we do a forced removal
+        if self.target['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
+            self.service = self.cdpy.df.disable_environment(
+                env_crn=self.env_crn,
+                persist=self.persist
+            )
+        if self.wait:
+            # Wait for Clean Disable, if possible
+            self.service = self.cdpy.sdk.wait_for_state(
+                describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.env_crn),
+                field=['status', 'state'],
+                state=self.cdpy.sdk.STOPPED_STATES + self.cdpy.sdk.REMOVABLE_STATES + [None],
+                delay=self.delay, timeout=self.timeout, ignore_failures=True
+            )
+        else:
+            self.service = self.cdpy.df.describe_environment(env_crn=self.name)
+        # Check disable result against need for further forced delete action, in case it didn't work first time around
+        if self.service is not None:
+            if self.service['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
+                if self.force:
+                    self.service = self.cdpy.df.delete_environment(
+                        env_crn=self.env_crn
+                    )
+                else:
+                    self.module.fail_json(msg="DF Service Disable failed and Force delete not requested")
+            if self.wait:
+                self.service = self.cdpy.sdk.wait_for_state(
+                    describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.env_crn),
+                    field=None,  # This time we require removal or declare failure
+                    delay=self.delay, timeout=self.timeout
+                )
+            else:
+                self.service = self.cdpy.df.describe_environment(env_crn=self.name)
 
 
 def main():
