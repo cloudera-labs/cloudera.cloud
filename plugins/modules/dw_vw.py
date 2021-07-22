@@ -363,7 +363,7 @@ class DwVw(CdpModule):
                 self.module.warn("DW Virtual Warehouse already present and config validation is not implemented")
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
-                        describe_func=self.cdpy.dw.delete_vw,
+                        describe_func=self.cdpy.dw.describe_vw,
                         params=dict(cluster_id=self.cluster_id, vw_id=self.target['id']),
                         state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                     )
