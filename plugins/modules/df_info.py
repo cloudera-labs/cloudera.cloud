@@ -37,6 +37,7 @@ options:
   name:
     description:
       - If a name is provided, that DataFlow Service will be described.
+      - Must be CDP Environment CRN or string name of DataFlow Service
     type: str
     required: False
     aliases:
@@ -168,9 +169,12 @@ class DFInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         if self.name:  # Note that both None and '' will trigger this
-            service_single = self.cdpy.df.describe_environment(name=self.name)
-            if service_single is not None:
-                self.services.append(service_single)
+            if self.name.startswith('crn:'):
+                service_single = self.cdpy.df.describe_environment(env_crn=self.name)
+                if service_single is not None:
+                    self.services.append(service_single)
+            else:
+                self.services = self.cdpy.df.list_environments(name=self.name)
         else:
             self.services = self.cdpy.df.list_environments()
 
