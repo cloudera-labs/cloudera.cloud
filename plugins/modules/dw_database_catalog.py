@@ -24,7 +24,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: dw_dbc
+module: dw_database_catalog
 short_description: Create CDP Data Warehouse Database Catalog
 description:
     - Create CDP Database Catalog
@@ -86,12 +86,12 @@ EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
 # Create Database Catalog
-- cloudera.cloud.dw_dbc:
+- cloudera.cloud.dw_database_catalog:
     name: "example-database-catalog-name"
     cluster_id: "example-cluster-id"
     
 # Delete Database Catalog
-- cloudera.cloud.dw_dbc:
+- cloudera.cloud.dw_database_catalog:
     id: "example-database-id"
     cluster_id: "example-cluster-id"  
     state: "absent"   
@@ -99,7 +99,7 @@ EXAMPLES = r'''
 
 RETURN = r'''
 ---
-dbcs:
+database_catalogs:
   description: The information about the named Database Catalog.
   type: list
   returned: always
@@ -144,7 +144,7 @@ class DwDbc(CdpModule):
         self.timeout = self._get_param('timeout')
 
         # Initialize return values
-        self.dbcs = []
+        self.database_catalogs = []
 
         # Initialize internal values
         self.target = None
@@ -165,7 +165,7 @@ class DwDbc(CdpModule):
         if self.target is not None:
             if self.state == 'absent':
                 if self.module.check_mode:
-                    self.dbcs.append(self.target)
+                    self.database_catalogs.append(self.target)
                 else:
                     if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
                         self.module.warn(
@@ -179,9 +179,9 @@ class DwDbc(CdpModule):
                             field=None, delay=self.delay, timeout=self.timeout
                         )
                     else:
-                        self.cdpy.sdk.sleep(3)  # Wait for consistency sync
+                        self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
                         self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
-                        self.dbcs.append(self.target)
+                        self.database_catalogs.append(self.target)
                     # Drop Done
             elif self.state == 'present':
                 # Begin Config check
@@ -192,7 +192,7 @@ class DwDbc(CdpModule):
                         params=dict(cluster_id=self.cluster_id, dbc_id=self.target['id']),
                         state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                     )
-                    self.dbcs.append(self.target)
+                    self.database_catalogs.append(self.target)
                     # End Config check
             else:
                 self.module.fail_json(msg="State %s is not valid for this module" % self.state)
@@ -215,7 +215,7 @@ class DwDbc(CdpModule):
                         )
                     else:
                         self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=dbc_id)
-                    self.dbcs.append(self.target)
+                    self.database_catalogs.append(self.target)
             else:
                 self.module.fail_json(msg="State %s is not valid for this module" % self.state)
 
@@ -236,7 +236,7 @@ def main():
     )
 
     result = DwDbc(module)
-    output = dict(changed=False, dbcs=result.dbcs)
+    output = dict(changed=False, database_catalogs=result.database_catalogs)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)

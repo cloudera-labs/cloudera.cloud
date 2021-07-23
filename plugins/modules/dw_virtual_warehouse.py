@@ -24,7 +24,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: dw_vw
+module: dw_virtual_warehouse
 short_description: Create CDP Data Warehouse Virtual Warehouse
 description:
     - Create CDP Virtual Warehouse
@@ -48,7 +48,7 @@ options:
     description: ID of Database Catalog that the Virtual Warehouse should be attached to.
     type: str
     required: True
-  vw_type:
+  type:
     description: Type of Virtual Warehouse to be created.
     type: str
     required: True
@@ -60,105 +60,100 @@ options:
     description: Name of configuration template to use.
     type: str
     required: False
-  autoscaling_min_cluster:
+  autoscaling_min_nodes:
     description: Minimum number of available nodes for Virtual Warehouse autoscaling.
     type: int
     required: False
-  autoscaling_max_cluster:
+  autoscaling_max_nodes:
     description: Maximum number of available nodes for Virtual Warehouse autoscaling.
     type: int
     required: False
-  config:
-    description: Configuration settings for the Virtual Warehouse.
+  common_configs: 
+    description: Configurations that are applied to every application in the service.
     type: dict
     required: False
     contains:
-      commonConfigs: 
-        description: Configurations that are applied to every application in the service.
-        type: dict
-        required: False
-        contains:
-          configBlocks: List of ConfigBlocks for the application.
-           type: list
-           required: False  
-           contains:
-            id: 
-              description: ID of the ConfigBlock. Unique within an ApplicationConfig.
-              type: str
-              required: False
-            format:
-              description: Format of ConfigBlock.
-              type: str
-              required: False
-            content:
-              description: Contents of a ConfigBlock.
-              type: obj
-              required: False
-              contains:
-                keyValues: 
-                  description: Key-value type configurations. 
-                  type: obj
-                  required: False
-                  contains:
-                    additionalProperties:
-                      description: Key-value type configurations.
-                      type: str
-                      required: False
-                    text:
-                      description: Text type configuration.
-                      type: str   
-                      required: False
-                    json:
-                      description: JSON type configuration.
-                      type: str    
-                      required: False
-      applicationConfigs:
-        description: Application specific configurations.
-        type: dict
-        required: False
-        contains:  
-          configBlocks: List of ConfigBlocks for the application.
-           type: list
-           required: False  
-           contains:
-            id: 
-              description: ID of the ConfigBlock. Unique within an ApplicationConfig.
-              type: str
-              required: False
-            format:
-              description: Format of ConfigBlock.
-              type: str
-              required: False
-            content:
-              description: Contents of a ConfigBlock.
-              type: obj
-              required: False
-              contains:
-                keyValues: 
-                  description: Key-value type configurations. 
-                  type: obj
-                  required: False
-                  contains:
-                    additionalProperties:
-                      description: Key-value type configurations.
-                      type: str
-                      required: False
-                    text:
-                      description: Text type configuration.
-                      type: str   
-                      required: False
-                    json:
-                      description: JSON type configuration.
-                      type: str    
-                      required: False
-      ldapGroups:
-        description: LDAP Groupnames to be enabled for auth.
+      configBlocks: List of ConfigBlocks for the application.
         type: list
-        required: False
-      enableSSO:
-        description: Should SSO be enabled for this VW.
-        type: bool
-        required: False    
+        required: False  
+        contains:
+          id: 
+            description: ID of the ConfigBlock. Unique within an ApplicationConfig.
+            type: str
+            required: False
+          format:
+            description: Format of ConfigBlock.
+            type: str
+            required: False
+          content:
+            description: Contents of a ConfigBlock.
+            type: obj
+            required: False
+            contains:
+              keyValues: 
+                description: Key-value type configurations. 
+                type: obj
+                required: False
+                contains:
+                  additionalProperties:
+                    description: Key-value type configurations.
+                    type: str
+                    required: False
+              text:
+                description: Text type configuration.
+                type: str   
+                required: False
+              json:
+                description: JSON type configuration.
+                type: str    
+                required: False
+  application_configs:
+    description: Configurations that are applied to every application in the service.
+    type: dict
+    required: False
+    contains:
+      configBlocks: List of ConfigBlocks for the application.
+        type: list
+        required: False  
+        contains:
+          id: 
+            description: ID of the ConfigBlock. Unique within an ApplicationConfig.
+            type: str
+            required: False
+          format:
+            description: Format of ConfigBlock.
+            type: str
+            required: False
+          content:
+            description: Contents of a ConfigBlock.
+            type: obj
+            required: False
+            contains:
+              keyValues: 
+                description: Key-value type configurations. 
+                type: obj
+                required: False
+                contains:
+                  additionalProperties:
+                    description: Key-value type configurations.
+                    type: str
+                    required: False
+              text:
+                description: Text type configuration.
+                type: str   
+                required: False
+              json:
+                description: JSON type configuration.
+                type: str    
+                required: False
+  ldap_groups:
+    description: LDAP Groupnames to be enabled for auth.
+    type: list
+    required: False
+  enable_sso:
+    description: Should SSO be enabled for this VW.
+    type: bool
+    required: False    
   tags:
     description: Tags associated with the resources.
     type: dict
@@ -205,22 +200,20 @@ EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
 # Create Virtual Warehouse
-- cloudera.cloud.dw_vw:
+- cloudera.cloud.dw_virtual_warehouse:
     cluster_id: "example-cluster-id"
     name: "example-virtual-warehouse"
-    vw_type: "hive"
+    type: "hive"
     template: "xsmall"
-    autoscaling:
-       min_cluster: 3
-       max_cluster: 19
+    autoscaling_min_nodes: 3
+    autoscaling_max_nodes: 19
     tags:
        tag-key: "tag-value"
-    configs:
-       enable_sso: true
-       ldap_groups: ['group1','group2','group3']
+    enable_sso: true
+    ldap_groups: ['group1','group2','group3']
        
 # Delete Virtual Warehouse
-- cloudera.cloud.dw_vw:
+- cloudera.cloud.dw_virtual_warehouse:
     cluster_id: "example-cluster-id"
     id: "example-virtual-warehouse-id"
     state: absent      
@@ -228,7 +221,7 @@ EXAMPLES = r'''
 
 RETURN = r'''
 ---
-vws:
+virtual_warehouses:
   description: The information about the named CDW Virtual Warehouses.
   type: list
   returned: always
@@ -302,11 +295,11 @@ class DwVw(CdpModule):
         self.id = self._get_param('id')
         self.cluster_id = self._get_param('cluster_id')
         self.dbc_id = self._get_param('dbc_id')
-        self.vw_type = self._get_param('vw_type')
+        self.type = self._get_param('type')
         self.name = self._get_param('name')
         self.template = self._get_param('template')
-        self.autoscaling_min_cluster = self._get_param('autoscaling_min_cluster')
-        self.autoscaling_max_cluster = self._get_param('autoscaling_max_cluster')
+        self.autoscaling_min_nodes = self._get_param('autoscaling_min_nodes')
+        self.autoscaling_max_nodes = self._get_param('autoscaling_max_nodes')
         self.common_configs = self._get_param('common_configs')
         self.application_configs = self._get_param('application_configs')
         self.ldap_groups = self._get_param('ldap_groups')
@@ -318,7 +311,7 @@ class DwVw(CdpModule):
         self.timeout = self._get_param('timeout')
 
         # Initialize return values
-        self.vws = []
+        self.virtual_warehouses = []
 
         # Initialize internal values
         self.target = None
@@ -339,7 +332,7 @@ class DwVw(CdpModule):
         if self.target is not None:
             if self.state == 'absent':
                 if self.module.check_mode:
-                    self.vws.append(self.target)
+                    self.virtual_warehouses.append(self.target)
                 else:
                     if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
                         self.module.warn(
@@ -354,9 +347,9 @@ class DwVw(CdpModule):
                             field=None, delay=self.delay, timeout=self.timeout
                         )
                     else:
-                        self.cdpy.sdk.sleep(3)  # Wait for consistency sync
+                        self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
                         self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
-                        self.vws.append(self.target)
+                        self.virtual_warehouses.append(self.target)
                     # Drop Done
             elif self.state == 'present':
                 # Begin Config check
@@ -367,7 +360,7 @@ class DwVw(CdpModule):
                         params=dict(cluster_id=self.cluster_id, vw_id=self.target['id']),
                         state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                     )
-                    self.vws.append(self.target)
+                    self.virtual_warehouses.append(self.target)
                     # End Config check
             else:
                 self.module.fail_json(msg="State %s is not valid for this module" % self.state)
@@ -382,10 +375,10 @@ class DwVw(CdpModule):
                     pass
                 else:
                     vw_id = self.cdpy.dw.create_vw(cluster_id=self.cluster_id,
-                                                   dbc_id=self.dbc_id, vw_type=self.vw_type, name=self.name,
+                                                   dbc_id=self.dbc_id, vw_type=self.type, name=self.name,
                                                    template=self.template,
-                                                   autoscaling_min_cluster=self.autoscaling_min_cluster,
-                                                   autoscaling_max_cluster=self.autoscaling_max_cluster,
+                                                   autoscaling_min_cluster=self.autoscaling_min_nodes,
+                                                   autoscaling_max_cluster=self.autoscaling_max_nodes,
                                                    common_configs=self.common_configs,
                                                    application_configs=self.application_configs,
                                                    ldap_groups=self.ldap_groups, enable_sso=self.enable_sso,
@@ -398,7 +391,7 @@ class DwVw(CdpModule):
                         )
                     else:
                         self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw_id)
-                    self.vws.append(self.target)
+                    self.virtual_warehouses.append(self.target)
             else:
                 self.module.fail_json(msg="State %s is not valid for this module" % self.state)
 
@@ -409,11 +402,11 @@ def main():
             id=dict(required=False, type='str', default=None),
             cluster_id=dict(required=True, type='str'),
             dbc_id=dict(required=False, type='str', default=None),
-            vw_type = dict(required=False, type='str', default=None),
+            type = dict(required=False, type='str', default=None),
             name = dict(required=False, type='str', default=None),
             template=dict(required=False, type='str', default=None),
-            autoscaling_min_cluster=dict(required=False, type='int', default=None),
-            autoscaling_max_cluster=dict(required=False, type='int', default=None),
+            autoscaling_min_nodes=dict(required=False, type='int', default=None),
+            autoscaling_max_nodes=dict(required=False, type='int', default=None),
             common_configs=dict(required=False, type='dict', default=None),
             application_configs=dict(required=False, type='dict', default=None),
             ldap_groups=dict(required=False, type='list', default=None),
@@ -428,7 +421,7 @@ def main():
     )
 
     result = DwVw(module)
-    output = dict(changed=False, vws=result.vws)
+    output = dict(changed=False, virtual_warehouses=result.virtual_warehouses)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
