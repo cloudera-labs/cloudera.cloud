@@ -72,11 +72,12 @@ options:
     description: Configurations that are applied to every application in the service.
     type: dict
     required: False
-    contains:
+    suboptions:
       configBlocks: List of ConfigBlocks for the application.
         type: list
         required: False  
-        contains:
+        elements: dict
+        suboptions:
           id: 
             description: ID of the ConfigBlock. Unique within an ApplicationConfig.
             type: str
@@ -84,21 +85,16 @@ options:
           format:
             description: Format of ConfigBlock.
             type: str
-            required: False
+            required: False 
           content:
             description: Contents of a ConfigBlock.
-            type: obj
+            type: dict
             required: False
-            contains:
+            suboptions:
               keyValues: 
                 description: Key-value type configurations. 
-                type: obj
+                type: dict
                 required: False
-                contains:
-                  additionalProperties:
-                    description: Key-value type configurations.
-                    type: str
-                    required: False
               text:
                 description: Text type configuration.
                 type: str   
@@ -111,45 +107,45 @@ options:
     description: Configurations that are applied to every application in the service.
     type: dict
     required: False
-    contains:
-      configBlocks: List of ConfigBlocks for the application.
-        type: list
-        required: False  
-        contains:
-          id: 
-            description: ID of the ConfigBlock. Unique within an ApplicationConfig.
-            type: str
-            required: False
-          format:
-            description: Format of ConfigBlock.
-            type: str
-            required: False
-          content:
-            description: Contents of a ConfigBlock.
-            type: obj
-            required: False
-            contains:
-              keyValues: 
-                description: Key-value type configurations. 
-                type: obj
-                required: False
-                contains:
-                  additionalProperties:
-                    description: Key-value type configurations.
-                    type: str
-                    required: False
-              text:
-                description: Text type configuration.
-                type: str   
-                required: False
-              json:
-                description: JSON type configuration.
-                type: str    
-                required: False
+    suboptions:
+      required: False
+      type: dict
+      suboptions:  
+        configBlocks: List of ConfigBlocks for the application.
+          type: list
+          required: False  
+          elements: dict
+          suboptions:
+            id: 
+              description: ID of the ConfigBlock. Unique within an ApplicationConfig.
+              type: str
+              required: False
+            format:
+              description: Format of ConfigBlock.
+              type: str
+              required: False
+            content:
+              description: Contents of a ConfigBlock.
+              type: dict
+              required: False
+              suboptions:
+                keyValues: 
+                  description: Key-value type configurations. 
+                  type: dict
+                  required: False
+                text:
+                  description: Text type configuration.
+                  type: str   
+                  required: False
+                json:
+                  description: JSON type configuration.
+                  type: str    
+                  required: False
   ldap_groups:
     description: LDAP Groupnames to be enabled for auth.
     type: list
     required: False
+    elements: str
   enable_sso:
     description: Should SSO be enabled for this VW.
     type: bool
@@ -211,6 +207,41 @@ EXAMPLES = r'''
        tag-key: "tag-value"
     enable_sso: true
     ldap_groups: ['group1','group2','group3']
+    
+- cloudera.cloud.dw_virtual_warehouse:
+    cluster_id: "example-cluster-id"
+    name: "example-virtual-warehouse"
+    type: "hive"
+    template: "xsmall"
+    enable_sso: true
+    ldap_groups: ['group1','group2','group3']
+    common_configs: "{
+        'configBlocks': [
+            {
+                'id': 'das-ranger-policymgr',
+                'format': 'HADOOP_XML',
+                'content': {
+                    'keyValues' : {
+                        'xasecure.policymgr.clientssl.truststore': '/path_to_ca_cert/cacerts'
+                    }
+                }
+            }
+          ]
+        }"
+    application_configs: "{
+       "das-webapp": {
+         "configBlocks": [
+           {
+               "id": "hive-kerberos-config",
+               "format": "TEXT",
+               "content": {
+                "text": "\n[libdefaults]\n\trenew_lifetime = 7d"
+              }
+            }
+           ] 
+         }   
+       }"        
+    
        
 # Delete Virtual Warehouse
 - cloudera.cloud.dw_virtual_warehouse:
@@ -226,10 +257,10 @@ virtual_warehouses:
   type: list
   returned: always
   elements: complex
-  contains:
+  suboptions:
     vws:
       type: dict
-      contains:
+      suboptions:
         id:
           description: Id of the Virtual Warehouse created.
           returned: always
@@ -258,7 +289,7 @@ virtual_warehouses:
           description: The CRN of the cluster creator.
           returned: always
           type: dict
-          contains:
+          suboptions:
             crn:
               type: str
               description: Actor CRN
@@ -315,6 +346,7 @@ class DwVw(CdpModule):
 
         # Initialize internal values
         self.target = None
+        self.changed = False
 
         # Execute logic process
         self.process()
@@ -340,6 +372,7 @@ class DwVw(CdpModule):
                                 'status'])
                     else:
                         _ = self.cdpy.dw.delete_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
+                        self.changed = True
                     if self.wait:
                         self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_vw,
@@ -383,6 +416,7 @@ class DwVw(CdpModule):
                                                    application_configs=self.application_configs,
                                                    ldap_groups=self.ldap_groups, enable_sso=self.enable_sso,
                                                    tags=self.tags)
+                    self.changed = True
                     if self.wait:
                         self.target = self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_vw,
@@ -399,29 +433,51 @@ class DwVw(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            id=dict(required=False, type='str', default=None),
+            id=dict(type='str'),
             cluster_id=dict(required=True, type='str'),
-            dbc_id=dict(required=False, type='str', default=None),
-            type = dict(required=False, type='str', default=None),
-            name = dict(required=False, type='str', default=None),
-            template=dict(required=False, type='str', default=None),
-            autoscaling_min_nodes=dict(required=False, type='int', default=None),
-            autoscaling_max_nodes=dict(required=False, type='int', default=None),
-            common_configs=dict(required=False, type='dict', default=None),
-            application_configs=dict(required=False, type='dict', default=None),
-            ldap_groups=dict(required=False, type='list', default=None),
-            enable_sso=dict(required=False, type='bool', default=False),
-            tags=dict(required=False, type='dict', default=None),
-            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
-            wait = dict(required=False, type='bool', default=True),
-            delay = dict(required=False, type='int', aliases=['polling_delay'], default=15),
-            timeout = dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
+            dbc_id=dict(type='str'),
+            type = dict(type='str'),
+            name = dict(type='str'),
+            template=dict(type='str'),
+            autoscaling_min_nodes=dict(type='int'),
+            autoscaling_max_nodes=dict(type='int'),
+            common_configs=dict(type='dict',
+              options=dict(
+                configBlocks = dict(
+                  type='list',
+                  elements='dict',
+                  options=dict(
+                    dict(
+                      id=dict(type='str'),
+                      format=dict(type='str', choices=['HADOOP_XML', 'PROPERTIES', 'TEXT', 'JSON', 'BINARY', 'ENV', 'FLAGFILE']),
+                      content=dict(type='dict',
+                        options=dict(
+                          dict(
+                            keyValues=dict(type='dict'),
+                            text=dict(type='str'),
+                            json=dict(type='json')
+                           )
+                         )
+                       )
+                     )
+                   )
+                 )
+               )
+             ),
+            application_configs=dict(type='dict'),
+            ldap_groups=dict(type='list'),
+            enable_sso=dict(type='bool'),
+            tags=dict(type='dict'),
+            state=dict(type='str', choices=['present', 'absent'], default='present'),
+            wait = dict(type='bool', default=True),
+            delay = dict(type='int', aliases=['polling_delay'], default=15),
+            timeout = dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         supports_check_mode=True
     )
 
     result = DwVw(module)
-    output = dict(changed=False, virtual_warehouses=result.virtual_warehouses)
+    output = dict(changed=result.changed, virtual_warehouses=result.virtual_warehouses)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
