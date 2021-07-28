@@ -434,7 +434,9 @@ class EnvironmentInfo(CdpModule):
         if self.descendants and self.environments:
             updated_envs = []
             for this_env in self.environments:
-                df = self.cdpy.df.describe_environment(this_env['crn'])
+                df = None
+                # Removing until DF is GA so we are not dependent on Beta functionality
+                # df = self.cdpy.df.describe_environment(this_env['crn'])
                 this_env['descendants'] = {
                     'datahub': self.cdpy.datahub.describe_all_clusters(this_env['environmentName']),
                     'dw': self.cdpy.dw.gather_clusters(this_env['crn']),
