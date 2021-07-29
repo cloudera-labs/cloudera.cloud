@@ -854,8 +854,8 @@ class Environment(CdpModule):
                 payload['proxyConfigName'] = self.proxy
 
             if self.s3_guard_name is not None:
-                self.module.warn('As of CDP Runtime 7.2.10 (and given consistent s3), s3Guard is no longer needed.')
-                payload['s3GuardTableName'] = self.s3_guard_name
+                self.module.warn('As of CDP Runtime 7.2.10 (and given consistent s3), s3Guard is no longer needed. '
+                                  'Proceeding without s3Guard.')
 
             if self.inbound_cidr is not None:
                 payload['securityAccess'] = dict(cidr=self.inbound_cidr)
