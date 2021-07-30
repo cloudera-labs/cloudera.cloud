@@ -240,14 +240,6 @@ options:
     default: 3600
     aliases:
       - polling_timeout
-  s3_guard_name:
-    description:
-      - (AWS) AWS Dynamo table name for S3 Guard.
-    type: str
-    required: False
-    aliases:
-      - s3_guard
-      - s3_guard_table_name
   endpoint_access_scheme:
     description:
       - (AWS)The scheme for the workload endpoint gateway. PUBLIC creates an external endpoint that can be accessed over the Internet. 
@@ -351,16 +343,6 @@ environment:
           type: str
           returned: when supported
           sample: a_labeled_public_key
-    awsDetails:
-      description: AWS-specific environment configuration information.
-      returned: when supported
-      type: dict
-      contains:
-        s3GuardTableName:
-          description: The name for the DynamoDB table backing S3Guard.
-          type: str
-          returned: always
-          sample: table_name
     cloudPlatform:
       description: Cloud provider of the Environment.
       returned: always
@@ -872,7 +854,8 @@ class Environment(CdpModule):
                 payload['proxyConfigName'] = self.proxy
 
             if self.s3_guard_name is not None:
-                payload['s3GuardTableName'] = self.s3_guard_name
+                self.module.warn('As of CDP Runtime 7.2.10 (and given consistent s3), s3Guard is no longer needed. '
+                                  'Proceeding without s3Guard.')
 
             if self.inbound_cidr is not None:
                 payload['securityAccess'] = dict(cidr=self.inbound_cidr)
@@ -956,9 +939,6 @@ class Environment(CdpModule):
 
             if self.network_cidr is not None and existing['network']['networkCidr'] != self.network_cidr:
                 mismatch.append(['network_cidr', existing['network']['networkCidr']])
-
-            if self.s3_guard_name is not None and existing['awsDetails']['s3GuardTableName'] != self.s3_guard_name:
-                mismatch.append(['s3_guard_name', existing['awsDetails']['s3GuardTableName']])
 
             if self.inbound_cidr is not None and existing['securityAccess']['cidr'] != self.inbound_cidr:
                 mismatch.append(['inbound_cidr', existing['securityAccess']['cidr']])
