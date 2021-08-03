@@ -160,27 +160,27 @@ class DatahubTemplateInfo(CdpModule):
             short_desc = next((t for t in self.all_templates if t['crn'] == self.name 
                                or t['clusterTemplateName'] == self.name), None)
             if short_desc is not None:
-              if self.content:
-                self.templates.append(self._describe_template(short_desc))
-              else:
-                self.templates.append(short_desc)
+                if self.content:
+                    self.templates.append(self._describe_template(short_desc))
+                else:
+                    self.templates.append(short_desc)
             else:
-              self.module.warn("Template not found, '%s'" % self.name)
+                self.module.warn("Template not found, '%s'" % self.name)
         else:
             if self.content:
-              for short_desc in self.all_templates:
-                self.templates.append(self._describe_template(short_desc))
+                for short_desc in self.all_templates:
+                    self.templates.append(self._describe_template(short_desc))
             else:
-              self.templates = self.all_templates
+                self.templates = self.all_templates
 
     def _describe_template(self, short_desc):
-      full_desc = self.cdpy.datahub.describe_cluster_template(short_desc['crn'])
-      if full_desc is not None:
-          full_desc.update(productVersion=short_desc['productVersion'])
-          return full_desc
-      else:
-        self.module.fail_json(msg="Failed to retrieve Cluster Template content, '%s'" %
-                              short_desc['clusterTemplateName'])
+        full_desc = self.cdpy.datahub.describe_cluster_template(short_desc['crn'])
+        if full_desc is not None:
+            full_desc.update(productVersion=short_desc['productVersion'])
+            return full_desc
+        else:
+            self.module.fail_json(msg="Failed to retrieve Cluster Template content, '%s'" %
+                                  short_desc['clusterTemplateName'])
         
 
 def main():
