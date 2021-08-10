@@ -842,7 +842,7 @@ class Environment(CdpModule):
                 payload['authentication'] = dict(publicKey=self.public_key_text)
 
             if self.freeipa is not None:
-                payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa)
+                payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
 
             if self.vpc_id is not None:
                 payload['vpcId'] = self.vpc_id
@@ -875,6 +875,8 @@ class Environment(CdpModule):
             )
             payload['usePublicIp'] = self.public_ip
             payload['logStorage'] = dict(serviceAccountEmail=self.log_identity, storageLocationBase=self.log_location)
+            if self.freeipa is not None:
+                payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
         else:
             # For Azure
             payload['securityAccess'] = dict(defaultSecurityGroupId=self.default_sg,
@@ -886,6 +888,8 @@ class Environment(CdpModule):
                 payload['existingNetworkParams'] = dict(
                     networkId=self.vpc_id, resourceGroupName=self.resource_gp, subnetIds=self.subnet_ids
                 )
+            if self.freeipa is not None:
+                payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
 
         return payload
 
@@ -928,7 +932,7 @@ class Environment(CdpModule):
             if self.description is not None and existing['description'] != self.description:
                 mismatch.append(['description', existing['description']])
 
-            if self.freeipa is not None and len(existing['freeipa']['serverIP']) != self.freeipa:
+            if self.freeipa is not None and len(existing['freeipa']['serverIP']) != self.freeipa['instanceCountByGroup']:
                 mismatch.append(['freeipa', len(existing['freeipa']['serverIP'])])
 
             if self.vpc_id is not None and existing['network']['aws']['vpcId'] != self.vpc_id:
