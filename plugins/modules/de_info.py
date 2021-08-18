@@ -25,166 +25,72 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: de_info
-short_description: Gather information about CDP DataFlow Services
+short_description: Gather information about CDP DE Workspaces
 description:
-    - Gather information about CDP DataFlow Services
+    - Gather information about CDP DE Workspaces
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Alan Silva (@acsjumpi)"
 requirements:
   - cdpy
 options:
-  name:
+  id:
     description:
-      - If a name is provided, that DataFlow Service will be described.
+      - If a name is provided, that Data Warehouse Cluster will be described.
+      - environment must be provided if using name to retrieve a Cluster
     type: str
     required: False
     aliases:
-      - crn
-notes:
-  - This feature this module is for is in Technical Preview
+      - name
+  environment:
+    description:
+      - The name of the Environment in which to find and describe the Data Warehouse Clusters.
+      - Required with name to retrieve a Cluster
+    type: str
+    required: False
+    aliases:
+      - env
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
 '''
-
-EXAMPLES = r'''
-# Note: These examples do not set authentication details.
-
-# List basic information about all DataFlow Services
-- cloudera.cloud.de_info:
-
-# Gather detailed information about a named DataFlow Service using a name
-- cloudera.cloud.de_info:
-    name: example-service
-
-# Gather detailed information about a named DataFlow Service using a CRN
-- cloudera.cloud.de_info:
-    crn: example-service-crn
-'''
-
-RETURN = r'''
----
-environments:
-  description: The information about the named DataFlow Service or DataFlow Services
-  type: list
-  returned: always
-  elements: complex
-  contains:
-    crn:
-      description:  The DataFlow Service's parent environment CRN.
-      returned: always
-      type: str
-    name:
-      description: The DataFlow Service's parent environment name.
-      returned: always
-      type: str
-    cloudPlatform:
-      description: The cloud platform of the environment.
-      returned: always
-      type: str
-    region:
-      description: The region of the environment.
-      returned: always
-      type: str
-    deploymentCount:
-      description: The deployment count.
-      returned: always
-      type: str
-    minK8sNodeCount:
-      description: The  minimum  number  of Kubernetes nodes that need to be provisioned in the environment.
-      returned: always
-      type: int
-    maxK8sNodeCount:
-      description:  The maximum number of  kubernetes  nodes  that  environment  may scale up under high-demand situations.
-      returned: always
-      type: str
-    status:
-      description: The status of a DataFlow enabled environment.
-      returned: always
-      type: dict
-      contains:
-        state:
-          description: The state of the environment.
-          returned: always
-          type: str
-        message:
-          description: A status message for the environment.
-          returned: always
-          type: str
-    k8sNodeCount:
-      description: The  number of kubernetes nodes currently in use by DataFlow for this environment.
-      returned: always
-      type: int
-    instanceType:
-      description: The instance type of the kubernetes nodes currently  in  use  by DataFlow for this environment.
-      returned: always
-      type: str
-    deLocalUrl:
-      description: The URL of the environment local DataFlow application.
-      returned: always
-      type: str
-    authorizedIpRanges:
-      description:  The authorized IP Ranges.
-      returned: always
-      type: list
-    activeWarningAlertCount:
-      description: Current count of active alerts classified as a warning.
-      returned: always
-      type: int
-    activeErrorAlertCount:
-      description: Current count of active alerts classified as an error.
-      returned: always
-      type: int
-    clusterId:
-      description: Cluster id of the environment.
-      returned: if enabled
-      type: str
-sdk_out:
-  description: Returns the captured CDP SDK log.
-  returned: when supported
-  type: str
-sdk_out_lines:
-  description: Returns a list of each line of the captured CDP SDK log.
-  returned: when supported
-  type: list
-  elements: str
-'''
-
 
 class DEInfo(CdpModule):
     def __init__(self, module):
         super(DEInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
+        self.id = self._get_param('name')
+        self.env = self._get_param('environment')
 
         # Initialize return values
-        self.services = []
+        self.cluster = []
 
         # Execute logic process
         self.process()
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.name:  # Note that both None and '' will trigger this
-            service_single = self.cdpy.de.describe_environment(name=self.name)
-            if service_single is not None:
-                self.services.append(service_single)
+        if self.id is not None:  # Note that both None and '' will trigger this
+            cluster_single = self.cdpy.de.describe_vc(name=self.id, env=self.env)
+            if cluster_single is not None:
+                self.cluster.append(cluster_single)
         else:
-            self.services = self.cdpy.de.list_environments()
+            self.cluster = self.cdpy.de.list_vcs(self.id)
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['crn']),
+            id=dict(required=False, type='str', aliases=['workspace']),
+            env=dict(required=False, type='str', aliases=['env']),
         ),
         supports_check_mode=True,
     )
 
     result = DEInfo(module)
-    output = dict(changed=False, services=result.services)
+    output = dict(changed=False, service=result.service)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
