@@ -16,7 +16,7 @@
 
 namespace: cloudera
 name: cloud
-version: 1.3.0
+version: 1.4.0
 readme: README.md
 authors:
 - Webster Mudge <wmudge@cloudera.com>
