@@ -44,7 +44,7 @@ Parameters
    | **Parameter**  | **Choices/Defaults** | **Comments**                                                    |
    +----------------+----------------------+-----------------------------------------------------------------+
    | **name**       |                      | If a name is provided, that DataFlow Service will be described. |
-   |                |                      |                                                                 |
+   |                |                      | Must be CDP Environment CRN or string name of DataFlow Service  |
    | |br|           |                      |                                                                 |
    |                |                      |                                                                 |
    | ``str``        |                      |                                                                 |
