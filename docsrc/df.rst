@@ -181,7 +181,7 @@ Examples
   # Note: These examples do not set authentication details.
 
   # Create a Dataflow Service
-  - cloudera.cloud.df:
+  - cloudera.cloud.df_service:
       name: my-service
       nodes_min: 3
       nodes_max: 10
@@ -191,7 +191,7 @@ Examples
       wait: yes
 
   # Remove a Dataflow Service with Async wait
-  - cloudera.cloud.df:
+  - cloudera.cloud.df_service:
       name: my-service
       persist: False
       state: absent

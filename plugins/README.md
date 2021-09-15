@@ -16,7 +16,7 @@ modules employ the underlying SDK contained within the `cdpy` Python package.
 | [datalake](./modules/datalake.py) | Create, manage, and destroy CDP Datalakes |
 | [datalake_info](./modules/datalake_info.py) | Gather information about CDP Datalakes |
 | [datalake_runtime_info](./modules/datalake_runtime_info.py) | Gather information about CDP Datalake Runtimes |
-| [df](./modules/df.py) | Enable or disable CDP DataFlow services |
+| [df](./modules/df_service.py) | Enable or disable CDP DataFlow services |
 | [df_info](./modules/df_info.py) | Gather information about CDP DataFlow services |
 | [dw_cluster](./modules/dw_cluster.py) | Create, manage, and destroy CDP Data Warehouse experiences |
 | [dw_cluster_info](./modules/dw_cluster_info.py) | Gather information about CDP Data Warehouse experiences |
