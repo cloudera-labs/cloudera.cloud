@@ -25,7 +25,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: dw_virtual_warehouse
-short_description: Create CDP Data Warehouse Virtual Warehouse
+short_description: Create, manage, and destroy CDP Data Warehouse Virtual Warehouses
 description:
     - Create CDP Virtual Warehouse
 author:
@@ -37,153 +37,146 @@ requirements:
 options:
   id:
     description:
-      - If an ID is provided, that Virtual Warehouse will be deleted if C(state=absent)
+      - The identifier of the Virtual Warehouse.
+      - Required if C(state=absent).
     type: str
-    required: When state is absent
   cluster_id:
-    description: ID of cluster where Virtual Warehouse should be created.
+    description: 
+      - The identifier of the parent DW Cluster of the Virtual Warehouse.
     type: str
     required: True
   dbc_id:
-    description: ID of Database Catalog that the Virtual Warehouse should be attached to.
+    description:
+      - The identifier of the parent Database Catalog attached to the Virtual Warehouse.
     type: str
     required: True
   type:
-    description: Type of Virtual Warehouse to be created.
+    description:
+      - The type of Virtual Warehouse to be created.
+      - Required if C(state=present)
     type: str
-    required: True
+    choices:
+      - hive
+      - impala
   name:
-    description: Name of the Virtual Warehouse.
+    description:
+      - The name of the Virtual Warehouse.
+      - Required if C(state=present)
     type: str
-    required: True
   template:
-    description: Name of configuration template to use.
+    description: The name of deployment template for the Virtual Warehouse
     type: str
-    required: False
+    choices:
+      - xsmall
+      - small
+      - medium
+      - large
   autoscaling_min_nodes:
-    description: Minimum number of available nodes for Virtual Warehouse autoscaling.
+    description: The minimum number of available nodes for Virtual Warehouse autoscaling.
     type: int
-    required: False
   autoscaling_max_nodes:
-    description: Maximum number of available nodes for Virtual Warehouse autoscaling.
+    description: The maximum number of available nodes for Virtual Warehouse autoscaling.
     type: int
-    required: False
   common_configs: 
-    description: Configurations that are applied to every application in the service.
+    description: Configurations that are applied to every application in the Virtual Warehouse service.
     type: dict
-    required: False
     suboptions:
-      configBlocks: List of ConfigBlocks for the application.
+      configBlocks: List of I(ConfigBlocks) for the application.
         type: list
-        required: False  
         elements: dict
         suboptions:
           id: 
-            description: ID of the ConfigBlock. Unique within an ApplicationConfig.
+            description:
+              - ID of the ConfigBlock. 
+              - Unique within an I(ApplicationConfig).
             type: str
-            required: False
           format:
-            description: Format of ConfigBlock.
+            description: Format of the ConfigBlock.
             type: str
-            required: False 
           content:
-            description: Contents of a ConfigBlock.
+            description: Contents of the ConfigBlock.
             type: dict
-            required: False
             suboptions:
               keyValues: 
-                description: Key-value type configurations. 
+                description: Key-value type configuration. 
                 type: dict
-                required: False
               text:
                 description: Text type configuration.
                 type: str   
-                required: False
               json:
                 description: JSON type configuration.
                 type: str    
-                required: False
   application_configs:
-    description: Configurations that are applied to every application in the service.
+    description: Configurations that are applied to specific applications in the Virtual Warehouse service.
     type: dict
-    required: False
     suboptions:
-      required: False
-      type: dict
-      suboptions:  
-        configBlocks: List of ConfigBlocks for the application.
-          type: list
-          required: False  
-          elements: dict
-          suboptions:
-            id: 
-              description: ID of the ConfigBlock. Unique within an ApplicationConfig.
-              type: str
-              required: False
-            format:
-              description: Format of ConfigBlock.
-              type: str
-              required: False
-            content:
-              description: Contents of a ConfigBlock.
-              type: dict
-              required: False
-              suboptions:
-                keyValues: 
-                  description: Key-value type configurations. 
-                  type: dict
-                  required: False
-                text:
-                  description: Text type configuration.
-                  type: str   
-                  required: False
-                json:
-                  description: JSON type configuration.
-                  type: str    
-                  required: False
+      __application_name__:
+        description: The application name or identifier.
+        type: dict
+        suboptions:  
+          configBlocks: List of ConfigBlocks for the application.
+            type: list
+            required: False  
+            elements: dict
+            suboptions:
+              id: 
+                description:
+                  - ID of the ConfigBlock.
+                  - Unique within an ApplicationConfig.
+                type: str
+              format:
+                description: Format of ConfigBlock.
+                type: str
+              content:
+                description: Contents of a ConfigBlock.
+                type: dict
+                suboptions:
+                  keyValues: 
+                    description: Key-value type configuration. 
+                    type: dict
+                  text:
+                    description: Text type configuration.
+                    type: str   
+                  json:
+                    description: JSON type configuration.
+                    type: str    
   ldap_groups:
-    description: LDAP Groupnames to be enabled for auth.
+    description: LDAP Groupnames to enabled for authentication to the Virtual Warehouse.
     type: list
-    required: False
     elements: str
   enable_sso:
-    description: Should SSO be enabled for this VW.
+    description: Flag to enable SSO for the Virtual Warehouse.
     type: bool
-    required: False    
+    default: False    
   tags:
-    description: Tags associated with the resources.
+    description: Key-value tags associated with the Virtual Warehouse cloud provider resources.
     type: dict
-    required: False
   state:
     description: The declarative state of the Virtual Warehouse
     type: str
-    required: False
     default: present
     choices:
       - present
       - absent  
   wait:
     description:
-      - Flag to enable internal polling to wait for the Data Warehouse Cluster to achieve the declared state.
+      - Flag to enable internal polling to wait for the Virtual Warehouse to achieve the declared state.
       - If set to FALSE, the module will return immediately.
     type: bool
-    required: False
     default: True
   delay:
     description:
-      - The internal polling interval (in seconds) while the module waits for the Data Warehouse Cluster to achieve the declared
+      - The internal polling interval (in seconds) while the module waits for the Virtual Warehouse to achieve the declared
         state.
     type: int
-    required: False
     default: 15
     aliases:
       - polling_delay
   timeout:
     description:
-      - The internal polling timeout (in seconds) while the module waits for the Data Warehouse Cluster to achieve the declared
+      - The internal polling timeout (in seconds) while the module waits for the Virtual Warehouse to achieve the declared
         state.
     type: int
-    required: False
     default: 3600
     aliases:
       - polling_timeout  
@@ -197,10 +190,10 @@ EXAMPLES = r'''
 
 # Create Virtual Warehouse
 - cloudera.cloud.dw_virtual_warehouse:
-    cluster_id: "example-cluster-id"
-    name: "example-virtual-warehouse"
-    type: "hive"
-    template: "xsmall"
+    cluster_id: example-cluster-id
+    name: example-virtual-warehouse
+    type: hive
+    template: xsmall
     autoscaling_min_nodes: 3
     autoscaling_max_nodes: 19
     tags:
@@ -215,34 +208,21 @@ EXAMPLES = r'''
     template: "xsmall"
     enable_sso: true
     ldap_groups: ['group1','group2','group3']
-    common_configs: "{
-        'configBlocks': [
-            {
-                'id': 'das-ranger-policymgr',
-                'format': 'HADOOP_XML',
-                'content': {
-                    'keyValues' : {
-                        'xasecure.policymgr.clientssl.truststore': '/path_to_ca_cert/cacerts'
-                    }
-                }
-            }
-          ]
-        }"
-    application_configs: "{
-       "das-webapp": {
-         "configBlocks": [
-           {
-               "id": "hive-kerberos-config",
-               "format": "TEXT",
-               "content": {
-                "text": "\n[libdefaults]\n\trenew_lifetime = 7d"
-              }
-            }
-           ] 
-         }   
-       }"        
-    
-       
+    common_configs:
+        configBlocks:
+            - id: das-ranger-policymgr
+              format: HADOOP_XML
+              content:
+                  keyValues:
+                      'xasecure.policymgr.clientssl.truststore': '/path_to_ca_cert/cacerts'
+    application_configs: 
+        das-webapp:
+            configBlocks:
+                - id: hive-kerberos-config
+                  format: TEXT
+                  content:
+                      text: "\n[libdefaults]\n\trenew_lifetime = 7d"   
+                      
 # Delete Virtual Warehouse
 - cloudera.cloud.dw_virtual_warehouse:
     cluster_id: "example-cluster-id"
@@ -252,60 +232,59 @@ EXAMPLES = r'''
 
 RETURN = r'''
 ---
-virtual_warehouses:
-  description: The information about the named CDW Virtual Warehouses.
-  type: list
-  returned: always
-  elements: complex
+virtual_warehouse:
+  description: The details about the CDP Data Warehouse Virtual Warehouse.
+  type: dict
   suboptions:
-    vws:
+    id:
+      description: The identifier of the Virtual Warehouse.
+      returned: always
+      type: str
+    name:
+      description: The name of the Virtual Warehouse.
+      returned: always
+      type: str
+    vwType:
+      description: The Virtual Warehouse type.
+      returned: always
+      type: str
+    dbcId:
+      description: The Database Catalog ID associated with the Virtual Warehouse.
+      returned: always
+      type: str    
+    creationDate:
+      description: The creation time of the Virtual Warehouse in UTC.
+      returned: always
+      type: str
+    status:
+      description: The status of the Virtual Warehouse.
+      returned: always
+      type: str
+    creator:
+      description: The CRN of the Virtual Warehouse creator.
+      returned: always
       type: dict
       suboptions:
-        id:
-          description: Id of the Virtual Warehouse created.
-          returned: always
+        crn:
           type: str
-        name:
-          description: Name of the Virtual Warehouse created.
+          description: The creator's Actor CRN
           returned: always
+        email:
           type: str
-        vwType:
-          description: Virtual Warehouse type.
-          returned: always
+          description: Email address (for users)
+          returned: when supported
+        workloadUsername:
           type: str
-        dbcId:
-          description: Database Catalog ID against which Virtual Warehouse was created.
-          returned: always
-          type: str    
-        creationDate:
-          description: The creation time of the cluster in UTC.
-          returned: always
+          description: Username (for users)
+          returned: when supported
+        machineUsername:
           type: str
-        status:
-          description: The status of the Virtual Warehouse.
-          returned: always
-          type: str
-        creator:
-          description: The CRN of the cluster creator.
-          returned: always
-          type: dict
-          suboptions:
-            crn:
-              type: str
-              description: Actor CRN
-            email:
-              type: str
-              description: Email address for users
-            workloadUsername:
-              type: str
-              description: Username for users
-            machineUsername:
-              type: str
-              description: Username for machine users
-        tags:
-          description: Custom tags that were used to create this Virtual Warehouse.
-          returned: always
-          type: dict
+          description: Username (for machine users)
+          returned: when supported
+    tags:
+      description: Custom tags applied to the Virtual Warehouse.
+      returned: always
+      type: dict
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
