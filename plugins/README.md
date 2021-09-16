@@ -20,6 +20,10 @@ modules employ the underlying SDK contained within the `cdpy` Python package.
 | [df_info](./modules/df_info.py) | Gather information about CDP DataFlow services |
 | [dw_cluster](./modules/dw_cluster.py) | Create, manage, and destroy CDP Data Warehouse experiences |
 | [dw_cluster_info](./modules/dw_cluster_info.py) | Gather information about CDP Data Warehouse experiences |
+| [dw_database_catalog](./modules/dw_database_catalog.py) | Create, manage, and destroy CDP Data Warehouse Data Catalogs |
+| [dw_database_catalog_info](./modules/dw_database_catalog_info.py) | Gather information about CDP Data Warehouse Data Catalogs |
+| [dw_virtual_warehouse](./modules/dw_virtual_warehouse.py) | Create, manage, and destroy CDP Data Warehouse Virtual Warehouses |
+| [dw_virtual_warehouse_info](./modules/dw_virtual_warehouse_info.py) | Gather information about CDP Data Warehouse Virtual Warehouses |
 | [env](./modules/env.py) | Create, manage, and destroy CDP Environments |
 | [env_auth](./modules/env_auth.py) | Set authentication details for CDP Environments |
 | [env_auth_info](./modules/env_auth_info.py) | Gather information about CDP Environment authentication details |

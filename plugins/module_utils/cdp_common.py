@@ -41,7 +41,7 @@ class CdpModule(object):
             def _impl(self, *args, **kwargs):
                 result = f(self, *args, **kwargs)
                 if self.debug:
-                    self.log_out = self.cdpy.get_log()
+                    self.log_out = self.cdpy.sdk.get_log()
                     self.log_lines.append(self.log_out.splitlines())
                 return result
 
@@ -73,11 +73,12 @@ class CdpModule(object):
 
     def _cdp_module_throw_error(self, error: 'CdpError'):
         """Error handler for CDPy SDK"""
-        self.module.fail_json(msg=str(error.message), error=str(error.__dict__))
+        self.module.fail_json(msg=str(error.message), error=str(error.__dict__), violations=error.violations)
 
     def _cdp_module_throw_warning(self, warning: 'CdpWarning'):
         """Warning handler for CDPy SDK"""
-        self.module.warn(warning.message)
+        if self.module._debug or self.module._verbosity >= 2:
+            self.module.warn(warning.message)
 
     @staticmethod
     def argument_spec(**spec):
