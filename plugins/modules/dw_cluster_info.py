@@ -34,20 +34,18 @@ author:
 requirements:
   - cdpy
 options:
-  id:
+  cluster_id:
     description:
-      - If a name is provided, that Data Warehouse Cluster will be described.
-      - environment must be provided if using name to retrieve a Cluster
+      - The identifier of the Data Warehouse Cluster.
+      - Mutually exclusive with I(environment).
     type: str
-    required: False
     aliases:
-      - name
+      - id
   environment:
     description:
-      - The name of the Environment in which to find and describe the Data Warehouse Clusters.
-      - Required with name to retrieve a Cluster
+      - The name or CRN of the Environment in which to find and describe Data Warehouse Clusters.
+      - Mutually exclusive with I(cluster_id).
     type: str
-    required: False
     aliases:
       - env
 extends_documentation_fragment:
@@ -58,67 +56,71 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
-# List basic information about all Data Warehouse Clusters
+# List information about all Data Warehouse Clusters
 - cloudera.cloud.dw_cluster_info:
 
-# Gather detailed information about a named Cluster
+# Gather information about all Data Warehouse Clusters within an Environment
 - cloudera.cloud.dw_cluster_info:
-    name: example-cluster
     env: example-environment
+    
+# Gather information about an identified Cluster
+- cloudera.cloud.dw_cluster_info:
+    cluster_id: env-xyzabc
 '''
 
 RETURN = r'''
 ---
 clusters:
   description: The information about the named Cluster or Clusters
-  type: list
   returned: always
-  elements: complex
+  type: list
+  elements: dict
   contains:
-    cluster:
+    id:
+      description: The cluster identifier.
+      returned: always
+      type: str
+    environmentCrn:
+      description: The CRN of the cluster's Environment
+      returned: always
+      type: str
+    crn:
+      description: The cluster's CRN.
+      returned: always
+      type: str
+    creationDate:
+      description: The creation timestamp of the cluster in UTC.
+      returned: always
+      type: str
+    status:
+      description: The status of the cluster
+      returned: always
+      type: str
+    creator:
+      description: The cluster creator details.
+      returned: always
       type: dict
       contains:
-        name:
-          description: The name of the cluster.
-          returned: always
-          type: str
-        environmentCrn:
-          description: The crn of the cluster's environment.
-          returned: always
-          type: str
         crn:
-          description: The cluster's crn.
-          returned: always
+          description: The Actor CRN.
           type: str
-        creationDate:
-          description: The creation time of the cluster in UTC.
           returned: always
+        email:
+          description: Email address (users).
           type: str
-        status:
-          description: The status of the Cluster
-          returned: always
+          returned: when supported
+        workloadUsername:
+          description: Username (users).
           type: str
-        creator:
-          description: The CRN of the cluster creator.
-          returned: always
-          type: dict
-          contains:
-            crn:
-              type: str
-              description: Actor CRN
-            email:
-              type: str
-              description: Email address for users
-            workloadUsername:
-              type: str
-              description: Username for users
-            machineUsername:
-              type: str
-              description: Username for machine users
-        cloudPlatform:
-          description: The  cloud  platform  of the environment that was used to create this cluster
-          returned: always
+          returned: when supported
+        machineUsername:
+          description: Username (machine users).
           type: str
+          returned: when supported
+    cloudPlatform:
+      description: The cloud platform of the environment that was used to create this cluster.
+      returned: always
+      type: str
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
@@ -136,8 +138,8 @@ class DwClusterInfo(CdpModule):
         super(DwClusterInfo, self).__init__(module)
 
         # Set variables
-        self.id = self._get_param('name')
-        self.env = self._get_param('env')
+        self.cluster_id = self._get_param('cluster_id')
+        self.environment = self._get_param('environment')
 
         # Initialize return values
         self.clusters = []
@@ -147,24 +149,27 @@ class DwClusterInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.id is not None:
-            cluster_single = self.cdpy.dw.describe_cluster(name=self.id)
+        if self.cluster_id is not None:
+            cluster_single = self.cdpy.dw.describe_cluster(self.cluster_id)
             if cluster_single is not None:
                 self.clusters.append(cluster_single)
-        if self.env is not None:
-            env_crn = self.cdpy.environments.resolve_environment_crn(self.env)
-            if env_crn is not None:
-                self.clusters = self.cdpy.dw.gather_clusters(env_crn)
+        elif self.environment is not None:
+            env_crn = self.cdpy.environments.resolve_environment_crn(self.environment)
+            if env_crn:
+                self.clusters = self.cdpy.dw.list_clusters(env_crn=env_crn)
         else:
-            self.clusters = self.cdpy.dw.gather_clusters()
+            self.clusters = self.cdpy.dw.list_clusters()
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            id=dict(required=False, type='str', aliases=['name']),
-            env=dict(required=False, type='str', aliases=['environment'])
+            cluster_id=dict(type='str', aliases=['id']),
+            environment=dict(type='str', aliases=['env'])
         ),
+        mutually_exclusive=[
+          ['cluster_id', 'environment']
+        ],
         supports_check_mode=True
     )
 
