@@ -156,7 +156,7 @@ class DwDbc(CdpModule):
         if self.id is None:
             dbcs = self.cdpy.dw.list_dbcs(cluster_id=self.cluster_id)
             for dbc in dbcs:
-                if self.name is not None and dbc['name'] == self.name:
+                if dbc['name'] == self.name:
                     self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=dbc['id'])
         else:
             self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.id)
@@ -169,24 +169,24 @@ class DwDbc(CdpModule):
                 else:
                     # Begin Drop
                     if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
-                        self.module.warn(
-                            "DW Database Catalog is not in a valid state for Delete operations: %s" % self.target['status'])
+                        self.module.fail_json(msg=
+                            "Database Catalog is not in a valid state for Delete operations: %s" % self.target['status'])
                     else:
                         _ = self.cdpy.dw.delete_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
                         self.changed = True
-                    if self.wait:
-                        self.cdpy.sdk.wait_for_state(
-                            describe_func=self.cdpy.dw.describe_dbc,
-                            params=dict(cluster_id=self.cluster_id, dbc_id=self.target['id']),
-                            field=None, delay=self.delay, timeout=self.timeout
-                        )
-                    else:
-                        self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
-                        self.database_catalog = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
+                        if self.wait:
+                            self.cdpy.sdk.wait_for_state(
+                                describe_func=self.cdpy.dw.describe_dbc,
+                                params=dict(cluster_id=self.cluster_id, dbc_id=self.target['id']),
+                                field=None, delay=self.delay, timeout=self.timeout
+                            )
+                        else:
+                            self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
+                            self.database_catalog = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
                     # End Drop
             elif self.state == 'present':
                 # Begin Config Check
-                self.module.warn("DW Database Catalog already present and reconciliation is not yet implemented")
+                self.module.warn("Database Catalog already present and reconciliation is not yet implemented")
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_dbc,
@@ -201,7 +201,7 @@ class DwDbc(CdpModule):
         else:
             # Begin Database Catalog Not Found
             if self.state == 'absent':
-                self.module.warn("DW Database Catalog %s already absent in Cluster %s" % (self.name, self.cluster_id))
+                self.module.warn("Database Catalog %s already absent in Cluster %s" % (self.name, self.cluster_id))
             elif self.state == 'present':
                 if not self.module.check_mode:
                     dbc_id = self.cdpy.dw.create_dbc(cluster_id=self.cluster_id, name=self.name,
@@ -233,8 +233,9 @@ def main():
         ),
         required_if=[
             ['state', 'present', ['name']],
-            ['state', 'absent', ['name', 'id']],
+            ['state', 'absent', ['name', 'id'], True],
         ],
+        mutually_exclusive=[['name', 'id']],
         supports_check_mode=True
     )
 
