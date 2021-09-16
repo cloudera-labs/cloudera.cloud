@@ -35,17 +35,19 @@ author:
 requirements:
   - cdpy
 options:
-  name:
+  cluster_id:
     description:
       - The identifier of the Data Warehouse Cluster.
-      - Required if C(state=absent) and C(env) is not specified.
+      - Required if I(state=absent) and I(env) is not specified.
     type: str
     aliases:
       - id
+      - name
   env:
     description:
       - The name of the target environment.
-      - Required if C(state=present) or C(state=absent) and C(id) is not specified.
+      - Required if I(state=present).
+      - Required if I(state=absent) and I(cluster_id) is not specified.
     type: str
     aliases:
       - environment
@@ -63,24 +65,24 @@ options:
   aws_public_subnets:
     description:
       - List of zero or more Public AWS Subnet IDs used for deployment.
-      - Required if C(state=present) and the C(env) is deployed to AWS.
+      - Required if I(state=present) and the I(env) is deployed to AWS.
     type: list
     elements: str
   aws_private_subnets:
     description:
       - List of zero or more Private AWS Subnet IDs used for deployment.
-      - Required if C(state=present) and the C(env) is deployed to AWS.
+      - Required if I(state=present) and the I(env) is deployed to AWS.
     type: list
     elements: str
   az_subnet:
     description:
       - The Azure Subnet Name.
-      - Required if C(state=present) and the C(env) is deployed to Azure.
+      - Required if I(state=present) and the I(env) is deployed to Azure.
     type: str
   az_enable_az:
     description: 
       - Flag to enable Availability Zone mode.
-      - Required if C(state=present) and the C(env) is deployed to Azure.
+      - Required if I(state=present) and the I(env) is deployed to Azure.
     type: bool
   state:
     description: The state of the Data Warehouse Cluster
@@ -154,12 +156,12 @@ cluster:
   description: Details for the Data Warehouse cluster
   type: dict
   contains:
-    name:
-      description: The name of the cluster.
+    id:
+      description: The cluster identifier.
       returned: always
       type: str
     environmentCrn:
-      description: The crn of the cluster's environment.
+      description: The CRN of the cluster's Environment
       returned: always
       type: str
     crn:
@@ -167,32 +169,36 @@ cluster:
       returned: always
       type: str
     creationDate:
-      description: The creation time of the cluster in UTC.
+      description: The creation timestamp of the cluster in UTC.
       returned: always
       type: str
     status:
-      description: The status of the cluster.
+      description: The status of the cluster
       returned: always
       type: str
     creator:
-      description: The details regarding the cluster creator.
+      description: The cluster creator details.
       returned: always
       type: dict
       contains:
         crn:
+          description: The Actor CRN.
           type: str
-          description: The creator's CRN
+          returned: always
         email:
+          description: Email address (users).
           type: str
-          description: Email address
+          returned: when supported
         workloadUsername:
+          description: Username (users).
           type: str
-          description: Username
+          returned: when supported
         machineUsername:
+          description: Username (machine users).
           type: str
-          description: Username for machine users
+          returned: when supported
     cloudPlatform:
-      description: The cloud platform of the environment housing the Data Warehouse cluster
+      description: The cloud platform of the environment that was used to create this cluster.
       returned: always
       type: str
 sdk_out:
@@ -325,14 +331,14 @@ class DwCluster(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(type='str', aliases=['id']),
+            cluster_id=dict(type='str', aliases=['id', 'name']),
             env=dict(type='str', aliases=['environment', 'env_crn']),
             overlay=dict(type='bool', default=False),
             private_load_balancer=dict(type='bool', default=False),
-            az_subnet=dict(type='str', default=None),
-            az_enable_az=dict(type='bool', default=None),
-            aws_public_subnets=dict(type='list', default=None),
-            aws_private_subnets=dict(type='list', default=None),
+            az_subnet=dict(type='str'),
+            az_enable_az=dict(type='bool'),
+            aws_public_subnets=dict(type='list'),
+            aws_private_subnets=dict(type='list'),
             state=dict(type='str', choices=['present', 'absent'], default='present'),
             force=dict(type='bool', default=False),
             wait=dict(type='bool', default=True),
@@ -344,7 +350,7 @@ def main():
             ['aws_public_subnets', 'aws_private_subnets']
         ],
         required_if=[
-            ['state', 'absent', ['name', 'env']],
+            ['state', 'absent', ['cluster_id', 'env'], True],
             ['state', 'present', ['env']]
         ],
         supports_check_mode=True

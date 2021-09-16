@@ -40,6 +40,8 @@ options:
       - The identifier of the Virtual Warehouse.
       - Required if C(state=absent).
     type: str
+    aliases:
+      - vw_id
   cluster_id:
     description: 
       - The identifier of the parent Data Warehouse Cluster of the Virtual Warehouse.
@@ -246,7 +248,7 @@ RETURN = r'''
 virtual_warehouse:
   description: The details about the CDP Data Warehouse Virtual Warehouse.
   type: dict
-  suboptions:
+  contains:
     id:
       description: The identifier of the Virtual Warehouse.
       returned: always
@@ -272,25 +274,25 @@ virtual_warehouse:
       returned: always
       type: str
     creator:
-      description: The CRN of the Virtual Warehouse creator.
+      description: Details about the Virtual Warehouse creator.
       returned: always
       type: dict
       suboptions:
         crn:
+          description: The creator's Actor CRN.
           type: str
-          description: The creator's Actor CRN
           returned: always
         email:
+          description: Email address (for users).
           type: str
-          description: Email address (for users)
           returned: when supported
         workloadUsername:
+          description: Username (for users).
           type: str
-          description: Username (for users)
           returned: when supported
         machineUsername:
+          description: Username (for machine users).
           type: str
-          description: Username (for machine users)
           returned: when supported
     tags:
       description: Custom tags applied to the Virtual Warehouse.
@@ -420,7 +422,7 @@ class DwVw(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            id=dict(type='str'),
+            id=dict(type='str', aliases=['vw_id']),
             cluster_id=dict(required=True, type='str'),
             dbc_id=dict(type='str'),
             type = dict(type='str'),
