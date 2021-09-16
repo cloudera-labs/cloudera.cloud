@@ -190,7 +190,7 @@ class DwDbc(CdpModule):
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_dbc,
                         params=dict(cluster_id=self.cluster_id, dbc_id=self.target['id']),
-                        state='Running', delay=self.delay, timeout=self.timeout
+                        state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                     )
                     self.dbcs.append(self.target)
                     # End Config check
@@ -211,7 +211,7 @@ class DwDbc(CdpModule):
                         self.target = self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_dbc,
                             params=dict(cluster_id=self.cluster_id, dbc_id=dbc_id),
-                            state='Running', delay=self.delay, timeout=self.timeout
+                            state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                         )
                     else:
                         self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=dbc_id)

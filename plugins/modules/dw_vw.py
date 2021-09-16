@@ -365,7 +365,7 @@ class DwVw(CdpModule):
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.delete_vw,
                         params=dict(cluster_id=self.cluster_id, vw_id=self.target['id']),
-                        state='Running', delay=self.delay, timeout=self.timeout
+                        state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                     )
                     self.vws.append(self.target)
                     # End Config check
@@ -394,7 +394,7 @@ class DwVw(CdpModule):
                         self.target = self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_vw,
                             params=dict(cluster_id=self.cluster_id, vw_id=vw_id),
-                            state='Running', delay=self.delay, timeout=self.timeout
+                            state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                         )
                     else:
                         self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw_id)
