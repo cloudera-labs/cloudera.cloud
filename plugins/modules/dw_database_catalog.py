@@ -104,7 +104,7 @@ database_catalogs:
   type: list
   returned: always
   elements: complex
-  contains:
+  suboptions:
     id:
       description: The id of the Database Catalog.
       returned: always
@@ -148,6 +148,7 @@ class DwDbc(CdpModule):
 
         # Initialize internal values
         self.target = None
+        self.changed = False
 
         # Execute logic process
         self.process()
@@ -172,6 +173,7 @@ class DwDbc(CdpModule):
                             "DW Database Catalog not in valid state for Delete operation: %s" % self.target['status'])
                     else:
                         _ = self.cdpy.dw.delete_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
+                        self.changed = True
                     if self.wait:
                         self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_dbc,
@@ -207,6 +209,7 @@ class DwDbc(CdpModule):
                 else:
                     dbc_id = self.cdpy.dw.create_dbc(cluster_id=self.cluster_id, name=self.name,
                                                      load_demo_data=self.load_demo_data)
+                    self.changed = True
                     if self.wait:
                         self.target = self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_dbc,
@@ -223,20 +226,20 @@ class DwDbc(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            id=dict(required=False, type='str', default=None),
+            id=dict(type='str'),
             cluster_id=dict(required=True, type='str'),
-            name = dict(required=False, type='str', default=None),
-            load_demo_data=dict(required=False, type='bool', default=False),
-            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
-            wait = dict(required=False, type='bool', default=True),
-            delay = dict(required=False, type='int', aliases=['polling_delay'], default=15),
-            timeout = dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
+            name = dict(type='str'),
+            load_demo_data=dict(type='bool'),
+            state=dict(type='str', choices=['present', 'absent'], default='present'),
+            wait = dict(type='bool', default=True),
+            delay = dict(type='int', aliases=['polling_delay'], default=15),
+            timeout = dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         supports_check_mode=True
     )
 
     result = DwDbc(module)
-    output = dict(changed=False, database_catalogs=result.database_catalogs)
+    output = dict(changed=result.changed, database_catalogs=result.database_catalogs)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
