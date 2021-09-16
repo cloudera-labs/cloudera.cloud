@@ -35,29 +35,32 @@ author:
 requirements:
   - cdpy
 options:
-  id:
+  warehouse_id:
     description:
       - The identifier of the Virtual Warehouse.
       - Requires I(cluster_id).
-      - Mutually exclusive with I(name) and I(dbc_id).
+      - Mutually exclusive with I(name) and I(catalog_id).
     type: str
     aliases:
       - vw_id
+      - id
   cluster_id:
     description: 
       - The identifier of the parent Data Warehouse Cluster of the Virtual Warehouse(s).
     type: str
-  dbc_id:
+  catalog_id:
     description:
       - The identifier of the parent Database Catalog attached to the Virtual Warehouse(s).
       - Requires I(cluster_id).
-      - Mutally exclusive with I(id) and I(name).
+      - Mutally exclusive with I(warehouse_id) and I(name).
     type: str
+    aliases:
+      - dbc_id
   name:
     description:
       - The name of the Virtual Warehouse.
       - Requires I(cluster_id).
-      - Mutually exclusive with I(id) and I(dbc_id).
+      - Mutually exclusive with I(warehouse_id) and I(catalog_id).
     type: str
   delay:
     description:
@@ -90,12 +93,12 @@ EXAMPLES = r'''
 # List all Virtual Warehouses associated with a Data Catalog
 - cloudera.cloud.dw_virtual_warehouse_info:
     cluster_id: example-cluster-id
-    dbc_id: example-data-catalog-id
+    catalog_id: example-data-catalog-id
 
 # Describe a Virtual Warehouse by ID
 - cloudera.cloud.dw_virtual_warehouse_info:
     cluster_id: example-cluster-id
-    id: example-virtual-warehouse-id
+    warehouse_id: example-virtual-warehouse-id
 
 # Describe a Virtual Warehouse by name
 - cloudera.cloud.dw_virtual_warehouse_info:
@@ -171,14 +174,14 @@ sdk_out_lines:
 '''
 
 
-class DwVwInfo(CdpModule):
+class DwVirtualWarehouseInfo(CdpModule):
     def __init__(self, module):
-        super(DwVwInfo, self).__init__(module)
+        super(DwVirtualWarehouseInfo, self).__init__(module)
 
         # Set variables
-        self.id = self._get_param('id')
+        self.warehouse_id = self._get_param('warehouse_id')
         self.cluster_id = self._get_param('cluster_id')
-        self.dbc_id = self._get_param('dbc_id')
+        self.catalog_id = self._get_param('catalog_id')
         self.type = self._get_param('type')
         self.name = self._get_param('name')
         self.delay = self._get_param('delay')
@@ -192,8 +195,8 @@ class DwVwInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.id is not None:
-            target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.id)
+        if self.warehouse_id is not None:
+            target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.warehouse_id)
             if target is not None:
                 self.virtual_warehouses.append(target)
         else:
@@ -204,8 +207,8 @@ class DwVwInfo(CdpModule):
                         self.virtual_warehouses.append(
                           self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw['id'])
                         )
-            elif self.dbc_id is not None:
-                self.virtual_warehouses =[v for v in vws if v['dbcId'] == self.dbc_id]
+            elif self.catalog_id is not None:
+                self.virtual_warehouses =[v for v in vws if v['dbcId'] == self.catalog_id]
             else:
                 self.virtual_warehouses = vws
 
@@ -213,20 +216,20 @@ class DwVwInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            id=dict(type='str', aliases=['vw_id']),
+            warehouse_id=dict(type='str', aliases=['vw_id', 'id']),
             cluster_id=dict(required=True, type='str'),
-            dbc_id=dict(type='str'),
+            catalog_id=dict(type='str', aliases=['dbc_id']),
             name=dict(type='str'),
             delay=dict(type='int', aliases=['polling_delay'], default=15),
             timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         mutually_exclusive=[
-            ['id', 'name', 'dbc_id']
+            ['warehouse_id', 'name', 'catalog_id']
         ],
         supports_check_mode=True
     )
 
-    result = DwVwInfo(module)
+    result = DwVirtualWarehouseInfo(module)
     output = dict(changed=False, virtual_warehouses=result.virtual_warehouses)
 
     if result.debug:

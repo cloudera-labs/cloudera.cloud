@@ -65,7 +65,7 @@ EXAMPLES = r'''
     
 # Gather information about an identified Cluster
 - cloudera.cloud.dw_cluster_info:
-    id: env-xyzabc
+    cluster_id: env-xyzabc
 '''
 
 RETURN = r'''

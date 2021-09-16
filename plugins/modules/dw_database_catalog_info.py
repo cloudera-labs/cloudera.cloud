@@ -35,12 +35,14 @@ author:
 requirements:
   - cdpy
 options:
-  id:
+  catalog_id:
     description:
       - The identifier of the Database Catalog.
       - If undefined, will return a list of all Database Catalogs in the Cluster.
       - Exclusive with I(name).
     type: str
+    aliases:
+      - id
   cluster_id:
     description:
       - The identifier of the parent Cluster of the Database Catalog or Catalogs.
@@ -102,12 +104,12 @@ sdk_out_lines:
 '''
 
 
-class DwDbcInfo(CdpModule):
+class DwDatabaseCatalogInfo(CdpModule):
     def __init__(self, module):
-        super(DwDbcInfo, self).__init__(module)
+        super(DwDatabaseCatalogInfo, self).__init__(module)
 
         # Set variables
-        self.id = self._get_param('id')
+        self.catalog_id = self._get_param('catalog_id')
         self.cluster_id = self._get_param('cluster_id')
         self.name = self._get_param('name')
 
@@ -119,8 +121,8 @@ class DwDbcInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.id is not None:
-          target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.id)
+        if self.catalog_id is not None:
+          target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.catalog_id)
           if target is not None:
             self.database_catalogs.append(target)
         else:
@@ -136,7 +138,7 @@ class DwDbcInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            id=dict(type='str'),
+            catalog_id=dict(type='str', aliases=['id']),
             cluster_id=dict(required=True, type='str'),
             name = dict(type='str'),
         ),
@@ -144,7 +146,7 @@ def main():
         supports_check_mode=True
     )
 
-    result = DwDbcInfo(module)
+    result = DwDatabaseCatalogInfo(module)
     output = dict(changed=False, database_catalogs=result.database_catalogs)
 
     if result.debug:

@@ -35,11 +35,13 @@ author:
 requirements:
   - cdpy
 options:
-  id:
+  catalog_id:
     description:
       - The identifier of the Database Catalog.
       - Required if C(state=absent).
     type: str
+    aliases:
+      - id
   cluster_id:
     description:
       - The identifier of the parent DW Cluster of the Database Catalog.
@@ -91,7 +93,7 @@ EXAMPLES = r'''
     
 # Delete Database Catalog
 - cloudera.cloud.dw_database_catalog:
-    id: example-database-id
+    catalog_id: example-database-id
     cluster_id: example-cluster-id
     state: absent
 '''
@@ -127,12 +129,12 @@ sdk_out_lines:
 '''
 
 
-class DwDbc(CdpModule):
+class DwDatabaseCatalog(CdpModule):
     def __init__(self, module):
-        super(DwDbc, self).__init__(module)
+        super(DwDatabaseCatalog, self).__init__(module)
 
         # Set variables
-        self.id = self._get_param('id')
+        self.catalog_id = self._get_param('catalog_id')
         self.cluster_id = self._get_param('cluster_id')
         self.name = self._get_param('name')
         self.load_demo_data = self._get_param('load_demo_data')
@@ -153,13 +155,13 @@ class DwDbc(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.id is None:
+        if self.catalog_id is None:
             dbcs = self.cdpy.dw.list_dbcs(cluster_id=self.cluster_id)
             for dbc in dbcs:
                 if dbc['name'] == self.name:
                     self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=dbc['id'])
         else:
-            self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.id)
+            self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.catalog_id)
         
         if self.target is not None:
             # Begin Database Catalog Exists
@@ -222,7 +224,7 @@ class DwDbc(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            id=dict(type='str'),
+            catalog_id=dict(type='str', aliases=['catalog_id']),
             cluster_id=dict(required=True, type='str'),
             name = dict(type='str'),
             load_demo_data=dict(type='bool'),
@@ -239,7 +241,7 @@ def main():
         supports_check_mode=True
     )
 
-    result = DwDbc(module)
+    result = DwDatabaseCatalog(module)
     output = dict(changed=result.changed, database_catalog=result.database_catalog)
 
     if result.debug:

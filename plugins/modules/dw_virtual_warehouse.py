@@ -35,23 +35,26 @@ author:
 requirements:
   - cdpy
 options:
-  id:
+  warehouse_id:
     description:
       - The identifier of the Virtual Warehouse.
       - Required if C(state=absent).
     type: str
     aliases:
       - vw_id
+      - id
   cluster_id:
     description: 
       - The identifier of the parent Data Warehouse Cluster of the Virtual Warehouse.
     type: str
     required: True
-  dbc_id:
+  catalog_id:
     description:
       - The identifier of the parent Database Catalog attached to the Virtual Warehouse.
       - Required if C(state=present)
     type: str
+    aliases:
+      - dbc_id
   type:
     description:
       - The type of Virtual Warehouse to be created.
@@ -239,7 +242,7 @@ EXAMPLES = r'''
 # Delete a Virtual Warehouse
 - cloudera.cloud.dw_virtual_warehouse:
     cluster_id: example-cluster-id
-    id: example-virtual-warehouse-id
+    warehouse_id: example-virtual-warehouse-id
     state: absent      
 '''
 
@@ -310,14 +313,14 @@ sdk_out_lines:
 '''
 
 
-class DwVw(CdpModule):
+class DwVirtualWarehouse(CdpModule):
     def __init__(self, module):
-        super(DwVw, self).__init__(module)
+        super(DwVirtualWarehouse, self).__init__(module)
 
         # Set variables
-        self.id = self._get_param('id')
+        self.warehouse_id = self._get_param('warehouse_id')
         self.cluster_id = self._get_param('cluster_id')
-        self.dbc_id = self._get_param('dbc_id')
+        self.dbc_id = self._get_param('catalog_id')
         self.type = self._get_param('type')
         self.name = self._get_param('name')
         self.template = self._get_param('template')
@@ -345,13 +348,13 @@ class DwVw(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.id is None:
+        if self.warehouse_id is None:
             vws = self.cdpy.dw.list_vws(cluster_id=self.cluster_id)
             for vw in vws:
                 if self.name is not None and vw['name'] == self.name:
                     self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw['id'])
         else:
-            self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.id)
+            self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.warehouse_id)
         
         if self.target is not None:
             # Begin Virtual Warehouse Exists
@@ -422,9 +425,9 @@ class DwVw(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            id=dict(type='str', aliases=['vw_id']),
+            warehouse_id=dict(type='str', aliases=['vw_id', 'id']),
             cluster_id=dict(required=True, type='str'),
-            dbc_id=dict(type='str'),
+            catalog_id=dict(type='str', aliases=['dbc_id']),
             type = dict(type='str'),
             name = dict(type='str'),
             template=dict(type='str', choices=['xsmall', 'small', 'medium', 'large']),
@@ -451,13 +454,13 @@ def main():
             timeout = dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         required_if=[
-            ['state', 'absent', ['id']],
-            ['state', 'present', ['dbc_id', 'type', 'name']]
+            ['state', 'absent', ['warehouse_id']],
+            ['state', 'present', ['catalog_id', 'type', 'name']]
         ],
         supports_check_mode=True
     )
 
-    result = DwVw(module)
+    result = DwVirtualWarehouse(module)
     output = dict(changed=result.changed, virtual_warehouse=result.virtual_warehouse)
 
     if result.debug:

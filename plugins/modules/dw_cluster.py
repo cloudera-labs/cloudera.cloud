@@ -142,7 +142,7 @@ EXAMPLES = r'''
 # Delete a Data Warehouse Cluster
 - cloudera.cloud.dw_cluster:
     state: absent
-    id: my-id
+    cluster_id: my-id
     
 # Delete the Data Warehouse Cluster within the Environment
 - cloudera.cloud.dw_cluster:
