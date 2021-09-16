@@ -25,9 +25,9 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: dw_database_catalog
-short_description: Create CDP Data Warehouse Database Catalog
+short_description: Create, manage, and destroy CDP Data Warehouse Database Catalogs
 description:
-    - Create CDP Database Catalog
+    - Create, manage, and destroy CDP Data Warehouse Database Catalogs
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
@@ -37,34 +37,34 @@ requirements:
 options:
   id:
     description:
-      - If an ID is provided, that Database Catalog will be deleted if C(state=absent)
+      - The identifier of the Database Catalog.
+      - Required if C(state=absent).
     type: str
-    required: When state is absent
   cluster_id:
-    description: ID of cluster where Database Catalog should be created.
+    description:
+      - The identifier of the parent DW Cluster of the Database Catalog.
     type: str
     required: True
   name:
-    description: Name of the Database Catalog.
+    description:
+      - The name of the Database Catalog.
+      - Required if C(state=present).
     type: str
-    required: True
   load_demo_data:
-    description: Set this to true if you demo data should be loaded into the Database Catalog.
+    description:
+      - Flag to load demonstration data into the Database Catalog during creation.
     type: str
-    required: False
   wait:
     description:
       - Flag to enable internal polling to wait for the Data Catalog to achieve the declared state.
       - If set to FALSE, the module will return immediately.
     type: bool
-    required: False
     default: True
   delay:
     description:
       - The internal polling interval (in seconds) while the module waits for the Data Catalog to achieve the declared
         state.
     type: int
-    required: False
     default: 15
     aliases:
       - polling_delay
@@ -73,7 +73,6 @@ options:
       - The internal polling timeout (in seconds) while the module waits for the Data Catalog to achieve the declared
         state.
     type: int
-    required: False
     default: 3600
     aliases:
       - polling_timeout  
@@ -87,26 +86,25 @@ EXAMPLES = r'''
 
 # Create Database Catalog
 - cloudera.cloud.dw_database_catalog:
-    name: "example-database-catalog-name"
-    cluster_id: "example-cluster-id"
+    name: example-database-catalog-name
+    cluster_id: example-cluster-id
     
 # Delete Database Catalog
 - cloudera.cloud.dw_database_catalog:
-    id: "example-database-id"
-    cluster_id: "example-cluster-id"  
-    state: "absent"   
+    id: example-database-id
+    cluster_id: example-cluster-id
+    state: absent
 '''
 
 RETURN = r'''
 ---
-database_catalogs:
-  description: The information about the named Database Catalog.
-  type: list
+database_catalog:
+  description: Details about the Database Catalog.
   returned: always
-  elements: complex
-  suboptions:
+  type: dict
+  contains:
     id:
-      description: The id of the Database Catalog.
+      description: The identifier of the Database Catalog.
       returned: always
       type: str
     name:
@@ -144,11 +142,11 @@ class DwDbc(CdpModule):
         self.timeout = self._get_param('timeout')
 
         # Initialize return values
-        self.database_catalogs = []
+        self.database_catalog = {}
+        self.changed = False
 
         # Initialize internal values
         self.target = None
-        self.changed = False
 
         # Execute logic process
         self.process()
@@ -160,17 +158,19 @@ class DwDbc(CdpModule):
             for dbc in dbcs:
                 if self.name is not None and dbc['name'] == self.name:
                     self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=dbc['id'])
-                elif self.id is not None and dbc['id'] == self.id:
-                    self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.id)
-        # If Database Catalog exists
+        else:
+            self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.id)
+        
         if self.target is not None:
+            # Begin Database Catalog Exists
             if self.state == 'absent':
                 if self.module.check_mode:
-                    self.database_catalogs.append(self.target)
+                    self.database_catalog = self.target
                 else:
+                    # Begin Drop
                     if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
                         self.module.warn(
-                            "DW Database Catalog not in valid state for Delete operation: %s" % self.target['status'])
+                            "DW Database Catalog is not in a valid state for Delete operations: %s" % self.target['status'])
                     else:
                         _ = self.cdpy.dw.delete_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
                         self.changed = True
@@ -182,46 +182,42 @@ class DwDbc(CdpModule):
                         )
                     else:
                         self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
-                        self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
-                        self.database_catalogs.append(self.target)
-                    # Drop Done
+                        self.database_catalog = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
+                    # End Drop
             elif self.state == 'present':
-                # Begin Config check
-                self.module.warn("DW Database Catalog already present and config validation is not implemented")
+                # Begin Config Check
+                self.module.warn("DW Database Catalog already present and reconciliation is not yet implemented")
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_dbc,
                         params=dict(cluster_id=self.cluster_id, dbc_id=self.target['id']),
                         state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                     )
-                    self.database_catalogs.append(self.target)
-                    # End Config check
+                self.database_catalog = self.target
+                # End Config Check
             else:
-                self.module.fail_json(msg="State %s is not valid for this module" % self.state)
-            # End handling Database Catalog exists
+                self.module.fail_json(msg="Invalid state %s" % self.state)
+            # End Database Catalog Exists
         else:
-            # Begin handling Database Catalog not found
+            # Begin Database Catalog Not Found
             if self.state == 'absent':
                 self.module.warn("DW Database Catalog %s already absent in Cluster %s" % (self.name, self.cluster_id))
             elif self.state == 'present':
-                if self.module.check_mode:
-                    pass
-                else:
+                if not self.module.check_mode:
                     dbc_id = self.cdpy.dw.create_dbc(cluster_id=self.cluster_id, name=self.name,
                                                      load_demo_data=self.load_demo_data)
                     self.changed = True
                     if self.wait:
-                        self.target = self.cdpy.sdk.wait_for_state(
+                        self.database_catalog = self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_dbc,
                             params=dict(cluster_id=self.cluster_id, dbc_id=dbc_id),
                             state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                         )
                     else:
-                        self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=dbc_id)
-                    self.database_catalogs.append(self.target)
+                        self.database_catalog = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=dbc_id)
             else:
                 self.module.fail_json(msg="State %s is not valid for this module" % self.state)
-
+            # End Database Catalog Not Found
 
 def main():
     module = AnsibleModule(
@@ -235,11 +231,15 @@ def main():
             delay = dict(type='int', aliases=['polling_delay'], default=15),
             timeout = dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
+        required_if=[
+            ['state', 'present', ['name']],
+            ['state', 'absent', ['name', 'id']],
+        ],
         supports_check_mode=True
     )
 
     result = DwDbc(module)
-    output = dict(changed=result.changed, database_catalogs=result.database_catalogs)
+    output = dict(changed=result.changed, database_catalog=result.database_catalog)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
