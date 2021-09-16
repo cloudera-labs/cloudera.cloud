@@ -81,7 +81,8 @@ options:
     description: Configurations that are applied to every application in the Virtual Warehouse service.
     type: dict
     suboptions:
-      configBlocks: List of I(ConfigBlocks) for the application.
+      configBlocks: 
+        description: List of I(ConfigBlocks) for the application.
         type: list
         elements: dict
         suboptions:
@@ -114,7 +115,8 @@ options:
         description: The application name or identifier.
         type: dict
         suboptions:  
-          configBlocks: List of ConfigBlocks for the application.
+          configBlocks:
+            description: List of I(ConfigBlocks) for the specified application.
             type: list
             required: False  
             elements: dict
