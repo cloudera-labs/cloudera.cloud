@@ -31,6 +31,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Saravanan Raju (@raju-saravanan)"
 requirements:
   - cdpy
 options:
@@ -83,6 +84,12 @@ EXAMPLES = r'''
 - cloudera.cloud.dw_dbc:
     name: example-database-catalog
     cluster_id: example-cluster-id
+    
+# Delete Database Catalog
+- cloudera.cloud.dw_dbc:
+    name: example-database-catalog
+    cluster_id: example-cluster-id  
+    state: absent   
 '''
 
 RETURN = r'''
@@ -133,22 +140,76 @@ class DwDbc(CdpModule):
         # Initialize return values
         self.dbcs = []
 
+        # Initialize internal values
+        self.target = None
+
         # Execute logic process
         self.process()
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.name = self.cdpy.dw.create_dbc(cluster_id=self.cluster_id, name=self.name,
-                                            load_demo_data=self.load_demo_data)
-        if self.wait:
-            self.target = self.cdpy.sdk.wait_for_state(
-                describe_func=self.cdpy.dw.describe_dbc,
-                params=dict(cluster_id=self.cluster_id, dbc_id=self.name['dbcId']),
-                state='Running', delay=self.delay, timeout=self.timeout
-            )
+        cluster = self.cdpy.dw.describe_cluster(cluster_id=self.cluster_id)
+        if cluster is None:
+            self.module.fail_json(msg="Couldn't retrieve cluster info for  %s " % self.cluster_id)
         else:
-            self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.name['dbcId'])
-        self.dbcs.append(self.target)
+            self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.name)
+            # If Database Catalog exists
+            if self.target is not None:
+                if self.state == 'absent':
+                    if self.module.check_mode:
+                        self.clusters.append(self.target)
+                    else:
+                        if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
+                            self.module.warn(
+                                "DW Database Catalog not in valid state for Delete operation: %s" % self.target['status'])
+                        else:
+                            _ = self.cdpy.dw.delete_dbc(cluster_id=self.cluster_id, dbc_id=self.name)
+                        if self.wait:
+                            self.cdpy.sdk.wait_for_state(
+                                describe_func=self.cdpy.dw.describe_dbc,
+                                params=dict(cluster_id=self.cluster_id, dbc_id=self.name),
+                                field=None, delay=self.delay, timeout=self.timeout
+                            )
+                        else:
+                            self.cdpy.sdk.sleep(3)  # Wait for consistency sync
+                            self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.name)
+                            self.clusters.append(self.target)
+                        # Drop Done
+                elif self.state == 'present':
+                    # Begin Config check
+                    self.module.warn("DW Database Catalog already present and config validation is not implemented")
+                    if self.wait:
+                        self.target = self.cdpy.sdk.wait_for_state(
+                            describe_func=self.cdpy.dw.describe_dbc,
+                            params=dict(cluster_id=self.cluster_id,dbc_id=self.name),
+                            state='Running', delay=self.delay, timeout=self.timeout
+                        )
+                        self.clusters.append(self.target)
+                        # End Config check
+                else:
+                    self.module.fail_json(msg="State %s is not valid for this module" % self.state)
+                # End handling Database Catalog exists
+            else:
+                # Begin handling Database Catalog not found
+                if self.state == 'absent':
+                    self.module.warn("DW Database Catalog %s already absent in Cluster %s" % (self.name, self.cluster_id))
+                elif self.state == 'present':
+                    if self.module.check_mode:
+                        pass
+                    else:
+                        self.name = self.cdpy.dw.create_dbc(cluster_id=self.cluster_id, name=self.name,
+                                            load_demo_data=self.load_demo_data)
+                        if self.wait:
+                            self.target = self.cdpy.sdk.wait_for_state(
+                                describe_func=self.cdpy.dw.describe_dbc,
+                                params=dict(cluster_id=self.cluster_id, dbc_id=self.name['dbcId']),
+                                state='Running', delay=self.delay, timeout=self.timeout
+                            )
+                        else:
+                            self.target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.name['dbcId'])
+                        self.dbcs.append(self.target)
+                else:
+                    self.module.fail_json(msg="State %s is not valid for this module" % self.state)
 
 
 def main():
