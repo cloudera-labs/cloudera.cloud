@@ -251,7 +251,7 @@ class DwCluster(CdpModule):
             elif len(listing) == 0:
                 self.target = None
             else:
-                self.module.fail_json(msg="Received multiple (i.e. ambiguous) DW Clusters in Environment %s" % self.env)
+                self.module.fail_json(msg="Received multiple (i.e. ambiguous) Clusters in Environment %s" % self.env)
         else:
             self.target = None
             
@@ -264,7 +264,7 @@ class DwCluster(CdpModule):
                 else:
                     self.changed = True
                     if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
-                        self.module.warn("DW Cluster is not in a valid state for Delete operations: %s" % self.target['status'])
+                        self.module.warn("Cluster is not in a valid state for Delete operations: %s" % self.target['status'])
                     else:
                         _ = self.cdpy.dw.delete_cluster(cluster_id=self.name, force=self.force)
                     
@@ -280,7 +280,7 @@ class DwCluster(CdpModule):
                 # End Delete
             elif self.state == 'present':
                 # Begin Config Check
-                self.module.warn("DW Cluster is already present and reconciliation is not yet implemented")
+                self.module.warn("Cluster is already present and reconciliation is not yet implemented")
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_cluster,
@@ -295,7 +295,7 @@ class DwCluster(CdpModule):
         else:
             # Begin Cluster Not Found
             if self.state == 'absent':
-                self.module.warn("DW Cluster %s already absent in Environment %s" % (self.name, self.env))
+                self.module.warn("Cluster %s already absent in Environment %s" % (self.name, self.env))
             elif self.state == 'present':
                 if not self.module.check_mode:
                     # Begin Cluster Creation
