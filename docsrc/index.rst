@@ -19,6 +19,8 @@ cloudera.cloud Ansible Collection
    df_info <df_info>
    dw_cluster <dw_cluster>
    dw_cluster_info <dw_cluster_info>
+   dw_database_catalog <dw_database_catalog>
+   dw_virtual_warehouse <dw_virtual_warehouse>
    env <env>
    env_auth <env_auth>
    env_auth_info <env_auth_info>
