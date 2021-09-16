@@ -35,6 +35,11 @@ author:
 requirements:
   - cdpy
 options:
+  id:
+    description:
+      - If an ID is provided, that Virtual Warehouse will be deleted if C(state=absent)
+    type: str
+    required: When state is absent
   cluster_id:
     description: ID of cluster where Virtual Warehouse should be created.
     type: str
@@ -217,7 +222,7 @@ EXAMPLES = r'''
 # Delete Virtual Warehouse
 - cloudera.cloud.dw_vw:
     cluster_id: "example-cluster-id"
-    name: "example-virtual-warehouse"
+    id: "example-virtual-warehouse-id"
     state: absent      
 '''
 
@@ -294,6 +299,7 @@ class DwVw(CdpModule):
         super(DwVw, self).__init__(module)
 
         # Set variables
+        self.id = self._get_param('id')
         self.cluster_id = self._get_param('cluster_id')
         self.dbc_id = self._get_param('dbc_id')
         self.vw_type = self._get_param('vw_type')
@@ -322,95 +328,97 @@ class DwVw(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        cluster = self.cdpy.dw.describe_cluster(cluster_id=self.cluster_id)
-        if cluster is None:
-            self.module.fail_json(msg="Couldn't retrieve cluster info for  %s " % self.cluster_id)
-        else:
-            dbc = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.dbc_id)
-            if dbc is None:
-                self.module.fail_json(msg="Couldn't retrieve dbc info for  %s " % self.dbc_id)
-            else:
-                self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.name)
-                # If Virtual Warehouse exists
-                if self.target is not None:
-                    if self.state == 'absent':
-                        if self.module.check_mode:
-                            self.clusters.append(self.target)
-                        else:
-                            if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
-                                self.module.warn(
-                                    "DW Virtual Warehouse not in valid state for Delete operation: %s" % self.target[
-                                        'status'])
-                            else:
-                                _ = self.cdpy.dw.delete_vw(cluster_id=self.cluster_id, vw_id=self.name)
-                            if self.wait:
-                                self.cdpy.sdk.wait_for_state(
-                                    describe_func=self.cdpy.dw.describe_vw,
-                                    params=dict(cluster_id=self.cluster_id, vw_id=self.name),
-                                    field=None, delay=self.delay, timeout=self.timeout
-                                )
-                            else:
-                                self.cdpy.sdk.sleep(3)  # Wait for consistency sync
-                                self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.name)
-                                self.clusters.append(self.target)
-                            # Drop Done
-                    elif self.state == 'present':
-                        # Begin Config check
-                        self.module.warn("DW Virtual Warehouse already present and config validation is not implemented")
-                        if self.wait:
-                            self.target = self.cdpy.sdk.wait_for_state(
-                                describe_func=self.cdpy.dw.delete_vw,
-                                params=dict(cluster_id=self.cluster_id, vw_id=self.name),
-                                state='Running', delay=self.delay, timeout=self.timeout
-                            )
-                            self.clusters.append(self.target)
-                            # End Config check
-                    else:
-                        self.module.fail_json(msg="State %s is not valid for this module" % self.state)
-                    # End handling Virtual Warehouse exists
+        if self.id is None:
+            vws = self.cdpy.dw.list_vws(cluster_id=self.cluster_id)
+            for vw in vws:
+                if self.name is not None and vw['name'] == self.name:
+                    self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw['id'])
+                elif self.id is not None and vw['id'] == self.id:
+                    self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.id)
+        # If Virtual Warehouse exists
+        if self.target is not None:
+            if self.state == 'absent':
+                if self.module.check_mode:
+                    self.vws.append(self.target)
                 else:
-                    # Begin handling Virtual Warehouse not found
-                    if self.state == 'absent':
+                    if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
                         self.module.warn(
-                            "DW Virtual Warehouse %s already absent in Cluster %s" % (self.name, self.cluster_id))
-                    elif self.state == 'present':
-                        if self.module.check_mode:
-                            pass
-                        else:
-                            self.name = self.cdpy.dw.create_vw(cluster_id=self.cluster_id,
-                               dbc_id=self.dbc_id, vw_type=self.vw_type, name=self.name,
-                               template=self.template, autoscaling_min_cluster=self.autoscaling_min_cluster,
-                               autoscaling_max_cluster=self.autoscaling_max_cluster,
-                               common_configs=self.common_configs, application_configs=self.application_configs,
-                               ldap_groups=self.ldap_groups, enable_sso=self.enable_sso, tags=self.tags)
-                            if self.wait:
-                                self.target = self.cdpy.sdk.wait_for_state(
-                                    describe_func=self.cdpy.dw.describe_vw,
-                                    params=dict(cluster_id=self.cluster_id, vw_id=self.name),
-                                    state='Running', delay=self.delay, timeout=self.timeout
-                                )
-                            else:
-                                self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.vw_id)
-                            self.vws.append(self.target)
+                            "DW Virtual Warehouse not in valid state for Delete operation: %s" % self.target[
+                                'status'])
                     else:
-                        self.module.fail_json(msg="State %s is not valid for this module" % self.state)
+                        _ = self.cdpy.dw.delete_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
+                    if self.wait:
+                        self.cdpy.sdk.wait_for_state(
+                            describe_func=self.cdpy.dw.describe_vw,
+                            params=dict(cluster_id=self.cluster_id, vw_id=self.target['id']),
+                            field=None, delay=self.delay, timeout=self.timeout
+                        )
+                    else:
+                        self.cdpy.sdk.sleep(3)  # Wait for consistency sync
+                        self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
+                        self.vws.append(self.target)
+                    # Drop Done
+            elif self.state == 'present':
+                # Begin Config check
+                self.module.warn("DW Virtual Warehouse already present and config validation is not implemented")
+                if self.wait:
+                    self.target = self.cdpy.sdk.wait_for_state(
+                        describe_func=self.cdpy.dw.delete_vw,
+                        params=dict(cluster_id=self.cluster_id, vw_id=self.target['id']),
+                        state='Running', delay=self.delay, timeout=self.timeout
+                    )
+                    self.vws.append(self.target)
+                    # End Config check
+            else:
+                self.module.fail_json(msg="State %s is not valid for this module" % self.state)
+            # End handling Virtual Warehouse exists
+        else:
+            # Begin handling Virtual Warehouse not found
+            if self.state == 'absent':
+                self.module.warn(
+                    "DW Virtual Warehouse %s already absent in Cluster %s" % (self.name, self.cluster_id))
+            elif self.state == 'present':
+                if self.module.check_mode:
+                    pass
+                else:
+                    vw_id = self.cdpy.dw.create_vw(cluster_id=self.cluster_id,
+                                                   dbc_id=self.dbc_id, vw_type=self.vw_type, name=self.name,
+                                                   template=self.template,
+                                                   autoscaling_min_cluster=self.autoscaling_min_cluster,
+                                                   autoscaling_max_cluster=self.autoscaling_max_cluster,
+                                                   common_configs=self.common_configs,
+                                                   application_configs=self.application_configs,
+                                                   ldap_groups=self.ldap_groups, enable_sso=self.enable_sso,
+                                                   tags=self.tags)
+                    if self.wait:
+                        self.target = self.cdpy.sdk.wait_for_state(
+                            describe_func=self.cdpy.dw.describe_vw,
+                            params=dict(cluster_id=self.cluster_id, vw_id=vw_id),
+                            state='Running', delay=self.delay, timeout=self.timeout
+                        )
+                    else:
+                        self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw_id)
+                    self.vws.append(self.target)
+            else:
+                self.module.fail_json(msg="State %s is not valid for this module" % self.state)
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            cluster_id=dict(required=True, type='str', aliases=['cluster_id']),
-            dbc_id=dict(required=False, type='str', aliases=['dbc_id']),
-            vw_type = dict(required=False, type='str', aliases=['vw_type']),
-            name = dict(required=True, type='str', aliases=['name']),
-            template=dict(required=False, type='str', aliases=['template']),
-            autoscaling_min_cluster=dict(required=False, type='int', aliases=['autoscaling_min_cluster']),
-            autoscaling_max_cluster=dict(required=False, type='int', aliases=['autoscaling_max_cluster']),
-            common_configs=dict(required=False, type='dict', aliases=['common_configs']),
-            application_configs=dict(required=False, type='dict', aliases=['application_configs']),
-            ldap_groups=dict(required=False, type='list', aliases=['ldap_groups']),
-            enable_sso=dict(required=False, type='bool', aliases=['enable_sso']),
-            tags=dict(required=False, type='dict', aliases=['tags']),
+            id=dict(required=False, type='str', default=None),
+            cluster_id=dict(required=True, type='str'),
+            dbc_id=dict(required=False, type='str', default=None),
+            vw_type = dict(required=False, type='str', default=None),
+            name = dict(required=False, type='str', default=None),
+            template=dict(required=False, type='str', default=None),
+            autoscaling_min_cluster=dict(required=False, type='int', default=None),
+            autoscaling_max_cluster=dict(required=False, type='int', default=None),
+            common_configs=dict(required=False, type='dict', default=None),
+            application_configs=dict(required=False, type='dict', default=None),
+            ldap_groups=dict(required=False, type='list', default=None),
+            enable_sso=dict(required=False, type='bool', default=False),
+            tags=dict(required=False, type='dict', default=None),
             state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
             wait = dict(required=False, type='bool', default=True),
             delay = dict(required=False, type='int', aliases=['polling_delay'], default=15),
