@@ -42,14 +42,14 @@ options:
     type: str
   cluster_id:
     description: 
-      - The identifier of the parent DW Cluster of the Virtual Warehouse.
+      - The identifier of the parent Data Warehouse Cluster of the Virtual Warehouse.
     type: str
     required: True
   dbc_id:
     description:
       - The identifier of the parent Database Catalog attached to the Virtual Warehouse.
+      - Required if C(state=present)
     type: str
-    required: True
   type:
     description:
       - The type of Virtual Warehouse to be created.
@@ -94,6 +94,14 @@ options:
           format:
             description: Format of the ConfigBlock.
             type: str
+            choices:
+              - HADOOP_XML
+              - PROPERTIES
+              - TEXT
+              - JSON
+              - BINARY
+              - ENV
+              - FLAGFILE
           content:
             description: Contents of the ConfigBlock.
             type: dict
@@ -147,7 +155,7 @@ options:
     type: list
     elements: str
   enable_sso:
-    description: Flag to enable SSO for the Virtual Warehouse.
+    description: Flag to enable Single Sign-On (SSO) for the Virtual Warehouse.
     type: bool
     default: False    
   tags:
@@ -190,7 +198,7 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
-# Create Virtual Warehouse
+# Create a Virtual Warehouse
 - cloudera.cloud.dw_virtual_warehouse:
     cluster_id: example-cluster-id
     name: example-virtual-warehouse
@@ -199,13 +207,14 @@ EXAMPLES = r'''
     autoscaling_min_nodes: 3
     autoscaling_max_nodes: 19
     tags:
-       tag-key: "tag-value"
+       some_key: "some value"
     enable_sso: true
-    ldap_groups: ['group1','group2','group3']
-    
+    ldap_groups: ['group1', 'group2', 'group3']
+
+# Create a Virtual Warehouse with configurations
 - cloudera.cloud.dw_virtual_warehouse:
-    cluster_id: "example-cluster-id"
-    name: "example-virtual-warehouse"
+    cluster_id: example-cluster-id
+    name: example-virtual-warehouse
     type: "hive"
     template: "xsmall"
     enable_sso: true
@@ -225,10 +234,10 @@ EXAMPLES = r'''
                   content:
                       text: "\n[libdefaults]\n\trenew_lifetime = 7d"   
                       
-# Delete Virtual Warehouse
+# Delete a Virtual Warehouse
 - cloudera.cloud.dw_virtual_warehouse:
-    cluster_id: "example-cluster-id"
-    id: "example-virtual-warehouse-id"
+    cluster_id: example-cluster-id
+    id: example-virtual-warehouse-id
     state: absent      
 '''
 
@@ -323,7 +332,7 @@ class DwVw(CdpModule):
         self.timeout = self._get_param('timeout')
 
         # Initialize return values
-        self.virtual_warehouses = []
+        self.virtual_warehouse = {}
 
         # Initialize internal values
         self.target = None
@@ -339,18 +348,19 @@ class DwVw(CdpModule):
             for vw in vws:
                 if self.name is not None and vw['name'] == self.name:
                     self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw['id'])
-                elif self.id is not None and vw['id'] == self.id:
-                    self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.id)
-        # If Virtual Warehouse exists
+        else:
+            self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.id)
+        
         if self.target is not None:
+            # Begin Virtual Warehouse Exists
             if self.state == 'absent':
                 if self.module.check_mode:
-                    self.virtual_warehouses.append(self.target)
+                    self.virtual_warehouse = self.target
                 else:
+                    # Begin Drop
                     if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
                         self.module.warn(
-                            "DW Virtual Warehouse not in valid state for Delete operation: %s" % self.target[
-                                'status'])
+                            "DW Virtual Warehouse not in valid state for Delete operation: %s" % self.target['status'])
                     else:
                         _ = self.cdpy.dw.delete_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
                         self.changed = True
@@ -362,32 +372,29 @@ class DwVw(CdpModule):
                         )
                     else:
                         self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
-                        self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
-                        self.virtual_warehouses.append(self.target)
-                    # Drop Done
+                        self.virtual_warehouse = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
+                    # End Drop
             elif self.state == 'present':
                 # Begin Config check
-                self.module.warn("DW Virtual Warehouse already present and config validation is not implemented")
+                self.module.warn("DW Virtual Warehouse already present and reconciliation is not implemented")
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_vw,
                         params=dict(cluster_id=self.cluster_id, vw_id=self.target['id']),
                         state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                     )
-                    self.virtual_warehouses.append(self.target)
-                    # End Config check
+                self.virtual_warehouse = self.target
+                # End Config check
             else:
                 self.module.fail_json(msg="State %s is not valid for this module" % self.state)
-            # End handling Virtual Warehouse exists
+            # End Virtual Warehouse Exists
         else:
-            # Begin handling Virtual Warehouse not found
+            # Begin Virtual Warehouse Not Found
             if self.state == 'absent':
                 self.module.warn(
                     "DW Virtual Warehouse %s already absent in Cluster %s" % (self.name, self.cluster_id))
             elif self.state == 'present':
-                if self.module.check_mode:
-                    pass
-                else:
+                if not self.module.check_mode:
                     vw_id = self.cdpy.dw.create_vw(cluster_id=self.cluster_id,
                                                    dbc_id=self.dbc_id, vw_type=self.type, name=self.name,
                                                    template=self.template,
@@ -399,17 +406,16 @@ class DwVw(CdpModule):
                                                    tags=self.tags)
                     self.changed = True
                     if self.wait:
-                        self.target = self.cdpy.sdk.wait_for_state(
+                        self.virtual_warehouse = self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_vw,
                             params=dict(cluster_id=self.cluster_id, vw_id=vw_id),
                             state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
                         )
                     else:
-                        self.target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw_id)
-                    self.virtual_warehouses.append(self.target)
+                        self.virtual_warehouse = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw_id)
             else:
                 self.module.fail_json(msg="State %s is not valid for this module" % self.state)
-
+            # End Virtual Warehouse Not Found
 
 def main():
     module = AnsibleModule(
@@ -419,32 +425,20 @@ def main():
             dbc_id=dict(type='str'),
             type = dict(type='str'),
             name = dict(type='str'),
-            template=dict(type='str'),
+            template=dict(type='str', choices=['xsmall', 'small', 'medium', 'large']),
             autoscaling_min_nodes=dict(type='int'),
             autoscaling_max_nodes=dict(type='int'),
-            common_configs=dict(type='dict',
-              options=dict(
-                configBlocks = dict(
-                  type='list',
-                  elements='dict',
-                  options=dict(
-                    dict(
-                      id=dict(type='str'),
-                      format=dict(type='str', choices=['HADOOP_XML', 'PROPERTIES', 'TEXT', 'JSON', 'BINARY', 'ENV', 'FLAGFILE']),
-                      content=dict(type='dict',
-                        options=dict(
-                          dict(
-                            keyValues=dict(type='dict'),
-                            text=dict(type='str'),
-                            json=dict(type='json')
-                           )
-                         )
-                       )
-                     )
-                   )
-                 )
-               )
-             ),
+            common_configs=dict(type='dict', options=dict(
+                configBlocks = dict(type='list', elements='dict', options=dict(
+                    id=dict(type='str'),
+                    format=dict(type='str', choices=['HADOOP_XML', 'PROPERTIES', 'TEXT', 'JSON', 'BINARY', 'ENV', 'FLAGFILE']),
+                    content=dict(type='dict', options=dict(
+                        keyValues=dict(type='dict'),
+                        text=dict(type='str'),
+                        json=dict(type='json')
+                    ))
+                ))
+            )),
             application_configs=dict(type='dict'),
             ldap_groups=dict(type='list'),
             enable_sso=dict(type='bool'),
@@ -454,11 +448,15 @@ def main():
             delay = dict(type='int', aliases=['polling_delay'], default=15),
             timeout = dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
+        required_if=[
+            ['state', 'absent', ['id']],
+            ['state', 'present', ['dbc_id', 'type', 'name'], True]
+        ],
         supports_check_mode=True
     )
 
     result = DwVw(module)
-    output = dict(changed=result.changed, virtual_warehouses=result.virtual_warehouses)
+    output = dict(changed=result.changed, virtual_warehouse=result.virtual_warehouse)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
