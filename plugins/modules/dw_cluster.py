@@ -251,7 +251,7 @@ class DwCluster(CdpModule):
             elif len(listing) == 0:
                 self.target = None
             else:
-                self.module.fail_json(msg="Received multiple (i.e. ambiguious) DW Clusters in Environment %s" % self.env)
+                self.module.fail_json(msg="Received multiple (i.e. ambiguous) DW Clusters in Environment %s" % self.env)
         else:
             self.target = None
             
