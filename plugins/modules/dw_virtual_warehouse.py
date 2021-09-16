@@ -167,7 +167,7 @@ options:
     default: present
     choices:
       - present
-      - absent  
+      - absent
   wait:
     description:
       - Flag to enable internal polling to wait for the Virtual Warehouse to achieve the declared state.
@@ -359,29 +359,30 @@ class DwVw(CdpModule):
                 else:
                     # Begin Drop
                     if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
-                        self.module.warn(
-                            "DW Virtual Warehouse not in valid state for Delete operation: %s" % self.target['status'])
+                        self.module.fail_json(msg="Virtual Warehouse not in valid state for Delete operation: %s" % 
+                                              self.target['status'])
                     else:
                         _ = self.cdpy.dw.delete_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
                         self.changed = True
-                    if self.wait:
-                        self.cdpy.sdk.wait_for_state(
-                            describe_func=self.cdpy.dw.describe_vw,
-                            params=dict(cluster_id=self.cluster_id, vw_id=self.target['id']),
-                            field=None, delay=self.delay, timeout=self.timeout
-                        )
-                    else:
-                        self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
-                        self.virtual_warehouse = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
+                        if self.wait:
+                            self.cdpy.sdk.wait_for_state(
+                                describe_func=self.cdpy.dw.describe_vw,
+                                params=dict(cluster_id=self.cluster_id, vw_id=self.target['id']),
+                                field=None, delay=self.delay, timeout=self.timeout
+                            )
+                        else:
+                            self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
+                            self.virtual_warehouse = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
                     # End Drop
             elif self.state == 'present':
                 # Begin Config check
-                self.module.warn("DW Virtual Warehouse already present and reconciliation is not implemented")
-                if self.wait:
+                self.module.warn("Virtual Warehouse already present and reconciliation is not yet implemented")
+                if self.wait and not self.module.check_mode:
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_vw,
                         params=dict(cluster_id=self.cluster_id, vw_id=self.target['id']),
-                        state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
+                        state=self.cdpy.sdk.STARTED_STATES + self.cdpy.sdk.STOPPED_STATES, delay=self.delay, 
+                        timeout=self.timeout
                     )
                 self.virtual_warehouse = self.target
                 # End Config check
@@ -391,8 +392,7 @@ class DwVw(CdpModule):
         else:
             # Begin Virtual Warehouse Not Found
             if self.state == 'absent':
-                self.module.warn(
-                    "DW Virtual Warehouse %s already absent in Cluster %s" % (self.name, self.cluster_id))
+                self.module.warn("Virtual Warehouse is already absent in Cluster %s" % self.cluster_id)
             elif self.state == 'present':
                 if not self.module.check_mode:
                     vw_id = self.cdpy.dw.create_vw(cluster_id=self.cluster_id,
@@ -441,7 +441,7 @@ def main():
             )),
             application_configs=dict(type='dict'),
             ldap_groups=dict(type='list'),
-            enable_sso=dict(type='bool'),
+            enable_sso=dict(type='bool', default=False),
             tags=dict(type='dict'),
             state=dict(type='str', choices=['present', 'absent'], default='present'),
             wait = dict(type='bool', default=True),
@@ -450,7 +450,7 @@ def main():
         ),
         required_if=[
             ['state', 'absent', ['id']],
-            ['state', 'present', ['dbc_id', 'type', 'name'], True]
+            ['state', 'present', ['dbc_id', 'type', 'name']]
         ],
         supports_check_mode=True
     )
