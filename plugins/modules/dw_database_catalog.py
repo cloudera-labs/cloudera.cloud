@@ -224,7 +224,7 @@ class DwDatabaseCatalog(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            catalog_id=dict(type='str', aliases=['catalog_id']),
+            catalog_id=dict(type='str', aliases=['id']),
             cluster_id=dict(required=True, type='str'),
             name = dict(type='str'),
             load_demo_data=dict(type='bool'),
