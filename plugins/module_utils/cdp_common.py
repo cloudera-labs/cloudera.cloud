@@ -60,8 +60,14 @@ class CdpModule(object):
         self.changed = False
 
         # Client Wrapper
-        self.cdpy = Cdpy(debug=self.debug, tls_verify=self.tls, strict_errors=self.strict,
-                         error_handler=self._cdp_module_throw_error, warning_handler=self._cdp_module_throw_warning)
+        self.cdpy = Cdpy(
+            debug=self.debug,
+            tls_verify=self.tls,
+            strict_errors=self.strict,
+            error_handler=self._cdp_module_throw_error,
+            warning_handler=self._cdp_module_throw_warning,
+            client_name='ClouderaFoundry'
+        )
 
     # Private functions
 
