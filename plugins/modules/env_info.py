@@ -441,6 +441,7 @@ class EnvironmentInfo(CdpModule):
                     'datahub': self.cdpy.datahub.describe_all_clusters(this_env['environmentName']),
                     'dw': self.cdpy.dw.gather_clusters(this_env['crn']),
                     'ml': self.cdpy.ml.describe_all_workspaces(this_env['environmentName']),
+                    'de': self.cdpy.de.list_services(this_env['environmentName'], remove_deleted=True),
                     'opdb': self.cdpy.opdb.describe_all_databases(this_env['environmentName']),
                     'df': df if df is not None else []
                 }

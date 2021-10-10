@@ -56,41 +56,55 @@ extends_documentation_fragment:
   - cloudera.cloud.cdp_auth_options
 '''
 
+EXAMPLES = r'''
+# Note: These examples do not set authentication details.
+
+# List basic information about all DE Services
+- cloudera.cloud.de_info:
+
+# Gather detailed information about a named DE Service
+- cloudera.cloud.de_info:
+    name: example-service
+'''
+
+RETURN = r'''
+TODO..
+'''
+
+
 class DEInfo(CdpModule):
     def __init__(self, module):
         super(DEInfo, self).__init__(module)
 
         # Set variables
-        self.id = self._get_param('name')
-        self.env = self._get_param('environment')
+        self.name = self._get_param('name')
 
         # Initialize return values
-        self.cluster = []
+        self.services = []
 
         # Execute logic process
         self.process()
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.id is not None:  # Note that both None and '' will trigger this
-            cluster_single = self.cdpy.de.describe_vc(name=self.id, env=self.env)
-            if cluster_single is not None:
-                self.cluster.append(cluster_single)
+        if self.name:
+            for service in self.cdpy.de.list_services(remove_deleted=True):
+                if service['name'] == self.name:
+                    self.services.append(self.cdpy.de.describe_service(service['clusterId']))
         else:
-            self.cluster = self.cdpy.de.list_vcs(self.id)
+            self.services = self.cdpy.de.list_services(remove_deleted=True)
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            id=dict(required=False, type='str', aliases=['workspace']),
-            env=dict(required=False, type='str', aliases=['env']),
+            name=dict(required=False, type='str', aliases=['workspace'])
         ),
-        supports_check_mode=True,
+        supports_check_mode=True
     )
 
     result = DEInfo(module)
-    output = dict(changed=False, service=result.service)
+    output = dict(changed=False, services=result.services)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
