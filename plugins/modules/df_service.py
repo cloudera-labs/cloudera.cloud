@@ -83,6 +83,11 @@ options:
     type: bool
     required: False
     default: False
+  terminate:
+    description: Whether or  not to terminate all deployments associated with this DataFlow service
+    type: bool
+    required: False
+    default: False
   wait:
     description:
       - Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
@@ -361,23 +366,23 @@ class DFService(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            env_crn=dict(required=False, type='str'),
-            df_crn=dict(required=False, type='str'),
-            nodes_min=dict(required=False, type='int', default=3, aliases=['min_k8s_node_count']),
-            nodes_max=dict(required=False, type='int', default=3, aliases=['max_k8s_node_count']),
-            public_loadbalancer=dict(required=False, type='bool', default=False, aliases=['use_public_load_balancer']),
-            loadbalancer_ip_ranges=dict(required=False, type='list', elements='str', default=None),
-            kube_ip_ranges=dict(required=False, type='list', elements='str', default=None),
-            cluster_subnets=dict(required=False, type='list', elements='str', default=None),
-            loadbalancer_subnets=dict(required=False, type='list', elements='str', default=None),
-            persist=dict(required=False, type='bool', default=False),
-            terminate=dict(required=False, type='bool', default=False),
-            state=dict(required=False, type='str', choices=['present', 'absent'],
+            env_crn=dict(type='str'),
+            df_crn=dict(type='str'),
+            nodes_min=dict(type='int', default=3, aliases=['min_k8s_node_count']),
+            nodes_max=dict(type='int', default=3, aliases=['max_k8s_node_count']),
+            public_loadbalancer=dict(type='bool', default=False, aliases=['use_public_load_balancer']),
+            loadbalancer_ip_ranges=dict(type='list', elements='str', default=None),
+            kube_ip_ranges=dict(type='list', elements='str', default=None),
+            cluster_subnets=dict(type='list', elements='str', default=None),
+            loadbalancer_subnets=dict(type='list', elements='str', default=None),
+            persist=dict(type='bool', default=False),
+            terminate=dict(type='bool', default=False),
+            state=dict(type='str', choices=['present', 'absent'],
                        default='present'),
-            force=dict(required=False, type='bool', default=False, aliases=['force_delete']),
-            wait=dict(required=False, type='bool', default=True),
-            delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
+            force=dict(type='bool', default=False, aliases=['force_delete']),
+            wait=dict(type='bool', default=True),
+            delay=dict(type='int', aliases=['polling_delay'], default=15),
+            timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         supports_check_mode=True,
         required_if=[
