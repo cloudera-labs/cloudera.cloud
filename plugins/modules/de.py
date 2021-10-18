@@ -52,19 +52,19 @@ options:
     description:
       - Instance type of the cluster for CDE Service
     type: str
-    required: True
+    required: False
     sample:
       - (AWS) m5.2xlarge
   minimum_instances:
     description:
     - Minimum Instances for the CDE Service
     type: int
-    required: True
+    required: False
   maximum_instances:
     description:
     - Maximum Instances for the CDE Service
     type: int
-    required: True
+    required: False
   minimum_spot_instances:
     description:
     - Minimum Spot Instances for the CDE Service
@@ -492,20 +492,20 @@ def main():
         argument_spec=CdpModule.argument_spec(
             name=dict(required=True, type='str'),
             environment=dict(required=True, type='str', aliases=['env']),
-            instance_type=dict(required=True, type='str'),
-            minimum_instances=dict(required=True, type='int'),
-            maximum_instances=dict(required=True, type='int'),
+            instance_type=dict(required=False, type='str'),
+            minimum_instances=dict(required=False, type='int', default=1),
+            maximum_instances=dict(required=False, type='int', default=4),
             minimum_spot_instances=dict(required=False, type='int', default=0),
             maximum_spot_instances=dict(required=False, type='int', default=0),
             chart_value_overrides=dict(required=False, type='list', default=None),
-            enable_public_endpoint=dict(required=False, type='bool', default=False),
-            enable_workload_analytics=dict(required=False, type='bool', default=False),
-            initial_instances=dict(required=False, type='int', default=None),
-            initial_spot_instances=dict(required=False, type='int', default=None),
-            root_volume_size=dict(required=False, type='int', default=None),
+            enable_public_endpoint=dict(required=False, type='bool', default=True),
+            enable_workload_analytics=dict(required=False, type='bool', default=True),
+            initial_instances=dict(required=False, type='int', default=1),
+            initial_spot_instances=dict(required=False, type='int', default=0),
+            root_volume_size=dict(required=False, type='int', default=100),
             skip_validation=dict(required=False, type='bool', default=False),
             tags=dict(required=False, type='dict', default=None),
-            use_ssd=dict(required=False, type='bool', default=False),
+            use_ssd=dict(required=False, type='bool', default=True),
             whitelist_ips=dict(required=False, type='list', elements='str', default=None),
             force=dict(required=False, type='bool', default=False, aliases=['force_delete']),
             state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
