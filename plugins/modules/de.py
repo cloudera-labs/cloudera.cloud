@@ -29,7 +29,8 @@ short_description: Enable and Disable CDP Data Engineering Services
 description:
     - Enable or Disable CDP Data Engineering Service
 author:
-  - "Curtis Howard (@curtis)"
+  - "Curtis Howard (@curtishoward)"
+  - "Alan Silva (@acsjumpi)"
 requirements:
   - cdpy
 options:
@@ -181,8 +182,150 @@ options:
       - polling_timeout
 '''
 
-# TODO: dcoument 'EXAMPLES' for DE
-# TODO: document 'RETURN' for DE
+EXAMPLES = r'''
+# Sample definition for a DE service
+de:
+  definitions:
+    - name: cde-cloudera-deploy-example
+      instance_type: "m5.2xlarge"
+      minimum_instances: 2
+      maximum_instances: 4
+      minimum_spot_instances: 0
+      maximum_spot_instances: 0
+      enable_public_endpoint: yes
+      enable_workload_analytics: yes
+      initial_instances: 2
+      initial_spot_instances: 0
+      root_volume_size: 100
+      chart_value_overrides: [{"chartName":"dex-app", "overrides":"dexapp.api.gangScheduling.enabled:true"}]
+      skip_validation: yes
+      tags: {"cde-cloudera-deploy-example":"v0.0.1"}
+      use_ssd: yes
+'''
+
+RETURN = r'''
+service:
+  description: DE service description
+  type: complex
+  returned: always
+  contains:
+    clusterId:
+      description: Cluster Id of the CDE Service.
+      returned: always
+      type: str
+    creatorEmail:
+      description: Email Address of the CDE creator.
+      returned: always
+      type: str
+    enablingTime:
+      description: Timestamp of service enabling.
+      returned: always
+      type: str
+    environmentName:
+      description: CDP Environment Name.
+      returned: always
+      type: str
+    name:
+      description: Name of the CDE Service.
+      returned: always
+      type: str
+    status:
+      description: Status of the CDE Service.
+      returned: always
+      type: str
+    chartValueOverrides:
+      description: Status of the CDE Service.
+      returned: always
+      type: array
+      elements: complex
+      contains:
+        ChartValueOverridesResponse:
+          type: list
+          returned: always
+          contains:
+            chartName:
+              description: Name of the chart that has to be overridden.
+              returned: always
+              type: str
+            overrides:
+              description: Space separated key value-pairs for overriding chart values (colon separated)
+              returned: always
+              type: str
+    cloudPlatform:
+      description: The cloud platform where the CDE service is enabled.
+      returned: always
+      type: str
+    clusterFqdn:
+      description: FQDN of the CDE service.
+      returned: always
+      type: str
+    creatorCrn:
+      description: CRN of the creator.
+      returned: always
+      type: str
+    dataLakeAtlasUIEndpoint:
+      description: Endpoint of Data Lake Atlas.E
+      returned: always
+      type: str
+    dataLakeFileSystems:
+      description: The Data lake file system.
+      returned: always
+      type: str
+    environmentCrn:
+      description: CRN of the environment.
+      returned: always
+      type: str
+    logLocation:
+      description: Location for the log files of jobs.
+      returned: always
+      type: str
+    resources:
+      description: Resources details of CDE Service.
+      returned: always
+      type: complex
+      contains:
+        ServiceResources:
+          description: Object to store resources for a CDE service.
+          returned: always
+          type: complex
+          contains:
+            initial_instances:
+              description: Initial instances for the CDE service.
+              returned: always
+              type: str
+            initial_spot_instances:
+              description: Initial Spot Instances for the CDE Service.
+              returned: always
+              type: str
+            instance_type:
+              description: Instance type of the CDE service.
+              returned: always
+              type: str
+            max_instances:
+              description: Maximum instances for the CDE service.
+              returned: always
+              type: str
+            max_spot_instances:
+              description: Maximum Number of Spot instances.
+              returned: always
+              type: str
+            min_instances:
+              description: Minimum Instances for the CDE service.
+              returned: always
+              type: str
+            min_spot_instances:
+              description: Minimum number of spot instances for the CDE service.
+              returned: always
+              type: str
+            root_vol_size:
+              description: Root Volume Size.
+              returned: always
+              type: str
+    tenantId:
+      description: CDP tenant ID.
+      returned: always
+      type: str
+'''
 
 class DEService(CdpModule):
     def __init__(self, module):

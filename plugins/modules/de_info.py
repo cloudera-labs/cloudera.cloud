@@ -91,7 +91,7 @@ services:
       type: str
     enablingTime:
       description: Timestamp of service enabling.
-      returned: always 
+      returned: always
       type: str
     environmentName:
       description: CDP Environment Name.
@@ -107,7 +107,7 @@ services:
       type: str
     chartValueOverrides:
       description: Status of the CDE Service.
-      returned: if full service description 
+      returned: if full service description
       type: array
       elements: complex
       contains:
@@ -125,14 +125,14 @@ services:
               type: str
     cloudPlatform:
       description: The cloud platform where the CDE service is enabled.
-      returned: if full service description 
+      returned: if full service description
       type: str
     clusterFqdn:
       description: FQDN of the CDE service.
       returned: if full service description
       type: str
     creatorCrn:
-      description: CRN of the creator. 
+      description: CRN of the creator.
       returned: if full service description
       type: str
     dataLakeAtlasUIEndpoint:
@@ -140,7 +140,7 @@ services:
       returned: if full service description
       type: str
     dataLakeFileSystems:
-      description: The Data lake file system. 
+      description: The Data lake file system.
       returned: if full service description
       type: str
     environmentCrn:
@@ -194,7 +194,7 @@ services:
               returned: always
               type: str
     tenantId:
-      description: CDP tenant ID. 
+      description: CDP tenant ID.
       returned: if full service description
       type: str
 '''
