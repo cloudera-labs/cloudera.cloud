@@ -24,60 +24,48 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'supported_by': 'community'}
 
 DOCUMENTATION = r'''
-module: de
-short_description: Enable and Disable CDP Data Engineering Services
+module: de_virtual_cluster
+short_description: Create or delete CDP Data Engineering Virtual Clusters
 description:
-    - Enable or Disable CDP Data Engineering Service
+    - Create or delete CDP Data Engineering Virtual Clusters 
 author:
   - "Curtis Howard (@curtishoward)"
-  - "Alan Silva (@acsjumpi)"
 requirements:
   - cdpy
 options:
   name:
     description:
-      - The name of the CDE Service
+      - The name of the CDE Virtual Cluster 
     type: str
     required: True
-    aliases:
-      - name
-  environment:
+  cluster_id:
     description:
-      - CDP environment where CDE service should be enabled
+      - Cluster id of the CDE service where virtual cluster has to be created. 
     type: str
     required: True
-    aliases:
-      - env
-  instance_type:
+  cpu_requests:
     description:
-      - Instance type of the cluster for CDE Service
+      - Cpu requests for autoscaling.
     type: str
     required: False
-    sample:
-      - (AWS) m5.2xlarge
-  minimum_instances:
+  memory_requests:
     description:
-    - Minimum Instances for the CDE Service
-    type: int
+      - Memory requests for autoscaling - eg. 30Gi.
+    type: str
     required: False
-  maximum_instances:
+  runtime_spot_component:
     description:
-    - Maximum Instances for the CDE Service
-    type: int
+      - Used to describe where the Driver and the Executors would run, on-demand or spot instances.
+    type: str
     required: False
-  minimum_spot_instances:
+  sparkVersion:
     description:
-    - Minimum Spot Instances for the CDE Service
-    type: int
-    required: False
-  maximum_spot_instances:
-    description:
-    - Maximum Spot Instances for the CDE Service
-    type: int
+      - Spark version for the virtual cluster (e.g. SPARK2 or SPARK3).
+    type: str
     required: False
   chart_value_overrides:
     description:
-    - Chart overrides for enabling a service
+    - Chart overrides for creating a virtual cluster. 
     type: list
     required: False
     contains:
@@ -86,69 +74,9 @@ options:
           - The key/value pair for the chart_name/override
         type: str
         required: False
-  enable_public_endpoint:
-    description:
-    - Creates a CDE endpoint (Load Balancer) in a publicly accessible subnet
-    type: bool
-    required: False
-  enable_workload_analytics:
-    description:
-    - If set false, diagnostic information about job and query execution is sent to Cloudera Workload Manager
-    type: bool
-    required: False
-  initial_instances:
-    description:
-    - Initial Instances when the service is enabled
-    type: int
-    required: False
-  initial_spot_instances:
-    description:
-    - Initial spot Instances when the service is enabled
-    type: int
-    required: False
-  root_volume_size:
-    description:
-    - EBS volume size in GB
-    type: int
-    required: False
-  skip_validation:
-    description:
-    - Skip Validation check.
-    type: bool
-    required: False
-  tags:
-    description:
-    - User defined labels that tag all provisioned cloud resources
-    type: dict
-    required: False
-    contains:
-      key:
-        description:
-          - The key/value pair for the tag
-        type: str
-        required: False
-  use_ssd:
-    description:
-    - Instance local storage (SSD) would be used for the workload filesystem (Example - spark local directory). Currently supported only for aws services
-    type: bool
-    required: False
-  whitelist_ips:
-    description:
-    - List of CIDRs that would be allowed to access kubernetes master API server
-    type: array
-    elements: str
-    required: False
-  force:
-    description:
-      - Flag to force delete a service even if errors occur during deletion.
-    type: bool
-    required: False
-    default: False
-    aliases:
-      - force_delete
   state:
     description:
-      - The declarative state of the CDE service
+      - The declarative state of the CDE virtual cluster 
     type: str
     required: False
     default: present
@@ -157,14 +85,14 @@ options:
       - absent
   wait:
     description:
-      - Flag to enable internal polling to wait for the DE Service to achieve the declared state.
+      - Flag to enable internal polling to wait for the DE virtual cluster to achieve the declared state.
       - If set to FALSE, the module will return immediately.
     type: bool
     required: False
     default: True
   delay:
     description:
-      - The internal polling interval (in seconds) while the module waits for the DE Service to achieve the declared
+      - The internal polling interval (in seconds) while the module waits for the DE virtual cluster to achieve the declared
         state.
     type: int
     required: False
@@ -173,7 +101,7 @@ options:
       - polling_delay
   timeout:
     description:
-      - The internal polling timeout (in seconds) while the module waits for the DE Service to achieve the declared
+      - The internal polling timeout (in seconds) while the module waits for the DE virtual cluster to achieve the declared
         state.
     type: int
     required: False
@@ -327,30 +255,21 @@ service:
       type: str
 '''
 
-class DEService(CdpModule):
+class DEVirtualCluster(CdpModule):
     def __init__(self, module):
-        super(DEService, self).__init__(module)
+        super(DEVirtualCluster, self).__init__(module)
 
         # Set variables
         self.name = self._get_param('name')
-        self.env = self._get_param('environment')
+        self.env = self._get_param('env')
+        self.cluster_name = self._get_param('cluster_name')
 
-        self.instance_type = self._get_param('instance_type')
-
-        self.minimum_instances = self._get_param('minimum_instances')
-        self.maximum_instances = self._get_param('maximum_instances')
-        self.minimum_spot_instances = self._get_param('minimum_spot_instances')
-        self.maximum_spot_instances = self._get_param('maximum_spot_instances')
+        self.cpu_requests = self._get_param('cpu_requests')
+        self.memory_requests = self._get_param('memory_requests')
         self.chart_value_overrides = self._get_param('chart_value_overrides')
-        self.enable_public_endpoint = self._get_param('enable_public_endpoint')
-        self.enable_workload_analytics = self._get_param('enable_workload_analytics')
-        self.initial_instances = self._get_param('initial_instances')
-        self.initial_spot_instances = self._get_param('initial_spot_instances')
-        self.root_volume_size = self._get_param('root_volume_size')
-        self.skip_validation = self._get_param('skip_validation')
-        self.tags = self._get_param('tags')
-        self.use_ssd = self._get_param('use_ssd')
-        self.whitelist_ips = self._get_param('whitelist_ips')
+        self.runtime_spot_component = self._get_param('runtime_spot_component')
+        self.spark_version = self._get_param('spark_version')
+        self.acl_users = self._get_param('acl_users')
 
         self.state = self._get_param('state')
         self.force = self._get_param('force')
@@ -359,128 +278,125 @@ class DEService(CdpModule):
         self.timeout = self._get_param('timeout')
 
         # Initialize return values
-        self.service = None
+        self.virtual_cluster = None
 
-        # Initialize cluster (service) ID
+        # Initialize virtual cluster ID
         self.cluster_id = None
+        self.vc_id = None
 
         # Execute logic process
         self.process()
 
-
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.cluster_id = self.cdpy.de.get_service_id_by_name(name=self.name, env=self.env)
-        initial_desc = self.cdpy.de.describe_service(self.cluster_id) if self.cluster_id else None
+        self.cluster_id = self.cdpy.de.get_service_id_by_name(name=self.cluster_name, env=self.env)
+        self.vc_id = self.cdpy.de.get_vc_id_by_name(name=self.name, cluster_id=self.cluster_id)
+        initial_desc = self.cdpy.de.describe_vc(self.cluster_id, self.vc_id) if self.vc_id else None
 
-        # If a service under the name/env pair was found (excluding disabled services)
+        # If a VC under the name was found
         if initial_desc and initial_desc['status']:
-            # Disable the Service if expected state is 'absent'
+            # Delete the VC if expected state is 'absent'
             if self.state == 'absent':
                 if self.module.check_mode:
-                    self.service = initial_desc
+                    self.virtual_cluster = initial_desc
                 else:
-                    # Service is available - disable it
+                    # VC is available - delete it
                     if initial_desc['status'] in self.cdpy.sdk.REMOVABLE_STATES:
-                        self.service = self._disable_service()
-                    # Service exists but is not in a disable-able state (could be in the process of
-                    # provisioning, disabling, or may be in a failed state)
+                        self.virtual_cluster = self._delete_vc()
+                    # VC exists but is not in a delete-able state (could be in the process of
+                    # provisioning, deleting, or may be in a failed state)
                     else:
-                        self.module.warn("DE Service is not in a removable state: %s" %
-                                         initial_desc['status'])
+                        self.module.warn("DE virtual cluster (%s) is not in a removable state: %s" %
+                                         (self.name, initial_desc['status']))
                         if self.wait:
                             self.module.warn(
-                                "Waiting for DE Service to reach Active or Disabled state")
+                                "Waiting for DE virtual cluster (%s) to reach Active or Deleted state" %
+                                self.name)
                             current_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES +
                                                                 self.cdpy.sdk.STOPPED_STATES)
-                            # If we just waited fo the service to be provisioned, then dis-abled it
+                            # If we just waited fo the virtual cluster to be provisioned, then delete it
                             if current_desc['status'] in self.cdpy.sdk.REMOVABLE_STATES:
-                                self.service = self._disable_service()
+                                self.virtual_cluster = self._delete_vc()
                             else:
-                                self.service = current_desc
+                                self.virtual_cluster = current_desc
                                 if current_desc['status'] not in self.cdpy.sdk.STOPPED_STATES:
-                                    self.module.warn("DE service did not disable successfully")
+                                    self.module.warn("DE virtual cluster (%s) did not delete successfully" %
+                                           self.name) 
             elif self.state == 'present':
                 # Check the existing configuration and state
-                self.module.warn("DE Service already present and configuration validation" +
-                                 "and reconciliation is not supported")
-                self.service = initial_desc
+                self.module.warn("DE virtual cluster (%s) already present" % self.name)
+                self.virtual_cluster = initial_desc
                 if self.wait:
                     current_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES +
                                                         self.cdpy.sdk.STOPPED_STATES)
-                    # If we just waited for the service to be disabled, then enable it
+                    # If we just waited for the virtual cluster to be deleted, then create it
                     if current_desc['status'] in self.cdpy.sdk.STOPPED_STATES:
-                        self.service = self._enable_service()
+                        self.virtual_cluster = self._create_vc()
                     else:
-                        self.service = current_desc
+                        self.virtual_cluster = current_desc
                         if current_desc['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
-                            self.module.warn("DE service did not enable successfully")
+                            self.module.warn("DE virtual cluster (%s) did not create successfully" %
+                                    self.name)
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state)
 
-        # Else if the Service does not exist
+        # Else if the virtual cluster does not exist
         else:
             if self.state == 'absent':
                 self.module.log(
-                    "DE service %s already absent or terminated in Environment %s" %
-                    (self.name, self.env))
-            # Create the Service
+                    "DE virtual cluster (%s) already absent or deleted within service ID (%s)" %
+                    (self.name, self.cluster_name))
+            # Create the virtual cluster
             elif self.state == 'present':
                 if not self.module.check_mode:
-                    self.service = self._enable_service()
+                    self.virtual_cluster = self._create_vc()
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state)
 
-    def _enable_service(self):
-        result = self.cdpy.de.enable_service(
+    def _create_vc(self):
+        # set cpu/memory requests to max available if not specified
+        self.cpu_requests = self.cpu_requests if self.cpu_requests else '10000000'
+        self.memory_requests = self.memory_requests if self.memory_requests else '10000000Gi'
+        result = self.cdpy.de.create_vc(
             name=self.name,
-            env=self.env,
-            instance_type=self.instance_type,
-            minimum_instances=self.minimum_instances,
-            maximum_instances=self.maximum_instances,
-            minimum_spot_instances=self.minimum_spot_instances,
-            maximum_spot_instances=self.maximum_spot_instances,
+            cluster_id=self.cluster_id,
+            cpu_requests=self.cpu_requests,
+            memory_requests=self.memory_requests,
             chart_value_overrides=self.chart_value_overrides,
-            enable_public_endpoint=self.enable_public_endpoint,
-            enable_workload_analytics=self.enable_workload_analytics,
-            initial_instances=self.initial_instances,
-            initial_spot_instances=self.initial_spot_instances,
-            root_volume_size=self.root_volume_size,
-            skip_validation=self.skip_validation,
-            tags=self.tags,
-            use_ssd=self.use_ssd,
-            whitelist_ips=self.whitelist_ips
+            runtime_spot_component=self.runtime_spot_component,
+            spark_version=self.spark_version,
+            acl_users=self.acl_users
         )
         return_desc = None
-        if result and result['clusterId']:
-            self.cluster_id = result['clusterId']
+        if result and result['vcId']:
+            self.vc_id = result['vcId']
             if self.wait:
                 return_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES)
                 if return_desc['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
-                    self.module.warn("DE service did not enable successfully")
+                    self.module.warn("DE virtual cluster (%s) did not create successfully" % self.name)
             else:
                 return_desc = result
         else:
-            self.module.warn("DE service did not enable successfully")
+            self.module.warn("DE virtual cluster (%s) did not create successfully" % self.name)
         return return_desc
 
-    def _disable_service(self):
-        self.cdpy.de.disable_service(self.cluster_id)
+    def _delete_vc(self):
+        self.cdpy.de.delete_vc(self.cluster_id, self.vc_id)
         if self.wait:
             current_desc = self._wait_for_state(self.cdpy.sdk.STOPPED_STATES)
             if current_desc['status'] not in self.cdpy.sdk.STOPPED_STATES:
-                self.module.warn("DE service did not disable successfully")
+                self.module.warn("DE virtual cluster (%s) did not delete successfully" % self.name)
             return current_desc
         else:
-            current_desc = self.cdpy.de.describe_service(self.cluster_id)
+            current_desc = self.cdpy.de.describe_vc(self.cluster_id, self.vc_id)
             return (current_desc if current_desc not in self.cdpy.sdk.STOPPED_STATES else None)
 
     def _wait_for_state(self, state):
         return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.de.describe_service,
-            params=dict(cluster_id=self.cluster_id),
+            describe_func=self.cdpy.de.describe_vc,
+            params=dict(cluster_id=self.cluster_id, vc_id=self.vc_id),
             field='status', state=state, delay=self.delay,
             timeout=self.timeout
         )
@@ -489,33 +405,24 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             name=dict(required=True, type='str'),
-            environment=dict(required=True, type='str', aliases=['env']),
-            instance_type=dict(required=False, type='str'),
-            minimum_instances=dict(required=False, type='int', default=1),
-            maximum_instances=dict(required=False, type='int', default=4),
-            minimum_spot_instances=dict(required=False, type='int', default=0),
-            maximum_spot_instances=dict(required=False, type='int', default=0),
+            env=dict(required=True, type='str', aliases=['environment']),
+            cluster_name=dict(required=True, type='str', aliases=['service_name']),
+            cpu_requests=dict(required=False, type='str', default=None),
+            memory_requests=dict(required=False, type='str', default=None),
             chart_value_overrides=dict(required=False, type='list', default=None),
-            enable_public_endpoint=dict(required=False, type='bool', default=True),
-            enable_workload_analytics=dict(required=False, type='bool', default=True),
-            initial_instances=dict(required=False, type='int', default=1),
-            initial_spot_instances=dict(required=False, type='int', default=0),
-            root_volume_size=dict(required=False, type='int', default=100),
-            skip_validation=dict(required=False, type='bool', default=False),
-            tags=dict(required=False, type='dict', default=None),
-            use_ssd=dict(required=False, type='bool', default=True),
-            whitelist_ips=dict(required=False, type='list', elements='str', default=None),
-            force=dict(required=False, type='bool', default=False, aliases=['force_delete']),
+            runtime_spot_component=dict(required=False, type='str', default=None),
+            spark_version=dict(required=False, type='str', default=None),
+            acl_users=dict(required=False, type='str', default=None),
             state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
             wait=dict(required=False, type='bool', default=True),
-            delay=dict(required=False, type='int', aliases=['polling_delay'], default=60),
-            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=7200)
+            delay=dict(required=False, type='int', aliases=['polling_delay'], default=30),
+            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=600)
         ),
         supports_check_mode=True
     )
 
-    result = DEService(module)
-    output = dict(changed=False, service=(result.service if result.service else {}))
+    result = DEVirtualCluster(module)
+    output = dict(changed=False, virtual_cluster=(result.virtual_cluster if result.virtual_cluster else {}))
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
