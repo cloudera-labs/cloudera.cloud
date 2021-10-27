@@ -58,9 +58,14 @@ options:
       - Used to describe where the Driver and the Executors would run, on-demand or spot instances.
     type: str
     required: False
-  sparkVersion:
+  spark_version:
     description:
       - Spark version for the virtual cluster (e.g. SPARK2 or SPARK3).
+    type: str
+    required: False
+  acl_users:
+    description:
+      - Comma-separated Workload usernames of CDP users to be granted access to the Virtual Cluster.
     type: str
     required: False
   chart_value_overrides:
@@ -111,58 +116,46 @@ options:
 '''
 
 EXAMPLES = r'''
-# Sample definition for a DE service
+# Sample definition for a DE virtual cluster (launched within a DE service)
 de:
   definitions:
     - name: cde-cloudera-deploy-example
-      instance_type: "m5.2xlarge"
-      minimum_instances: 2
-      maximum_instances: 4
-      minimum_spot_instances: 0
-      maximum_spot_instances: 0
-      enable_public_endpoint: yes
-      enable_workload_analytics: yes
-      initial_instances: 2
-      initial_spot_instances: 0
-      root_volume_size: 100
-      chart_value_overrides: [{"chartName":"dex-app", "overrides":"dexapp.api.gangScheduling.enabled:true"}]
-      skip_validation: yes
-      tags: {"cde-cloudera-deploy-example":"v0.0.1"}
-      use_ssd: yes
+    ...
+    virtual_clusters:
+      - name: cloudera-deployed-vc-1
+        cpu_requests: 32 
+        memory_requests: '128Gi'
+        spark_version: 'SPARK2'
+        acl_users: '*'
+        runtime_spot_component: 'ALL'
+        chart_value_overrides: [{"chartName":"dex-app", "overrides":"pipelines.enabled:true"}]
 '''
 
 RETURN = r'''
-service:
-  description: DE service description
+virtual_cluster:
+  description: DE virtual cluste
   type: complex
   returned: always
   contains:
-    clusterId:
-      description: Cluster Id of the CDE Service.
+    VcUiUrl:
+      description: URL of the CDE Virtual Cluster UI
       returned: always
       type: str
-    creatorEmail:
-      description: Email Address of the CDE creator.
+    accessControl:
+      description: Access control object for the Virtual Cluster
       returned: always
-      type: str
-    enablingTime:
-      description: Timestamp of service enabling.
-      returned: always
-      type: str
-    environmentName:
-      description: CDP Environment Name.
-      returned: always
-      type: str
-    name:
-      description: Name of the CDE Service.
-      returned: always
-      type: str
-    status:
-      description: Status of the CDE Service.
-      returned: always
-      type: str
+      type: dict
+      contains:
+        users:
+          description: Workload usernames of CDP users granted access to the Virtual Cluster. 
+          returned: always
+          type: list
+          contains:
+            description: Workload username
+            returned: always
+            type: str
     chartValueOverrides:
-      description: Status of the CDE Service.
+      description: Chart overrides for the CDE virtual cluster.
       returned: always
       type: array
       elements: complex
@@ -179,78 +172,82 @@ service:
               description: Space separated key value-pairs for overriding chart values (colon separated)
               returned: always
               type: str
-    cloudPlatform:
-      description: The cloud platform where the CDE service is enabled.
+    clusterId:
+      description: Cluster ID of the CDE service that contains the Virtual Cluster
       returned: always
       type: str
-    clusterFqdn:
-      description: FQDN of the CDE service.
+    creationTime:
+      description: Time of creation of the virtual Cluster
       returned: always
       type: str
-    creatorCrn:
-      description: CRN of the creator.
+    creatorEmail:
+      description: Email address of the creator of Virtual Cluster
       returned: always
       type: str
-    dataLakeAtlasUIEndpoint:
-      description: Endpoint of Data Lake Atlas.E
+    creatorID:
+      description: ID of the creator of Virtual Cluster
       returned: always
       type: str
-    dataLakeFileSystems:
-      description: The Data lake file system.
+    creatorName:
+      description: Name of the creator of the Virtual Cluster
       returned: always
       type: str
-    environmentCrn:
-      description: CRN of the environment.
+    historyServerUrl:
+      description: Spark History Server URL for the Virtual Cluster
       returned: always
       type: str
-    logLocation:
-      description: Location for the log files of jobs.
+    livyServerUrl:
+      description: Livy Server URL for the Virtual Cluster
       returned: always
       type: str
     resources:
-      description: Resources details of CDE Service.
+      description: Resources details of CDE virtual cluster.
       returned: always
       type: complex
       contains:
-        ServiceResources:
+        VcResources:
           description: Object to store resources for a CDE service.
           returned: always
           type: complex
           contains:
-            initial_instances:
-              description: Initial instances for the CDE service.
+            actualCpuRequests:
+              description: Actual CPU request for the VC. This accounts for other dex apps(eg. livy, airflow), that run in the virtual cluster.
               returned: always
               type: str
-            initial_spot_instances:
-              description: Initial Spot Instances for the CDE Service.
+            actualMemoryRequests:
+              description: Actual Memory request for the VC. This accounts for other dex apps(eg. livy, airflow), that run in the virtual cluster.
               returned: always
               type: str
-            instance_type:
-              description: Instance type of the CDE service.
+            cpuRequests:
+              description: The CPU requests for VC for running spark jobs.
               returned: always
               type: str
-            max_instances:
-              description: Maximum instances for the CDE service.
+            memRequests:
+              description: The Memory requests for VC for running spark jobs.
               returned: always
               type: str
-            max_spot_instances:
-              description: Maximum Number of Spot instances.
-              returned: always
-              type: str
-            min_instances:
-              description: Minimum Instances for the CDE service.
-              returned: always
-              type: str
-            min_spot_instances:
-              description: Minimum number of spot instances for the CDE service.
-              returned: always
-              type: str
-            root_vol_size:
-              description: Root Volume Size.
-              returned: always
-              type: str
-    tenantId:
-      description: CDP tenant ID.
+    safariUrl:
+      description: Safari URL for the Virtual Cluster
+      returned: always
+      type: str
+    sparkVersion:
+      description: Spark version for the virtual cluster
+      returned: always
+      type: str
+    status:
+      description: Status of the Virtual Cluster
+      returned: always
+      type: str
+    vcApiUrl:
+      description: Url for the Virtual Cluster APIs
+      returned: always
+      type: str
+    vcId:
+      description: Virtual Cluster ID
+      returned: always
+      type: str
+    vcName:
+      description: Name of the CDE Virtual Cluster
       returned: always
       type: str
 '''
