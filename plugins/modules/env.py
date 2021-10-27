@@ -655,6 +655,8 @@ class Environment(CdpModule):
         self.endpoint_access_scheme = self._get_param('endpoint_access_scheme')
         self.endpoint_access_subnets = self._get_param('endpoint_access_subnets')
 
+        self.use_single_resource_group=self._get_param('use_single_resource_group')
+
         # Initialize the return values
         self.environment = dict()
 
@@ -890,6 +892,8 @@ class Environment(CdpModule):
                 )
             if self.freeipa is not None:
                 payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
+            if self.use_single_resource_group:
+                payload['resourceGroupName'] = self.resource_gp
 
         return payload
 
@@ -1007,7 +1011,8 @@ def main():
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
             endpoint_access_subnets=dict(required=False, type='list', elements='str'),
-            endpoint_access_scheme=dict(required=False, type='str', choices=['PUBLIC', 'PRIVATE'])
+            endpoint_access_scheme=dict(required=False, type='str', choices=['PUBLIC', 'PRIVATE']),
+            use_single_resource_group=dict(required=False, type='bool', default=False),
 
         ),
         # TODO: Update for Azure
