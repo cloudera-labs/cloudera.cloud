@@ -36,12 +36,24 @@ requirements:
 options:
   name:
     description:
-      - If a name is provided, that DataFlow Service will be described.
-      - Must be CDP Environment CRN or string name of DataFlow Service
+      - If a name is provided, that DataFlow Service will be described
+      - Must be the string name of the CDP Environment
+      - Mutually exclusive with df_crn and env_crn 
     type: str
     required: False
-    aliases:
-      - crn
+  df_crn:
+    description:
+      - If a df_crn is provided, that DataFlow Service will be described
+      - Mutually exclusive with name and env_crn 
+    type: str
+    required: False
+  env_crn:
+    description:
+      - If an env_crn is provided, the DataFlow Service for that Environment will be described
+      - Mutually exclusive with name and df_crn
+    type: str
+    required: False
+
 notes:
   - This feature this module is for is in Technical Preview
 extends_documentation_fragment:
@@ -59,9 +71,13 @@ EXAMPLES = r'''
 - cloudera.cloud.df_info:
     name: example-service
 
-# Gather detailed information about a named DataFlow Service using a CRN
+# Gather detailed information about a named DataFlow Service using a Dataflow CRN
 - cloudera.cloud.df_info:
-    crn: example-service-crn
+    df_crn: crn:cdp:df:region:tenant-uuid4:service:service-uuid4
+
+# Gather detailed information about a named DataFlow Service using an Environment CRN
+- cloudera.cloud.df_info:
+    df_crn: crn:cdp:environments:region:tenant-uuid4:environment:environment-uuid4
 '''
 
 RETURN = r'''
@@ -159,32 +175,38 @@ class DFInfo(CdpModule):
 
         # Set variables
         self.name = self._get_param('name')
+        self.df_crn = self._get_param('df_crn')
+        self.env_crn = self._get_param('env_crn')
 
         # Initialize return values
         self.services = []
+
+        # Initialize internal values
+        self.all_services = []
 
         # Execute logic process
         self.process()
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.name:  # Note that both None and '' will trigger this
-            if self.name.startswith('crn:'):
-                service_single = self.cdpy.df.describe_environment(env_crn=self.name)
-                if service_single is not None:
-                    self.services.append(service_single)
-            else:
-                self.services = self.cdpy.df.list_environments(name=self.name)
+        # Note that parameters are defaulted to None, and are skipped if None at submission
+        self.all_services = self.cdpy.df.list_services(df_crn=self.df_crn, name=self.name, env_crn=self.env_crn)
+        if any(x is not None for x in [self.name, self.df_crn, self.env_crn]):
+            # Any set parameter indicates a describe is preferred to the lower information list command
+            self.services = [self.cdpy.df.describe_service(df_crn=x['crn']) for x in self.all_services]
         else:
-            self.services = self.cdpy.df.list_environments()
+            self.services = self.all_services
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['crn']),
+            name=dict(required=False, type='str'),
+            df_crn=dict(required=False, type='str'),
+            env_crn=dict(required=False, type='str'),
         ),
         supports_check_mode=True,
+        mutually_exclusive=['name', 'df_crn', 'env_crn']
     )
 
     result = DFInfo(module)

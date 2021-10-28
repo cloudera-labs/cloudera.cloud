@@ -83,6 +83,11 @@ options:
     type: bool
     required: False
     default: False
+  terminate:
+    description: Whether or  not to terminate all deployments associated with this DataFlow service
+    type: bool
+    required: False
+    default: False
   wait:
     description:
       - Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
@@ -119,7 +124,7 @@ EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
 # Create a Dataflow Service
-- cloudera.cloud.df:
+- cloudera.cloud.df_service:
     name: my-service
     nodes_min: 3
     nodes_max: 10
@@ -129,7 +134,7 @@ EXAMPLES = r'''
     wait: yes
 
 # Remove a Dataflow Service with Async wait
-- cloudera.cloud.df:
+- cloudera.cloud.df_service:
     name: my-service
     persist: False
     state: absent
@@ -234,12 +239,17 @@ class DFService(CdpModule):
         super(DFService, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
+        self.env_crn = self._get_param('env_crn')
+        self.df_crn = self._get_param('df_crn')
         self.nodes_min = self._get_param('nodes_min')
         self.nodes_max = self._get_param('nodes_max')
         self.public_loadbalancer = self._get_param('public_loadbalancer')
-        self.ip_ranges = self._get_param('ip_ranges')
+        self.lb_ip_ranges = self._get_param('loadbalancer_ip_ranges')
+        self.kube_ip_ranges = self._get_param('kube_ip_ranges')
+        self.cluster_subnets = self._get_param('cluster_subnets')
+        self.lb_subnets = self._get_param('lb_subnets')
         self.persist = self._get_param('persist')
+        self.terminate = self._get_param('terminate')
         self.force = self._get_param('force')
 
         self.state = self._get_param('state')
@@ -252,16 +262,16 @@ class DFService(CdpModule):
 
         # Initialize internal values
         self.target = None
-        self.env_crn = None
 
         # Execute logic process
         self.process()
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.env_crn = self.cdpy.environments.resolve_environment_crn(self.name)
         if self.env_crn is not None:
-            self.target = self.cdpy.df.describe_environment(env_crn=self.name)
+            self.env_crn = self.cdpy.environments.resolve_environment_crn(self.env_crn)
+        if self.env_crn is not None or self.df_crn is not None:
+            self.target = self.cdpy.df.describe_service(env_crn=self.env_crn, df_crn=self.df_crn)
 
         if self.target is not None:
             # DF Database Entry exists
@@ -283,19 +293,22 @@ class DFService(CdpModule):
             # Environment does not have DF database entry, and probably doesn't exist
             if self.state in ['absent']:
                 self.module.log(
-                    "Dataflow Service %s already disabled in CDP Environment %s" % (self.name, self.env_crn))
+                    "Dataflow Service already disabled in CDP Environment %s" % self.env_crn)
             elif self.state in ['present']:
                 if self.env_crn is None:
                     self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % self.env)
                 else:
                     # create DF Service
                     if not self.module.check_mode:
-                        self.service = self.cdpy.df.enable_environment(
+                        self.service = self.cdpy.df.enable_service(
                             env_crn=self.env_crn,
-                            authorized_ips=self.ip_ranges,
                             min_nodes=self.nodes_min,
                             max_nodes=self.nodes_max,
-                            enable_public_ip=self.public_loadbalancer
+                            enable_public_ip=self.public_loadbalancer,
+                            lb_ips=self.lb_ip_ranges,
+                            kube_ips=self.kube_ip_ranges,
+                            cluster_subnets=self.cluster_subnets,
+                            lb_subnets=self.lb_subnets
                         )
                         if self.wait:
                             self.service = self._wait_for_enabled()
@@ -305,7 +318,7 @@ class DFService(CdpModule):
 
     def _wait_for_enabled(self):
         return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.env_crn),
+            describe_func=self.cdpy.df.describe_service, params=dict(env_crn=self.env_crn),
             field=['status', 'state'], state=self.cdpy.sdk.STARTED_STATES,
             delay=self.delay, timeout=self.timeout
         )
@@ -313,57 +326,69 @@ class DFService(CdpModule):
     def _disable_df(self):
         # Attempt clean Disable, which also ensures we have tried at least once before we do a forced removal
         if self.target['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
-            self.service = self.cdpy.df.disable_environment(
-                env_crn=self.env_crn,
-                persist=self.persist
+            self.service = self.cdpy.df.disable_service(
+                df_crn=self.df_crn,
+                persist=self.persist,
+                terminate=self.terminate
             )
+        else:
+            self.module.warn("Attempting to disable DataFlow Service but state %s not in Removable States %s"
+                             % (self.target['status']['state'], self.cdpy.sdk.REMOVABLE_STATES))
         if self.wait:
             # Wait for Clean Disable, if possible
             self.service = self.cdpy.sdk.wait_for_state(
-                describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.env_crn),
+                describe_func=self.cdpy.df.describe_service, params=dict(df_crn=self.df_crn),
                 field=['status', 'state'],
                 state=self.cdpy.sdk.STOPPED_STATES + self.cdpy.sdk.REMOVABLE_STATES + [None],
                 delay=self.delay, timeout=self.timeout, ignore_failures=True
             )
         else:
-            self.service = self.cdpy.df.describe_environment(env_crn=self.name)
+            self.service = self.cdpy.df.describe_service(df_crn=self.df_crn)
         # Check disable result against need for further forced delete action, in case it didn't work first time around
         if self.service is not None:
             if self.service['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
                 if self.force:
-                    self.service = self.cdpy.df.delete_environment(
-                        env_crn=self.env_crn
+                    self.service = self.cdpy.df.reset_service(
+                        df_crn=self.df_crn
                     )
                 else:
                     self.module.fail_json(msg="DF Service Disable failed and Force delete not requested")
             if self.wait:
                 self.service = self.cdpy.sdk.wait_for_state(
-                    describe_func=self.cdpy.df.describe_environment, params=dict(env_crn=self.env_crn),
+                    describe_func=self.cdpy.df.describe_service, params=dict(df_crn=self.df_crn),
                     field=None,  # This time we require removal or declare failure
                     delay=self.delay, timeout=self.timeout
                 )
             else:
-                self.service = self.cdpy.df.describe_environment(env_crn=self.name)
+                self.service = self.cdpy.df.describe_service(df_crn=self.df_crn)
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['crn', 'env_crn']),
-            nodes_min=dict(required=False, type='int', default=3, aliases=['min_k8s_node_count']),
-            nodes_max=dict(required=False, type='int', default=3, aliases=['max_k8s_node_count']),
-            public_loadbalancer=dict(required=False, type='bool', default=False, aliases=['use_public_load_balancer']),
-            ip_ranges=dict(required=False, type='list', elements='str', default=list(),
-                           aliases=['authorized_ip_ranges']),
-            persist=dict(required=False, type='bool', default=False),
-            state=dict(required=False, type='str', choices=['present', 'absent'],
+            env_crn=dict(type='str'),
+            df_crn=dict(type='str'),
+            nodes_min=dict(type='int', default=3, aliases=['min_k8s_node_count']),
+            nodes_max=dict(type='int', default=3, aliases=['max_k8s_node_count']),
+            public_loadbalancer=dict(type='bool', default=False, aliases=['use_public_load_balancer']),
+            loadbalancer_ip_ranges=dict(type='list', elements='str', default=None),
+            kube_ip_ranges=dict(type='list', elements='str', default=None),
+            cluster_subnets=dict(type='list', elements='str', default=None),
+            loadbalancer_subnets=dict(type='list', elements='str', default=None),
+            persist=dict(type='bool', default=False),
+            terminate=dict(type='bool', default=False),
+            state=dict(type='str', choices=['present', 'absent'],
                        default='present'),
-            force=dict(required=False, type='bool', default=False, aliases=['force_delete']),
-            wait=dict(required=False, type='bool', default=True),
-            delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
+            force=dict(type='bool', default=False, aliases=['force_delete']),
+            wait=dict(type='bool', default=True),
+            delay=dict(type='int', aliases=['polling_delay'], default=15),
+            timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         supports_check_mode=True,
+        required_if=[
+            ('state', 'present', ('env_crn', ), False),
+            ('state', 'absent', ('df_crn', ), False)
+        ]
     )
 
     result = DFService(module)
