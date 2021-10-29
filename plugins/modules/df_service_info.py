@@ -24,7 +24,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: df_info
+module: df_service_info
 short_description: Gather information about CDP DataFlow Services
 description:
     - Gather information about CDP DataFlow Services
@@ -169,9 +169,9 @@ sdk_out_lines:
 '''
 
 
-class DFInfo(CdpModule):
+class DFServiceInfo(CdpModule):
     def __init__(self, module):
-        super(DFInfo, self).__init__(module)
+        super(DFServiceInfo, self).__init__(module)
 
         # Set variables
         self.name = self._get_param('name')

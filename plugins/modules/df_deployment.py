@@ -21,10 +21,10 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import C
 ANSIBLE_METADATA = {'metadata_version': '1.1',
                     'status': ['preview'],
                     'supported_by': 'community'}
-
+#TODO: Update docs
 DOCUMENTATION = r'''
 ---
-module: df_service
+module: df_deployment
 short_description: Enable or Disable CDP DataFlow Services
 description:
     - Enable or Disable CDP DataFlow Services
@@ -84,7 +84,7 @@ options:
     required: False
     default: False
   terminate:
-    description: Whether or  not to terminate all deployments associated with this DataFlow service
+    description: Whether or  not to terminate all deployments associated with this DataFlow deployment
     type: bool
     required: False
     default: False
@@ -124,8 +124,8 @@ EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
 # Create a Dataflow Service
-- cloudera.cloud.df_service:
-    name: my-service
+- cloudera.cloud.df_deployment:
+    name: my-deployment
     nodes_min: 3
     nodes_max: 10
     public_loadbalancer: True
@@ -134,8 +134,8 @@ EXAMPLES = r'''
     wait: yes
 
 # Remove a Dataflow Service with Async wait
-- cloudera.cloud.df_service:
-    name: my-service
+- cloudera.cloud.df_deployment:
+    name: my-deployment
     persist: False
     state: absent
     wait: yes
@@ -147,8 +147,8 @@ EXAMPLES = r'''
 
 RETURN = r'''
 ---
-services:
-  description: The information about the named DataFlow Service or DataFlow Services
+deployments:
+  description: The information about the named DataFlow Deployment or DataFlow Deployments
   type: list
   returned: always
   elements: complex
@@ -234,9 +234,9 @@ sdk_out_lines:
 '''
 
 
-class DFService(CdpModule):
+class DFDeployment(CdpModule):
     def __init__(self, module):
-        super(DFService, self).__init__(module)
+        super(DFDeployment, self).__init__(module)
 
         # Set variables
         self.env_crn = self._get_param('env_crn')
@@ -258,7 +258,7 @@ class DFService(CdpModule):
         self.timeout = self._get_param('timeout')
 
         # Initialize return values
-        self.service = {}
+        self.deployment = {}
 
         # Initialize internal values
         self.target = None
@@ -271,13 +271,13 @@ class DFService(CdpModule):
         if self.env_crn is not None:
             self.env_crn = self.cdpy.environments.resolve_environment_crn(self.env_crn)
         if self.env_crn is not None or self.df_crn is not None:
-            self.target = self.cdpy.df.describe_service(env_crn=self.env_crn, df_crn=self.df_crn)
+            self.target = self.cdpy.df.describe_deployment(env_crn=self.env_crn, df_crn=self.df_crn)
 
         if self.target is not None:
             # DF Database Entry exists
             if self.state in ['absent']:
                 if self.module.check_mode:
-                    self.service = self.target
+                    self.deployment = self.target
                 else:
                     self._disable_df()
             elif self.state in ['present']:
@@ -285,7 +285,7 @@ class DFService(CdpModule):
                     "Dataflow Service already enabled and configuration validation and reconciliation is not supported;" +
                     "to change a Dataflow Service, explicitly disable and recreate the Service or use the UI")
                 if self.wait:
-                    self.service = self._wait_for_enabled()
+                    self.deployment = self._wait_for_enabled()
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state)
@@ -300,7 +300,7 @@ class DFService(CdpModule):
                 else:
                     # create DF Service
                     if not self.module.check_mode:
-                        self.service = self.cdpy.df.enable_service(
+                        self.deployment = self.cdpy.df.enable_deployment(
                             env_crn=self.env_crn,
                             min_nodes=self.nodes_min,
                             max_nodes=self.nodes_max,
@@ -311,14 +311,14 @@ class DFService(CdpModule):
                             lb_subnets=self.lb_subnets
                         )
                         if self.wait:
-                            self.service = self._wait_for_enabled()
+                            self.deployment = self._wait_for_enabled()
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state)
 
     def _wait_for_enabled(self):
         return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.df.describe_service, params=dict(env_crn=self.env_crn),
+            describe_func=self.cdpy.df.describe_deployment, params=dict(env_crn=self.env_crn),
             field=['status', 'state'], state=self.cdpy.sdk.STARTED_STATES,
             delay=self.delay, timeout=self.timeout
         )
@@ -326,7 +326,7 @@ class DFService(CdpModule):
     def _disable_df(self):
         # Attempt clean Disable, which also ensures we have tried at least once before we do a forced removal
         if self.target['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
-            self.service = self.cdpy.df.disable_service(
+            self.deployment = self.cdpy.df.disable_deployment(
                 df_crn=self.df_crn,
                 persist=self.persist,
                 terminate=self.terminate
@@ -336,31 +336,31 @@ class DFService(CdpModule):
                              % (self.target['status']['state'], self.cdpy.sdk.REMOVABLE_STATES))
         if self.wait:
             # Wait for Clean Disable, if possible
-            self.service = self.cdpy.sdk.wait_for_state(
-                describe_func=self.cdpy.df.describe_service, params=dict(df_crn=self.df_crn),
+            self.deployment = self.cdpy.sdk.wait_for_state(
+                describe_func=self.cdpy.df.describe_deployment, params=dict(df_crn=self.df_crn),
                 field=['status', 'state'],
                 state=self.cdpy.sdk.STOPPED_STATES + self.cdpy.sdk.REMOVABLE_STATES + [None],
                 delay=self.delay, timeout=self.timeout, ignore_failures=True
             )
         else:
-            self.service = self.cdpy.df.describe_service(df_crn=self.df_crn)
+            self.deployment = self.cdpy.df.describe_deployment(df_crn=self.df_crn)
         # Check disable result against need for further forced delete action, in case it didn't work first time around
-        if self.service is not None:
-            if self.service['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
+        if self.deployment is not None:
+            if self.deployment['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
                 if self.force:
-                    self.service = self.cdpy.df.reset_service(
+                    self.deployment = self.cdpy.df.reset_deployment(
                         df_crn=self.df_crn
                     )
                 else:
                     self.module.fail_json(msg="DF Service Disable failed and Force delete not requested")
             if self.wait:
-                self.service = self.cdpy.sdk.wait_for_state(
-                    describe_func=self.cdpy.df.describe_service, params=dict(df_crn=self.df_crn),
+                self.deployment = self.cdpy.sdk.wait_for_state(
+                    describe_func=self.cdpy.df.describe_deployment, params=dict(df_crn=self.df_crn),
                     field=None,  # This time we require removal or declare failure
                     delay=self.delay, timeout=self.timeout
                 )
             else:
-                self.service = self.cdpy.df.describe_service(df_crn=self.df_crn)
+                self.deployment = self.cdpy.df.describe_deployment(df_crn=self.df_crn)
 
 
 def main():
@@ -392,7 +392,7 @@ def main():
     )
 
     result = DFService(module)
-    output = dict(changed=False, service=result.service)
+    output = dict(changed=False, deployment=result.deployment)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
