@@ -101,7 +101,7 @@ options:
         state.
     type: int
     required: False
-    default: 60
+    default: 30
     aliases:
       - polling_delay
   timeout:
@@ -110,26 +110,25 @@ options:
         state.
     type: int
     required: False
-    default: 7200
+    default: 600
     aliases:
       - polling_timeout
 '''
 
 EXAMPLES = r'''
-# Sample definition for a DE virtual cluster (launched within a DE service)
-de:
-  definitions:
-    - name: cde-cloudera-deploy-example
-    ...
-    virtual_clusters:
-      - name: cloudera-deployed-vc-1
-        cpu_requests: 32 
-        memory_requests: '128Gi'
-        spark_version: 'SPARK2'
-        acl_users: '*'
-        runtime_spot_component: 'ALL'
-        chart_value_overrides: [{"chartName":"dex-app", "overrides":"pipelines.enabled:true"}]
+# Create a CDE virtual cluster
+- cloudera.cloud.de_virtual_cluster:
+  name: virtual-cluster-name
+  cluster_name: cde-service-name
+  env: cdp-environment-name
+  state: present
+  wait: True
+  delay: 30
+  timeout: 600
+
+# Note: virtual clusters can be removed manually (CDP CLI/API or Web UI), or by removing the parent CDE service (and all other virtual clusters)
 '''
+
 
 RETURN = r'''
 virtual_cluster:
