@@ -183,24 +183,20 @@ options:
 '''
 
 EXAMPLES = r'''
-# Sample definition for a DE service
-de:
-  definitions:
-    - name: cde-cloudera-deploy-example
-      instance_type: "m5.2xlarge"
-      minimum_instances: 2
-      maximum_instances: 4
-      minimum_spot_instances: 0
-      maximum_spot_instances: 0
-      enable_public_endpoint: yes
-      enable_workload_analytics: yes
-      initial_instances: 2
-      initial_spot_instances: 0
-      root_volume_size: 100
-      chart_value_overrides: [{"chartName":"dex-app", "overrides":"dexapp.api.gangScheduling.enabled:true"}]
-      skip_validation: yes
-      tags: {"cde-cloudera-deploy-example":"v0.0.1"}
-      use_ssd: yes
+# Create a DE service using defaults for optional parameters and wait for completion
+- cloudera.cloud.de:
+    name: cde-cloudera-deploy-example
+    env: cdp-environment-name
+    instance_type: "m5.2xlarge"
+    state: present
+    wait: yes
+
+# Remove a DE service without waiting
+- cloudera.cloud.de:
+    name: cde-cloudera-deploy-example+
+    env: cdp-environment-name
+    state: absent
+    wait: no
 '''
 
 RETURN = r'''
@@ -367,12 +363,10 @@ class DEService(CdpModule):
         # Execute logic process
         self.process()
 
+
     @CdpModule._Decorators.process_debug
     def process(self):
-        for service in self.cdpy.de.list_services(env=self.env, remove_deleted=True):
-            if service['name'] == self.name:
-                self.cluster_id = service['clusterId']
-                break
+        self.cluster_id = self.cdpy.de.get_service_id_by_name(name=self.name, env=self.env)
         initial_desc = self.cdpy.de.describe_service(self.cluster_id) if self.cluster_id else None
 
         # If a service under the name/env pair was found (excluding disabled services)
