@@ -46,6 +46,8 @@ cloudera.cloud Ansible Collection
    ml_workspace_access <ml_workspace_access>
    opdb <opdb>
    opdb_info <opdb_info>
+   de <de>
+   de_info <de_info>
 
 This repository hosts the ``cloudera.cloud`` Ansible collection. The collection includes modules and other Ansible
 assets to help automate the provisioning and use of Cloudera Data Platform (CDP) experiences, datalakes, and 

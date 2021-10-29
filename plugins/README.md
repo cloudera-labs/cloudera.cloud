@@ -47,3 +47,5 @@ modules employ the underlying SDK contained within the `cdpy` Python package.
 | [ml_workspace_access](./modules/ml_workspace_access.py) | Grant and revoke user access to and from CDP Machine Learning experiences |
 | [opdb](./modules/opdb.py) | Create, manage, and destroy CDP Operational Database experiences |
 | [opdb_info](./modules/opdb_info.py) | Gather information about CDP Operational Database experiences |
+| [de](./modules/de.py) | Create, manage, and destroy CDP Data Engineering experiences |
+| [de_info](./modules/de_info.py) | Gather information about CDP Data Engineering experiences |
