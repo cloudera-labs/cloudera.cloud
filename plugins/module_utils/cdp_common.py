@@ -67,7 +67,7 @@ class CdpModule(object):
             strict_errors=self.strict,
             error_handler=self._cdp_module_throw_error,
             warning_handler=self._cdp_module_throw_warning,
-            client_name=self.agent_header
+            agent_header=self.agent_header
         )
 
     # Private functions
