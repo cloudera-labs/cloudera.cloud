@@ -118,13 +118,13 @@ options:
 EXAMPLES = r'''
 # Create a CDE virtual cluster
 - cloudera.cloud.de_virtual_cluster:
-  name: virtual-cluster-name
-  cluster_name: cde-service-name
-  env: cdp-environment-name
-  state: present
-  wait: True
-  delay: 30
-  timeout: 600
+    name: virtual-cluster-name
+    cluster_name: cde-service-name
+    env: cdp-environment-name
+    state: present
+    wait: True
+    delay: 30
+    timeout: 600
 
 # Note: virtual clusters can be removed manually (CDP CLI/API or Web UI), or by removing the parent CDE service (and all other virtual clusters)
 '''

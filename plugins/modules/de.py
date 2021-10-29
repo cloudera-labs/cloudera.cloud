@@ -185,18 +185,18 @@ options:
 EXAMPLES = r'''
 # Create a DE service using defaults for optional parameters and wait for completion
 - cloudera.cloud.de:
-  name: cde-cloudera-deploy-example
-  env: cdp-environment-name
-  instance_type: "m5.2xlarge"
-  state: present
-  wait: yes
+    name: cde-cloudera-deploy-example
+    env: cdp-environment-name
+    instance_type: "m5.2xlarge"
+    state: present
+    wait: yes
 
 # Remove a DE service without waiting
 - cloudera.cloud.de:
-  name: cde-cloudera-deploy-example+
-  env: cdp-environment-name
-  state: absent
-  wait: no
+    name: cde-cloudera-deploy-example+
+    env: cdp-environment-name
+    state: absent
+    wait: no
 '''
 
 RETURN = r'''
