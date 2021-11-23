@@ -24,7 +24,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: df
+module: df_service
 short_description: Enable or Disable CDP DataFlow Services
 description:
     - Enable or Disable CDP DataFlow Services
