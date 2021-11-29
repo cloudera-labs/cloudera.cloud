@@ -1,4 +1,4 @@
-.. _df_module:
+.. _df_service_module:
 .. include:: <isoamsa.txt>
 .. |br| raw:: html
 
@@ -8,10 +8,10 @@
 .. Start the module documentation
 
 
-.. title:: df -- Enable or Disable CDP DataFlow Services
+.. title:: df_service -- Enable or Disable CDP DataFlow Services
 
-df -- Enable or Disable CDP DataFlow Services
-=============================================
+df_service -- Enable or Disable CDP DataFlow Services
+=====================================================
 
 .. contents::
    :local:
@@ -104,6 +104,12 @@ Parameters
    |                         |                       | *Aliases: authorized_ip_ranges*                                                                                           |
    +-------------------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------+
    | **persist**             |                       | Whether or not to retain the database records of related entities during removal.                                         |
+   |                         |                       |                                                                                                                           |
+   | |br|                    |                       |                                                                                                                           |
+   |                         |                       |                                                                                                                           |
+   | ``bool``                |                       |                                                                                                                           |
+   +-------------------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------+
+   | **terminate**           |                       | Whether or  not to terminate all deployments associated with this DataFlow service                                        |
    |                         |                       |                                                                                                                           |
    | |br|                    |                       |                                                                                                                           |
    |                         |                       |                                                                                                                           |

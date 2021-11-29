@@ -8,17 +8,25 @@ cloudera.cloud Ansible Collection
    account_auth <account_auth>
    account_auth_info <account_auth_info>
    account_cred_info <account_cred_info>
-   datalake <datalake>
-   datalake_info <datalake_info>
-   datalake_runtime_info <datalake_runtime_info>
    datahub_cluster <datahub_cluster>
    datahub_cluster_info <datahub_cluster_info>
    datahub_definition_info <datahub_definition_info>
    datahub_template_info <datahub_template_info>
-   df <df>
+   datalake <datalake>
+   datalake_info <datalake_info>
+   datalake_runtime_info <datalake_runtime_info>
+   de <de>
+   de_info <de_info>
+   de_virtual_cluster <de_virtual_cluster>
+   de_virtual_cluster_info <de_virtual_cluster_info>
+   df_service <df_service>
    df_info <df_info>
    dw_cluster <dw_cluster>
    dw_cluster_info <dw_cluster_info>
+   dw_database_catalog <dw_database_catalog>
+   dw_database_catalog_info <dw_database_catalog_info>
+   dw_virtual_warehouse <dw_virtual_warehouse>
+   dw_virtual_warehouse_info <dw_virtual_warehouse_info>
    env <env>
    env_auth <env_auth>
    env_auth_info <env_auth_info>

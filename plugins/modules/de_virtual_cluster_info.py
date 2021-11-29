@@ -25,9 +25,9 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: de_virtual_cluster_info
-short_description: Gather information about CDP DE virtual clusters (within a DE service)
+short_description: Gather information about CDP DE virtual clusters
 description:
-    - Gather information about CDP DE virtual clusters (within a DE service)
+    - Gather information about CDP DE virtual clusters
 author:
   - "Curtis Howard (@curtishoward)"
 requirements:

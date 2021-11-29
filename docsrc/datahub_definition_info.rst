@@ -43,9 +43,9 @@ Parameters
    +----------------+----------------------+---------------------------------------------------------------------------------------+
    | **Parameter**  | **Choices/Defaults** | **Comments**                                                                          |
    +----------------+----------------------+---------------------------------------------------------------------------------------+
-   | **name**       |                      | If a name or CRN is provided, that Definition will be described.                      |
-   |                |                      | If no name or CRN is provided, all Definitions will be listed.                        |
-   | |br|           |                      |                                                                                       |
+   | **name**       |                      | If a name is provided, that Definition will be described.                             |
+   |                |                      | If a crn is provided, that Definition will be described.                              |
+   | |br|           |                      | If no name provided, all Definitions will be listed.                                  |
    |                |                      |                                                                                       |
    | ``str``        |                      |                                                                                       |
    |                |                      |                                                                                       |

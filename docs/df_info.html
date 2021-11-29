@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>df_info -- Gather information about CDP DataFlow Services &mdash; cloudera.cloud 1.4.0 documentation</title>
+  <title>df_info -- Gather information about CDP DataFlow Services &mdash; cloudera.cloud 1.5.0 documentation</title>
   
 
   
@@ -38,7 +38,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" href="dw_cluster.html" />
-    <link rel="prev" title="df – Enable or Disable CDP DataFlow Services" href="df.html" /> 
+    <link rel="prev" title="df_service – Enable or Disable CDP DataFlow Services" href="df_service.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,14 +88,18 @@
 <li class="toctree-l1"><a class="reference internal" href="account_auth.html">account_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="account_auth_info.html">account_auth_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="account_cred_info.html">account_cred_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster.html">datahub_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster_info.html">datahub_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_definition_info.html">datahub_definition_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="df.html">df</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de.html">de</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_info.html">de_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster.html">de_virtual_cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster_info.html">de_virtual_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_service.html">df_service</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">df_info</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
@@ -108,6 +112,10 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_database_catalog.html">dw_database_catalog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_database_catalog_info.html">dw_database_catalog_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_virtual_warehouse.html">dw_virtual_warehouse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_virtual_warehouse_info.html">dw_virtual_warehouse_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
@@ -240,11 +248,25 @@
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>If a name is provided, that DataFlow Service will be described.
-Must be CDP Environment CRN or string name of DataFlow Service</p>
+<td><p>If a name is provided, that DataFlow Service will be described
+Must be the string name of the CDP Environment
+Mutually exclusive with df_crn and env_crn</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>df_crn</strong></p>
 <p><br /></p>
-<p><em>Aliases: crn</em></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
+<td></td>
+<td><p>If a df_crn is provided, that DataFlow Service will be described
+Mutually exclusive with name and env_crn</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>env_crn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>If an env_crn is provided, the DataFlow Service for that Environment will be described
+Mutually exclusive with name and df_crn</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
@@ -296,9 +318,13 @@ Must be CDP Environment CRN or string name of DataFlow Service</p>
 <span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
     <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-service</span>
 
-<span class="c1"># Gather detailed information about a named DataFlow Service using a CRN</span>
+<span class="c1"># Gather detailed information about a named DataFlow Service using a Dataflow CRN</span>
 <span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
-    <span class="nt">crn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-service-crn</span>
+    <span class="nt">df_crn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">crn:cdp:df:region:tenant-uuid4:service:service-uuid4</span>
+
+<span class="c1"># Gather detailed information about a named DataFlow Service using an Environment CRN</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
+    <span class="nt">df_crn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">crn:cdp:environments:region:tenant-uuid4:environment:environment-uuid4</span>
 </pre></div>
 </div>
 </div>
@@ -507,7 +533,7 @@ Must be CDP Environment CRN or string name of DataFlow Service</p>
         <a href="dw_cluster.html" class="btn btn-neutral float-right" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="df.html" class="btn btn-neutral float-left" title="df – Enable or Disable CDP DataFlow Services" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="df_service.html" class="btn btn-neutral float-left" title="df_service – Enable or Disable CDP DataFlow Services" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

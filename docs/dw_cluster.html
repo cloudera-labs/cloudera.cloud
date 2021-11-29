@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>dw_cluster -- Create or Delete CDP Data Warehouse Clusters &mdash; cloudera.cloud 1.4.0 documentation</title>
+  <title>dw_cluster -- Create or Delete CDP Data Warehouse Clusters &mdash; cloudera.cloud 1.5.0 documentation</title>
   
 
   
@@ -88,14 +88,18 @@
 <li class="toctree-l1"><a class="reference internal" href="account_auth.html">account_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="account_auth_info.html">account_auth_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="account_cred_info.html">account_cred_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster.html">datahub_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster_info.html">datahub_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_definition_info.html">datahub_definition_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="df.html">df</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de.html">de</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_info.html">de_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster.html">de_virtual_cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster_info.html">de_virtual_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_service.html">df_service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_info.html">df_info</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">dw_cluster</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
@@ -107,6 +111,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_database_catalog.html">dw_database_catalog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_database_catalog_info.html">dw_database_catalog_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_virtual_warehouse.html">dw_virtual_warehouse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_virtual_warehouse_info.html">dw_virtual_warehouse_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
@@ -233,65 +241,75 @@
 <td><p><strong>Choices/Defaults</strong></p></td>
 <td><p><strong>Comments</strong></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>id</strong></p>
+<tr class="row-even"><td><p><strong>cluster_id</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-<p><br /></p>
-<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>If an ID is provided, that Data Warehouse Cluster will be deleted if <code class="docutils literal notranslate"><span class="pre">state=absent</span></code></p>
+<td><p>The identifier of the Data Warehouse Cluster.
+Required if <em>state=absent</em> and <em>env</em> is not specified.</p>
 <p><br /></p>
-<p><em>Aliases: name</em></p>
+<p><em>Aliases: id, name</em></p>
 </td>
 </tr>
 <tr class="row-odd"><td><p><strong>env</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-<p><br /></p>
-<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>The name of the target environment</p>
+<td><p>The name of the target environment.
+Required if <em>state=present</em>.
+Required if <em>state=absent</em> and <em>cluster_id</em> is not specified.</p>
 <p><br /></p>
 <p><em>Aliases: environment, env_crn</em></p>
 </td>
 </tr>
+<tr class="row-even"><td><p><strong>overlay</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to use private IP addresses for Pods within the cluster.
+Otherwise, use IP addresses within the VPC.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>private_load_balancer</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to set up a load balancer for private subnets.</p></td>
+</tr>
 <tr class="row-even"><td><p><strong>aws_public_subnets</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
-<p><br /></p>
-<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>List of zero or more Public AWS Subnet IDs to deploy to</p></td>
+<td><p>List of zero or more Public AWS Subnet IDs used for deployment.
+Required if <em>state=present</em> and the <em>env</em> is deployed to AWS.</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>aws_private_subnets</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
-<p><br /></p>
-<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>List of zero or more Private AWS Subnet IDs to deploy to</p></td>
+<td><p>List of zero or more Private AWS Subnet IDs used for deployment.
+Required if <em>state=present</em> and the <em>env</em> is deployed to AWS.</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>az_subnet</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-<p><br /></p>
-<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>Azure Subnet Name, not URI</p></td>
+<td><p>The Azure Subnet Name.
+Required if <em>state=present</em> and the <em>env</em> is deployed to Azure.</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>az_enable_az</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
-<p><br /></p>
-<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>Whether to enable AZ mode or not</p></td>
+<td><p>Flag to enable Availability Zone mode.
+Required if <em>state=present</em> and the <em>env</em> is deployed to Azure.</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>state</strong></p>
 <p><br /></p>
@@ -304,7 +322,7 @@
 </dd>
 </dl>
 </td>
-<td><p>The declarative state of the Data Warehouse Cluster</p></td>
+<td><p>The state of the Data Warehouse Cluster</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>wait</strong></p>
 <p><br /></p>
@@ -314,7 +332,15 @@
 <td><p>Flag to enable internal polling to wait for the Data Warehouse Cluster to achieve the declared state.
 If set to FALSE, the module will return immediately.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>delay</strong></p>
+<tr class="row-even"><td><p><strong>force</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to enable force deletion of the Data Warehouse Cluster.
+This will not destroy the underlying cloud provider assets.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>delay</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
@@ -324,7 +350,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: polling_delay</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>timeout</strong></p>
+<tr class="row-even"><td><p><strong>timeout</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
@@ -334,7 +360,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: polling_timeout</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>verify_tls</strong></p>
+<tr class="row-odd"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -344,7 +370,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: tls</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>debug</strong></p>
+<tr class="row-even"><td><p><strong>debug</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -354,7 +380,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: debug_endpoints</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>profile</strong></p>
+<tr class="row-odd"><td><p><strong>profile</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
@@ -368,11 +394,6 @@ If set to FALSE, the module will return immediately.</p></td>
 <h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># Delete a Data Warehouse Cluster</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.dw_cluster</span><span class="p">:</span>
-    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">absent</span>
-    <span class="nt">id</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-id</span>
-
 <span class="c1"># Request Azure Cluster creation</span>
 <span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.dw_cluster</span><span class="p">:</span>
     <span class="nt">env_crn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">crn:cdp:environments...</span>
@@ -384,6 +405,16 @@ If set to FALSE, the module will return immediately.</p></td>
     <span class="nt">env_crn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">crn:cdp:environments...</span>
     <span class="nt">aws_public_subnets</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">subnet-id-1</span><span class="p p-Indicator">,</span> <span class="nv">subnet-id-2</span><span class="p p-Indicator">]</span>
     <span class="nt">aws_private_subnets</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">subnet-id-3</span><span class="p p-Indicator">,</span> <span class="nv">subnet-id-4</span><span class="p p-Indicator">]</span>
+
+<span class="c1"># Delete a Data Warehouse Cluster</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.dw_cluster</span><span class="p">:</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">absent</span>
+    <span class="nt">cluster_id</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-id</span>
+
+<span class="c1"># Delete the Data Warehouse Cluster within the Environment</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.dw_cluster</span><span class="p">:</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">absent</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">crn:cdp:environments...</span>
 </pre></div>
 </div>
 </div>
@@ -392,143 +423,124 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 14%" />
-<col style="width: 9%" />
-<col style="width: 23%" />
+<col style="width: 16%" />
 <col style="width: 10%" />
-<col style="width: 7%" />
-<col style="width: 36%" />
+<col style="width: 26%" />
+<col style="width: 8%" />
+<col style="width: 40%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td colspan="4"><p><strong>Key</strong></p></td>
+<tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="4"><p><strong>clusters</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>cluster</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
 </td>
-<td><p>always</p></td>
-<td><p>The information about the named Cluster or Clusters</p></td>
+<td></td>
+<td><p>Details for the Data Warehouse cluster</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>cluster</strong></p>
-<p><br /></p>
-</td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="2"><p><strong>name</strong></p>
+<td colspan="2"><p><strong>id</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The name of the cluster.</p></td>
+<td><p>The cluster identifier.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td colspan="2"><p><strong>environmentCrn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The crn of the cluster’s environment.</p></td>
+<td><p>The CRN of the cluster’s Environment</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td colspan="2"><p><strong>crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The cluster’s crn.</p></td>
+<td><p>The cluster’s CRN.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td colspan="2"><p><strong>creationDate</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The creation time of the cluster in UTC.</p></td>
+<td><p>The creation timestamp of the cluster in UTC.</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td colspan="2"><p><strong>status</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The status of the Cluster</p></td>
+<td><p>The status of the cluster</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td colspan="2"><p><strong>creator</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The CRN of the cluster creator.</p></td>
+<td><p>The cluster creator details.</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td><p><strong>crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>Actor CRN</p></td>
+<td><p>always</p></td>
+<td><p>The Actor CRN.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td><p><strong>email</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>Email address for users</p></td>
+<td><p>when supported</p></td>
+<td><p>Email address (users).</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td><p><strong>workloadUsername</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>Username for users</p></td>
+<td><p>when supported</p></td>
+<td><p>Username (users).</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td><p><strong>machineUsername</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>Username for machine users</p></td>
+<td><p>when supported</p></td>
+<td><p>Username (machine users).</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td colspan="2"><p><strong>cloudPlatform</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The  cloud  platform  of the environment that was used to create this cluster</p></td>
+<td><p>The cloud platform of the environment that was used to create this cluster.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="4"><p><strong>sdk_out</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>sdk_out</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>when supported</p></td>
 <td><p>Returns the captured CDP SDK log.</p></td>
 </tr>
-<tr class="row-even"><td colspan="4"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-odd"><td colspan="3"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -548,6 +560,8 @@ If set to FALSE, the module will return immediately.</p></td>
 <h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p>Dan Chaffelson (&#64;chaffelson)</p></li>
+<li><p>Saravanan Raju (&#64;raju-saravanan)</p></li>
+<li><p>Webster Mudge (&#64;wmudge)</p></li>
 </ul>
 </div>
 </div>

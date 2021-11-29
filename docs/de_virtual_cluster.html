@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>df -- Enable or Disable CDP DataFlow Services &mdash; cloudera.cloud 1.4.0 documentation</title>
+  <title>de_virtual_cluster -- Create or delete CDP Data Engineering Virtual Clusters &mdash; cloudera.cloud 1.5.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="df_info – Gather information about CDP DataFlow Services" href="df_info.html" />
-    <link rel="prev" title="datahub_template_info – Gather information about CDP Datahub Cluster Templates" href="datahub_template_info.html" /> 
+    <link rel="next" title="de_virtual_cluster_info – Gather information about CDP DE virtual clusters" href="de_virtual_cluster_info.html" />
+    <link rel="prev" title="de_info – Gather information about CDP DE Workspaces" href="de_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -88,26 +88,33 @@
 <li class="toctree-l1"><a class="reference internal" href="account_auth.html">account_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="account_auth_info.html">account_auth_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="account_cred_info.html">account_cred_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster.html">datahub_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster_info.html">datahub_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_definition_info.html">datahub_definition_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">df</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de.html">de</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_info.html">de_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">de_virtual_cluster</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#notes">Notes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster_info.html">de_virtual_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_service.html">df_service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_info.html">df_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_database_catalog.html">dw_database_catalog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_database_catalog_info.html">dw_database_catalog_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_virtual_warehouse.html">dw_virtual_warehouse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_virtual_warehouse_info.html">dw_virtual_warehouse_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
@@ -177,13 +184,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>df -- Enable or Disable CDP DataFlow Services</li>
+      <li>de_virtual_cluster -- Create or delete CDP Data Engineering Virtual Clusters</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/df.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/de_virtual_cluster.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -196,23 +203,22 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="df-module"></span><div class="section" id="df-enable-or-disable-cdp-dataflow-services">
-<h1>df – Enable or Disable CDP DataFlow Services<a class="headerlink" href="#df-enable-or-disable-cdp-dataflow-services" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="de-virtual-cluster-module"></span><div class="section" id="de-virtual-cluster-create-or-delete-cdp-data-engineering-virtual-clusters">
+<h1>de_virtual_cluster – Create or delete CDP Data Engineering Virtual Clusters<a class="headerlink" href="#de-virtual-cluster-create-or-delete-cdp-data-engineering-virtual-clusters" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
 <li><p><a class="reference internal" href="#requirements" id="id2">Requirements</a></p></li>
 <li><p><a class="reference internal" href="#parameters" id="id3">Parameters</a></p></li>
-<li><p><a class="reference internal" href="#notes" id="id4">Notes</a></p></li>
-<li><p><a class="reference internal" href="#examples" id="id5">Examples</a></p></li>
-<li><p><a class="reference internal" href="#return-values" id="id6">Return Values</a></p></li>
-<li><p><a class="reference internal" href="#status" id="id7">Status</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id4">Examples</a></p></li>
+<li><p><a class="reference internal" href="#return-values" id="id5">Return Values</a></p></li>
+<li><p><a class="reference internal" href="#status" id="id6">Status</a></p></li>
 </ul>
 </div>
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Enable or Disable CDP DataFlow Services</p></li>
+<li><p>Create or delete CDP Data Engineering Virtual Clusters</p></li>
 </ul>
 </div>
 <div class="section" id="requirements">
@@ -235,87 +241,85 @@
 <td><p><strong>Choices/Defaults</strong></p></td>
 <td><p><strong>Comments</strong></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>crn</strong></p>
+<tr class="row-even"><td><p><strong>name</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 <p><br /></p>
 <p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>The name or crn of the CDP Environment to host the Dataflow Service</p>
-<p><br /></p>
-<p><em>Aliases: name, env_crn</em></p>
-</td>
+<td><p>The name of the CDE Virtual Cluster</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>state</strong></p>
+<tr class="row-odd"><td><p><strong>cluster_id</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><br /></p>
+<p><em>Required</em></p>
+</td>
+<td></td>
+<td><p>Cluster id of the CDE service where virtual cluster has to be created.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cpu_requests</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td><dl class="simple">
-<dt><strong>Choices:</strong></dt><dd><ul class="simple">
-<li><p><strong>present</strong> ↞</p></li>
-<li><p>enabled</p></li>
-<li><p>absent</p></li>
-<li><p>disabled</p></li>
-</ul>
-</dd>
-</dl>
-</td>
-<td><p>The declarative state of the Dataflow Service</p></td>
+<td></td>
+<td><p>Cpu requests for autoscaling.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>nodes_min</strong></p>
+<tr class="row-odd"><td><p><strong>memory_requests</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>The minimum number of kubernetes nodes needed for the environment. Note that the lowest minimum is 3 nodes.</p>
-<p><br /></p>
-<p><em>Aliases: min_k8s_node_count</em></p>
-</td>
+<td><p>Memory requests for autoscaling - eg. 30Gi.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>nodes_max</strong></p>
+<tr class="row-even"><td><p><strong>runtime_spot_component</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>The maximum number of  kubernetes  nodes that environment may scale up under high-demand situations.</p>
-<p><br /></p>
-<p><em>Aliases: max_k8s_node_count</em></p>
-</td>
+<td><p>Used to describe where the Driver and the Executors would run, on-demand or spot instances.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>public_loadbalancer</strong></p>
+<tr class="row-odd"><td><p><strong>spark_version</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>Indicates whether or not to use a public load balancer when deploying dependencies stack.</p>
-<p><br /></p>
-<p><em>Aliases: use_public_load_balancer</em></p>
-</td>
+<td><p>Spark version for the virtual cluster (e.g. SPARK2 or SPARK3).</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>ip_ranges</strong></p>
+<tr class="row-even"><td><p><strong>acl_users</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>Comma-separated Workload usernames of CDP users to be granted access to the Virtual Cluster.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>chart_value_overrides</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
 <td></td>
-<td><p>The IP ranges authorized to connect to the Kubernetes API server</p>
-<p><br /></p>
-<p><em>Aliases: authorized_ip_ranges</em></p>
-</td>
+<td><p>Chart overrides for creating a virtual cluster.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>persist</strong></p>
+<tr class="row-even"><td><p><strong>state</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
-<td></td>
-<td><p>Whether or not to retain the database records of related entities during removal.</p></td>
+<td><dl class="simple">
+<dt><strong>Choices:</strong></dt><dd><ul class="simple">
+<li><p><strong>present</strong> ↞</p></li>
+<li><p>absent</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+<td><p>The declarative state of the CDE virtual cluster</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>wait</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
 <td></td>
-<td><p>Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
+<td><p>Flag to enable internal polling to wait for the DE virtual cluster to achieve the declared state.
 If set to FALSE, the module will return immediately.</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>delay</strong></p>
@@ -323,7 +327,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
 <td></td>
-<td><p>The internal polling interval (in seconds) while the module waits for the Dataflow Service to achieve the declared state.</p>
+<td><p>The internal polling interval (in seconds) while the module waits for the DE virtual cluster to achieve the declared state.</p>
 <p><br /></p>
 <p><em>Aliases: polling_delay</em></p>
 </td>
@@ -333,256 +337,309 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
 <td></td>
-<td><p>The internal polling timeout (in seconds) while the module waits for the Dataflow Service to achieve the declared state.</p>
+<td><p>The internal polling timeout (in seconds) while the module waits for the DE virtual cluster to achieve the declared state.</p>
 <p><br /></p>
 <p><em>Aliases: polling_timeout</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>verify_tls</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
-</td>
-<td></td>
-<td><p>Verify the TLS certificates for the CDP endpoint.</p>
-<p><br /></p>
-<p><em>Aliases: tls</em></p>
-</td>
-</tr>
-<tr class="row-odd"><td><p><strong>debug</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
-</td>
-<td></td>
-<td><p>Capture the CDP SDK debug log.</p>
-<p><br /></p>
-<p><em>Aliases: debug_endpoints</em></p>
-</td>
-</tr>
-<tr class="row-even"><td><p><strong>profile</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>If provided, the CDP SDK will use this value as its profile.</p></td>
-</tr>
 </tbody>
 </table>
 </div>
-<div class="section" id="notes">
-<h2><a class="toc-backref" href="#id4">Notes</a><a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<ul class="simple">
-<li><p>This feature this module is for is in Technical Preview</p></li>
-</ul>
-</div>
-</div>
 <div class="section" id="examples">
-<h2><a class="toc-backref" href="#id5">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
-
-<span class="c1"># Create a Dataflow Service</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-service</span>
-    <span class="nt">nodes_min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
-    <span class="nt">nodes_max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
-    <span class="nt">public_loadbalancer</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
-    <span class="nt">ip_ranges</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">&#39;192.168.0.1/24&#39;</span><span class="p p-Indicator">]</span>
+<h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a CDE virtual cluster</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.de_virtual_cluster</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">virtual-cluster-name</span>
+    <span class="nt">cluster_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cde-service-name</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">cdp-environment-name</span>
     <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">present</span>
-    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">True</span>
+    <span class="nt">delay</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
+    <span class="nt">timeout</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">600</span>
 
-<span class="c1"># Remove a Dataflow Service with Async wait</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-service</span>
-    <span class="nt">persist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
-    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">absent</span>
-    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
-  <span class="nt">async</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3600</span>
-  <span class="nt">poll</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
-  <span class="nt">register</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">__my_teardown_request</span>
+<span class="c1"># Note: virtual clusters can be removed manually (CDP CLI/API or Web UI), or by removing the parent CDE service (and all other virtual clusters)</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="return-values">
-<h2><a class="toc-backref" href="#id6">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 14%" />
-<col style="width: 9%" />
-<col style="width: 23%" />
-<col style="width: 7%" />
-<col style="width: 46%" />
+<col style="width: 11%" />
+<col style="width: 8%" />
+<col style="width: 19%" />
+<col style="width: 12%" />
+<col style="width: 5%" />
+<col style="width: 45%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
+<tr class="row-odd"><td colspan="4"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="3"><p><strong>environments</strong></p>
+<tr class="row-even"><td colspan="4"><p><strong>virtual_cluster</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">complex</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The information about the named DataFlow Service or DataFlow Services</p></td>
+<td><p>DE virtual cluste</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>crn</strong></p>
+<td colspan="3"><p><strong>VcUiUrl</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The DataFlow Service’s parent environment CRN.</p></td>
+<td><p>URL of the CDE Virtual Cluster UI</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td colspan="2"><p><strong>name</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The DataFlow Service’s parent environment name.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>cloudPlatform</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The cloud platform of the environment.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="2"><p><strong>region</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The region of the environment.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>deploymentCount</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The deployment count.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="2"><p><strong>minK8sNodeCount</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The  minimum number of Kubernetes nodes that need to be provisioned in the environment.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>maxK8sNodeCount</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The maximum number of kubernetes nodes that environment may scale up under high-demand situations.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="2"><p><strong>status</strong></p>
+<td colspan="3"><p><strong>accessControl</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The status of a DataFlow enabled environment.</p></td>
+<td><p>Access control object for the Virtual Cluster</p></td>
 </tr>
 <tr class="row-odd"><td></td>
 <td></td>
-<td><p><strong>state</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The state of the environment.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td><p><strong>message</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>A status message for the environment.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>k8sNodeCount</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The number of kubernetes nodes currently in use by DataFlow for this environment.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="2"><p><strong>instanceType</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The instance type of the kubernetes nodes currently in use by DataFlow for this environment.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>dfLocalUrl</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The URL of the environment local DataFlow application.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="2"><p><strong>authorizedIpRanges</strong></p>
+<td colspan="2"><p><strong>users</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The authorized IP Ranges.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>activeWarningAlertCount</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Current count of active alerts classified as a warning.</p></td>
+<td><p>Workload usernames of CDP users granted access to the Virtual Cluster.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td colspan="2"><p><strong>activeErrorAlertCount</strong></p>
+<td></td>
+<td></td>
+<td><p><strong>description</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
-<td><p>always</p></td>
-<td><p>Current count of active alerts classified as an error.</p></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>clusterId</strong></p>
+<td></td>
+<td></td>
+<td><p><strong>returned</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td><p>if enabled</p></td>
-<td><p>Cluster id of the environment.</p></td>
+<td></td>
+<td></td>
 </tr>
-<tr class="row-even"><td colspan="3"><p><strong>sdk_out</strong></p>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>type</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td><p>when supported</p></td>
-<td><p>Returns the captured CDP SDK log.</p></td>
+<td></td>
+<td></td>
 </tr>
-<tr class="row-odd"><td colspan="3"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>chartValueOverrides</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Chart overrides for the CDE virtual cluster.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td colspan="2"><p><strong>ChartValueOverridesResponse</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td><p>when supported</p></td>
-<td><p>Returns a list of each line of the captured CDP SDK log.</p></td>
+<td><p>always</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>chartName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Name of the chart that has to be overridden.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>overrides</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Space separated key value-pairs for overriding chart values (colon separated)</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>clusterId</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Cluster ID of the CDE service that contains the Virtual Cluster</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>creationTime</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Time of creation of the virtual Cluster</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>creatorEmail</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Email address of the creator of Virtual Cluster</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>creatorID</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>ID of the creator of Virtual Cluster</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>creatorName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Name of the creator of the Virtual Cluster</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>historyServerUrl</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Spark History Server URL for the Virtual Cluster</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>livyServerUrl</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Livy Server URL for the Virtual Cluster</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>resources</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">complex</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Resources details of CDE virtual cluster.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td colspan="2"><p><strong>VcResources</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">complex</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Object to store resources for a CDE service.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>actualCpuRequests</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Actual CPU request for the VC. This accounts for other dex apps(eg. livy, airflow), that run in the virtual cluster.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>actualMemoryRequests</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Actual Memory request for the VC. This accounts for other dex apps(eg. livy, airflow), that run in the virtual cluster.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>cpuRequests</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The CPU requests for VC for running spark jobs.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td></td>
+<td><p><strong>memRequests</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The Memory requests for VC for running spark jobs.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>safariUrl</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Safari URL for the Virtual Cluster</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>sparkVersion</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Spark version for the virtual cluster</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>status</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Status of the Virtual Cluster</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>vcApiUrl</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Url for the Virtual Cluster APIs</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="3"><p><strong>vcId</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Virtual Cluster ID</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="3"><p><strong>vcName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Name of the CDE Virtual Cluster</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="status">
-<h2><a class="toc-backref" href="#id7">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id6">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>This module is not guaranteed to have a backwards compatible interface. <em>[preview]</em></p></li>
 <li><p>This module is maintained by community.</p></li>
@@ -590,7 +647,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <div class="section" id="authors">
 <h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Dan Chaffelson (&#64;chaffelson)</p></li>
+<li><p>Curtis Howard (&#64;curtishoward)</p></li>
 </ul>
 </div>
 </div>
@@ -604,10 +661,10 @@ If set to FALSE, the module will return immediately.</p></td>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="df_info.html" class="btn btn-neutral float-right" title="df_info – Gather information about CDP DataFlow Services" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="de_virtual_cluster_info.html" class="btn btn-neutral float-right" title="de_virtual_cluster_info – Gather information about CDP DE virtual clusters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="datahub_template_info.html" class="btn btn-neutral float-left" title="datahub_template_info – Gather information about CDP Datahub Cluster Templates" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="de_info.html" class="btn btn-neutral float-left" title="de_info – Gather information about CDP DE Workspaces" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

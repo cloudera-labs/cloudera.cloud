@@ -19,6 +19,18 @@ updated template and Ansible 2.10 support.
 pip install git+https://github.com/wmudge/ansible-doc-extractor.git@native_2_10
 ```
 
+# Preparing a Release
+
+To release a new version of the collection, first update the following files:
+
+* `galaxy.yml` - version number
+* `site/conf.py` - version number
+* `plugins/README.md` - modules and module links
+* `docs/index.rst` - modules and reST links 
+
+Then build the module documentation and correct any errors. Once the reST `docsrc` files are generating correctly, you
+can build the documentation.
+
 # Building Module Documentation
 
 The `ansible-doc-extractor` is a Python CLI application that reads an Ansible module source file, extracts the embedded
@@ -35,6 +47,8 @@ Or you can run the bash script, `generate_rst.sh`, which will file glob the `mod
 
 For new modules, you will also want to edit the `docsrc/index.rst` file and add the module to the `toctree::` 
 directive.
+
+NOTE: You must declare the `ANSIBLE_COLLECTIONS_PATH` so the document fragments, etc. can be found by Ansible.
 
 # Building the Site Documentation Locally
 

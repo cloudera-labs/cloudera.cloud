@@ -12,11 +12,16 @@ modules employ the underlying SDK contained within the `cdpy` Python package.
 | [account_cred_info](./modules/account_cred_info.py) | Gather information about Account prerequisites for CDP Credentials |
 | [datahub_cluster](./modules/datahub_cluster.py) | Create, manage, and destroy CDP Data Hubs |
 | [datahub_cluster_info](./modules/datahub_cluster_info.py) | Gather information about CDP Data Hubs |
+| [datahub_definition_info](./modules/datahub_definition_info.py) | Gather information about CDP Data Hub Cluster Definitions |
 | [datahub_template_info](./modules/datahub_template_info.py) | Gather information about CDP Data Hub templates |
 | [datalake](./modules/datalake.py) | Create, manage, and destroy CDP Datalakes |
 | [datalake_info](./modules/datalake_info.py) | Gather information about CDP Datalakes |
 | [datalake_runtime_info](./modules/datalake_runtime_info.py) | Gather information about CDP Datalake Runtimes |
-| [df](./modules/df_service.py) | Enable or disable CDP DataFlow services |
+| [de](./modules/de.py) | Enable and Disable CDP Data Engineering services |
+| [de_info](./modules/de_info.py) | Gather information about CDP Data Engineering Workspaces |
+| [de_virtual_cluster](./modules/de_virtual_cluster.py) | Create or delete CDP Data Engineering Virtual Clusters |
+| [de_virtual_cluster_info](./modules/de_virtual_cluster_info.py) | Gather information about CDP Data Engineering Virtual Clusters |
+| [df_service](./modules/df_service.py) | Enable or disable CDP DataFlow services |
 | [df_info](./modules/df_info.py) | Gather information about CDP DataFlow services |
 | [dw_cluster](./modules/dw_cluster.py) | Create, manage, and destroy CDP Data Warehouse experiences |
 | [dw_cluster_info](./modules/dw_cluster_info.py) | Gather information about CDP Data Warehouse experiences |
@@ -47,5 +52,3 @@ modules employ the underlying SDK contained within the `cdpy` Python package.
 | [ml_workspace_access](./modules/ml_workspace_access.py) | Grant and revoke user access to and from CDP Machine Learning experiences |
 | [opdb](./modules/opdb.py) | Create, manage, and destroy CDP Operational Database experiences |
 | [opdb_info](./modules/opdb_info.py) | Gather information about CDP Operational Database experiences |
-| [de](./modules/de.py) | Create, manage, and destroy CDP Data Engineering experiences |
-| [de_info](./modules/de_info.py) | Gather information about CDP Data Engineering experiences |

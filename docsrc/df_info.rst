@@ -40,45 +40,53 @@ Parameters
 .. table::
    :widths: 30 20 50
 
-   +----------------+----------------------+-----------------------------------------------------------------+
-   | **Parameter**  | **Choices/Defaults** | **Comments**                                                    |
-   +----------------+----------------------+-----------------------------------------------------------------+
-   | **name**       |                      | If a name is provided, that DataFlow Service will be described. |
-   |                |                      | Must be CDP Environment CRN or string name of DataFlow Service  |
-   | |br|           |                      |                                                                 |
-   |                |                      |                                                                 |
-   | ``str``        |                      |                                                                 |
-   |                |                      |                                                                 |
-   |                |                      | |br|                                                            |
-   |                |                      |                                                                 |
-   |                |                      | *Aliases: crn*                                                  |
-   +----------------+----------------------+-----------------------------------------------------------------+
-   | **verify_tls** |                      | Verify the TLS certificates for the CDP endpoint.               |
-   |                |                      |                                                                 |
-   | |br|           |                      |                                                                 |
-   |                |                      |                                                                 |
-   | ``bool``       |                      |                                                                 |
-   |                |                      |                                                                 |
-   |                |                      | |br|                                                            |
-   |                |                      |                                                                 |
-   |                |                      | *Aliases: tls*                                                  |
-   +----------------+----------------------+-----------------------------------------------------------------+
-   | **debug**      |                      | Capture the CDP SDK debug log.                                  |
-   |                |                      |                                                                 |
-   | |br|           |                      |                                                                 |
-   |                |                      |                                                                 |
-   | ``bool``       |                      |                                                                 |
-   |                |                      |                                                                 |
-   |                |                      | |br|                                                            |
-   |                |                      |                                                                 |
-   |                |                      | *Aliases: debug_endpoints*                                      |
-   +----------------+----------------------+-----------------------------------------------------------------+
-   | **profile**    |                      | If provided, the CDP SDK will use this value as its profile.    |
-   |                |                      |                                                                 |
-   | |br|           |                      |                                                                 |
-   |                |                      |                                                                 |
-   | ``str``        |                      |                                                                 |
-   +----------------+----------------------+-----------------------------------------------------------------+
+   +----------------+----------------------+----------------------------------------------------------------------------------------+
+   | **Parameter**  | **Choices/Defaults** | **Comments**                                                                           |
+   +----------------+----------------------+----------------------------------------------------------------------------------------+
+   | **name**       |                      | If a name is provided, that DataFlow Service will be described                         |
+   |                |                      | Must be the string name of the CDP Environment                                         |
+   | |br|           |                      | Mutually exclusive with df_crn and env_crn                                             |
+   |                |                      |                                                                                        |
+   | ``str``        |                      |                                                                                        |
+   +----------------+----------------------+----------------------------------------------------------------------------------------+
+   | **df_crn**     |                      | If a df_crn is provided, that DataFlow Service will be described                       |
+   |                |                      | Mutually exclusive with name and env_crn                                               |
+   | |br|           |                      |                                                                                        |
+   |                |                      |                                                                                        |
+   | ``str``        |                      |                                                                                        |
+   +----------------+----------------------+----------------------------------------------------------------------------------------+
+   | **env_crn**    |                      | If an env_crn is provided, the DataFlow Service for that Environment will be described |
+   |                |                      | Mutually exclusive with name and df_crn                                                |
+   | |br|           |                      |                                                                                        |
+   |                |                      |                                                                                        |
+   | ``str``        |                      |                                                                                        |
+   +----------------+----------------------+----------------------------------------------------------------------------------------+
+   | **verify_tls** |                      | Verify the TLS certificates for the CDP endpoint.                                      |
+   |                |                      |                                                                                        |
+   | |br|           |                      |                                                                                        |
+   |                |                      |                                                                                        |
+   | ``bool``       |                      |                                                                                        |
+   |                |                      |                                                                                        |
+   |                |                      | |br|                                                                                   |
+   |                |                      |                                                                                        |
+   |                |                      | *Aliases: tls*                                                                         |
+   +----------------+----------------------+----------------------------------------------------------------------------------------+
+   | **debug**      |                      | Capture the CDP SDK debug log.                                                         |
+   |                |                      |                                                                                        |
+   | |br|           |                      |                                                                                        |
+   |                |                      |                                                                                        |
+   | ``bool``       |                      |                                                                                        |
+   |                |                      |                                                                                        |
+   |                |                      | |br|                                                                                   |
+   |                |                      |                                                                                        |
+   |                |                      | *Aliases: debug_endpoints*                                                             |
+   +----------------+----------------------+----------------------------------------------------------------------------------------+
+   | **profile**    |                      | If provided, the CDP SDK will use this value as its profile.                           |
+   |                |                      |                                                                                        |
+   | |br|           |                      |                                                                                        |
+   |                |                      |                                                                                        |
+   | ``str``        |                      |                                                                                        |
+   +----------------+----------------------+----------------------------------------------------------------------------------------+
 
 
 Notes
@@ -105,9 +113,13 @@ Examples
   - cloudera.cloud.df_info:
       name: example-service
 
-  # Gather detailed information about a named DataFlow Service using a CRN
+  # Gather detailed information about a named DataFlow Service using a Dataflow CRN
   - cloudera.cloud.df_info:
-      crn: example-service-crn
+      df_crn: crn:cdp:df:region:tenant-uuid4:service:service-uuid4
+
+  # Gather detailed information about a named DataFlow Service using an Environment CRN
+  - cloudera.cloud.df_info:
+      df_crn: crn:cdp:environments:region:tenant-uuid4:environment:environment-uuid4
 
 
 

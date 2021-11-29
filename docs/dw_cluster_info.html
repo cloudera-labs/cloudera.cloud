@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>dw_cluster_info -- Gather information about CDP Data Warehouse Clusters &mdash; cloudera.cloud 1.4.0 documentation</title>
+  <title>dw_cluster_info -- Gather information about CDP Data Warehouse Clusters &mdash; cloudera.cloud 1.5.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="env – Manage CDP Environments" href="env.html" />
+    <link rel="next" title="dw_database_catalog – Create, manage, and destroy CDP Data Warehouse Database Catalogs" href="dw_database_catalog.html" />
     <link rel="prev" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" href="dw_cluster.html" /> 
 </head>
 
@@ -88,14 +88,18 @@
 <li class="toctree-l1"><a class="reference internal" href="account_auth.html">account_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="account_auth_info.html">account_auth_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="account_cred_info.html">account_cred_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster.html">datahub_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_cluster_info.html">datahub_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_definition_info.html">datahub_definition_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="df.html">df</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de.html">de</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_info.html">de_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster.html">de_virtual_cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster_info.html">de_virtual_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_service.html">df_service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_info.html">df_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">dw_cluster_info</a><ul>
@@ -107,6 +111,10 @@
 <li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="dw_database_catalog.html">dw_database_catalog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_database_catalog_info.html">dw_database_catalog_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_virtual_warehouse.html">dw_virtual_warehouse</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dw_virtual_warehouse_info.html">dw_virtual_warehouse_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
@@ -233,15 +241,15 @@
 <td><p><strong>Choices/Defaults</strong></p></td>
 <td><p><strong>Comments</strong></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>id</strong></p>
+<tr class="row-even"><td><p><strong>cluster_id</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>If a name is provided, that Data Warehouse Cluster will be described.
-environment must be provided if using name to retrieve a Cluster</p>
+<td><p>The identifier of the Data Warehouse Cluster.
+Mutually exclusive with <em>environment</em>.</p>
 <p><br /></p>
-<p><em>Aliases: name</em></p>
+<p><em>Aliases: id</em></p>
 </td>
 </tr>
 <tr class="row-odd"><td><p><strong>environment</strong></p>
@@ -249,8 +257,8 @@ environment must be provided if using name to retrieve a Cluster</p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>The name of the Environment in which to find and describe the Data Warehouse Clusters.
-Required with name to retrieve a Cluster</p>
+<td><p>The name or CRN of the Environment in which to find and describe Data Warehouse Clusters.
+Mutually exclusive with <em>cluster_id</em>.</p>
 <p><br /></p>
 <p><em>Aliases: env</em></p>
 </td>
@@ -289,13 +297,16 @@ Required with name to retrieve a Cluster</p>
 <h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># List basic information about all Data Warehouse Clusters</span>
+<span class="c1"># List information about all Data Warehouse Clusters</span>
 <span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.dw_cluster_info</span><span class="p">:</span>
 
-<span class="c1"># Gather detailed information about a named Cluster</span>
+<span class="c1"># Gather information about all Data Warehouse Clusters within an Environment</span>
 <span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.dw_cluster_info</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-cluster</span>
     <span class="nt">env</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-environment</span>
+
+<span class="c1"># Gather information about an identified Cluster</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.dw_cluster_info</span><span class="p">:</span>
+    <span class="nt">cluster_id</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">env-xyzabc</span>
 </pre></div>
 </div>
 </div>
@@ -304,19 +315,18 @@ Required with name to retrieve a Cluster</p>
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 14%" />
-<col style="width: 9%" />
-<col style="width: 23%" />
+<col style="width: 16%" />
 <col style="width: 10%" />
-<col style="width: 7%" />
-<col style="width: 36%" />
+<col style="width: 26%" />
+<col style="width: 8%" />
+<col style="width: 40%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td colspan="4"><p><strong>Key</strong></p></td>
+<tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="4"><p><strong>clusters</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>clusters</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -324,124 +334,105 @@ Required with name to retrieve a Cluster</p>
 <td><p>The information about the named Cluster or Clusters</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>cluster</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
-</td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td colspan="2"><p><strong>name</strong></p>
+<td colspan="2"><p><strong>id</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The name of the cluster.</p></td>
+<td><p>The cluster identifier.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td colspan="2"><p><strong>environmentCrn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The crn of the cluster’s environment.</p></td>
+<td><p>The CRN of the cluster’s Environment</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td colspan="2"><p><strong>crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The cluster’s crn.</p></td>
+<td><p>The cluster’s CRN.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td colspan="2"><p><strong>creationDate</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The creation time of the cluster in UTC.</p></td>
+<td><p>The creation timestamp of the cluster in UTC.</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td colspan="2"><p><strong>status</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The status of the Cluster</p></td>
+<td><p>The status of the cluster</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td colspan="2"><p><strong>creator</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The CRN of the cluster creator.</p></td>
+<td><p>The cluster creator details.</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td><p><strong>crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>Actor CRN</p></td>
+<td><p>always</p></td>
+<td><p>The Actor CRN.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td><p><strong>email</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>Email address for users</p></td>
+<td><p>when supported</p></td>
+<td><p>Email address (users).</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td><p><strong>workloadUsername</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>Username for users</p></td>
+<td><p>when supported</p></td>
+<td><p>Username (users).</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td><p><strong>machineUsername</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td></td>
-<td><p>Username for machine users</p></td>
+<td><p>when supported</p></td>
+<td><p>Username (machine users).</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
+<tr class="row-odd"><td></td>
 <td colspan="2"><p><strong>cloudPlatform</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The  cloud  platform  of the environment that was used to create this cluster</p></td>
+<td><p>The cloud platform of the environment that was used to create this cluster.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="4"><p><strong>sdk_out</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>sdk_out</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>when supported</p></td>
 <td><p>Returns the captured CDP SDK log.</p></td>
 </tr>
-<tr class="row-even"><td colspan="4"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-odd"><td colspan="3"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -475,7 +466,7 @@ Required with name to retrieve a Cluster</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="env.html" class="btn btn-neutral float-right" title="env – Manage CDP Environments" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="dw_database_catalog.html" class="btn btn-neutral float-right" title="dw_database_catalog – Create, manage, and destroy CDP Data Warehouse Database Catalogs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="dw_cluster.html" class="btn btn-neutral float-left" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
