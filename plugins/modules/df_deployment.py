@@ -33,61 +33,95 @@ author:
 requirements:
   - cdpy
 options:
-  crn:
-    description: The name or crn of the CDP Environment to host the Dataflow Service
-    type: str
-    required: True
-    aliases:
-      - name
-      - env_crn
-  state:
+  name:
     description:
-      - The declarative state of the Dataflow Service
+      - The name of the Deployed Flow, or Flow to be Deployed
     type: str
     required: False
-    default: present
-    choices:
-      - present
-      - enabled
-      - absent
-      - disabled
-  nodes_min:
-    description: The minimum number of kubernetes nodes needed for the environment.
-      Note that the lowest minimum is 3 nodes.
+  dep_crn:
+    description: 
+      - The crn of the Deployed Flow to be terminated
+      - Required if Name is not supplied for termination
+    type: str
+    required: False
+  df_crn:
+    description:
+      - The crn of the Dataflow Service
+      - Required if the df_name is not supplied
+    type: str
+    required: False
+  df_name:
+    description:
+      - The Name of the Dataflow Service
+      - Required if the df_crn is not supplied
+    type: str
+    required: False
+  flow_ver_crn:
+    description:
+      - The crn of the specific Version of the Flow to be Deployed
+      - Required for creating a Deployment if flow_name is not supplied
+    type: str
+    required: False
+  flow_name:
+    description:
+      - The Name of the Flow to be Deployed
+      - Required for creating a Deployment if flow_ver_crn is not supplied
+    type: str
+    required: False
+  flow_ver_crn:
+    description:
+      - The crn of the specific Version of the Flow to be Deployed
+      - Required for creating a Deployment if flow_name is not supplied
+    type: str
+    required: False
+  flow_ver:
+    description:
+      - The Version number of the Flow to be Deployed
+      - If not supplied, the latest version available will be Deployed
     type: int
-    default: 3
     required: False
-    aliases:
-      - min_k8s_node_count
-  nodes_max:
-    description: The maximum number of  kubernetes  nodes that environment may scale up under high-demand situations.
+    default: newest
+  size:
+    description:
+      - The Size of the Pod for the Flow to be Deployed into
+    type: str
+    default: SMALL
+    options:
+      - EXTRA_SMALL
+      - SMALL
+      - MEDIUM
+      - LARGE
+    required: False
+  static_node_count:
+    description:
+      - The number of nodes to build the Pod on if not using Autoscaling
     type: int
-    default: 3
     required: False
-    aliases:
-      - max_k8s_node_count
-  public_loadbalancer:
-    description: Indicates whether or not to use a public load balancer when deploying dependencies stack.
-    type: bool
-    required: False
-    aliases:
-      - use_public_load_balancer
-  ip_ranges:
-    description: The IP ranges authorized to connect to the Kubernetes API server
-    type: list
-    required: False
-    aliases:
-      - authorized_ip_ranges
-  persist:
-    description: Whether or not to retain the database records of related entities during removal.
+    default: 1
+  autoscale:
+    description:
+      - Whether to use autoscaling of pods for this Deployment
     type: bool
     required: False
     default: False
-  terminate:
-    description: Whether or  not to terminate all deployments associated with this DataFlow deployment
-    type: bool
+  autoscale_nodes_min:
+    description:
+      - The minimum number of nodes to use when Autoscaling
+    type: int
     required: False
-    default: False
+    default: 1
+  autoscale_nodes_max:
+    description:
+      - The maximum number of nodes to use when Autoscaling
+    type: int
+    required: False
+    default: 3
+  nifi_ver:
+    description:
+      - The specific version of NiFi to use in the Deployment
+    type: str
+    required: False
+    default: latest
   wait:
     description:
       - Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
@@ -95,6 +129,22 @@ options:
     type: bool
     required: False
     default: True
+  autostart_flow:
+    description:
+      - Whether to automatically start the Flow once Deployment is complete
+    type: bool
+    required: False
+    default: True
+  parameter_groups:
+    description:
+      - Definitions of Parameters to apply to the Deployed Flow
+    type: dict
+    required: False
+  kpis:
+    description:
+      - Definitions of KPIs to apply to the Deployed Flow
+    type: list
+    required: False
   delay:
     description:
       - The internal polling interval (in seconds) while the module waits for the Dataflow Service to achieve the 
@@ -123,20 +173,14 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
-# Create a Dataflow Service
+# Deploy a Dataflow with defaults
 - cloudera.cloud.df_deployment:
-    name: my-deployment
-    nodes_min: 3
-    nodes_max: 10
-    public_loadbalancer: True
-    ip_ranges: ['192.168.0.1/24']
-    state: present
-    wait: yes
+    name: my-flow
 
 # Remove a Dataflow Service with Async wait
 - cloudera.cloud.df_deployment:
-    name: my-deployment
-    persist: False
+    name: my-flow-name
+    df_name: my-env-name
     state: absent
     wait: yes
   async: 3600
@@ -239,18 +283,22 @@ class DFDeployment(CdpModule):
         super(DFDeployment, self).__init__(module)
 
         # Set variables
-        self.env_crn = self._get_param('env_crn')
+        self.name = self._get_param('name')
+        self.dep_crn = self._get_param('dep_crn')
         self.df_crn = self._get_param('df_crn')
-        self.nodes_min = self._get_param('nodes_min')
-        self.nodes_max = self._get_param('nodes_max')
-        self.public_loadbalancer = self._get_param('public_loadbalancer')
-        self.lb_ip_ranges = self._get_param('loadbalancer_ip_ranges')
-        self.kube_ip_ranges = self._get_param('kube_ip_ranges')
-        self.cluster_subnets = self._get_param('cluster_subnets')
-        self.lb_subnets = self._get_param('lb_subnets')
-        self.persist = self._get_param('persist')
-        self.terminate = self._get_param('terminate')
-        self.force = self._get_param('force')
+        self.df_name = self._get_param('df_name')
+        self.flow_ver_crn = self._get_param('flow_ver_crn')
+        self.flow_name = self._get_param('flow_name')
+        self.flow_ver = self._get_param('flow_ver')
+        self.size = self._get_param('size')
+        self.static_node_count = self._get_param('static_node_count')
+        self.autoscale_enabled = self._get_param('autoscale_enabled')
+        self.autoscale_nodes_min = self._get_param('autoscale_nodes_min')
+        self.autoscale_nodes_max = self._get_param('autoscale_nodes_max')
+        self.nifi_ver = self._get_param('nifi_ver')
+        self.autostart_flow = self._get_param('autostart_flow')
+        self.parameter_groups = self._get_param('parameter_groups')
+        self.kpis = self._get_param('kpis')
 
         self.state = self._get_param('state')
         self.wait = self._get_param('wait')
@@ -259,140 +307,153 @@ class DFDeployment(CdpModule):
 
         # Initialize return values
         self.deployment = {}
+        self.changed = False
 
         # Initialize internal values
-        self.target = None
+        self.target = {}
 
         # Execute logic process
         self.process()
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.env_crn is not None:
-            self.env_crn = self.cdpy.environments.resolve_environment_crn(self.env_crn)
-        if self.env_crn is not None or self.df_crn is not None:
-            self.target = self.cdpy.df.describe_deployment(env_crn=self.env_crn, df_crn=self.df_crn)
-
+        # Prepare information
+        if self.df_crn is None:
+            self.df_crn = self.cdpy.df.resolve_service_crn_from_name(self.df_name)
+            if self.df_crn is None:
+                self.module.fail_json(
+                    msg="Either df_crn must be supplied or resolvable from df_name")
+        if self.dep_crn is not None:
+            self.target = self.cdpy.df.describe_deployment(dep_crn=self.dep_crn)
+        elif self.name is not None and self.df_crn is not None:
+            self.target = self.cdpy.df.describe_deployment(df_crn=self.df_crn, name=self.name)
+            if self.target is not None:
+                self.dep_crn = self.target['crn']
+        # Process execution
         if self.target is not None:
-            # DF Database Entry exists
+            # DF Deployment exists
             if self.state in ['absent']:
+                # Existing Deployment to be removed
                 if self.module.check_mode:
                     self.deployment = self.target
                 else:
-                    self._disable_df()
+                    self._terminate_deployment()
+            # Existing deployment to be retained
             elif self.state in ['present']:
                 self.module.warn(
-                    "Dataflow Service already enabled and configuration validation and reconciliation is not supported;" +
-                    "to change a Dataflow Service, explicitly disable and recreate the Service or use the UI")
+                    "Dataflow Deployment already exists and configuration validation and reconciliation " +
+                    "is not supported;" +
+                    "to change a Deployment, explicitly terminate and recreate it or use the UI")
                 if self.wait:
-                    self.deployment = self._wait_for_enabled()
+                    self.deployment = self._wait_for_deployed()
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state)
         else:
-            # Environment does not have DF database entry, and probably doesn't exist
+            # Deployment CRN not found in Tenant, and probably doesn't exist
             if self.state in ['absent']:
                 self.module.log(
-                    "Dataflow Service already disabled in CDP Environment %s" % self.env_crn)
+                    "Dataflow Deployment not found in CDP Tenant %s" % self.dep_crn)
+            # Deployment to be created
             elif self.state in ['present']:
-                if self.env_crn is None:
-                    self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % self.env)
+                # create Deployment
+                if not self.module.check_mode:
+                    self._create_deployment()
+                    if self.wait:
+                        self.deployment = self._wait_for_deployed()
                 else:
-                    # create DF Service
-                    if not self.module.check_mode:
-                        self.deployment = self.cdpy.df.enable_deployment(
-                            env_crn=self.env_crn,
-                            min_nodes=self.nodes_min,
-                            max_nodes=self.nodes_max,
-                            enable_public_ip=self.public_loadbalancer,
-                            lb_ips=self.lb_ip_ranges,
-                            kube_ips=self.kube_ip_ranges,
-                            cluster_subnets=self.cluster_subnets,
-                            lb_subnets=self.lb_subnets
-                        )
-                        if self.wait:
-                            self.deployment = self._wait_for_enabled()
+                    pass  # Check mode can return the described deployment
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state)
 
-    def _wait_for_enabled(self):
+    def _create_deployment(self):
+        if self.flow_ver_crn is None:
+            # flow_name must be populated if flow_ver_crn is None
+            self.flow_ver_crn = self.cdpy.df.get_version_crn_from_flow_definition(self.flow_name, self.flow_ver)
+        self.deployment = self.cdpy.df.create_deployment(
+            df_crn=self.df_crn,
+            flow_ver_crn=self.flow_ver_crn,
+            deployment_name=self.name,
+            size_name=self.size,
+            static_node_count=self.static_node_count,
+            autoscale_enabled=self.autoscale_enabled,
+            autoscale_nodes_min=self.autoscale_nodes_min,
+            autoscale_nodes_max=self.autoscale_nodes_max,
+            nifi_ver=self.nifi_ver,
+            autostart_flow=self.autostart_flow,
+            parameter_groups=self.parameter_groups,
+            kpis=self.kpis,
+        )
+        self.changed = True
+
+    def _wait_for_deployed(self):
         return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.df.describe_deployment, params=dict(env_crn=self.env_crn),
+            describe_func=self.cdpy.df.describe_deployment,
+            params=dict(dep_crn=self.dep_crn, df_crn=self.df_crn, name=self.name),
             field=['status', 'state'], state=self.cdpy.sdk.STARTED_STATES,
             delay=self.delay, timeout=self.timeout
         )
 
-    def _disable_df(self):
-        # Attempt clean Disable, which also ensures we have tried at least once before we do a forced removal
+    def _terminate_deployment(self):
         if self.target['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
-            self.deployment = self.cdpy.df.disable_deployment(
-                df_crn=self.df_crn,
-                persist=self.persist,
-                terminate=self.terminate
+            self.deployment = self.cdpy.df.terminate_deployment(
+                dep_crn=self.dep_crn
             )
+            self.changed = True
         else:
-            self.module.warn("Attempting to disable DataFlow Service but state %s not in Removable States %s"
+            self.module.warn("Attempting to disable DataFlow Deployment but state %s not in Removable States %s"
                              % (self.target['status']['state'], self.cdpy.sdk.REMOVABLE_STATES))
         if self.wait:
-            # Wait for Clean Disable, if possible
             self.deployment = self.cdpy.sdk.wait_for_state(
-                describe_func=self.cdpy.df.describe_deployment, params=dict(df_crn=self.df_crn),
-                field=['status', 'state'],
-                state=self.cdpy.sdk.STOPPED_STATES + self.cdpy.sdk.REMOVABLE_STATES + [None],
-                delay=self.delay, timeout=self.timeout, ignore_failures=True
+                describe_func=self.cdpy.df.describe_deployment,
+                params=dict(dep_crn=self.dep_crn), field=None,
+                delay=self.delay, timeout=self.timeout
             )
         else:
-            self.deployment = self.cdpy.df.describe_deployment(df_crn=self.df_crn)
-        # Check disable result against need for further forced delete action, in case it didn't work first time around
-        if self.deployment is not None:
-            if self.deployment['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
-                if self.force:
-                    self.deployment = self.cdpy.df.reset_deployment(
-                        df_crn=self.df_crn
-                    )
-                else:
-                    self.module.fail_json(msg="DF Service Disable failed and Force delete not requested")
-            if self.wait:
-                self.deployment = self.cdpy.sdk.wait_for_state(
-                    describe_func=self.cdpy.df.describe_deployment, params=dict(df_crn=self.df_crn),
-                    field=None,  # This time we require removal or declare failure
-                    delay=self.delay, timeout=self.timeout
-                )
-            else:
-                self.deployment = self.cdpy.df.describe_deployment(df_crn=self.df_crn)
+            self.deployment = self.cdpy.df.describe_deployment(dep_crn=self.dep_crn)
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            env_crn=dict(type='str'),
-            df_crn=dict(type='str'),
-            nodes_min=dict(type='int', default=3, aliases=['min_k8s_node_count']),
-            nodes_max=dict(type='int', default=3, aliases=['max_k8s_node_count']),
-            public_loadbalancer=dict(type='bool', default=False, aliases=['use_public_load_balancer']),
-            loadbalancer_ip_ranges=dict(type='list', elements='str', default=None),
-            kube_ip_ranges=dict(type='list', elements='str', default=None),
-            cluster_subnets=dict(type='list', elements='str', default=None),
-            loadbalancer_subnets=dict(type='list', elements='str', default=None),
-            persist=dict(type='bool', default=False),
-            terminate=dict(type='bool', default=False),
+            name=dict(type='str'),
+            df_crn=dict(type='str', default=None),
+            df_name=dict(type='str', default=None),
+            dep_crn=dict(type='str', default=None),
+            flow_ver_crn=dict(type='str', default=None),
+            flow_name=dict(type='str', default=None),
+            flow_ver=dict(type='int', default=None),
+            size=dict(type='str',
+                           choices=['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE'],
+                           default='EXTRA_SMALL', aliases=['size_name']),
+            static_node_count=dict(type='int', default=1),
+            autoscale=dict(type='bool', default=False, aliases=['autoscale_enabled']),
+            autoscale_nodes_min=dict(type='int', default=1),
+            autoscale_nodes_max=dict(type='int', default=3),
+            nifi_ver=dict(type='str', default=None),
+            autostart_flow=dict(type='bool', default=True),
+            parameter_groups=dict(type='dict', default=None),
+            kpis=dict(type='list', default=None),
             state=dict(type='str', choices=['present', 'absent'],
                        default='present'),
-            force=dict(type='bool', default=False, aliases=['force_delete']),
             wait=dict(type='bool', default=True),
             delay=dict(type='int', aliases=['polling_delay'], default=15),
             timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         supports_check_mode=True,
+        required_one_of=[
+            ['df_crn', 'df_name']
+        ],
         required_if=[
-            ('state', 'present', ('env_crn', ), False),
-            ('state', 'absent', ('df_crn', ), False)
-        ]
+            ['state', 'absent', ['dep_crn', 'name'], True],  # One of for termination
+            ['state', 'present', ['flow_ver_crn', 'flow_name'], True],  # One of
+            ['state', 'present', ['name']]
+        ],
     )
 
-    result = DFService(module)
-    output = dict(changed=False, deployment=result.deployment)
+    result = DFDeployment(module)
+    output = dict(changed=result.changed, deployment=result.deployment)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)

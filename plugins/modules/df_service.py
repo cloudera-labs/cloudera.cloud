@@ -88,6 +88,10 @@ options:
     type: bool
     required: False
     default: False
+  tags:
+    description: Tags to apply to the DataFlow Service 
+    type: dict
+    required: False
   wait:
     description:
       - Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
@@ -251,6 +255,7 @@ class DFService(CdpModule):
         self.persist = self._get_param('persist')
         self.terminate = self._get_param('terminate')
         self.force = self._get_param('force')
+        self.tags = self._get_param('tags')
 
         self.state = self._get_param('state')
         self.wait = self._get_param('wait')
@@ -259,6 +264,7 @@ class DFService(CdpModule):
 
         # Initialize return values
         self.service = {}
+        self.changed = False
 
         # Initialize internal values
         self.target = None
@@ -298,6 +304,7 @@ class DFService(CdpModule):
                 if self.env_crn is None:
                     self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % self.env)
                 else:
+                    df_tags = [{'key': x, 'value': self.tags[x]} for x in self.tags] if self.tags is not None else None
                     # create DF Service
                     if not self.module.check_mode:
                         self.service = self.cdpy.df.enable_service(
@@ -307,9 +314,11 @@ class DFService(CdpModule):
                             enable_public_ip=self.public_loadbalancer,
                             lb_ips=self.lb_ip_ranges,
                             kube_ips=self.kube_ip_ranges,
+                            tags=df_tags,
                             cluster_subnets=self.cluster_subnets,
                             lb_subnets=self.lb_subnets
                         )
+                        self.changed = True
                         if self.wait:
                             self.service = self._wait_for_enabled()
             else:
@@ -331,6 +340,10 @@ class DFService(CdpModule):
                 persist=self.persist,
                 terminate=self.terminate
             )
+            self.changed = True
+        elif self.target['status']['state'] in self.cdpy.sdk.TERMINATION_STATES:
+            self.module.warn("DataFlow Service is already Disabling, skipping termination request")
+            pass
         else:
             self.module.warn("Attempting to disable DataFlow Service but state %s not in Removable States %s"
                              % (self.target['status']['state'], self.cdpy.sdk.REMOVABLE_STATES))
@@ -351,6 +364,7 @@ class DFService(CdpModule):
                     self.service = self.cdpy.df.reset_service(
                         df_crn=self.df_crn
                     )
+                    self.changed = True
                 else:
                     self.module.fail_json(msg="DF Service Disable failed and Force delete not requested")
             if self.wait:
@@ -377,6 +391,7 @@ def main():
             loadbalancer_subnets=dict(type='list', elements='str', default=None),
             persist=dict(type='bool', default=False),
             terminate=dict(type='bool', default=False),
+            tags=dict(required=False, type='dict', default=None),
             state=dict(type='str', choices=['present', 'absent'],
                        default='present'),
             force=dict(type='bool', default=False, aliases=['force_delete']),
@@ -392,7 +407,7 @@ def main():
     )
 
     result = DFService(module)
-    output = dict(changed=False, service=result.service)
+    output = dict(changed=result.changed, service=result.service)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)

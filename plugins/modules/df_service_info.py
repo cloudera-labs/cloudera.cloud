@@ -82,14 +82,18 @@ EXAMPLES = r'''
 
 RETURN = r'''
 ---
-environments:
+services:
   description: The information about the named DataFlow Service or DataFlow Services
   type: list
   returned: always
   elements: complex
   contains:
     crn:
-      description:  The DataFlow Service's parent environment CRN.
+      description:  The DataFlow Service's CRN.
+      returned: always
+      type: str
+    environmentCrn:
+      description:  The DataFlow Service's Parent Environment CRN.
       returned: always
       type: str
     name:
@@ -209,7 +213,7 @@ def main():
         mutually_exclusive=['name', 'df_crn', 'env_crn']
     )
 
-    result = DFInfo(module)
+    result = DFServiceInfo(module)
     output = dict(changed=False, services=result.services)
 
     if result.debug:
