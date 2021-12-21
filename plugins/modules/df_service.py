@@ -304,7 +304,6 @@ class DFService(CdpModule):
                 if self.env_crn is None:
                     self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % self.env)
                 else:
-                    df_tags = [{'key': x, 'value': self.tags[x]} for x in self.tags] if self.tags is not None else None
                     # create DF Service
                     if not self.module.check_mode:
                         self.service = self.cdpy.df.enable_service(
@@ -314,7 +313,7 @@ class DFService(CdpModule):
                             enable_public_ip=self.public_loadbalancer,
                             lb_ips=self.lb_ip_ranges,
                             kube_ips=self.kube_ip_ranges,
-                            tags=df_tags,
+                            # tags=self.tags,  # Currently overstrict blocking of values
                             cluster_subnets=self.cluster_subnets,
                             lb_subnets=self.lb_subnets
                         )

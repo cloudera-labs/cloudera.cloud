@@ -306,7 +306,7 @@ class DFDeployment(CdpModule):
         self.timeout = self._get_param('timeout')
 
         # Initialize return values
-        self.deployment = {}
+        self.deployment = None
         self.changed = False
 
         # Initialize internal values
@@ -335,6 +335,8 @@ class DFDeployment(CdpModule):
             if self.state in ['absent']:
                 # Existing Deployment to be removed
                 if self.module.check_mode:
+                    self.module.log(
+                        "Check mode enabled, skipping termination of Deployment %s" % self.dep_crn)
                     self.deployment = self.target
                 else:
                     self._terminate_deployment()

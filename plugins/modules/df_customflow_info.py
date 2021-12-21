@@ -66,7 +66,7 @@ EXAMPLES = r'''
 
 RETURN = r'''
 ---
-catalog:
+flows:
   description: The listing of CustomFlow Definitions in the DataFlow Catalog in this CDP Tenant
   type: list
   returned: always
