@@ -138,7 +138,7 @@ options:
   parameter_groups:
     description:
       - Definitions of Parameters to apply to the Deployed Flow
-    type: dict
+    type: array
     required: False
   kpis:
     description:
@@ -435,7 +435,7 @@ def main():
             autoscale_nodes_max=dict(type='int', default=3),
             nifi_ver=dict(type='str', default=None),
             autostart_flow=dict(type='bool', default=True),
-            parameter_groups=dict(type='dict', default=None),
+            parameter_groups=dict(type='list', default=None),
             kpis=dict(type='list', default=None),
             state=dict(type='str', choices=['present', 'absent'],
                        default='present'),
