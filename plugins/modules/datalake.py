@@ -135,7 +135,7 @@ options:
       - polling_timeout
   raz:
     description:
-      - Flag indicating if Ranger RAZ should be enabled for the datalake
+      - Flag indicating if Ranger RAZ fine grained access should be enabled for the datalake
     type: bool
     required: False
     default: False
