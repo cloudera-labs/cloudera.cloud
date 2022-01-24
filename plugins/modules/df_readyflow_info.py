@@ -73,7 +73,7 @@ flows:
   elements: complex
   contains:
     readyflowCrn:
-      description:  
+      description:
         - The DataFlow readyflow Definition's CRN.
         - Use this readyflowCrn to address this object
       returned: always
@@ -131,11 +131,11 @@ flows:
           returned: always
           type: str
         imported:
-          description: Whether  the  ready  flow  has been imported into the current account.
+          description: Whether the ready flow has been imported into the current account.
           returned: always
-          type: bool         
+          type: bool
         modifiedTimestamp:
-          description: THe timestamp the entry was last modified.
+          description: The timestamp the entry was last modified.
           returned: always
           type: int
     versions:

@@ -191,38 +191,17 @@ EXAMPLES = r'''
 
 RETURN = r'''
 ---
-deployments:
-  description: The information about the named DataFlow Deployment or DataFlow Deployments
-  type: list
+deployment:
+  description: The information about the named DataFlow Deployment
+  type: dict
   returned: always
   elements: complex
-  contains:
     crn:
-      description:  The DataFlow Service's parent environment CRN.
+      description: The deployment CRN.
       returned: always
       type: str
     name:
-      description: The DataFlow Service's parent environment name.
-      returned: always
-      type: str
-    cloudPlatform:
-      description: The cloud platform of the environment.
-      returned: always
-      type: str
-    region:
-      description: The region of the environment.
-      returned: always
-      type: str
-    deploymentCount:
-      description: The deployment count.
-      returned: always
-      type: str
-    minK8sNodeCount:
-      description: The  minimum number of Kubernetes nodes that need to be provisioned in the environment.
-      returned: always
-      type: int
-    maxK8sNodeCount:
-      description:  The maximum number of kubernetes nodes that environment may scale up under high-demand situations.
+      description: The deployment name.
       returned: always
       type: str
     status:
@@ -230,30 +209,101 @@ deployments:
       returned: always
       type: dict
       contains:
-        state:
-          description: The state of the environment.
+        detailedState:
+          description: The detailed state that the deployment is currently in.
           returned: always
           type: str
         message:
           description: A status message for the environment.
           returned: always
           type: str
-    k8sNodeCount:
-      description: The number of kubernetes nodes currently in use by DataFlow for this environment.
+        state:
+          description: The state that the deployment is currently in
+          returned: always
+          type: str
+    service:
+      description: Metadata about the DataFlow service.
+      returned: always
+      type: dict
+      contains:
+        crn:
+          description: The crn of the DataFlow service.
+          returned: always
+          type: str
+        name:
+          description: The name of the CDP Environment.
+          returned: always
+          type: str
+        cloudProvider:
+          description: The cloud provider
+          returned: always
+          type: str
+        region:
+          description: The region within the cloud provider
+          returned: always
+          type: str
+        environmentCrn:
+          description: The CDP Environment CRN
+          returned: always
+          type: str
+    updated:
+      description: Timestamp of the last time the deployment was modified.
       returned: always
       type: int
-    instanceType:
-      description: The instance type of the kubernetes nodes currently in use by DataFlow for this environment.
+    clusterSize:
+      description:  The initial size of the deployment.
       returned: always
       type: str
-    dfLocalUrl:
-      description: The URL of the environment local DataFlow application.
+    flowVersionCrn:
+      description: The deployment's current flow version CRN.
       returned: always
       type: str
-    authorizedIpRanges:
-      description: The authorized IP Ranges.
+    flowCrn:
+      description: The deployment's current flow CRN.
       returned: always
-      type: list
+      type: int
+    nifiUrl:
+      description: The url to open the deployed flow in NiFi.
+      returned: always
+      type: str
+    autoscaleMaxNodes:
+      description:  The maximum number of nodes that the deployment can scale up to, or null if autoscaling is not enabled for this deployment.
+      returned: always
+      type: int
+    flowName:
+      description: The name of the flow.
+      returned: always
+      type: str
+    flowVersion:
+      description: The version of the flow.
+      returned: always
+      type: int
+    currentNodeCount:
+      description: The current node count.
+      returned: always
+      type: int
+    deployedByCrn:
+      description: The actor CRN of the person who deployed the flow.
+      returned: always
+      type: str
+    deployedByName:
+      description: The name of the person who deployed the flow.
+      returned: always
+      type: str
+    autoscalingEnabled:
+      description: Whether or not to autoscale the deployment.
+      returned: always
+      type: bool
+    autoscaleMinNodes:
+      description: 
+        - The  minimum  number of nodes that the deployment will allocate.
+        - May only be specified when autoscalingEnabled is true.
+      returned: always
+      type: int
+    autoscalingEnabled:
+      description: Whether or not to autoscale the deployment.
+      returned: always
+      type: bool
     activeWarningAlertCount:
       description: Current count of active alerts classified as a warning.
       returned: always
@@ -262,10 +312,24 @@ deployments:
       description: Current count of active alerts classified as an error.
       returned: always
       type: int
-    clusterId:
-      description: Cluster id of the environment.
-      returned: if enabled
+    staticNodeCount:
+      description: 
+        - The static number of nodes that the  deployment  will  allocate.
+        - May only be specified when autoscalingEnabled is false.
+      returned: always
+      type: int
+    dfxLocalUrl:
+      description: Base URL to the dfx-local instance running this deployment.
+      returned: always
       type: str
+    lastUpdatedByName:
+      description: The name of the person who last updated the deployment.
+      returned: always
+      type: str
+    configurationVersion:
+      description: The version of the configuration for this deployment.
+      returned: always
+      type: int
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
@@ -340,8 +404,8 @@ class DFDeployment(CdpModule):
                     self.deployment = self.target
                 else:
                     self._terminate_deployment()
-            # Existing deployment to be retained
             elif self.state in ['present']:
+                # Existing deployment to be retained
                 self.module.warn(
                     "Dataflow Deployment already exists and configuration validation and reconciliation " +
                     "is not supported;" +
@@ -354,9 +418,9 @@ class DFDeployment(CdpModule):
         else:
             # Deployment CRN not found in Tenant, and probably doesn't exist
             if self.state in ['absent']:
+                # Deployment not found, and not wanted, return
                 self.module.log(
                     "Dataflow Deployment not found in CDP Tenant %s" % self.dep_crn)
-            # Deployment to be created
             elif self.state in ['present']:
                 # create Deployment
                 if not self.module.check_mode:

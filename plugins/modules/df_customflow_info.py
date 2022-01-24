@@ -46,7 +46,7 @@ options:
     default: True
 
 notes:
-  - This feature this module is for is in Technical Preview
+  - The feature this module is for is in Technical Preview
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -81,7 +81,7 @@ flows:
       returned: always
       type: str
     modifiedTimestamp:
-      description: THe timestamp the entry was last modified.
+      description: The timestamp the entry was last modified.
       returned: always
       type: int
     versionCount:

@@ -35,9 +35,9 @@ requirements:
 options:
   name:
     description:
-      - If a name is provided, that DataFlow ReadyFlow Definition will be described
+      - The name of the ReadyFlow to be acted upon.
     type: str
-    required: False
+    required: True
   state:
     description:
       - The declarative state of the ReadyFlow
@@ -71,11 +71,10 @@ EXAMPLES = r'''
 RETURN = r'''
 ---
 readyflow:
-  description: The listing of ReadyFlow Definitions in the DataFlow Catalog in this CDP Tenant
-  type: list
-  returned: always
+  description: The ReadyFlow Definition
+  type: dict
   elements: complex
-  contains:
+  returned: always
     readyflowCrn:
       description:  
         - The DataFlow readyflow Definition's CRN.
@@ -85,7 +84,7 @@ readyflow:
     readyflow:
       description: The details of the ReadyFlow object
       type: dict
-      returned: always
+      returned: varies
       elements: complex
       contains:
         readyflowCrn:
@@ -135,11 +134,11 @@ readyflow:
           returned: always
           type: str
         imported:
-          description: Whether  the  ready  flow  has been imported into the current account.
+          description: Whether the ready flow has been imported into the current account.
           returned: always
           type: bool         
         modifiedTimestamp:
-          description: THe timestamp the entry was last modified.
+          description: The timestamp the entry was last modified.
           returned: always
           type: int
     versions:

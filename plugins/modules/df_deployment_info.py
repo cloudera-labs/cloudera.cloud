@@ -33,17 +33,18 @@ author:
 requirements:
   - cdpy
 options:
-  name:
+  crn:
     description:
-      - If a name is provided, that DataFlow Deployment will be described
-      - Must be the string CRN of the deployment
+      - If a crn is provided, that DataFlow Deployment will be described
+      - Must be the string CRN of the deployment object
     type: str
     aliases:
       - dep_crn
+      - name
     required: False
 
 notes:
-  - This feature this module is for is in Technical Preview
+  - The feature this module is for is in Technical Preview
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -77,7 +78,7 @@ deployments:
       returned: always
       type: str
     status:
-      description: The status of a DataFlow enabled environment.
+      description: The status of a DataFlow deployment.
       returned: always
       type: dict
       contains:
@@ -107,11 +108,11 @@ deployments:
           returned: always
           type: str
         cloudProvider:
-          description: the cloud provider for the parent environment.
+          description: The cloud provider for the parent environment.
           returned: always
           type: str
         region:
-          description:  the region within the parent environment cloud provider.
+          description: The region within the parent environment cloud provider.
           returned: always
           type: str
         environmentCrn:
@@ -167,7 +168,7 @@ deployments:
       returned: always
       type: bool
     autoscaleMinNodes:
-      description: The  minimum  number of nodes that the deployment will allocate. May only be specified when autoscalingEnabled is true.
+      description: The minimum number of nodes that the deployment will allocate. May only be specified when autoscalingEnabled is true.
       returned: always
       type: int
     activeWarningAlertCount:
@@ -179,7 +180,7 @@ deployments:
       returned: always
       type: int
     staticNodeCount:
-      description: The static number of nodes that the  deployment  will  allocate. May only be specified when autoscalingEnabled is false.
+      description: The static number of nodes that the deployment will allocate. May only be specified when autoscalingEnabled is false.
       returned: always
       type: int
     dfxLocalUrl:

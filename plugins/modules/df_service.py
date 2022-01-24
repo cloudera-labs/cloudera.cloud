@@ -33,13 +33,21 @@ author:
 requirements:
   - cdpy
 options:
-  crn:
-    description: The name or crn of the CDP Environment to host the Dataflow Service
+  env_crn:
+    description: 
+        - The CRN of the CDP Environment to host the Dataflow Service
+        - Required when state is present
     type: str
-    required: True
+    required: Conditional
     aliases:
       - name
-      - env_crn
+      - crn
+  df_crn:
+    description: 
+        - The CRN of the DataFlow Service, if available
+        - Required when state is absent
+    type: str
+    required: Conditional
   state:
     description:
       - The declarative state of the Dataflow Service
@@ -48,9 +56,7 @@ options:
     default: present
     choices:
       - present
-      - enabled
       - absent
-      - disabled
   nodes_min:
     description: The minimum number of kubernetes nodes needed for the environment.
       Note that the lowest minimum is 3 nodes.
