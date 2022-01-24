@@ -18,13 +18,11 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
+ANSIBLE_METADATA = {'metadata_version': '1.1',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
 
-DOCUMENTATION = r"""
+DOCUMENTATION = r'''
 ---
 module: datalake
 short_description: Manage CDP Datalakes
@@ -40,7 +38,7 @@ options:
   name:
     description:
       - The name of the datalake.
-      - This name must be unique, must have between 5 and 100 characters, and must contain only lowercase letters,
+      - This name must be unique, must have between 5 and 100 characters, and must contain only lowercase letters, 
             numbers, and hyphens.
       - Names are case-sensitive.
     type: str
@@ -144,9 +142,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-"""
+'''
 
-EXAMPLES = r"""
+EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
 # Create a datalake in AWS
@@ -174,9 +172,9 @@ EXAMPLES = r"""
   cloudera.cloud.datalake:
     name: example-datalake
     state: absent
-"""
+'''
 
-RETURN = r"""
+RETURN = r'''
 ---
 datalake:
   description: The information about the Datalake
@@ -376,7 +374,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-"""
+'''
 
 
 class Datalake(CdpModule):
@@ -384,24 +382,24 @@ class Datalake(CdpModule):
         super(Datalake, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param("name")
-        self.state = self._get_param("state").lower()
-        self.cloud = self._get_param("cloud")
+        self.name = self._get_param('name')
+        self.state = self._get_param('state').lower()
+        self.cloud = self._get_param('cloud')
 
         # ID Broker Role
-        self.instance_profile = self._get_param("instance_profile")
+        self.instance_profile = self._get_param('instance_profile')
         # Storage Location Base
-        self.storage = self._get_param("storage")
+        self.storage = self._get_param('storage')
 
-        self.environment = self._get_param("environment")
-        self.runtime = self._get_param("runtime")
-        self.scale = self._get_param("scale")
-        self.tags = self._get_param("tags")
+        self.environment = self._get_param('environment')
+        self.runtime = self._get_param('runtime')
+        self.scale = self._get_param('scale')
+        self.tags = self._get_param('tags')
 
-        self.wait = self._get_param("wait")
-        self.delay = self._get_param("delay")
-        self.timeout = self._get_param("timeout")
-        self.force = self._get_param("force")
+        self.wait = self._get_param('wait')
+        self.delay = self._get_param('delay')
+        self.timeout = self._get_param('timeout')
+        self.force = self._get_param('force')
         self.raz = self._get_param("raz")
 
         # Initialize the return values
@@ -414,61 +412,44 @@ class Datalake(CdpModule):
     def process(self):
         existing = self.cdpy.datalake.describe_datalake(self.name)
 
-        if self.state in ["present"]:
+        if self.state in ['present']:
 
             # If the datalake exists
             if existing is not None:
                 self.datalake = existing
                 # Fail if attempting to restart a failed datalake
-                if "status" in existing:
-                    if existing["status"] in self.cdpy.sdk.FAILED_STATES:
-                        self.module.fail_json(
-                            msg="Attempting to restart a failed datalake"
-                        )
+                if 'status' in existing:
+                    if existing['status'] in self.cdpy.sdk.FAILED_STATES:
+                        self.module.fail_json(msg='Attempting to restart a failed datalake')
 
                     # Check for Datalake actions during create or started
-                    elif (
-                        existing["status"]
-                        in self.cdpy.sdk.CREATION_STATES + self.cdpy.sdk.STARTED_STATES
-                    ):
+                    elif existing['status'] in self.cdpy.sdk.CREATION_STATES + self.cdpy.sdk.STARTED_STATES:
                         # Reconcile and error if specifying invalid cloud parameters
                         if self.environment is not None:
-                            env = self.cdpy.environments.describe_environment(
-                                self.environment
-                            )
-                            if env["crn"] != existing["environmentCrn"]:
+                            env = self.cdpy.environments.describe_environment(self.environment)
+                            if env['crn'] != existing['environmentCrn']:
                                 self.module.fail_json(
-                                    msg="Datalake exists in a different Environment: %s"
-                                    % existing["environmentCrn"]
-                                )
+                                    msg="Datalake exists in a different Environment: %s" % existing['environmentCrn'])
                         # Check for changes
                         mismatch = self._reconcile_existing_state(existing)
                         if mismatch:
-                            msg = ""
+                            msg = ''
                             for m in mismatch:
-                                msg += "Parameter '%s' found to be '%s'\n" % (
-                                    m[0],
-                                    m[1],
-                                )
+                                msg += "Parameter '%s' found to be '%s'\n" % (m[0], m[1])
                             self.module.fail_json(
-                                msg="Datalake exists and differs from expected:\n"
-                                + msg,
-                                violations=mismatch,
-                            )
+                                msg='Datalake exists and differs from expected:\n' + msg, violations=mismatch)
                         # Wait
                         if not self.wait:
-                            self.module.warn(
-                                "Datalake already creating or started, changes may not be possible"
-                            )
+                            self.module.warn('Datalake already creating or started, changes may not be possible')
                         else:
                             # Wait for creation to complete if previously requested and still running
                             self.datalake = self.cdpy.sdk.wait_for_state(
                                 describe_func=self.cdpy.datalake.describe_datalake,
                                 params=dict(name=self.name),
-                                field="status",
-                                state="RUNNING",
+                                field='status',
+                                state='RUNNING',
                                 delay=self.delay,
-                                timeout=self.timeout,
+                                timeout=self.timeout
                             )
             # Else create the datalake if not exists already
             else:
@@ -477,88 +458,64 @@ class Datalake(CdpModule):
                     if env is not None:
                         self.create_datalake(env)
                     else:
-                        self.module.fail_json(
-                            msg="Unable to find environment, '%s'" % self.environment
-                        )
+                        self.module.fail_json(msg="Unable to find environment, '%s'" % self.environment)
                 else:
-                    self.module.fail_json(
-                        msg="Datalake creation failed, required parameter 'environment' missing"
-                    )
+                    self.module.fail_json(msg="Datalake creation failed, required parameter 'environment' missing")
 
-        elif self.state == "absent":
+        elif self.state == 'absent':
             # If the datalake exists
             if existing is not None:
 
                 # Warn if attempting to delete an already terminated/terminating datalake
-                if (
-                    not self.wait
-                    and existing["status"] in self.cdpy.sdk.TERMINATION_STATES
-                ):
-                    self.module.warn(
-                        "Attempting to delete an datalake during the termination cycle"
-                    )
+                if not self.wait and existing['status'] in self.cdpy.sdk.TERMINATION_STATES:
+                    self.module.warn('Attempting to delete an datalake during the termination cycle')
                     self.datalake = existing
 
                 # Otherwise, delete the datalake
                 else:
                     self.delete_datalake()
         else:
-            self.module.fail_json(msg="Invalid state: %s" % self.state)
+            self.module.fail_json(msg='Invalid state: %s' % self.state)
 
     def create_datalake(self, environment):
         self._validate_datalake_name()
 
         payload = self._configure_payload()
 
-        if environment["cloudPlatform"] == "AWS":
+        if environment['cloudPlatform'] == 'AWS':
             if self.instance_profile is None or self.storage is None:
-                self.module.fail_json(
-                    msg="One of the following are missing: instance_profile, storage"
-                )
+                self.module.fail_json(msg="One of the following are missing: instance_profile, storage")
 
-            payload.update(
-                cloudProviderConfiguration=dict(
-                    instanceProfile=self.instance_profile,
-                    storageBucketLocation=self.storage,
-                )
-            )
+            payload.update(cloudProviderConfiguration=dict(
+                instanceProfile=self.instance_profile,
+                storageBucketLocation=self.storage
+            ))
 
-            self.datalake = self.cdpy.sdk.call(
-                "datalake", "create_aws_datalake", **payload
-            )
-        elif environment["cloudPlatform"] == "AZURE":
-            payload.update(
-                cloudProviderConfiguration=dict(
-                    managedIdentity=self.instance_profile, storageLocation=self.storage
-                )
-            )
-            self.datalake = self.cdpy.sdk.call(
-                "datalake", "create_azure_datalake", **payload
-            )
-        elif environment["cloudPlatform"] == "GCP":
-            payload.update(
-                cloudProviderConfiguration=dict(
-                    serviceAccountEmail=self.instance_profile,
-                    storageLocation=self.storage,
-                )
-            )
-            self.datalake = self.cdpy.sdk.call(
-                "datalake", "create_gcp_datalake", **payload
-            )
+            self.datalake = self.cdpy.sdk.call('datalake', 'create_aws_datalake', **payload)
+        elif environment['cloudPlatform'] == 'AZURE':
+            payload.update(cloudProviderConfiguration=dict(
+                managedIdentity=self.instance_profile,
+                storageLocation=self.storage
+            ))
+            self.datalake = self.cdpy.sdk.call('datalake', 'create_azure_datalake', **payload)
+        elif environment['cloudPlatform'] == 'GCP':
+            payload.update(cloudProviderConfiguration=dict(
+                serviceAccountEmail=self.instance_profile,
+                storageLocation=self.storage
+            ))
+            self.datalake = self.cdpy.sdk.call('datalake', 'create_gcp_datalake', **payload)
         else:
-            self.module.fail_json(
-                msg="Datalakes not yet implemented for this Environment Type"
-            )
+            self.module.fail_json(msg='Datalakes not yet implemented for this Environment Type')
         self.changed = True
 
         if self.wait and not self.module.check_mode:
             self.datalake = self.cdpy.sdk.wait_for_state(
                 describe_func=self.cdpy.datalake.describe_datalake,
                 params=dict(name=self.name),
-                field="status",
-                state="RUNNING",
+                field='status',
+                state='RUNNING',
                 delay=self.delay,
-                timeout=self.timeout,
+                timeout=self.timeout
             )
 
     def delete_datalake(self):
@@ -572,11 +529,14 @@ class Datalake(CdpModule):
                 params=dict(name=self.name),
                 field=None,
                 delay=self.delay,
-                timeout=self.timeout,
+                timeout=self.timeout
             )
 
     def _configure_payload(self):
-        payload = dict(datalakeName=self.name, environmentName=self.environment,)
+        payload = dict(
+            datalakeName=self.name,
+            environmentName=self.environment,
+        )
 
         if self.runtime:
             payload.update(runtime=self.runtime)
@@ -588,121 +548,81 @@ class Datalake(CdpModule):
             payload.update(enableRangerRaz=self.raz)
 
         if self.tags is not None:
-            payload["tags"] = list()
+            payload['tags'] = list()
             for k in self.tags:
-                payload["tags"].append(dict(key=k, value=str(self.tags[k])))
+                payload['tags'].append(dict(key=k, value=str(self.tags[k])))
 
         return payload
 
     def _reconcile_existing_state(self, existing):
         mismatched = list()
 
-        if "cloudPlatform" in existing and existing["cloudPlatform"] == "AWS":
-            if (
-                self.instance_profile is not None
-                and self.instance_profile
-                != existing["awsConfiguration"]["instanceProfile"]
-            ):
-                mismatched.append(
-                    [
-                        "instance_profile",
-                        existing["awsConfiguration"]["instanceProfile"],
-                    ]
-                )
+        if 'cloudPlatform' in existing and existing['cloudPlatform'] == 'AWS':
+            if self.instance_profile is not None and \
+                    self.instance_profile != existing['awsConfiguration']['instanceProfile']:
+                mismatched.append(['instance_profile', existing['awsConfiguration']['instanceProfile']])
 
         if self.storage is not None:
-            self.module.warn(
-                "Updating an existing Datalake's 'storage' "
-                "directly is not supported at this time. If "
-                "you need to change the storage, explicitly "
-                "delete and recreate the Datalake."
-            )
+            self.module.warn("Updating an existing Datalake's 'storage' "
+                             "directly is not supported at this time. If "
+                             "you need to change the storage, explicitly "
+                             "delete and recreate the Datalake.")
 
         if self.runtime:
-            self.module.warn(
-                "Updating an existing Datalake's 'runtime' "
-                "directly is not supported at this time. If you "
-                "need to change the runtime, either use the "
-                "'upgrade' state or explicitly delete and "
-                "recreate the Datalake."
-            )
+            self.module.warn("Updating an existing Datalake's 'runtime' "
+                             "directly is not supported at this time. If you "
+                             "need to change the runtime, either use the "
+                             "'upgrade' state or explicitly delete and "
+                             "recreate the Datalake.")
         if self.scale:
-            self.module.warn(
-                "Updating an existing Datalake's 'scale' "
-                "directly is not supported at this time. If you "
-                "need to change the scale, explicitly delete "
-                "and recreate the Datalake."
-            )
+            self.module.warn("Updating an existing Datalake's 'scale' "
+                             "directly is not supported at this time. If you "
+                             "need to change the scale, explicitly delete "
+                             "and recreate the Datalake.")
 
         if self.tags:
-            self.module.warn(
-                "Updating an existing Datalake's 'tags' "
-                "directly are not supported at this time. If you "
-                "need to change the tags, explicitly delete "
-                "and recreate the Datalake."
-            )
+            self.module.warn("Updating an existing Datalake's 'tags' "
+                             "directly are not supported at this time. If you "
+                             "need to change the tags, explicitly delete "
+                             "and recreate the Datalake.")
 
         if self.raz:
-            self.module.warn(
-                "Updating an existing Datalake's 'enableRangerRaz' "
-                "directly is not supported at this time. If you "
-                "need to change the enableRangerRaz, explicitly delete "
-                "and recreate the Datalake."
-            )
+            self.module.warn("Updating an existing Datalake's 'enableRangerRaz' "
+                             "directly is not supported at this time. If you "
+                             "need to change the enableRangerRaz, explicitly delete "
+                             "and recreate the Datalake.")
 
         return mismatched
 
     def _validate_datalake_name(self):
         if len(self.name) < 5 or len(self.name) > 100:
             self.module.fail_json(
-                msg="Invalid datalake name, '%s'. Names must be between 5-100 characters."
-                % self.name
-            )
-        elif (
-            self.cdpy.sdk.regex_search(self.cdpy.sdk.DATALAKE_NAME_PATTERN, self.name)
-            is not None
-        ):
-            self.module.fail_json(
-                msg="Invalid datalake name, '%s'. Names must contain only lowercase "
-                "letters, numbers and hyphens." % self.name
-            )
+                msg="Invalid datalake name, '%s'. Names must be between 5-100 characters." % self.name)
+        elif self.cdpy.sdk.regex_search(self.cdpy.sdk.DATALAKE_NAME_PATTERN, self.name) is not None:
+            self.module.fail_json(msg="Invalid datalake name, '%s'. Names must contain only lowercase "
+                                      "letters, numbers and hyphens." % self.name)
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type="str", aliases=["datalake"]),
-            state=dict(
-                required=False,
-                type="str",
-                choices=["present", "absent"],
-                default="present",
-            ),
-            instance_profile=dict(
-                required=False, type="str", aliases=["managed_identity"]
-            ),
-            storage=dict(
-                required=False,
-                type="str",
-                aliases=["storage_location", "storage_location_base"],
-            ),
-            environment=dict(required=False, type="str", aliases=["env"]),
-            runtime=dict(required=False, type="str"),
-            scale=dict(
-                required=False, type="str", choices=["LIGHT_DUTY", "MEDIUM_DUTY_HA"]
-            ),
-            tags=dict(required=False, type="dict", aliases=["datalake_tags"]),
-            force=dict(required=False, type="bool", default=False),
-            wait=dict(required=False, type="bool", default=True),
-            delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=15
-            ),
-            timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=3600
-            ),
-            raz=dict(required=False, type="bool", default=False),
+            name=dict(required=True, type='str', aliases=['datalake']),
+            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
+            instance_profile=dict(required=False, type='str', aliases=['managed_identity']),
+            storage=dict(required=False, type='str', aliases=['storage_location', 'storage_location_base']),
+
+            environment=dict(required=False, type='str', aliases=['env']),
+            runtime=dict(required=False, type='str'),
+            scale=dict(required=False, type='str', choices=['LIGHT_DUTY', 'MEDIUM_DUTY_HA']),
+            tags=dict(required=False, type='dict', aliases=['datalake_tags']),
+
+            force=dict(required=False, type='bool', default=False),
+            wait=dict(required=False, type='bool', default=True),
+            delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
+            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
+            raz=dict(required=False, type="bool", default=False)
         ),
-        supports_check_mode=True,
+        supports_check_mode=True
     )
 
     result = Datalake(module)
@@ -714,5 +634,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
