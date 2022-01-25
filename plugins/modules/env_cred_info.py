@@ -115,7 +115,7 @@ class EnvironmentCredentialInfo(CdpModule):
         if self.name:
             cred = self.cdpy.environments.describe_credential(self.name)
             if cred is not None:
-                self.credentials.append(cred[0])
+                self.credentials.append(cred)
         else:
             self.credentials = self.cdpy.environments.list_credentials()
 
