@@ -1013,7 +1013,7 @@ def main():
             endpoint_access_subnets=dict(required=False, type='list', elements='str'),
             endpoint_access_scheme=dict(required=False, type='str', choices=['PUBLIC', 'PRIVATE']),
             use_single_resource_group=dict(required=False, type='bool', default=False),
-            cascading=dict(required=False, type='bool', default=False),
+            cascading=dict(required=False, type='bool', default=False)
 
         ),
         # TODO: Update for Azure
