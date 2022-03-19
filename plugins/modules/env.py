@@ -215,6 +215,21 @@ options:
     aliases:
       - proxy_config
       - proxy_config_name
+  force:
+    description:
+      - Flag to remove CDP and cloud provider resources, but ignore cloud provider resources deletion errors.
+      - NOTE: this option might leave cloud provider resources after deletion.
+    type: bool
+    required: False
+    default: False
+  cascade:
+    description:
+      - Flag to delete all connected resources, e.g. Data Services and Data Hubs.
+    type: bool
+    required: False
+    default: False
+    aliases:
+      - cascading
   wait:
     description:
       - Flag to enable internal polling to wait for the environment to achieve the declared state.
@@ -794,7 +809,7 @@ class Environment(CdpModule):
                 # TODO: Check that no CML or DWX etc. are attached to environment
                 else:
                     if not self.module.check_mode:
-                        self.cdpy.environments.delete_environment(self.name)
+                        self.cdpy.environments.delete_environment(self.name, self.cascade, self.force)
                         self.changed = True
 
                         if self.wait:
@@ -1005,7 +1020,7 @@ def main():
                                                                                              type='int'))),
             project=dict(required=False, type='str'),
             proxy=dict(required=False, type='str', aliases=['[proxy_config', 'proxy_config_name']),
-            cascade=dict(required=False, type='bool', default=False),
+            cascade=dict(required=False, type='bool', default=False, aliases=['cascading']),
             force=dict(required=False, type='bool', default=False),
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
