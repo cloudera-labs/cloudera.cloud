@@ -38,7 +38,7 @@ options:
         - The CRN of the CDP Environment to host the Dataflow Service
         - Required when state is present
     type: str
-    required: Conditional
+    required: False
     aliases:
       - name
       - crn

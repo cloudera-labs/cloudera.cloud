@@ -88,50 +88,54 @@ flows:
       description: The number of versions uploaded to the catalog.
       returned: always
       type: str
+    artifactType:
+      description: The type of artifact
+      type: str
+      returned: when include_details is False
     createdTimestamp:
       description: The created timestamp.
-      returned: always
+      returned: when include_details is True
       type: int
     author:
       description: Author of the most recent version.
-      returned: always
+      returned: when include_details is True
       type: str
     description:
       description: The artifact description.
-      returned: always
+      returned: when include_details is True
       type: str
     versions:
       description: The list of artifactDetail versions.
-      returned: always
+      returned: when include_details is True
       type: array
       contains:
         crn:
           description: The flow version CRN.
-          returned: always
+          returned: when include_details is True
           type: str
         bucketIdentifier:
           description: The bucketIdentifier of the flow.
-          returned: always
+          returned: when include_details is True
           type: str
         author:
           description: The author of the flow.
-          returned: always
+          returned: when include_details is True
           type: str
         version:
           description: The version of the flow.
-          returned: always
+          returned: when include_details is True
           type: int
         timestamp:
           description: The timestamp of the flow.
-          returned: always
+          returned: when include_details is True
           type: int
         deploymentCount:
           description: The number of deployments of the flow.
-          returned: always
+          returned: when include_details is True
           type: int
         comments:
           description: Comments about the flow.
-          returned: always
+          returned: when include_details is True
           type: str
 sdk_out:
   description: Returns the captured CDP SDK log.

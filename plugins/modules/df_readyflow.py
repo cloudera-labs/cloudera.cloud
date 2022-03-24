@@ -192,7 +192,6 @@ class DFReadyFlow(CdpModule):
 
         # Set variables
         self.name = self._get_param('name')
-        self.include_details = self._get_param('include_details')
         self.state = self._get_param('state')
 
         # Initialize internal values

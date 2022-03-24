@@ -61,7 +61,6 @@ EXAMPLES = r'''
 # Gather summary information about a specific DataFlow Flow Definition using a name
 - cloudera.cloud.df_readyflow_info:
     name: my-flow-name
-    include_details: False
 '''
 
 RETURN = r'''
@@ -72,11 +71,11 @@ flows:
   returned: always
   elements: complex
   contains:
-    readyflowCrn:
+    addedReadyflowCrn:
       description:
-        - The DataFlow readyflow Definition's CRN.
-        - Use this readyflowCrn to address this object
-      returned: always
+        - The CRN of this readyflow when it is imported to the CDP Tenant
+        - Use this readyflowCrn to address this object when doing deployments
+      returned: when readyflow imported is True
       type: str
     readyflow:
       description: The details of the ReadyFlow object
@@ -86,8 +85,9 @@ flows:
       contains:
         readyflowCrn:
           description:
-            - The general base crn of this ReadyFlow
-            - Different to the unique readyflowCrn containing a UUID4
+            - The CRN of this readyflow in the Control Plane
+            - Different to the addedReadyflowCrn of the imported readyflow within the CDP Tenant
+            - Use this readyflowCrn when importing the object to your CDP Tenant
           returned: always
           type: str
         name:
@@ -189,7 +189,6 @@ class DFReadyFlowInfo(CdpModule):
 
         # Set variables
         self.name = self._get_param('name')
-        self.include_details = self._get_param('include_details')
 
         # Initialize internal values
         self.listing = []
@@ -203,7 +202,7 @@ class DFReadyFlowInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         self.listing = self.cdpy.df.list_readyflows(name=self.name)
-        if self.include_details and self.listing:
+        if self.listing:
             self.flows = []
             for this_readyflow in self.listing:
                 if this_readyflow['imported']:
@@ -226,7 +225,6 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             name=dict(required=False, type='str'),
-            include_details=dict(required=False, type='bool', default=True)
         ),
         supports_check_mode=True
     )

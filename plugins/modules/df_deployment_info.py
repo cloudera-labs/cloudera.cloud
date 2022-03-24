@@ -24,7 +24,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: df_deployment_info
+module:f_deployment_info
 short_description: Gather information about CDP DataFlow Deployments
 description:
     - Gather information about CDP DataFlow Deployments
@@ -80,7 +80,7 @@ deployments:
     status:
       description: The status of a DataFlow deployment.
       returned: always
-      type: dict
+      type:ict
       contains:
         state:
           description: The state of the Deployment.
@@ -97,7 +97,7 @@ deployments:
     service:
       description: Metadata about the parent DataFlow service.
       returned: always
-      type: dict
+      type:ict
       contains:
         crn:
           description: The crn of the parent service.
@@ -122,7 +122,7 @@ deployments:
     updated:
       description: Timestamp of the last time the deployment was modified.
       returned: always
-      type: str
+      type: int
     clusterSize:
       description: The initial size of the deployment.
       returned: always
@@ -222,10 +222,7 @@ class DFDeploymentInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.name is not None:
-            self.deployments = [self.cdpy.df.describe_deployment(dep_crn=self.name)]
-        else:
-            self.deployments = self.cdpy.df.list_deployments()
+        self.deployments = self.cdpy.df.list_deployments(dep_crn=self.name, described=True)
 
 
 def main():
