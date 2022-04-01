@@ -24,7 +24,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module:f_deployment_info
+module: df_deployment_info
 short_description: Gather information about CDP DataFlow Deployments
 description:
     - Gather information about CDP DataFlow Deployments
