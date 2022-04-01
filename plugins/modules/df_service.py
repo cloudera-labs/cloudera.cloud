@@ -33,13 +33,21 @@ author:
 requirements:
   - cdpy
 options:
-  crn:
-    description: The name or crn of the CDP Environment to host the Dataflow Service
+  env_crn:
+    description: 
+        - The CRN of the CDP Environment to host the Dataflow Service
+        - Required when state is present
     type: str
-    required: True
+    required: False
     aliases:
       - name
-      - env_crn
+      - crn
+  df_crn:
+    description: 
+        - The CRN of the DataFlow Service, if available
+        - Required when state is absent
+    type: str
+    required: Conditional
   state:
     description:
       - The declarative state of the Dataflow Service
@@ -48,9 +56,7 @@ options:
     default: present
     choices:
       - present
-      - enabled
       - absent
-      - disabled
   nodes_min:
     description: The minimum number of kubernetes nodes needed for the environment.
       Note that the lowest minimum is 3 nodes.
@@ -88,6 +94,10 @@ options:
     type: bool
     required: False
     default: False
+  tags:
+    description: Tags to apply to the DataFlow Service 
+    type: dict
+    required: False
   wait:
     description:
       - Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
@@ -147,7 +157,7 @@ EXAMPLES = r'''
 
 RETURN = r'''
 ---
-environments:
+services:
   description: The information about the named DataFlow Service or DataFlow Services
   type: list
   returned: always
@@ -251,6 +261,7 @@ class DFService(CdpModule):
         self.persist = self._get_param('persist')
         self.terminate = self._get_param('terminate')
         self.force = self._get_param('force')
+        self.tags = self._get_param('tags')
 
         self.state = self._get_param('state')
         self.wait = self._get_param('wait')
@@ -259,6 +270,7 @@ class DFService(CdpModule):
 
         # Initialize return values
         self.service = {}
+        self.changed = False
 
         # Initialize internal values
         self.target = None
@@ -307,9 +319,11 @@ class DFService(CdpModule):
                             enable_public_ip=self.public_loadbalancer,
                             lb_ips=self.lb_ip_ranges,
                             kube_ips=self.kube_ip_ranges,
+                            # tags=self.tags,  # Currently overstrict blocking of values
                             cluster_subnets=self.cluster_subnets,
                             lb_subnets=self.lb_subnets
                         )
+                        self.changed = True
                         if self.wait:
                             self.service = self._wait_for_enabled()
             else:
@@ -331,6 +345,10 @@ class DFService(CdpModule):
                 persist=self.persist,
                 terminate=self.terminate
             )
+            self.changed = True
+        elif self.target['status']['state'] in self.cdpy.sdk.TERMINATION_STATES:
+            self.module.warn("DataFlow Service is already Disabling, skipping termination request")
+            pass
         else:
             self.module.warn("Attempting to disable DataFlow Service but state %s not in Removable States %s"
                              % (self.target['status']['state'], self.cdpy.sdk.REMOVABLE_STATES))
@@ -351,6 +369,7 @@ class DFService(CdpModule):
                     self.service = self.cdpy.df.reset_service(
                         df_crn=self.df_crn
                     )
+                    self.changed = True
                 else:
                     self.module.fail_json(msg="DF Service Disable failed and Force delete not requested")
             if self.wait:
@@ -377,6 +396,7 @@ def main():
             loadbalancer_subnets=dict(type='list', elements='str', default=None),
             persist=dict(type='bool', default=False),
             terminate=dict(type='bool', default=False),
+            tags=dict(required=False, type='dict', default=None),
             state=dict(type='str', choices=['present', 'absent'],
                        default='present'),
             force=dict(type='bool', default=False, aliases=['force_delete']),
@@ -392,7 +412,7 @@ def main():
     )
 
     result = DFService(module)
-    output = dict(changed=False, service=result.service)
+    output = dict(changed=result.changed, service=result.service)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
