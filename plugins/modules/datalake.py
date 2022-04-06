@@ -215,6 +215,10 @@ datalake:
       sample:
         - AWS
         - AZURE
+    enableRangerRaz:
+      description: Whether or not RAZ is enabled
+      returned: always
+      type: bool
     clouderaManager:
       description: The Cloudera Manager details.
       returned: when supported
@@ -480,7 +484,7 @@ class Datalake(CdpModule):
     def create_datalake(self, environment):
         self._validate_datalake_name()
 
-        payload = self._configure_payload()
+        payload = self._configure_payload(environment)
 
         if environment['cloudPlatform'] == 'AWS':
             if self.instance_profile is None or self.storage is None:
@@ -532,7 +536,7 @@ class Datalake(CdpModule):
                 timeout=self.timeout
             )
 
-    def _configure_payload(self):
+    def _configure_payload(self, environment):
         payload = dict(
             datalakeName=self.name,
             environmentName=self.environment,
@@ -545,6 +549,11 @@ class Datalake(CdpModule):
             payload.update(scale=self.scale)
 
         if self.raz:
+            if environment['cloudPlatform'] == 'AWS' or environment['cloudPlatform'] == 'AZURE':
+                payload.update(enableRangerRaz=self.raz)
+            else:
+                self.module.fail_json(msg='GCP Datalakes do not currently support RAZ')
+        else:
             payload.update(enableRangerRaz=self.raz)
 
         if self.tags is not None:
