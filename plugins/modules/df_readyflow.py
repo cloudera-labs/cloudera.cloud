@@ -47,7 +47,6 @@ options:
     choices:
       - present
       - absent
-
 notes:
   - This feature this module is for is in Technical Preview
 extends_documentation_fragment:
@@ -73,8 +72,8 @@ RETURN = r'''
 readyflow:
   description: The ReadyFlow Definition
   type: dict
-  elements: complex
   returned: always
+  contains:
     readyflowCrn:
       description:  
         - The DataFlow readyflow Definition's CRN.
@@ -85,11 +84,10 @@ readyflow:
       description: The details of the ReadyFlow object
       type: dict
       returned: varies
-      elements: complex
       contains:
         readyflowCrn:
           description:
-            - The general base crn of this ReadyFlow
+            - The general base CRN of this ReadyFlow
             - Different to the unique readyflowCrn containing a UUID4
           returned: always
           type: str
@@ -144,7 +142,8 @@ readyflow:
     versions:
       description: The list of artifactDetail versions.
       returned: When imported is True
-      type: array
+      type: list
+      elements: dict
       contains:
         crn:
           description: The artifact version CRN.

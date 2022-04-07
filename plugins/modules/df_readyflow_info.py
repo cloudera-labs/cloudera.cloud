@@ -25,7 +25,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: df_readyflow_info
-short_description: Gather information about CDP DataFlow CustomFlow Definitions
+short_description: Gather information about CDP DataFlow ReadyFlow Definitions
 description:
     - Gather information about CDP DataFlow ReadyFlow Definitions
 author:

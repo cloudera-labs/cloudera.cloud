@@ -25,9 +25,9 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: df_deployment
-short_description: Enable or Disable CDP DataFlow Services
+short_description: Enable or Disable CDP DataFlow Deployments
 description:
-    - Enable or Disable CDP DataFlow Services
+    - Enable or Disable CDP DataFlow Deployments
 author:
   - "Dan Chaffelson (@chaffelson)"
 requirements:
@@ -40,38 +40,32 @@ options:
     required: False
   dep_crn:
     description: 
-      - The crn of the Deployed Flow to be terminated
-      - Required if Name is not supplied for termination
+      - The CRN of the Deployed Flow to be terminated
+      - Required if C(name) is not supplied for termination
     type: str
     required: False
   df_crn:
     description:
-      - The crn of the Dataflow Service
-      - Required if the df_name is not supplied
+      - The CRN of the Dataflow Service
+      - Required if the C(df_name) is not supplied
     type: str
     required: False
   df_name:
     description:
       - The Name of the Dataflow Service
-      - Required if the df_crn is not supplied
+      - Required if C(df_crn) is not supplied
     type: str
     required: False
   flow_ver_crn:
     description:
-      - The crn of the specific Version of the Flow to be Deployed
-      - Required for creating a Deployment if flow_name is not supplied
+      - The CRN of the specific Version of the Flow to be Deployed
+      - Required for creating a Deployment if C(flow_name) is not supplied
     type: str
     required: False
   flow_name:
     description:
       - The Name of the Flow to be Deployed
-      - Required for creating a Deployment if flow_ver_crn is not supplied
-    type: str
-    required: False
-  flow_ver_crn:
-    description:
-      - The crn of the specific Version of the Flow to be Deployed
-      - Required for creating a Deployment if flow_name is not supplied
+      - Required for creating a Deployment if C(flow_ver_crn) is not supplied
     type: str
     required: False
   flow_ver:
@@ -80,18 +74,19 @@ options:
       - If not supplied, the latest version available will be Deployed
     type: int
     required: False
-    default: newest
   size:
     description:
       - The Size of the Pod for the Flow to be Deployed into
     type: str
     default: SMALL
-    options:
+    choices:
       - EXTRA_SMALL
       - SMALL
       - MEDIUM
       - LARGE
     required: False
+    aliases:
+      - size_name
   static_node_count:
     description:
       - The number of nodes to build the Pod on if not using Autoscaling
@@ -125,7 +120,7 @@ options:
   wait:
     description:
       - Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
-      - If set to FALSE, the module will return immediately.
+      - If set to C(FALSE), the module will return immediately.
     type: bool
     required: False
     default: True
@@ -138,7 +133,7 @@ options:
   parameter_groups:
     description:
       - Definitions of Parameters to apply to the Deployed Flow
-    type: array
+    type: list
     required: False
   kpis:
     description:
@@ -195,7 +190,7 @@ deployment:
   description: The information about the named DataFlow Deployment
   type: dict
   returned: always
-  elements: complex
+  contains:
     crn:
       description: The deployment CRN.
       returned: always
@@ -300,10 +295,6 @@ deployment:
         - May only be specified when autoscalingEnabled is true.
       returned: always
       type: int
-    autoscalingEnabled:
-      description: Whether or not to autoscale the deployment.
-      returned: always
-      type: bool
     activeWarningAlertCount:
       description: Current count of active alerts classified as a warning.
       returned: always

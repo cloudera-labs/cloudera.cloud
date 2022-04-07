@@ -42,7 +42,6 @@ options:
       - dep_crn
       - name
     required: False
-
 notes:
   - The feature this module is for is in Technical Preview
 extends_documentation_fragment:
@@ -67,10 +66,10 @@ deployments:
   description: The information about the named DataFlow Deployment or DataFlow Deployments
   type: list
   returned: always
-  elements: complex
+  elements: dict
   contains:
     crn:
-      description:  The DataFlow Deployment's CRN.
+      description: The DataFlow Deployment's CRN.
       returned: always
       type: str
     name:
@@ -80,7 +79,7 @@ deployments:
     status:
       description: The status of a DataFlow deployment.
       returned: always
-      type:ict
+      type: dict
       contains:
         state:
           description: The state of the Deployment.
@@ -97,10 +96,10 @@ deployments:
     service:
       description: Metadata about the parent DataFlow service.
       returned: always
-      type:ict
+      type: dict
       contains:
         crn:
-          description: The crn of the parent service.
+          description: The CRN of the parent service.
           returned: always
           type: str
         name:
@@ -132,7 +131,7 @@ deployments:
       returned: always
       type: str
     flowCrn:
-      description:  The deployment's current flow CRN.
+      description: The deployment's current flow CRN.
       returned: always
       type: str
     nifiUrl:
@@ -152,7 +151,7 @@ deployments:
       returned: always
       type: int
     currentNodeCount:
-      description:  The current node count.
+      description: The current node count.
       returned: always
       type: int
     deployedByCrn:
@@ -172,7 +171,7 @@ deployments:
       returned: always
       type: int
     activeWarningAlertCount:
-      description:  Current count of active alerts classified as a warning.
+      description: Current count of active alerts classified as a warning.
       returned: always
       type: int
     activeErrorAlertCount:
@@ -188,7 +187,7 @@ deployments:
       returned: always
       type: string
     lastUpdatedByName:
-      description:  The name of the person who last updated the deployment.
+      description: The name of the person who last updated the deployment.
       returned: always
       type: string
     configurationVersion:
