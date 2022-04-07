@@ -22,7 +22,12 @@ modules employ the underlying SDK contained within the `cdpy` Python package.
 | [de_virtual_cluster](./modules/de_virtual_cluster.py) | Create or delete CDP Data Engineering Virtual Clusters |
 | [de_virtual_cluster_info](./modules/de_virtual_cluster_info.py) | Gather information about CDP Data Engineering Virtual Clusters |
 | [df_service](./modules/df_service.py) | Enable or disable CDP DataFlow services |
-| [df_info](./modules/df_info.py) | Gather information about CDP DataFlow services |
+| [df_service_info](./modules/df_service_info.py) | Gather information about CDP DataFlow services |
+| [df_customflow_info](./modules/df_customflow_info.py) | Gather information about CDP DataFlow CustomFlow definitions |
+| [df_deployment](./modules/df_deployment.py) | Enable or Disable CDP DataFlow Deployments |
+| [df_deployment_info](./modules/df_deployment_info.py) | Gather information about CDP DataFlow Deployments |
+| [df_readyflow](./modules/df_readyflow.py) | Import or Delete ReadyFlows from a CDP Tenant |
+| [df_readyflow_info](./modules/df_readyflow_info.py) | Gather information about CDP DataFlow ReadyFlow Definitions |
 | [dw_cluster](./modules/dw_cluster.py) | Create, manage, and destroy CDP Data Warehouse experiences |
 | [dw_cluster_info](./modules/dw_cluster_info.py) | Gather information about CDP Data Warehouse experiences |
 | [dw_database_catalog](./modules/dw_database_catalog.py) | Create, manage, and destroy CDP Data Warehouse Data Catalogs |

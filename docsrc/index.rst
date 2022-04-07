@@ -19,8 +19,13 @@ cloudera.cloud Ansible Collection
    de_info <de_info>
    de_virtual_cluster <de_virtual_cluster>
    de_virtual_cluster_info <de_virtual_cluster_info>
+   df_customflow_info <df_customflow_info>
+   df_deployment <df_deployment>
+   df_deployment_info <df_deployment_info>
+   df_readyflow <df_readyflow>
+   df_readyflow_info <df_readyflow_info>
    df_service <df_service>
-   df_info <df_info>
+   df_service_info <df_service_info>
    dw_cluster <dw_cluster>
    dw_cluster_info <dw_cluster_info>
    dw_database_catalog <dw_database_catalog>
