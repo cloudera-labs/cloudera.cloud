@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>datalake_runtime_info -- Gather information about CDP Datalake Runtimes &mdash; cloudera.cloud 1.6.0 documentation</title>
+  <title>df_customflow_info -- Gather information about CDP DataFlow CustomFlow Definitions &mdash; cloudera.cloud 1.6.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="de – Enable and Disable CDP Data Engineering Services" href="de.html" />
-    <link rel="prev" title="datalake_info – Gather information about CDP Datalakes" href="datalake_info.html" /> 
+    <link rel="next" title="df_deployment – Enable or Disable CDP DataFlow Deployments" href="df_deployment.html" />
+    <link rel="prev" title="de_virtual_cluster_info – Gather information about CDP DE virtual clusters" href="de_virtual_cluster_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -94,20 +94,21 @@
 <li class="toctree-l1"><a class="reference internal" href="datahub_template_info.html">datahub_template_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datalake.html">datalake</a></li>
 <li class="toctree-l1"><a class="reference internal" href="datalake_info.html">datalake_info</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">datalake_runtime_info</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="datalake_runtime_info.html">datalake_runtime_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de.html">de</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_info.html">de_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster.html">de_virtual_cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster_info.html">de_virtual_cluster_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">df_customflow_info</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#notes">Notes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="de.html">de</a></li>
-<li class="toctree-l1"><a class="reference internal" href="de_info.html">de_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster.html">de_virtual_cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster_info.html">de_virtual_cluster_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="df_customflow_info.html">df_customflow_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_deployment.html">df_deployment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_deployment_info.html">df_deployment_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_readyflow.html">df_readyflow</a></li>
@@ -189,13 +190,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>datalake_runtime_info -- Gather information about CDP Datalake Runtimes</li>
+      <li>df_customflow_info -- Gather information about CDP DataFlow CustomFlow Definitions</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/datalake_runtime_info.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/df_customflow_info.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -208,22 +209,23 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="datalake-runtime-info-module"></span><div class="section" id="datalake-runtime-info-gather-information-about-cdp-datalake-runtimes">
-<h1>datalake_runtime_info – Gather information about CDP Datalake Runtimes<a class="headerlink" href="#datalake-runtime-info-gather-information-about-cdp-datalake-runtimes" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="df-customflow-info-module"></span><div class="section" id="df-customflow-info-gather-information-about-cdp-dataflow-customflow-definitions">
+<h1>df_customflow_info – Gather information about CDP DataFlow CustomFlow Definitions<a class="headerlink" href="#df-customflow-info-gather-information-about-cdp-dataflow-customflow-definitions" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
 <li><p><a class="reference internal" href="#requirements" id="id2">Requirements</a></p></li>
 <li><p><a class="reference internal" href="#parameters" id="id3">Parameters</a></p></li>
-<li><p><a class="reference internal" href="#examples" id="id4">Examples</a></p></li>
-<li><p><a class="reference internal" href="#return-values" id="id5">Return Values</a></p></li>
-<li><p><a class="reference internal" href="#status" id="id6">Status</a></p></li>
+<li><p><a class="reference internal" href="#notes" id="id4">Notes</a></p></li>
+<li><p><a class="reference internal" href="#examples" id="id5">Examples</a></p></li>
+<li><p><a class="reference internal" href="#return-values" id="id6">Return Values</a></p></li>
+<li><p><a class="reference internal" href="#status" id="id7">Status</a></p></li>
 </ul>
 </div>
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Gather information about CDP Datalake Runtimes</p></li>
+<li><p>Gather information about CDP DataFlow CustomFlow Definitions</p></li>
 </ul>
 </div>
 <div class="section" id="requirements">
@@ -246,15 +248,21 @@
 <td><p><strong>Choices/Defaults</strong></p></td>
 <td><p><strong>Comments</strong></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>default</strong></p>
+<tr class="row-even"><td><p><strong>name</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>If a name is provided, that DataFlow Flow Definition will be described</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>include_details</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
 <td></td>
-<td><p>Flag to return only the <code class="docutils literal notranslate"><span class="pre">default</span></code> Runtime.
-Otherwise, all available Runtimes will be listed.</p></td>
+<td><p>If set to false, only a summary of each flow is returned</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>verify_tls</strong></p>
+<tr class="row-even"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -264,7 +272,7 @@ Otherwise, all available Runtimes will be listed.</p></td>
 <p><em>Aliases: tls</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>debug</strong></p>
+<tr class="row-odd"><td><p><strong>debug</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -274,7 +282,7 @@ Otherwise, all available Runtimes will be listed.</p></td>
 <p><em>Aliases: debug_endpoints</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>profile</strong></p>
+<tr class="row-even"><td><p><strong>profile</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
@@ -284,69 +292,195 @@ Otherwise, all available Runtimes will be listed.</p></td>
 </tbody>
 </table>
 </div>
+<div class="section" id="notes">
+<h2><a class="toc-backref" href="#id4">Notes</a><a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>The feature this module is for is in Technical Preview</p></li>
+</ul>
+</div>
+</div>
 <div class="section" id="examples">
-<h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id5">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># List basic information about available Datalake Runtimes</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datalake_runtime_info</span><span class="p">:</span>
+<span class="c1"># List summary information about all Custom DataFlow Flow Definitions</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_customflow_info</span><span class="p">:</span>
 
-<span class="c1"># List basic information about the default Datalake Runtime</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datalake_runtime_info</span><span class="p">:</span>
-    <span class="nt">default</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+<span class="c1"># Gather summary information about a specific DataFlow Flow Definition using a name</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_customflow_info</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-flow-name</span>
+    <span class="nt">include_details</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="return-values">
-<h2><a class="toc-backref" href="#id5">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id6">Return Values</a><a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h2>
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 19%" />
-<col style="width: 13%" />
-<col style="width: 32%" />
-<col style="width: 37%" />
+<col style="width: 14%" />
+<col style="width: 9%" />
+<col style="width: 23%" />
+<col style="width: 15%" />
+<col style="width: 38%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td colspan="2"><p><strong>Key</strong></p></td>
+<tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="2"><p><strong>versions</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>flows</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td><p>on success</p></td>
-<td><p>Details on available CDP Datalake Runtimes</p></td>
+<td><p>always</p></td>
+<td><p>The listing of CustomFlow Definitions in the DataFlow Catalog in this CDP Tenant</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td><p><strong>runtimeVersion</strong></p>
+<td colspan="2"><p><strong>crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The version number of the Runtime.</p>
-<p><br /></p>
-<p><strong>Sample:</strong></p>
-<p>7.2.6</p>
-</td>
+<td><p>The DataFlow Flow Definition’s CRN.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td><p><strong>defaultRuntimeVersion</strong></p>
+<td colspan="2"><p><strong>name</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>Flag designating default status.</p></td>
+<td><p>The DataFlow Flow Definition’s name.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="2"><p><strong>sdk_out</strong></p>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>modifiedTimestamp</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The timestamp the entry was last modified.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>versionCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The number of versions uploaded to the catalog.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>artifactType</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when include_details is False</p></td>
+<td><p>The type of artifact</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>createdTimestamp</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>The created timestamp.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>author</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>Author of the most recent version.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>description</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>The artifact description.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>versions</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>The list of artifactDetail versions.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>crn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>The flow version CRN.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p><strong>bucketIdentifier</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>The bucketIdentifier of the flow.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>author</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>The author of the flow.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p><strong>version</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>The version of the flow.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>timestamp</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>The timestamp of the flow.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p><strong>deploymentCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>The number of deployments of the flow.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>comments</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when include_details is True</p></td>
+<td><p>Comments about the flow.</p></td>
+</tr>
+<tr class="row-odd"><td colspan="3"><p><strong>sdk_out</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>when supported</p></td>
 <td><p>Returns the captured CDP SDK log.</p></td>
 </tr>
-<tr class="row-even"><td colspan="2"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -357,7 +491,7 @@ Otherwise, all available Runtimes will be listed.</p></td>
 </table>
 </div>
 <div class="section" id="status">
-<h2><a class="toc-backref" href="#id6">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Status</a><a class="headerlink" href="#status" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p>This module is not guaranteed to have a backwards compatible interface. <em>[preview]</em></p></li>
 <li><p>This module is maintained by community.</p></li>
@@ -365,7 +499,7 @@ Otherwise, all available Runtimes will be listed.</p></td>
 <div class="section" id="authors">
 <h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Webster Mudge (&#64;wmudge)</p></li>
+<li><p>Dan Chaffelson (&#64;chaffelson)</p></li>
 </ul>
 </div>
 </div>
@@ -379,10 +513,10 @@ Otherwise, all available Runtimes will be listed.</p></td>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="de.html" class="btn btn-neutral float-right" title="de – Enable and Disable CDP Data Engineering Services" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="df_deployment.html" class="btn btn-neutral float-right" title="df_deployment – Enable or Disable CDP DataFlow Deployments" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="datalake_info.html" class="btn btn-neutral float-left" title="datalake_info – Gather information about CDP Datalakes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="de_virtual_cluster_info.html" class="btn btn-neutral float-left" title="de_virtual_cluster_info – Gather information about CDP DE virtual clusters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

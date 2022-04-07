@@ -43,8 +43,18 @@ Parameters
    +-------------------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------+
    | **Parameter**           | **Choices/Defaults**  | **Comments**                                                                                                              |
    +-------------------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------+
-   | **crn**                 |                       | The name or crn of the CDP Environment to host the Dataflow Service                                                       |
+   | **env_crn**             |                       | The CRN of the CDP Environment to host the Dataflow Service                                                               |
+   |                         |                       | Required when state is present                                                                                            |
+   | |br|                    |                       |                                                                                                                           |
    |                         |                       |                                                                                                                           |
+   | ``str``                 |                       |                                                                                                                           |
+   |                         |                       |                                                                                                                           |
+   |                         |                       | |br|                                                                                                                      |
+   |                         |                       |                                                                                                                           |
+   |                         |                       | *Aliases: name, crn*                                                                                                      |
+   +-------------------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------+
+   | **df_crn**              |                       | The CRN of the DataFlow Service, if available                                                                             |
+   |                         |                       | Required when state is absent                                                                                             |
    | |br|                    |                       |                                                                                                                           |
    |                         |                       |                                                                                                                           |
    | ``str``                 |                       |                                                                                                                           |
@@ -52,16 +62,10 @@ Parameters
    | |br|                    |                       |                                                                                                                           |
    |                         |                       |                                                                                                                           |
    | *Required*              |                       |                                                                                                                           |
-   |                         |                       |                                                                                                                           |
-   |                         |                       | |br|                                                                                                                      |
-   |                         |                       |                                                                                                                           |
-   |                         |                       | *Aliases: name, env_crn*                                                                                                  |
    +-------------------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------+
    | **state**               | **Choices:**          | The declarative state of the Dataflow Service                                                                             |
    |                         |  - **present** |larr| |                                                                                                                           |
-   | |br|                    |  - enabled            |                                                                                                                           |
-   |                         |  - absent             |                                                                                                                           |
-   | ``str``                 |  - disabled           |                                                                                                                           |
+   | |br|                    |  - absent             |                                                                                                                           |
    +-------------------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------+
    | **nodes_min**           |                       | The minimum number of kubernetes nodes needed for the environment. Note that the lowest minimum is 3 nodes.               |
    |                         |                       |                                                                                                                           |
@@ -114,6 +118,12 @@ Parameters
    | |br|                    |                       |                                                                                                                           |
    |                         |                       |                                                                                                                           |
    | ``bool``                |                       |                                                                                                                           |
+   +-------------------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------+
+   | **tags**                |                       | Tags to apply to the DataFlow Service                                                                                     |
+   |                         |                       |                                                                                                                           |
+   | |br|                    |                       |                                                                                                                           |
+   |                         |                       |                                                                                                                           |
+   | ``dict``                |                       |                                                                                                                           |
    +-------------------------+-----------------------+---------------------------------------------------------------------------------------------------------------------------+
    | **wait**                |                       | Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.                           |
    |                         |                       | If set to FALSE, the module will return immediately.                                                                      |
@@ -222,7 +232,7 @@ Common return values are documented here, the following are fields unique to thi
    +-------------------------------+----------------+----------------------------------------------------------------------------------------------------+
    | **Key**                       | **Returned**   | **Description**                                                                                    |
    +-------------------------------+----------------+----------------------------------------------------------------------------------------------------+
-   | **environments**              | always         | The information about the named DataFlow Service or DataFlow Services                              |
+   | **services**                  | always         | The information about the named DataFlow Service or DataFlow Services                              |
    |                               |                |                                                                                                    |
    | |br|                          |                |                                                                                                    |
    |                               |                |                                                                                                    |

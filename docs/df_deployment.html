@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>df_info -- Gather information about CDP DataFlow Services &mdash; cloudera.cloud 1.5.0 documentation</title>
+  <title>df_deployment -- Enable or Disable CDP DataFlow Deployments &mdash; cloudera.cloud 1.6.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" href="dw_cluster.html" />
-    <link rel="prev" title="df_service – Enable or Disable CDP DataFlow Services" href="df_service.html" /> 
+    <link rel="next" title="df_deployment_info – Gather information about CDP DataFlow Deployments" href="df_deployment_info.html" />
+    <link rel="prev" title="df_customflow_info – Gather information about CDP DataFlow CustomFlow Definitions" href="df_customflow_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -99,8 +99,8 @@
 <li class="toctree-l1"><a class="reference internal" href="de_info.html">de_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster.html">de_virtual_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster_info.html">de_virtual_cluster_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="df_service.html">df_service</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">df_info</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="df_customflow_info.html">df_customflow_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">df_deployment</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
@@ -110,6 +110,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="df_deployment_info.html">df_deployment_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_readyflow.html">df_readyflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_readyflow_info.html">df_readyflow_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_service.html">df_service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_service_info.html">df_service_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_database_catalog.html">dw_database_catalog</a></li>
@@ -185,13 +190,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>df_info -- Gather information about CDP DataFlow Services</li>
+      <li>df_deployment -- Enable or Disable CDP DataFlow Deployments</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/df_info.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/df_deployment.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -204,8 +209,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="df-info-module"></span><div class="section" id="df-info-gather-information-about-cdp-dataflow-services">
-<h1>df_info – Gather information about CDP DataFlow Services<a class="headerlink" href="#df-info-gather-information-about-cdp-dataflow-services" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="df-deployment-module"></span><div class="section" id="df-deployment-enable-or-disable-cdp-dataflow-deployments">
+<h1>df_deployment – Enable or Disable CDP DataFlow Deployments<a class="headerlink" href="#df-deployment-enable-or-disable-cdp-dataflow-deployments" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
@@ -220,7 +225,7 @@
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Gather information about CDP DataFlow Services</p></li>
+<li><p>Enable or Disable CDP DataFlow Deployments</p></li>
 </ul>
 </div>
 <div class="section" id="requirements">
@@ -248,25 +253,158 @@
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>If a name is provided, that DataFlow Service will be described
-Must be the string name of the CDP Environment
-Mutually exclusive with df_crn and env_crn</p></td>
+<td><p>The name of the Deployed Flow, or Flow to be Deployed</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>df_crn</strong></p>
+<tr class="row-odd"><td><p><strong>dep_crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>If a df_crn is provided, that DataFlow Service will be described
-Mutually exclusive with name and env_crn</p></td>
+<td><p>The CRN of the Deployed Flow to be terminated
+Required if <code class="docutils literal notranslate"><span class="pre">name</span></code> is not supplied for termination</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>env_crn</strong></p>
+<tr class="row-even"><td><p><strong>df_crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td></td>
-<td><p>If an env_crn is provided, the DataFlow Service for that Environment will be described
-Mutually exclusive with name and df_crn</p></td>
+<td><p>The CRN of the Dataflow Service
+Required if the <code class="docutils literal notranslate"><span class="pre">df_name</span></code> is not supplied</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>df_name</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>The Name of the Dataflow Service
+Required if <code class="docutils literal notranslate"><span class="pre">df_crn</span></code> is not supplied</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>flow_ver_crn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>The CRN of the specific Version of the Flow to be Deployed
+Required for creating a Deployment if <code class="docutils literal notranslate"><span class="pre">flow_name</span></code> is not supplied</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>flow_name</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>The Name of the Flow to be Deployed
+Required for creating a Deployment if <code class="docutils literal notranslate"><span class="pre">flow_ver_crn</span></code> is not supplied</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>flow_ver</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The Version number of the Flow to be Deployed
+If not supplied, the latest version available will be Deployed</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>size</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><dl class="simple">
+<dt><strong>Choices:</strong></dt><dd><ul class="simple">
+<li><p>EXTRA_SMALL</p></li>
+<li><p><strong>SMALL</strong> ↞</p></li>
+<li><p>MEDIUM</p></li>
+<li><p>LARGE</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+<td><p>The Size of the Pod for the Flow to be Deployed into</p>
+<p><br /></p>
+<p><em>Aliases: size_name</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>static_node_count</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The number of nodes to build the Pod on if not using Autoscaling</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>autoscale</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Whether to use autoscaling of pods for this Deployment</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>autoscale_nodes_min</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The minimum number of nodes to use when Autoscaling</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>autoscale_nodes_max</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The maximum number of nodes to use when Autoscaling</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>nifi_ver</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>The specific version of NiFi to use in the Deployment</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>wait</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag to enable internal polling to wait for the Dataflow Service to achieve the declared state.
+If set to <code class="docutils literal notranslate"><span class="pre">FALSE</span></code>, the module will return immediately.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>autostart_flow</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Whether to automatically start the Flow once Deployment is complete</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>parameter_groups</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+</td>
+<td></td>
+<td><p>Definitions of Parameters to apply to the Deployed Flow</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>kpis</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+</td>
+<td></td>
+<td><p>Definitions of KPIs to apply to the Deployed Flow</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>delay</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The internal polling interval (in seconds) while the module waits for the Dataflow Service to achieve the declared state.</p>
+<p><br /></p>
+<p><em>Aliases: polling_delay</em></p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>timeout</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td></td>
+<td><p>The internal polling timeout (in seconds) while the module waits for the Dataflow Service to achieve the declared state.</p>
+<p><br /></p>
+<p><em>Aliases: polling_timeout</em></p>
+</td>
 </tr>
 <tr class="row-odd"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
@@ -311,20 +449,19 @@ Mutually exclusive with name and df_crn</p></td>
 <h2><a class="toc-backref" href="#id5">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># List basic information about all DataFlow Services</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
+<span class="c1"># Deploy a Dataflow with defaults</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_deployment</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-flow</span>
 
-<span class="c1"># Gather detailed information about a named DataFlow Service using a name</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
-    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-service</span>
-
-<span class="c1"># Gather detailed information about a named DataFlow Service using a Dataflow CRN</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
-    <span class="nt">df_crn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">crn:cdp:df:region:tenant-uuid4:service:service-uuid4</span>
-
-<span class="c1"># Gather detailed information about a named DataFlow Service using an Environment CRN</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_info</span><span class="p">:</span>
-    <span class="nt">df_crn</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">crn:cdp:environments:region:tenant-uuid4:environment:environment-uuid4</span>
+<span class="c1"># Remove a Dataflow Service with Async wait</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.df_deployment</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-flow-name</span>
+    <span class="nt">df_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-env-name</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">absent</span>
+    <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yes</span>
+  <span class="nt">async</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3600</span>
+  <span class="nt">poll</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="nt">register</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">__my_teardown_request</span>
 </pre></div>
 </div>
 </div>
@@ -333,23 +470,23 @@ Mutually exclusive with name and df_crn</p></td>
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 14%" />
-<col style="width: 9%" />
-<col style="width: 23%" />
+<col style="width: 12%" />
+<col style="width: 8%" />
+<col style="width: 21%" />
 <col style="width: 7%" />
-<col style="width: 48%" />
+<col style="width: 52%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="3"><p><strong>environments</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>deployment</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The information about the named DataFlow Service or DataFlow Services</p></td>
+<td><p>The information about the named DataFlow Deployment</p></td>
 </tr>
 <tr class="row-odd"><td></td>
 <td colspan="2"><p><strong>crn</strong></p>
@@ -357,7 +494,7 @@ Mutually exclusive with name and df_crn</p></td>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The DataFlow Service’s parent environment CRN.</p></td>
+<td><p>The deployment CRN.</p></td>
 </tr>
 <tr class="row-even"><td></td>
 <td colspan="2"><p><strong>name</strong></p>
@@ -365,49 +502,9 @@ Mutually exclusive with name and df_crn</p></td>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The DataFlow Service’s parent environment name.</p></td>
+<td><p>The deployment name.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>cloudPlatform</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The cloud platform of the environment.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="2"><p><strong>region</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The region of the environment.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>deploymentCount</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The deployment count.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="2"><p><strong>minK8sNodeCount</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The  minimum  number  of Kubernetes nodes that need to be provisioned in the environment.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>maxK8sNodeCount</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The maximum number of  kubernetes  nodes  that  environment  may scale up under high-demand situations.</p></td>
-</tr>
-<tr class="row-even"><td></td>
 <td colspan="2"><p><strong>status</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -415,16 +512,16 @@ Mutually exclusive with name and df_crn</p></td>
 <td><p>always</p></td>
 <td><p>The status of a DataFlow enabled environment.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
-<td><p><strong>state</strong></p>
+<td><p><strong>detailedState</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The state of the environment.</p></td>
+<td><p>The detailed state that the deployment is currently in.</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td><p><strong>message</strong></p>
 <p><br /></p>
@@ -433,39 +530,174 @@ Mutually exclusive with name and df_crn</p></td>
 <td><p>always</p></td>
 <td><p>A status message for the environment.</p></td>
 </tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>state</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The state that the deployment is currently in</p></td>
+</tr>
 <tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>k8sNodeCount</strong></p>
+<td colspan="2"><p><strong>service</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Metadata about the DataFlow service.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>crn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The crn of the DataFlow service.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p><strong>name</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The name of the CDP Environment.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>cloudProvider</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The cloud provider</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td></td>
+<td><p><strong>region</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The region within the cloud provider</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>environmentCrn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The CDP Environment CRN</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>updated</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The  number of kubernetes nodes currently in use by DataFlow for this environment.</p></td>
+<td><p>Timestamp of the last time the deployment was modified.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td colspan="2"><p><strong>instanceType</strong></p>
+<td colspan="2"><p><strong>clusterSize</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The instance type of the kubernetes nodes currently  in  use  by DataFlow for this environment.</p></td>
+<td><p>The initial size of the deployment.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>dfLocalUrl</strong></p>
+<td colspan="2"><p><strong>flowVersionCrn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The URL of the environment local DataFlow application.</p></td>
+<td><p>The deployment’s current flow version CRN.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td colspan="2"><p><strong>authorizedIpRanges</strong></p>
+<td colspan="2"><p><strong>flowCrn</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>The authorized IP Ranges.</p></td>
+<td><p>The deployment’s current flow CRN.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>nifiUrl</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The url to open the deployed flow in NiFi.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>autoscaleMaxNodes</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The maximum number of nodes that the deployment can scale up to, or null if autoscaling is not enabled for this deployment.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>flowName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The name of the flow.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>flowVersion</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The version of the flow.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>currentNodeCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The current node count.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>deployedByCrn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The actor CRN of the person who deployed the flow.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>deployedByName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The name of the person who deployed the flow.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>autoscalingEnabled</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Whether or not to autoscale the deployment.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>autoscaleMinNodes</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The  minimum  number of nodes that the deployment will allocate.
+May only be specified when autoscalingEnabled is true.</p></td>
+</tr>
+<tr class="row-even"><td></td>
 <td colspan="2"><p><strong>activeWarningAlertCount</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
@@ -473,7 +705,7 @@ Mutually exclusive with name and df_crn</p></td>
 <td><p>always</p></td>
 <td><p>Current count of active alerts classified as a warning.</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td colspan="2"><p><strong>activeErrorAlertCount</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
@@ -481,13 +713,38 @@ Mutually exclusive with name and df_crn</p></td>
 <td><p>always</p></td>
 <td><p>Current count of active alerts classified as an error.</p></td>
 </tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>staticNodeCount</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The static number of nodes that the  deployment  will  allocate.
+May only be specified when autoscalingEnabled is false.</p></td>
+</tr>
 <tr class="row-odd"><td></td>
-<td colspan="2"><p><strong>clusterId</strong></p>
+<td colspan="2"><p><strong>dfxLocalUrl</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
-<td><p>if enabled</p></td>
-<td><p>Cluster id of the environment.</p></td>
+<td><p>always</p></td>
+<td><p>Base URL to the dfx-local instance running this deployment.</p></td>
+</tr>
+<tr class="row-even"><td></td>
+<td colspan="2"><p><strong>lastUpdatedByName</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The name of the person who last updated the deployment.</p></td>
+</tr>
+<tr class="row-odd"><td></td>
+<td colspan="2"><p><strong>configurationVersion</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The version of the configuration for this deployment.</p></td>
 </tr>
 <tr class="row-even"><td colspan="3"><p><strong>sdk_out</strong></p>
 <p><br /></p>
@@ -515,7 +772,6 @@ Mutually exclusive with name and df_crn</p></td>
 <div class="section" id="authors">
 <h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Webster Mudge (&#64;wmudge)</p></li>
 <li><p>Dan Chaffelson (&#64;chaffelson)</p></li>
 </ul>
 </div>
@@ -530,10 +786,10 @@ Mutually exclusive with name and df_crn</p></td>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="dw_cluster.html" class="btn btn-neutral float-right" title="dw_cluster – Create or Delete CDP Data Warehouse Clusters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="df_deployment_info.html" class="btn btn-neutral float-right" title="df_deployment_info – Gather information about CDP DataFlow Deployments" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="df_service.html" class="btn btn-neutral float-left" title="df_service – Enable or Disable CDP DataFlow Services" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="df_customflow_info.html" class="btn btn-neutral float-left" title="df_customflow_info – Gather information about CDP DataFlow CustomFlow Definitions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -543,7 +799,7 @@ Mutually exclusive with name and df_crn</p></td>
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2021, Cloudera
+        &copy; Copyright 2022, Cloudera
 
     </p>
   </div>

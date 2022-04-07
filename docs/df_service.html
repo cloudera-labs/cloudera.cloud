@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>df_service -- Enable or Disable CDP DataFlow Services &mdash; cloudera.cloud 1.5.0 documentation</title>
+  <title>df_service -- Enable or Disable CDP DataFlow Services &mdash; cloudera.cloud 1.6.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="df_info – Gather information about CDP DataFlow Services" href="df_info.html" />
-    <link rel="prev" title="de_virtual_cluster_info – Gather information about CDP DE virtual clusters" href="de_virtual_cluster_info.html" /> 
+    <link rel="next" title="df_service_info – Gather information about CDP DataFlow Services" href="df_service_info.html" />
+    <link rel="prev" title="df_readyflow_info – Gather information about CDP DataFlow ReadyFlow Definitions" href="df_readyflow_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -99,6 +99,11 @@
 <li class="toctree-l1"><a class="reference internal" href="de_info.html">de_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster.html">de_virtual_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster_info.html">de_virtual_cluster_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_customflow_info.html">df_customflow_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_deployment.html">df_deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_deployment_info.html">df_deployment_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_readyflow.html">df_readyflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_readyflow_info.html">df_readyflow_info</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">df_service</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
@@ -109,7 +114,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="df_info.html">df_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="df_service_info.html">df_service_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster.html">dw_cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_cluster_info.html">dw_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dw_database_catalog.html">dw_database_catalog</a></li>
@@ -243,35 +248,41 @@
 <td><p><strong>Choices/Defaults</strong></p></td>
 <td><p><strong>Comments</strong></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>crn</strong></p>
+<tr class="row-even"><td><p><strong>env_crn</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td></td>
+<td><p>The CRN of the CDP Environment to host the Dataflow Service
+Required when state is present</p>
+<p><br /></p>
+<p><em>Aliases: name, crn</em></p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>df_crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 <p><br /></p>
 <p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>The name or crn of the CDP Environment to host the Dataflow Service</p>
-<p><br /></p>
-<p><em>Aliases: name, env_crn</em></p>
-</td>
+<td><p>The CRN of the DataFlow Service, if available
+Required when state is absent</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>state</strong></p>
+<tr class="row-even"><td><p><strong>state</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><dl class="simple">
 <dt><strong>Choices:</strong></dt><dd><ul class="simple">
 <li><p><strong>present</strong> ↞</p></li>
-<li><p>enabled</p></li>
 <li><p>absent</p></li>
-<li><p>disabled</p></li>
 </ul>
 </dd>
 </dl>
 </td>
 <td><p>The declarative state of the Dataflow Service</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>nodes_min</strong></p>
+<tr class="row-odd"><td><p><strong>nodes_min</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
@@ -281,7 +292,7 @@
 <p><em>Aliases: min_k8s_node_count</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>nodes_max</strong></p>
+<tr class="row-even"><td><p><strong>nodes_max</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
@@ -291,7 +302,7 @@
 <p><em>Aliases: max_k8s_node_count</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>public_loadbalancer</strong></p>
+<tr class="row-odd"><td><p><strong>public_loadbalancer</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -301,7 +312,7 @@
 <p><em>Aliases: use_public_load_balancer</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>ip_ranges</strong></p>
+<tr class="row-even"><td><p><strong>ip_ranges</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -311,19 +322,26 @@
 <p><em>Aliases: authorized_ip_ranges</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>persist</strong></p>
+<tr class="row-odd"><td><p><strong>persist</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
 <td></td>
 <td><p>Whether or not to retain the database records of related entities during removal.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>terminate</strong></p>
+<tr class="row-even"><td><p><strong>terminate</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
 <td></td>
 <td><p>Whether or  not to terminate all deployments associated with this DataFlow service</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>tags</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
+</td>
+<td></td>
+<td><p>Tags to apply to the DataFlow Service</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>wait</strong></p>
 <p><br /></p>
@@ -434,7 +452,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="3"><p><strong>environments</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>services</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
@@ -619,10 +637,10 @@ If set to FALSE, the module will return immediately.</p></td>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="df_info.html" class="btn btn-neutral float-right" title="df_info – Gather information about CDP DataFlow Services" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="df_service_info.html" class="btn btn-neutral float-right" title="df_service_info – Gather information about CDP DataFlow Services" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="de_virtual_cluster_info.html" class="btn btn-neutral float-left" title="de_virtual_cluster_info – Gather information about CDP DE virtual clusters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="df_readyflow_info.html" class="btn btn-neutral float-left" title="df_readyflow_info – Gather information about CDP DataFlow ReadyFlow Definitions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -632,7 +650,7 @@ If set to FALSE, the module will return immediately.</p></td>
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2021, Cloudera
+        &copy; Copyright 2022, Cloudera
 
     </p>
   </div>

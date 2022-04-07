@@ -1,4 +1,4 @@
-.. _df_info_module:
+.. _df_service_info_module:
 .. include:: <isoamsa.txt>
 .. |br| raw:: html
 
@@ -8,10 +8,10 @@
 .. Start the module documentation
 
 
-.. title:: df_info -- Gather information about CDP DataFlow Services
+.. title:: df_service_info -- Gather information about CDP DataFlow Services
 
-df_info -- Gather information about CDP DataFlow Services
-=========================================================
+df_service_info -- Gather information about CDP DataFlow Services
+=================================================================
 
 .. contents::
    :local:
@@ -136,13 +136,19 @@ Common return values are documented here, the following are fields unique to thi
    +-------------------------------+----------------+---------------------------------------------------------------------------------------------------------+
    | **Key**                       | **Returned**   | **Description**                                                                                         |
    +-------------------------------+----------------+---------------------------------------------------------------------------------------------------------+
-   | **environments**              | always         | The information about the named DataFlow Service or DataFlow Services                                   |
+   | **services**                  | always         | The information about the named DataFlow Service or DataFlow Services                                   |
    |                               |                |                                                                                                         |
    | |br|                          |                |                                                                                                         |
    |                               |                |                                                                                                         |
    | ``list``                      |                |                                                                                                         |
    +-+-----------------------------+----------------+---------------------------------------------------------------------------------------------------------+
-   | | **crn**                     | always         | The DataFlow Service's parent environment CRN.                                                          |
+   | | **crn**                     | always         | The DataFlow Service's CRN.                                                                             |
+   | |                             |                |                                                                                                         |
+   | | |br|                        |                |                                                                                                         |
+   | |                             |                |                                                                                                         |
+   | | ``str``                     |                |                                                                                                         |
+   +-+-----------------------------+----------------+---------------------------------------------------------------------------------------------------------+
+   | | **environmentCrn**          | always         | The DataFlow Service's Parent Environment CRN.                                                          |
    | |                             |                |                                                                                                         |
    | | |br|                        |                |                                                                                                         |
    | |                             |                |                                                                                                         |
