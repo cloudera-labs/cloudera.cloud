@@ -26,7 +26,7 @@ To release a new version of the collection, first update the following files:
 * `galaxy.yml` - version number
 * `site/conf.py` - version number
 * `plugins/README.md` - modules and module links
-* `docs/index.rst` - modules and reST links 
+* `docsrc/index.rst` - modules and reST links 
 
 Then build the module documentation and correct any errors. Once the reST `docsrc` files are generating correctly, you
 can build the documentation.
