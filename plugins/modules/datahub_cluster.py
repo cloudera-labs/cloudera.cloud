@@ -54,6 +54,8 @@ options:
     default: present
     choices:
       - present
+      - started
+      - stopped
       - absent
   environment:
     description:
@@ -223,6 +225,16 @@ EXAMPLES = r'''
     tags:
       project: Arbitrary content
     wait: no
+
+# Stop the datahub (and wait for status change)
+- cloudera.cloud.datahub:
+    name: example-datahub
+    state: stopped
+
+# Start the datahub (and wait for status change)
+- cloudera.cloud.datahub:
+    name: example-datahub
+    state: started
 
 # Delete the datahub (and wait for status change)
   cloudera.cloud.datahub:
@@ -404,7 +416,7 @@ class DatahubCluster(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         existing = self.cdpy.datahub.describe_cluster(self.name)
-        if self.state in ['present']:
+        if self.state in ['present', 'started']:
             # If the datahub exists
             if existing is not None:
                 self.datahub = existing
@@ -423,6 +435,10 @@ class DatahubCluster(CdpModule):
                                 msg += "Parameter '%s' found to be '%s'\n" % (m[0], m[1])
                             self.module.fail_json(msg='Datahub exists and differs from expected:\n' + msg,
                                                   violations=mismatch)
+                # Attempt to start the datahub
+                if 'status' in existing and existing['status'] not in self.cdpy.sdk.STARTED_STATES:
+                    self.cdpy.datahub.start_cluster(self.name)
+                    
                 if self.wait and not self.module.check_mode:
                     self.datahub = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.datahub.describe_cluster,
@@ -441,6 +457,34 @@ class DatahubCluster(CdpModule):
                         self.module.fail_json(msg="Unable to find datalake or not Running, '%s'" % self.environment)
                 else:
                     self.module.fail_json(msg="Unable to find environment, '%s'" % self.environment)
+        elif self.state == 'stopped':
+            # If the datahub exists
+            if existing is not None:
+                
+              # Warn if attempting to stop an already stopped/stopping datahub
+              if existing['status'] in self.cdpy.sdk.STOPPED_STATES:
+                  self.module.warn('Attempting to stop a datahub already stopped or in stopping cycle')
+                  self.datahub = existing
+              # Warn if attempting to stop an already terminated/terminating datahub
+              elif existing['status'] in self.cdpy.sdk.TERMINATION_STATES:
+                self.module.warn('Attempting to stop an datahub during the termination cycle')
+                self.datahub = existing
+              # Otherwise, stop the datahub
+              else:
+                if not self.module.check_mode:
+                  self.cdpy.datahub.stop_cluster(self.name)
+                  self.changed = True
+                  if self.wait:
+                    self.datahub = self.cdpy.sdk.wait_for_state(
+                        describe_func=self.cdpy.datahub.describe_cluster,
+                        params=dict(name=self.name),
+                        state='STOPPED',
+                        delay=self.delay,
+                        timeout=self.timeout
+                    )
+            
+            else:
+              self.module.fail_json(msg='Datahub %s does not exist' % self.name)
 
         elif self.state == 'absent':
             # If the datahub exists
@@ -547,7 +591,7 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             name=dict(required=True, type='str', aliases=['datahub']),
-            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
+            state=dict(required=False, type='str', choices=['present', 'started', 'stopped', 'absent'], default='present'),
             definition=dict(required=False, type='str'),
             subnet=dict(required=False, type='str', default=None),
             image=dict(required=False, type='str', default=None),
