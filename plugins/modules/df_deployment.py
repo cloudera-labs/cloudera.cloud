@@ -360,6 +360,10 @@ class DFDeployment(CdpModule):
         self.delay = self._get_param('delay')
         self.timeout = self._get_param('timeout')
 
+        # Additional checks that can't be coded using the AnsibleModule rules
+        if self.state == 'absent' and self.dep_crn is None and self.df_crn is None and self.df_name is None:
+            self.module.fail_json(msg='name is specified but any of the following are missing: df_crn, df_name')
+
         # Initialize return values
         self.deployment = None
         self.changed = False
@@ -373,14 +377,15 @@ class DFDeployment(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         # Prepare information
+        if self.dep_crn is not None:
+            self.target = self.cdpy.df.describe_deployment(dep_crn=self.dep_crn)
+            self.df_crn = self.target['service']['crn']
         if self.df_crn is None:
             self.df_crn = self.cdpy.df.resolve_service_crn_from_name(self.df_name)
             if self.df_crn is None:
                 self.module.fail_json(
                     msg="Either df_crn must be supplied or resolvable from df_name")
-        if self.dep_crn is not None:
-            self.target = self.cdpy.df.describe_deployment(dep_crn=self.dep_crn)
-        elif self.name is not None and self.df_crn is not None:
+        if self.name is not None and self.df_crn is not None:
             self.target = self.cdpy.df.describe_deployment(df_crn=self.df_crn, name=self.name)
             if self.target is not None:
                 self.dep_crn = self.target['crn']
@@ -499,12 +504,13 @@ def main():
             timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         supports_check_mode=True,
-        required_one_of=[
-            ['df_crn', 'df_name']
+        mutually_exclusive=[
+            ['dep_crn', 'df_crn', 'df_name'],
         ],
         required_if=[
             ['state', 'absent', ['dep_crn', 'name'], True],  # One of for termination
             ['state', 'present', ['flow_ver_crn', 'flow_name'], True],  # One of
+            ['state', 'present', ['df_crn', 'df_name'], True],  # One of
             ['state', 'present', ['name']]
         ],
     )
