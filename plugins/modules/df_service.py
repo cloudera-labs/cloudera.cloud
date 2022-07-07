@@ -14,7 +14,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import json
+import jmespath
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
@@ -89,12 +90,32 @@ options:
   cluster_subnets:
     description:
       - Subnet ids that will be assigned to the Kubernetes cluster
+      - Mutually exclusive with the cluster_subnets_filter option 
     type: list
+    required: False
+  cluster_subnets_filter:
+    description:
+      - JMESPath expression to filter the subnets to be used for the Kubernetes cluster
+      - The expression will be applied to the full list of subnets for the specified environment
+      - Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr
+      - The filter expression must only filter the list, but not apply any attribute projection
+      - Mutually exclusive with the cluster_subnets option 
+    type: str
     required: False
   loadbalancer_subnets:
     description:
       - Subnet ids that will be assigned to the load balancer
+      - Mutually exclusive with the loadbalancer_subnets_filter option 
     type: list
+    required: False
+  loadbalancer_subnets_filter:
+    description:
+      - JMESPath expression to filter the subnets to be used for the load balancer
+      - The expression will be applied to the full list of subnets for the specified environment
+      - Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr
+      - The filter expression must only filter the list, but not apply any attribute projection
+      - Mutually exclusive with the cluster_subnets option 
+    type: str
     required: False
   persist:
     description: Whether or not to retain the database records of related entities during removal.
@@ -157,6 +178,8 @@ EXAMPLES = r'''
     nodes_min: 3
     nodes_max: 10
     public_loadbalancer: True
+    cluster_subnets_filter: "[?contains(subnetName, 'pvt')]"
+    loadbalancer_subnets_filter: "[?contains(subnetName, 'pub')]"
     kube_ip_ranges: ['192.168.0.1/24']
     state: present
     wait: yes
@@ -275,7 +298,9 @@ class DFService(CdpModule):
         self.lb_ip_ranges = self._get_param('loadbalancer_ip_ranges')
         self.kube_ip_ranges = self._get_param('kube_ip_ranges')
         self.cluster_subnets = self._get_param('cluster_subnets')
+        self.cluster_subnets_filter = self._get_param('cluster_subnets_filter')
         self.lb_subnets = self._get_param('loadbalancer_subnets')
+        self.lb_subnets_filter = self._get_param('loadbalancer_subnets_filter')
         self.persist = self._get_param('persist')
         self.terminate = self._get_param('terminate')
         self.force = self._get_param('force')
@@ -330,6 +355,21 @@ class DFService(CdpModule):
                     self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % original_env_crn)
                 else:
                     # create DF Service
+                    if self.cluster_subnets_filter or self.lb_subnets_filter:
+                        try:
+                            env_info = self.cdpy.environments.describe_environment(self.env_crn)
+                            subnet_metadata = list(env_info['network']['subnetMetadata'].values())
+                        except Exception:
+                            subnet_metadata = []
+                        if not subnet_metadata:
+                            self.module.fail_json(
+                                msg="Could not retrieve subnet metadata for CDP Environment %s" % self.env_crn)
+
+                        if self.cluster_subnets_filter:
+                            self.cluster_subnets = self._filter_subnets(self.cluster_subnets_filter, subnet_metadata)
+                        if self.lb_subnets_filter:
+                            self.lb_subnets = self._filter_subnets(self.lb_subnets_filter, subnet_metadata)
+
                     if not self.module.check_mode:
                         self.service = self.cdpy.df.enable_service(
                             env_crn=self.env_crn,
@@ -355,6 +395,27 @@ class DFService(CdpModule):
             field=['status', 'state'], state=self.cdpy.sdk.STARTED_STATES,
             delay=self.delay, timeout=self.timeout
         )
+
+    def _filter_subnets(self, query, subnets):
+        """Apply a JMESPath to an array of subnets and return the id of the selected subnets.
+        The query must only filter the array, without applying any projection. The query result must also be an
+        array of subnet objects.
+
+        :param query: JMESpath query to filter the subnet array.
+        :param subnets: An array of subnet objects. Each subnet in the array is an object with the following attributes:
+        subnetId, subnetName, availabilityZone, cidr.
+        :return: An array of subnet ids.
+        """
+        filtered_subnets = []
+        try:
+            filtered_subnets = jmespath.search(query, subnets)
+        except Exception:
+            self.module.fail_json(msg="The specified subnet filter is an invalid JMESPath expression: " % query)
+        try:
+            return [s['subnetId'] for s in filtered_subnets]
+        except Exception:
+            self.module.fail_json(msg='The subnet filter "%s" should return an array of subnet objects '
+                                      'but instead returned this: %s' % (query, json.dumps(filtered_subnets)))
 
     def _disable_df(self):
         # Attempt clean Disable, which also ensures we have tried at least once before we do a forced removal
@@ -412,7 +473,9 @@ def main():
             loadbalancer_ip_ranges=dict(type='list', elements='str', default=None),
             kube_ip_ranges=dict(type='list', elements='str', default=None),
             cluster_subnets=dict(type='list', elements='str', default=None),
+            cluster_subnets_filter=dict(type='str', default=None),
             loadbalancer_subnets=dict(type='list', elements='str', default=None),
+            loadbalancer_subnets_filter=dict(type='str', default=None),
             persist=dict(type='bool', default=False),
             terminate=dict(type='bool', default=False),
             tags=dict(required=False, type='dict', default=None),
@@ -426,7 +489,11 @@ def main():
         required_if=[
             ('state', 'present', ('env_crn', ), False),
             ('state', 'absent', ('df_crn', ), False)
-        ]
+        ],
+        mutually_exclusive=[
+            ('cluster_subnets', 'cluster_subnets_filter'),
+            ('loadbalancer_subnets', 'loadbalancer_subnets_filter'),
+        ],
     )
 
     result = DFService(module)
