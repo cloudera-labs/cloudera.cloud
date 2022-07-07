@@ -35,17 +35,17 @@ requirements:
 options:
   env_crn:
     description: 
-        - The CRN of the CDP Environment to host the Dataflow Service
-        - Required when state is present
+      - The CRN of the CDP Environment to host the Dataflow Service
+      - The environment name can also be provided, instead of the CRN
+      - Required when state is present
     type: str
-    required: False
+    required: Conditional
     aliases:
       - name
-      - crn
   df_crn:
     description: 
-        - The CRN of the DataFlow Service, if available
-        - Required when state is absent
+      - The CRN of the DataFlow Service, if available
+      - Required when state is absent
     type: str
     required: Conditional
   state:
@@ -78,12 +78,24 @@ options:
     required: False
     aliases:
       - use_public_load_balancer
-  ip_ranges:
+  loadbalancer_ip_ranges:
+    description: The IP ranges authorized to connect to the load balancer
+    type: list
+    required: False
+  kube_ip_ranges:
     description: The IP ranges authorized to connect to the Kubernetes API server
     type: list
     required: False
-    aliases:
-      - authorized_ip_ranges
+  cluster_subnets:
+    description:
+      - Subnet ids that will be assigned to the Kubernetes cluster
+    type: list
+    required: False
+  loadbalancer_subnets:
+    description:
+      - Subnet ids that will be assigned to the load balancer
+    type: list
+    required: False
   persist:
     description: Whether or not to retain the database records of related entities during removal.
     type: bool
@@ -94,6 +106,12 @@ options:
     type: bool
     required: False
     default: False
+  force:
+    description: Flag to indicate if the DataFlow deletion should be forced.
+    type: bool
+    required: False
+    aliases:
+      - force_delete
   tags:
     description: Tags to apply to the DataFlow Service 
     type: dict
@@ -139,7 +157,7 @@ EXAMPLES = r'''
     nodes_min: 3
     nodes_max: 10
     public_loadbalancer: True
-    ip_ranges: ['192.168.0.1/24']
+    kube_ip_ranges: ['192.168.0.1/24']
     state: present
     wait: yes
 
@@ -386,7 +404,7 @@ class DFService(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            env_crn=dict(type='str'),
+            env_crn=dict(type='str', aliases=['name']),
             df_crn=dict(type='str'),
             nodes_min=dict(type='int', default=3, aliases=['min_k8s_node_count']),
             nodes_max=dict(type='int', default=3, aliases=['max_k8s_node_count']),
@@ -398,8 +416,7 @@ def main():
             persist=dict(type='bool', default=False),
             terminate=dict(type='bool', default=False),
             tags=dict(required=False, type='dict', default=None),
-            state=dict(type='str', choices=['present', 'absent'],
-                       default='present'),
+            state=dict(type='str', choices=['present', 'absent'], default='present'),
             force=dict(type='bool', default=False, aliases=['force_delete']),
             wait=dict(type='bool', default=True),
             delay=dict(type='int', aliases=['polling_delay'], default=15),
