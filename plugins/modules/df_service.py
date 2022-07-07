@@ -257,7 +257,7 @@ class DFService(CdpModule):
         self.lb_ip_ranges = self._get_param('loadbalancer_ip_ranges')
         self.kube_ip_ranges = self._get_param('kube_ip_ranges')
         self.cluster_subnets = self._get_param('cluster_subnets')
-        self.lb_subnets = self._get_param('lb_subnets')
+        self.lb_subnets = self._get_param('loadbalancer_subnets')
         self.persist = self._get_param('persist')
         self.terminate = self._get_param('terminate')
         self.force = self._get_param('force')
