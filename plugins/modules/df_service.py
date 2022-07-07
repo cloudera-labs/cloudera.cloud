@@ -280,6 +280,7 @@ class DFService(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
+        original_env_crn = self.env_crn
         if self.env_crn is not None:
             self.env_crn = self.cdpy.environments.resolve_environment_crn(self.env_crn)
         if self.env_crn is not None or self.df_crn is not None:
@@ -294,8 +295,9 @@ class DFService(CdpModule):
                     self._disable_df()
             elif self.state in ['present']:
                 self.module.warn(
-                    "Dataflow Service already enabled and configuration validation and reconciliation is not supported;" +
-                    "to change a Dataflow Service, explicitly disable and recreate the Service or use the UI")
+                    "Dataflow Service already enabled and configuration validation and reconciliation is not "
+                    "supported; to change a Dataflow Service, explicitly disable and recreate the Service or "
+                    "use the UI")
                 if self.wait:
                     self.service = self._wait_for_enabled()
             else:
@@ -304,11 +306,10 @@ class DFService(CdpModule):
         else:
             # Environment does not have DF database entry, and probably doesn't exist
             if self.state in ['absent']:
-                self.module.log(
-                    "Dataflow Service already disabled in CDP Environment %s" % self.env_crn)
+                self.module.log("Dataflow Service already disabled in CDP Environment %s" % self.env_crn)
             elif self.state in ['present']:
                 if self.env_crn is None:
-                    self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % self.env)
+                    self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % original_env_crn)
                 else:
                     # create DF Service
                     if not self.module.check_mode:
