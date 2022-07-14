@@ -1,6 +1,9 @@
 # Keep the Galaxy builds
 !cloudera-cloud-*.tar.gz
 
+# Ignore the test output
+tests/output
+
 # Remove the Sphinx build directory
 site/_build
 
