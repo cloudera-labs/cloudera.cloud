@@ -33,17 +33,21 @@ author:
 requirements:
   - cdpy
 options:
+  name:
+    description:
+      - If a name is provided, the DataFlow Deployment with this name will be described
+      - Mutually exclusive with the crn argument
+    type: str
+    required: False
   crn:
     description:
       - If a crn is provided, that DataFlow Deployment will be described
       - Must be the string CRN of the deployment object
+      - Mutually exclusive with the name argument
     type: str
     aliases:
       - dep_crn
-      - name
     required: False
-notes:
-  - The feature this module is for is in Technical Preview
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -212,6 +216,7 @@ class DFDeploymentInfo(CdpModule):
 
         # Set variables
         self.name = self._get_param('name')
+        self.crn = self._get_param('crn')
 
         # Initialize return values
         self.deployments = []
@@ -221,16 +226,17 @@ class DFDeploymentInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.deployments = self.cdpy.df.list_deployments(dep_crn=self.name, described=True)
+        self.deployments = self.cdpy.df.list_deployments(dep_crn=self.crn, name=self.name, described=True)
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['crn', 'dep_crn'])
+            name=dict(required=False, type='str'),
+            crn=dict(required=False, type='str', aliases=['dep_crn'])
         ),
         supports_check_mode=True,
-        mutually_exclusive=['name', 'df_crn', 'env_crn']
+        mutually_exclusive=[('name', 'crn')]
     )
 
     result = DFDeploymentInfo(module)
