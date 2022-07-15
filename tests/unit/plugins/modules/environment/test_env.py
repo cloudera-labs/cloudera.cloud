@@ -20,7 +20,7 @@ __metaclass__ = type
 import pytest
 import unittest
 
-from mock import patch
+from unittest.mock import patch
 
 from ansible_collections.cloudera.cloud.plugins.modules import env
 from ansible_collections.cloudera.cloud.tests.unit.plugins.modules.utils import AnsibleExitJson, ModuleTestCase, setup_module_args
