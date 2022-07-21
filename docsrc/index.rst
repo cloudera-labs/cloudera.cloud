@@ -5,6 +5,7 @@ cloudera.cloud Ansible Collection
    :hidden:
    :caption: Module APIs
 
+   access_token <access_token>
    account_auth <account_auth>
    account_auth_info <account_auth_info>
    account_cred_info <account_cred_info>
