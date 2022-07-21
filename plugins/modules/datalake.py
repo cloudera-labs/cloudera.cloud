@@ -133,6 +133,12 @@ options:
     default: 3600
     aliases:
       - polling_timeout
+  raz:
+    description:
+      - Flag indicating if Ranger RAZ fine grained access should be enabled for the datalake
+    type: bool
+    required: False
+    default: False
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -209,6 +215,10 @@ datalake:
       sample:
         - AWS
         - AZURE
+    enableRangerRaz:
+      description: Whether or not RAZ is enabled
+      returned: always
+      type: bool
     clouderaManager:
       description: The Cloudera Manager details.
       returned: when supported
@@ -394,6 +404,7 @@ class Datalake(CdpModule):
         self.delay = self._get_param('delay')
         self.timeout = self._get_param('timeout')
         self.force = self._get_param('force')
+        self.raz = self._get_param("raz")
 
         # Initialize the return values
         self.datalake = dict()
@@ -473,7 +484,7 @@ class Datalake(CdpModule):
     def create_datalake(self, environment):
         self._validate_datalake_name()
 
-        payload = self._configure_payload()
+        payload = self._configure_payload(environment)
 
         if environment['cloudPlatform'] == 'AWS':
             if self.instance_profile is None or self.storage is None:
@@ -525,7 +536,7 @@ class Datalake(CdpModule):
                 timeout=self.timeout
             )
 
-    def _configure_payload(self):
+    def _configure_payload(self, environment):
         payload = dict(
             datalakeName=self.name,
             environmentName=self.environment,
@@ -536,6 +547,14 @@ class Datalake(CdpModule):
 
         if self.scale:
             payload.update(scale=self.scale)
+
+        if self.raz:
+            if environment['cloudPlatform'] == 'AWS' or environment['cloudPlatform'] == 'AZURE':
+                payload.update(enableRangerRaz=self.raz)
+            else:
+                self.module.fail_json(msg='GCP Datalakes do not currently support RAZ')
+        else:
+            payload.update(enableRangerRaz=self.raz)
 
         if self.tags is not None:
             payload['tags'] = list()
@@ -576,6 +595,12 @@ class Datalake(CdpModule):
                              "need to change the tags, explicitly delete "
                              "and recreate the Datalake.")
 
+        if self.raz:
+            self.module.warn("Updating an existing Datalake's 'enableRangerRaz' "
+                             "directly is not supported at this time. If you "
+                             "need to change the enableRangerRaz, explicitly delete "
+                             "and recreate the Datalake.")
+
         return mismatched
 
     def _validate_datalake_name(self):
@@ -603,7 +628,8 @@ def main():
             force=dict(required=False, type='bool', default=False),
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
+            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
+            raz=dict(required=False, type="bool", default=False)
         ),
         supports_check_mode=True
     )
