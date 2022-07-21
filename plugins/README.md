@@ -37,6 +37,7 @@ modules employ the underlying SDK contained within the `cdpy` Python package.
 | [env](./modules/env.py) | Create, manage, and destroy CDP Environments |
 | [env_auth](./modules/env_auth.py) | Set authentication details for CDP Environments |
 | [env_auth_info](./modules/env_auth_info.py) | Gather information about CDP Environment authentication details |
+| [env_automated_user_sync_info](./modules/env_automated_user_sync_info.py) | Get the status of the automated CDP Users and Groups synchronization service |
 | [env_cred](./modules/env_cred.py) | Create, update, and destroy CDP Credentials |
 | [env_cred_info](./modules/env_cred_info.py) | Gather information about CDP Credentials |
 | [env_idbroker](./modules/env_idbroker.py) | Manage CDP Environment ID Broker data access mappings |
