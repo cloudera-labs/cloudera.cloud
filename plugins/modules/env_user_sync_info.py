@@ -37,9 +37,10 @@ requirements:
 options:
   name:
     description:
-      - The C(operations id) for a User and Group sync event.
+      - The C(operations id) for a User and Group sync event or the C(operations CRN) for the event if the C(WORKLOAD_IAM_SYNC) entitlement is enabled
     aliases:
       - operations_id
+      - operations_crn
     required: True
     type: str
 extends_documentation_fragment:
@@ -50,7 +51,7 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
-# Get the status of a sync event
+# Get the status of a sync event (non-WORKLOAD_IAM_SYNC)
 - cloudera.cloud.env_user_sync_info:
     name: 0e9bc67a-b308-4275-935c-b8c764dc13be
 '''
@@ -85,7 +86,7 @@ sync:
                     returned: when supported
                     type: str
         operationId:
-            description: UUID of the request for this operation.
+            description: UUID (or CRN, if running with the C(WORKLOAD_IAM_SYNC) entitlement) of the request for this operation.
             returned: always
             type: str
             sample: 0e9bc67a-b308-4275-935c-b8c764dc13be
@@ -159,7 +160,7 @@ class EnvironmentUserSyncInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['operation_id'])
+            name=dict(required=True, type='str', aliases=['operation_id', 'operation_crn'])
         ),
         supports_check_mode=True
     )
