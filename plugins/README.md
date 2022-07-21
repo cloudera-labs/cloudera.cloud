@@ -7,6 +7,7 @@ modules employ the underlying SDK contained within the `cdpy` Python package.
 
 | Module | Description |
 | --- | --- |
+| [access_token](./modules/access_token.py) | Retrieve session access tokens for a user accounts. |
 | [account_auth](./modules/account_auth.py) | Manage about Account authentication services and policies |
 | [account_auth_info](./modules/account_auth_info.py) | Gather information about Account authentication services and policies |
 | [account_cred_info](./modules/account_cred_info.py) | Gather information about Account prerequisites for CDP Credentials |
