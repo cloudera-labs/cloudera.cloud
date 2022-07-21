@@ -35,6 +35,7 @@ cloudera.cloud Ansible Collection
    env <env>
    env_auth <env_auth>
    env_auth_info <env_auth_info>
+   env_automated_user_sync_info <env_automated_user_sync_info>
    env_cred <env_cred>
    env_cred_info <env_cred_info>
    env_idbroker <env_idbroker>
