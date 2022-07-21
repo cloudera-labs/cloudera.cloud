@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2021 Cloudera, Inc. All Rights Reserved.
+# Copyright 2022 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -204,9 +204,11 @@ options:
     contains:
       instanceCountByGroup:
         description:
-          - The number of FreeIPA instances to create per group when creating FreeIPA in the environment
+          - The number of FreeIPA instances to create per group when creating FreeIPA in the environment.
+          - For high-availability, provide a number greater than 2.
         type: int
         required: False
+        default: 2
   proxy:
     description:
       - The name of the proxy config to use for the environment.
@@ -306,6 +308,8 @@ EXAMPLES = r'''
     public_key_id: example-sshkey
     network_cidr: 10.10.0.0/16
     inbound_cidr: 0.0.0.0/0
+    freeipa:
+      instanceCountByGroup: 3
     tags:
       project: Arbitrary content
 
@@ -1016,8 +1020,9 @@ def main():
             workload_analytics=dict(required=False, type='bool', default=True),
             description=dict(required=False, type='str', aliases=['desc']),
             tunnel=dict(required=False, type='bool', aliases=['enable_tunnel', 'ssh_tunnel'], default=False),
-            freeipa=dict(required=False, type='dict', options=dict(instanceCountByGroup=dict(required=False,
-                                                                                             type='int'))),
+            freeipa=dict(required=False, type='dict', options=dict(
+              instanceCountByGroup=dict(required=False, type='int')
+            ), default=dict(instanceCountByGroup=2)),
             project=dict(required=False, type='str'),
             proxy=dict(required=False, type='str', aliases=['[proxy_config', 'proxy_config_name']),
             cascade=dict(required=False, type='bool', default=False, aliases=['cascading']),
