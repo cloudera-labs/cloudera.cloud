@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2021 Cloudera, Inc. All Rights Reserved.
+# Copyright 2022 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,10 +52,18 @@ options:
       - The name of the Database Catalog.
       - Required if C(state=present).
     type: str
+  state:
+    description:
+      - The operational state of the Database Catalog.
+    type: str
+    default: present
+    choices:
+      - present
+      - absent
   load_demo_data:
     description:
       - Flag to load demonstration data into the Database Catalog during creation.
-    type: str
+    type: bool
   wait:
     description:
       - Flag to enable internal polling to wait for the Data Catalog to achieve the declared state.
@@ -189,6 +197,9 @@ class DwDatabaseCatalog(CdpModule):
             elif self.state == 'present':
                 # Begin Config Check
                 self.module.warn("Database Catalog already present and reconciliation is not yet implemented")
+                if self.target['status'] in self.cdpy.sdk.STOPPED_STATES:
+                    #self.target = self.cdpy.dw.restart_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
+                    self.module.fail_json(msg='Unable to restart a stopped DB Catalog. You must manually restart.')
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_dbc,
