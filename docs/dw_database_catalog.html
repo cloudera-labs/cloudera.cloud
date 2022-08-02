@@ -123,6 +123,7 @@
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_automated_user_sync_info.html">env_automated_user_sync_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred.html">env_cred</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred_info.html">env_cred_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_idbroker.html">env_idbroker</a></li>
@@ -274,14 +275,27 @@ Required if <code class="docutils literal notranslate"><span class="pre">state=a
 <td><p>The name of the Database Catalog.
 Required if <code class="docutils literal notranslate"><span class="pre">state=present</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>load_demo_data</strong></p>
+<tr class="row-odd"><td><p><strong>state</strong></p>
 <p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><dl class="simple">
+<dt><strong>Choices:</strong></dt><dd><ul class="simple">
+<li><p><strong>present</strong> ↞</p></li>
+<li><p>absent</p></li>
+</ul>
+</dd>
+</dl>
+</td>
+<td><p>The operational state of the Database Catalog.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>load_demo_data</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
 <td></td>
 <td><p>Flag to load demonstration data into the Database Catalog during creation.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>wait</strong></p>
+<tr class="row-odd"><td><p><strong>wait</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -289,7 +303,7 @@ Required if <code class="docutils literal notranslate"><span class="pre">state=p
 <td><p>Flag to enable internal polling to wait for the Data Catalog to achieve the declared state.
 If set to FALSE, the module will return immediately.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>delay</strong></p>
+<tr class="row-even"><td><p><strong>delay</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
@@ -299,7 +313,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: polling_delay</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>timeout</strong></p>
+<tr class="row-odd"><td><p><strong>timeout</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">int</span></code></p>
 </td>
@@ -309,7 +323,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: polling_timeout</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>verify_tls</strong></p>
+<tr class="row-even"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -319,7 +333,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: tls</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>debug</strong></p>
+<tr class="row-odd"><td><p><strong>debug</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -329,7 +343,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: debug_endpoints</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>profile</strong></p>
+<tr class="row-even"><td><p><strong>profile</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>

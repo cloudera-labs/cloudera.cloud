@@ -115,6 +115,7 @@
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_automated_user_sync_info.html">env_automated_user_sync_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred.html">env_cred</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred_info.html">env_cred_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_idbroker.html">env_idbroker</a></li>
@@ -254,9 +255,9 @@
 <p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>The <code class="docutils literal notranslate"><span class="pre">operations</span> <span class="pre">id</span></code> for a User and Group sync event.</p>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">operations</span> <span class="pre">id</span></code> for a User and Group sync event or the <code class="docutils literal notranslate"><span class="pre">operations</span> <span class="pre">CRN</span></code> for the event if the <code class="docutils literal notranslate"><span class="pre">WORKLOAD_IAM_SYNC</span></code> entitlement is enabled</p>
 <p><br /></p>
-<p><em>Aliases: operations_id</em></p>
+<p><em>Aliases: operations_id, operations_crn</em></p>
 </td>
 </tr>
 <tr class="row-odd"><td><p><strong>verify_tls</strong></p>
@@ -293,7 +294,7 @@
 <h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># Get the status of a sync event</span>
+<span class="c1"># Get the status of a sync event (non-WORKLOAD_IAM_SYNC)</span>
 <span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_user_sync_info</span><span class="p">:</span>
     <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0e9bc67a-b308-4275-935c-b8c764dc13be</span>
 </pre></div>
@@ -304,11 +305,11 @@
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 15%" />
-<col style="width: 10%" />
-<col style="width: 26%" />
-<col style="width: 8%" />
-<col style="width: 40%" />
+<col style="width: 14%" />
+<col style="width: 9%" />
+<col style="width: 23%" />
+<col style="width: 7%" />
+<col style="width: 48%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
@@ -374,7 +375,7 @@
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>UUID of the request for this operation.</p>
+<td><p>UUID (or CRN, if running with the <code class="docutils literal notranslate"><span class="pre">WORKLOAD_IAM_SYNC</span></code> entitlement) of the request for this operation.</p>
 <p><br /></p>
 <p><strong>Sample:</strong></p>
 <p>0e9bc67a-b308-4275-935c-b8c764dc13be</p>

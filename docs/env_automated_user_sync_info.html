@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>de_virtual_cluster_info -- Gather information about CDP DE virtual clusters &mdash; cloudera.cloud 1.6.0 documentation</title>
+  <title>env_automated_user_sync_info -- Get the status of the automated CDP Users and Groups synchronization service &mdash; cloudera.cloud 1.6.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="df_customflow_info – Gather information about CDP DataFlow CustomFlow Definitions" href="df_customflow_info.html" />
-    <link rel="prev" title="de_virtual_cluster – Create or delete CDP Data Engineering Virtual Clusters" href="de_virtual_cluster.html" /> 
+    <link rel="next" title="env_cred – Create, update, and destroy CDP credentials" href="env_cred.html" />
+    <link rel="prev" title="env_auth_info – Gather information about CDP environment authentication details" href="env_auth_info.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -98,15 +98,7 @@
 <li class="toctree-l1"><a class="reference internal" href="de.html">de</a></li>
 <li class="toctree-l1"><a class="reference internal" href="de_info.html">de_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster.html">de_virtual_cluster</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">de_virtual_cluster_info</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="de_virtual_cluster_info.html">de_virtual_cluster_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_customflow_info.html">df_customflow_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_deployment.html">df_deployment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="df_deployment_info.html">df_deployment_info</a></li>
@@ -123,7 +115,15 @@
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
-<li class="toctree-l1"><a class="reference internal" href="env_automated_user_sync_info.html">env_automated_user_sync_info</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">env_automated_user_sync_info</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#status">Status</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred.html">env_cred</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred_info.html">env_cred_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_idbroker.html">env_idbroker</a></li>
@@ -190,13 +190,13 @@
     
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
-      <li>de_virtual_cluster_info -- Gather information about CDP DE virtual clusters</li>
+      <li>env_automated_user_sync_info -- Get the status of the automated CDP Users and Groups synchronization service</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/de_virtual_cluster_info.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/env_automated_user_sync_info.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -209,8 +209,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <span class="target" id="de-virtual-cluster-info-module"></span><div class="section" id="de-virtual-cluster-info-gather-information-about-cdp-de-virtual-clusters">
-<h1>de_virtual_cluster_info – Gather information about CDP DE virtual clusters<a class="headerlink" href="#de-virtual-cluster-info-gather-information-about-cdp-de-virtual-clusters" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="env-automated-user-sync-info-module"></span><div class="section" id="env-automated-user-sync-info-get-the-status-of-the-automated-cdp-users-and-groups-synchronization-service">
+<h1>env_automated_user_sync_info – Get the status of the automated CDP Users and Groups synchronization service<a class="headerlink" href="#env-automated-user-sync-info-get-the-status-of-the-automated-cdp-users-and-groups-synchronization-service" title="Permalink to this headline">¶</a></h1>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#synopsis" id="id1">Synopsis</a></p></li>
@@ -224,7 +224,9 @@
 <div class="section" id="synopsis">
 <h2><a class="toc-backref" href="#id1">Synopsis</a><a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p>Gather information about CDP DE virtual clusters</p></li>
+<li><p>Get the status of the automated synchronization for users and groups for a given Environment.</p></li>
+<li><p>Requires the <code class="docutils literal notranslate"><span class="pre">WORKLOAD_IAM_SYNC</span></code> entitlement.</p></li>
+<li><p>The module support check_mode.</p></li>
 </ul>
 </div>
 <div class="section" id="requirements">
@@ -250,25 +252,16 @@
 <tr class="row-even"><td><p><strong>name</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<p><br /></p>
+<p><em>Required</em></p>
 </td>
 <td></td>
-<td><p>If a name is provided, that DE virtual cluster will be described (if it exists)
-Note that there should be only 1 or 0 (non-deleted) virtual clusters with a given CDE service</p>
+<td><p>The CDP Environment name or CRN to check.</p>
 <p><br /></p>
-<p><em>Aliases: name</em></p>
+<p><em>Aliases: environment</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>cluster_name</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td></td>
-<td><p>The ID of the service in which to find and describe the DE virtual clusters.</p>
-<p><br /></p>
-<p><em>Aliases: env</em></p>
-</td>
-</tr>
-<tr class="row-even"><td><p><strong>verify_tls</strong></p>
+<tr class="row-odd"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -278,7 +271,7 @@ Note that there should be only 1 or 0 (non-deleted) virtual clusters with a give
 <p><em>Aliases: tls</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>debug</strong></p>
+<tr class="row-even"><td><p><strong>debug</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -288,7 +281,7 @@ Note that there should be only 1 or 0 (non-deleted) virtual clusters with a give
 <p><em>Aliases: debug_endpoints</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>profile</strong></p>
+<tr class="row-odd"><td><p><strong>profile</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
@@ -302,16 +295,9 @@ Note that there should be only 1 or 0 (non-deleted) virtual clusters with a give
 <h2><a class="toc-backref" href="#id4">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-yaml+jinja notranslate"><div class="highlight"><pre><span></span><span class="c1"># Note: These examples do not set authentication details.</span>
 
-<span class="c1"># List basic information about all CDE virtual clusters within a CDE service</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.de_virtual_cluster_info</span><span class="p">:</span>
-    <span class="nt">cluster_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-cluster-name</span>
-    <span class="nt">environment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-environment</span>
-
-<span class="c1"># Gather detailed information about a specific CDE virtual cluster</span>
-<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.de_info</span><span class="p">:</span>
-    <span class="nt">cluster_name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-cluster-name</span>
-    <span class="nt">environment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-environment</span>
-    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-virtual-cluster-name</span>
+<span class="c1"># Get the status of a sync event (non-WORKLOAD_IAM_SYNC)</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.env_automated_user_sync_info</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-env</span>
 </pre></div>
 </div>
 </div>
@@ -320,274 +306,101 @@ Note that there should be only 1 or 0 (non-deleted) virtual clusters with a give
 <p>Common return values are documented here, the following are fields unique to this module.</p>
 <table class="colwidths-given docutils align-default">
 <colgroup>
-<col style="width: 11%" />
-<col style="width: 8%" />
-<col style="width: 19%" />
-<col style="width: 12%" />
-<col style="width: 5%" />
-<col style="width: 45%" />
+<col style="width: 14%" />
+<col style="width: 9%" />
+<col style="width: 23%" />
+<col style="width: 7%" />
+<col style="width: 47%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td colspan="4"><p><strong>Key</strong></p></td>
+<tr class="row-odd"><td colspan="3"><p><strong>Key</strong></p></td>
 <td><p><strong>Returned</strong></p></td>
 <td><p><strong>Description</strong></p></td>
 </tr>
-<tr class="row-even"><td colspan="4"><p><strong>virtual_cluster</strong></p>
+<tr class="row-even"><td colspan="3"><p><strong>sync</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">complex</span></code></p>
 </td>
-<td><p>always</p></td>
-<td><p>DE virtual cluste</p></td>
+<td><p>success</p></td>
+<td><p>Returns an object describing of the status of the automated User and Group synchronization service.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>VcUiUrl</strong></p>
+<td colspan="2"><p><strong>environmentCrn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>URL of the CDE Virtual Cluster UI</p></td>
+<td><p>The environment CRN.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td colspan="3"><p><strong>accessControl</strong></p>
+<td colspan="2"><p><strong>lastSyncStatus</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>Access control object for the Virtual Cluster</p></td>
+<td><p>Status of the last automated sync operation for the environment.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
 <td></td>
-<td colspan="2"><p><strong>users</strong></p>
+<td><p><strong>status</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The status of the sync.</p>
+<p><br /></p>
+<p><strong>Sample:</strong></p>
+<p>UNKNOWN</p>
+<p>SUCCESS</p>
+<p>FAILED</p>
+</td>
+</tr>
+<tr class="row-even"><td></td>
+<td></td>
+<td><p><strong>statusMessages</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td><p>always</p></td>
-<td><p>Workload usernames of CDP users granted access to the Virtual Cluster.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td><p><strong>description</strong></p>
-<p><br /></p>
-</td>
-<td></td>
-<td></td>
+<td><p>when supported</p></td>
+<td><p>Additional detail related to the status.</p></td>
 </tr>
 <tr class="row-odd"><td></td>
 <td></td>
-<td></td>
-<td><p><strong>returned</strong></p>
+<td><p><strong>timestamp</strong></p>
 <p><br /></p>
-</td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td><p><strong>type</strong></p>
-<p><br /></p>
-</td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>chartValueOverrides</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">array</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>always</p></td>
-<td><p>Chart overrides for the CDE virtual cluster.</p></td>
+<td><p>A datetime stamp of when the sync was processed.</p></td>
 </tr>
 <tr class="row-even"><td></td>
-<td></td>
-<td colspan="2"><p><strong>ChartValueOverridesResponse</strong></p>
+<td colspan="2"><p><strong>syncPendingState</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>The state indicating whether the environment is synced or has a sync pending.</p>
+<p><br /></p>
+<p><strong>Sample:</strong></p>
+<p>UNKNOWN</p>
+<p>SYNC_PENDING</p>
+<p>SYNCED</p>
+<p>SYNC_HALTED</p>
+</td>
+</tr>
+<tr class="row-odd"><td colspan="3"><p><strong>sdk_out</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+</td>
+<td><p>when supported</p></td>
+<td><p>Returns the captured CDP SDK log.</p></td>
+</tr>
+<tr class="row-even"><td colspan="3"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
-<td><p>always</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td><p><strong>chartName</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Name of the chart that has to be overridden.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td><p><strong>overrides</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Space separated key value-pairs for overriding chart values (colon separated)</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>clusterId</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Cluster ID of the CDE service that contains the Virtual Cluster</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="3"><p><strong>creationTime</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Time of creation of the virtual Cluster</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>creatorEmail</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Email address of the creator of Virtual Cluster</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="3"><p><strong>creatorID</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>ID of the creator of Virtual Cluster</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>creatorName</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Name of the creator of the Virtual Cluster</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="3"><p><strong>historyServerUrl</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Spark History Server URL for the Virtual Cluster</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>livyServerUrl</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Livy Server URL for the Virtual Cluster</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="3"><p><strong>resources</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">complex</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Resources details of CDE virtual cluster.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td colspan="2"><p><strong>VcResources</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">complex</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Object to store resources for a CDE service.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td><p><strong>actualCpuRequests</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Actual CPU request for the VC. This accounts for other dex apps(eg. livy, airflow), that run in the virtual cluster.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td><p><strong>actualMemoryRequests</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Actual Memory request for the VC. This accounts for other dex apps(eg. livy, airflow), that run in the virtual cluster.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td><p><strong>cpuRequests</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The CPU requests for VC for running spark jobs.</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td><p><strong>memRequests</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>The Memory requests for VC for running spark jobs.</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="3"><p><strong>safariUrl</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Safari URL for the Virtual Cluster</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>sparkVersion</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Spark version for the virtual cluster</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="3"><p><strong>status</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Status of the Virtual Cluster</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>vcApiUrl</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Url for the Virtual Cluster APIs</p></td>
-</tr>
-<tr class="row-even"><td></td>
-<td colspan="3"><p><strong>vcId</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Virtual Cluster ID</p></td>
-</tr>
-<tr class="row-odd"><td></td>
-<td colspan="3"><p><strong>vcName</strong></p>
-<p><br /></p>
-<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
-</td>
-<td><p>always</p></td>
-<td><p>Name of the CDE Virtual Cluster</p></td>
+<td><p>when supported</p></td>
+<td><p>Returns a list of each line of the captured CDP SDK log.</p></td>
 </tr>
 </tbody>
 </table>
@@ -601,7 +414,7 @@ Note that there should be only 1 or 0 (non-deleted) virtual clusters with a give
 <div class="section" id="authors">
 <h3>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
-<li><p>Curtis Howard (&#64;curtishoward)</p></li>
+<li><p>Webster Mudge (&#64;wmudge)</p></li>
 </ul>
 </div>
 </div>
@@ -615,10 +428,10 @@ Note that there should be only 1 or 0 (non-deleted) virtual clusters with a give
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="df_customflow_info.html" class="btn btn-neutral float-right" title="df_customflow_info – Gather information about CDP DataFlow CustomFlow Definitions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="env_cred.html" class="btn btn-neutral float-right" title="env_cred – Create, update, and destroy CDP credentials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="de_virtual_cluster.html" class="btn btn-neutral float-left" title="de_virtual_cluster – Create or delete CDP Data Engineering Virtual Clusters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="env_auth_info.html" class="btn btn-neutral float-left" title="env_auth_info – Gather information about CDP environment authentication details" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

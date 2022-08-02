@@ -358,6 +358,8 @@ Examples
       public_key_id: example-sshkey
       network_cidr: 10.10.0.0/16
       inbound_cidr: 0.0.0.0/0
+      freeipa:
+        instanceCountByGroup: 3
       tags:
         project: Arbitrary content
 

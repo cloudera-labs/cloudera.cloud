@@ -123,6 +123,7 @@
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_automated_user_sync_info.html">env_automated_user_sync_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred.html">env_cred</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred_info.html">env_cred_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_idbroker.html">env_idbroker</a></li>
@@ -262,10 +263,13 @@ Names are case-sensitive.</p>
 </tr>
 <tr class="row-odd"><td><p><strong>state</strong></p>
 <p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><dl class="simple">
 <dt><strong>Choices:</strong></dt><dd><ul class="simple">
 <li><p><strong>present</strong> ↞</p></li>
+<li><p>started</p></li>
+<li><p>stopped</p></li>
 <li><p>absent</p></li>
 </ul>
 </dd>
@@ -441,6 +445,16 @@ If set to FALSE, the module will return immediately.</p></td>
     <span class="nt">tags</span><span class="p">:</span>
       <span class="nt">project</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Arbitrary content</span>
     <span class="nt">wait</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">no</span>
+
+<span class="c1"># Stop the datahub (and wait for status change)</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-datahub</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">stopped</span>
+
+<span class="c1"># Start the datahub (and wait for status change)</span>
+<span class="p p-Indicator">-</span> <span class="nt">cloudera.cloud.datahub</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">example-datahub</span>
+    <span class="nt">state</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">started</span>
 
 <span class="c1"># Delete the datahub (and wait for status change)</span>
   <span class="nt">cloudera.cloud.datahub</span><span class="p">:</span>
