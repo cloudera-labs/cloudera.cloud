@@ -59,7 +59,9 @@ Parameters
    +-----------------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------+
    | **state**       | **Choices:**          | The declarative state of the datahub.                                                                                            |
    |                 |  - **present** |larr| | If creating a datahub, the associate Environment and Datalake must be started as well.                                           |
-   | |br|            |  - absent             |                                                                                                                                  |
+   | |br|            |  - started            |                                                                                                                                  |
+   |                 |  - stopped            |                                                                                                                                  |
+   | ``str``         |  - absent             |                                                                                                                                  |
    +-----------------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------+
    | **environment** |                       | The CDP environment name or CRN to which the datahub will be attached.                                                           |
    |                 |                       |                                                                                                                                  |
@@ -222,6 +224,16 @@ Examples
       tags:
         project: Arbitrary content
       wait: no
+
+  # Stop the datahub (and wait for status change)
+  - cloudera.cloud.datahub:
+      name: example-datahub
+      state: stopped
+
+  # Start the datahub (and wait for status change)
+  - cloudera.cloud.datahub:
+      name: example-datahub
+      state: started
 
   # Delete the datahub (and wait for status change)
     cloudera.cloud.datahub:

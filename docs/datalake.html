@@ -123,6 +123,7 @@
 <li class="toctree-l1"><a class="reference internal" href="env.html">env</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth.html">env_auth</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_auth_info.html">env_auth_info</a></li>
+<li class="toctree-l1"><a class="reference internal" href="env_automated_user_sync_info.html">env_automated_user_sync_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred.html">env_cred</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_cred_info.html">env_cred_info</a></li>
 <li class="toctree-l1"><a class="reference internal" href="env_idbroker.html">env_idbroker</a></li>
@@ -375,7 +376,14 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: polling_timeout</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>verify_tls</strong></p>
+<tr class="row-even"><td><p><strong>raz</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td></td>
+<td><p>Flag indicating if Ranger RAZ fine grained access should be enabled for the datalake</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>verify_tls</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -385,7 +393,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: tls</em></p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><strong>debug</strong></p>
+<tr class="row-even"><td><p><strong>debug</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
 </td>
@@ -395,7 +403,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><em>Aliases: debug_endpoints</em></p>
 </td>
 </tr>
-<tr class="row-even"><td><p><strong>profile</strong></p>
+<tr class="row-odd"><td><p><strong>profile</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
@@ -526,6 +534,14 @@ If set to FALSE, the module will return immediately.</p></td>
 </td>
 </tr>
 <tr class="row-even"><td></td>
+<td colspan="3"><p><strong>enableRangerRaz</strong></p>
+<p><br /></p>
+<p><code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+</td>
+<td><p>always</p></td>
+<td><p>Whether or not RAZ is enabled</p></td>
+</tr>
+<tr class="row-odd"><td></td>
 <td colspan="3"><p><strong>clouderaManager</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -533,7 +549,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>when supported</p></td>
 <td><p>The Cloudera Manager details.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td colspan="2"><p><strong>clouderaManagerRepositoryURL</strong></p>
 <p><br /></p>
@@ -542,7 +558,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>always</p></td>
 <td><p>Cloudera Manager repository URL.</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td colspan="2"><p><strong>clouderaManagerServerURL</strong></p>
 <p><br /></p>
@@ -551,7 +567,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>when supported</p></td>
 <td><p>Cloudera Manager server URL.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td colspan="2"><p><strong>version</strong></p>
 <p><br /></p>
@@ -564,7 +580,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>7.2.1</p>
 </td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td colspan="3"><p><strong>creationDate</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
@@ -576,7 +592,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>2020-09-23 11:33:50.847000+00:00</p>
 </td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td colspan="3"><p><strong>credentialCrn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
@@ -584,7 +600,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>when supported</p></td>
 <td><p>CRN of the CDP Credential.</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td colspan="3"><p><strong>crn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
@@ -592,7 +608,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>always</p></td>
 <td><p>CRN value for the Datalake.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td colspan="3"><p><strong>datalakeName</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
@@ -600,7 +616,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>always</p></td>
 <td><p>Name of the Datalake.</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td colspan="3"><p><strong>endpoints</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -608,7 +624,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>when supported</p></td>
 <td><p>Details for the exposed service API endpoints of the Datalake.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td colspan="2"><p><strong>endpoints</strong></p>
 <p><br /></p>
@@ -617,7 +633,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>always</p></td>
 <td><p>The exposed API endpoints.</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td></td>
 <td><p><strong>displayName</strong></p>
@@ -631,7 +647,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>Atlas</p>
 </td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td></td>
 <td><p><strong>knoxService</strong></p>
@@ -645,7 +661,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>ATLAS_API</p>
 </td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td></td>
 <td><p><strong>mode</strong></p>
@@ -659,7 +675,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>PAM</p>
 </td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td></td>
 <td><p><strong>open</strong></p>
@@ -669,7 +685,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>always</p></td>
 <td><p>Flag for the access status of the service.</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td></td>
 <td><p><strong>serviceName</strong></p>
@@ -683,7 +699,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>ATLAS_SERVER</p>
 </td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td></td>
 <td><p><strong>serviceUrl</strong></p>
@@ -697,7 +713,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p><a class="reference external" href="https://some.domain/a-datalake/endpoint">https://some.domain/a-datalake/endpoint</a></p>
 </td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td colspan="3"><p><strong>environmentCrn</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
@@ -705,7 +721,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>when supported</p></td>
 <td><p>CRN of the associated Environment.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td colspan="3"><p><strong>instanceGroups</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
@@ -713,7 +729,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>when supported</p></td>
 <td><p>The instance details of the Datalake.</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td colspan="2"><p><strong>instances</strong></p>
 <p><br /></p>
@@ -722,7 +738,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>always</p></td>
 <td><p>Details about the instances.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td></td>
 <td><p><strong>id</strong></p>
@@ -736,7 +752,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>i-00b58f27be4e7ab9f</p>
 </td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td></td>
 <td><p><strong>state</strong></p>
@@ -750,7 +766,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>HEALTHY</p>
 </td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td colspan="2"><p><strong>name</strong></p>
 <p><br /></p>
@@ -763,7 +779,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>idbroker</p>
 </td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td colspan="3"><p><strong>productVersions</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
@@ -771,7 +787,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>when supported</p></td>
 <td><p>The product versions.</p></td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td></td>
 <td colspan="2"><p><strong>name</strong></p>
 <p><br /></p>
@@ -784,7 +800,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>FLINK</p>
 </td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td></td>
 <td colspan="2"><p><strong>version</strong></p>
 <p><br /></p>
@@ -797,7 +813,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>1.10.0-csa1.2.1.0-cdh7.2.1.0-240-4844562</p>
 </td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td colspan="3"><p><strong>region</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
@@ -805,7 +821,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <td><p>when supported</p></td>
 <td><p>The region of the Datalake.</p></td>
 </tr>
-<tr class="row-even"><td></td>
+<tr class="row-odd"><td></td>
 <td colspan="3"><p><strong>status</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
@@ -830,7 +846,7 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>PROVISIONING_FAILED</p>
 </td>
 </tr>
-<tr class="row-odd"><td></td>
+<tr class="row-even"><td></td>
 <td colspan="3"><p><strong>statusReason</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
@@ -842,14 +858,14 @@ If set to FALSE, the module will return immediately.</p></td>
 <p>Datalake is running</p>
 </td>
 </tr>
-<tr class="row-even"><td colspan="4"><p><strong>sdk_out</strong></p>
+<tr class="row-odd"><td colspan="4"><p><strong>sdk_out</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">str</span></code></p>
 </td>
 <td><p>when supported</p></td>
 <td><p>Returns the captured CDP SDK log.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="4"><p><strong>sdk_out_lines</strong></p>
+<tr class="row-even"><td colspan="4"><p><strong>sdk_out_lines</strong></p>
 <p><br /></p>
 <p><code class="docutils literal notranslate"><span class="pre">list</span></code></p>
 </td>
