@@ -553,7 +553,7 @@ class Datalake(CdpModule):
                 payload.update(enableRangerRaz=self.raz)
             else:
                 self.module.fail_json(msg='GCP Datalakes do not currently support RAZ')
-        else:
+        elif environment['cloudPlatform'] != 'GCP' :
             payload.update(enableRangerRaz=self.raz)
 
         if self.tags is not None:
