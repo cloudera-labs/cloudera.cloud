@@ -54,6 +54,7 @@ class CdpModule(object):
         self.debug = self._get_param('debug', False)
         self.strict = self._get_param('strict', False)
         self.agent_header = self._get_param('agent_header', 'ClouderaFoundry')
+        self.cp_region = self._get_param('cp_region', 'default')
 
         # Initialize common return values
         self.log_out = None
@@ -67,7 +68,8 @@ class CdpModule(object):
             strict_errors=self.strict,
             error_handler=self._cdp_module_throw_error,
             warning_handler=self._cdp_module_throw_warning,
-            agent_header=self.agent_header
+            agent_header=self.agent_header,
+            cp_region=self.cp_region
         )
 
     # Private functions
@@ -95,5 +97,6 @@ class CdpModule(object):
             verify_tls=dict(required=False, type='bool', default=True, aliases=['tls']),
             debug=dict(required=False, type='bool', default=False, aliases=['debug_endpoints']),
             strict=dict(required=False, type='bool', default=False, aliases=['strict_errors']),
-            agent_header=dict(required=False, type='str', default='ClouderaFoundry')
+            agent_header=dict(required=False, type='str', default='ClouderaFoundry'),
+            cp_region=dict(required=False, type='str', default='default')
         )
