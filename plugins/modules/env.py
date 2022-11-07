@@ -239,6 +239,12 @@ options:
     type: bool
     required: False
     default: True
+  datahub_start:
+    description:
+      - Also starts datahubs within this environment when starting the environment
+    type: bool
+    required: False
+    default: True
   delay:
     description:
       - The internal polling interval (in seconds) while the module waits for the environment to achieve the declared
@@ -671,6 +677,8 @@ class Environment(CdpModule):
         self.cascade = self._get_param('cascade', False)
         self.wait = self._get_param('wait', False)
 
+        self.datahub_start = self._get_param('datahub_start')
+
         self.endpoint_access_scheme = self._get_param('endpoint_access_scheme')
         self.endpoint_access_subnets = self._get_param('endpoint_access_subnets')
 
@@ -726,7 +734,7 @@ class Environment(CdpModule):
                 # Otherwise attempt to start the environment
                 elif existing['status'] not in self.cdpy.sdk.STARTED_STATES:
                     if not self.module.check_mode:
-                        self.environment = self.cdpy.environments.start_environment(self.name)
+                        self.environment = self.cdpy.environments.start_environment(self.name, self.datahub_start)
                 else:
                     self.module.warn('Environment state %s is unexpected' % existing['status'])
 
@@ -1028,6 +1036,7 @@ def main():
             cascade=dict(required=False, type='bool', default=False, aliases=['cascading']),
             force=dict(required=False, type='bool', default=False),
             wait=dict(required=False, type='bool', default=True),
+            datahub_start=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
             endpoint_access_subnets=dict(required=False, type='list', elements='str'),
