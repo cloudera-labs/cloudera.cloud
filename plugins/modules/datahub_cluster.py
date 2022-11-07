@@ -227,17 +227,17 @@ EXAMPLES = r'''
     wait: no
 
 # Stop the datahub (and wait for status change)
-- cloudera.cloud.datahub:
+- cloudera.cloud.datahub_cluster:
     name: example-datahub
     state: stopped
 
 # Start the datahub (and wait for status change)
-- cloudera.cloud.datahub:
+- cloudera.cloud.datahub_cluster:
     name: example-datahub
     state: started
 
 # Delete the datahub (and wait for status change)
-  cloudera.cloud.datahub:
+  cloudera.cloud.datahub_cluster:
     name: example-datahub
     state: absent
 '''

@@ -181,16 +181,16 @@ options:
     default: True
   delay:
     description:
-      - The internal polling interval (in seconds) while the module waits for the Virtual Warehouse to achieve the declared
-        state.
+      - The internal polling interval (in seconds) while the module waits for the Virtual Warehouse to achieve the 
+        declared state.
     type: int
     default: 15
     aliases:
       - polling_delay
   timeout:
     description:
-      - The internal polling timeout (in seconds) while the module waits for the Virtual Warehouse to achieve the declared
-        state.
+      - The internal polling timeout (in seconds) while the module waits for the Virtual Warehouse to achieve the 
+        declared state.
     type: int
     default: 3600
     aliases:
@@ -377,7 +377,9 @@ class DwVirtualWarehouse(CdpModule):
                             )
                         else:
                             self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
-                            self.virtual_warehouse = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.target['id'])
+                            self.virtual_warehouse = self.cdpy.dw.describe_vw(
+                                cluster_id=self.cluster_id, vw_id=self.target['id']
+                            )
                     # End Drop
             elif self.state == 'present':
                 # Begin Config check
@@ -411,10 +413,11 @@ class DwVirtualWarehouse(CdpModule):
                                                    tags=self.tags)
                     self.changed = True
                     if self.wait:
+                        completed_states = self.cdpy.sdk.STARTED_STATES + self.cdpy.sdk.STOPPED_STATES
                         self.virtual_warehouse = self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_vw,
                             params=dict(cluster_id=self.cluster_id, vw_id=vw_id),
-                            state=self.cdpy.sdk.STARTED_STATES, delay=self.delay, timeout=self.timeout
+                            state=completed_states, delay=self.delay, timeout=self.timeout
                         )
                     else:
                         self.virtual_warehouse = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw_id)
@@ -422,21 +425,23 @@ class DwVirtualWarehouse(CdpModule):
                 self.module.fail_json(msg="State %s is not valid for this module" % self.state)
             # End Virtual Warehouse Not Found
 
+
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             warehouse_id=dict(type='str', aliases=['vw_id', 'id']),
             cluster_id=dict(required=True, type='str'),
             catalog_id=dict(type='str', aliases=['dbc_id']),
-            type = dict(type='str'),
-            name = dict(type='str'),
+            type=dict(type='str'),
+            name=dict(type='str'),
             template=dict(type='str', choices=['xsmall', 'small', 'medium', 'large']),
             autoscaling_min_nodes=dict(type='int'),
             autoscaling_max_nodes=dict(type='int'),
             common_configs=dict(type='dict', options=dict(
-                configBlocks = dict(type='list', elements='dict', options=dict(
+                configBlocks=dict(type='list', elements='dict', options=dict(
                     id=dict(type='str'),
-                    format=dict(type='str', choices=['HADOOP_XML', 'PROPERTIES', 'TEXT', 'JSON', 'BINARY', 'ENV', 'FLAGFILE']),
+                    format=dict(
+                        type='str', choices=['HADOOP_XML', 'PROPERTIES', 'TEXT', 'JSON', 'BINARY', 'ENV', 'FLAGFILE']),
                     content=dict(type='dict', options=dict(
                         keyValues=dict(type='dict'),
                         text=dict(type='str'),
@@ -449,9 +454,9 @@ def main():
             enable_sso=dict(type='bool', default=False),
             tags=dict(type='dict'),
             state=dict(type='str', choices=['present', 'absent'], default='present'),
-            wait = dict(type='bool', default=True),
-            delay = dict(type='int', aliases=['polling_delay'], default=15),
-            timeout = dict(type='int', aliases=['polling_timeout'], default=3600)
+            wait=dict(type='bool', default=True),
+            delay=dict(type='int', aliases=['polling_delay'], default=15),
+            timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         required_if=[
             ['state', 'absent', ['warehouse_id']],
