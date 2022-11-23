@@ -143,6 +143,11 @@ options:
     required: False
     aliases:
       - instance_profile
+  backups_location:
+    description:
+      - (GCP) Storage bucket for backups
+    type: str
+    required: False
   network_cidr:
     description:
       - (AWS) The network CIDR. This will create a VPC along with subnets in multiple Availability Zones.
@@ -658,6 +663,7 @@ class Environment(CdpModule):
         self.public_key_id = self._get_param('public_key_id')
         self.log_location = self._get_param('log_location')
         self.log_identity = self._get_param('log_identity')
+        self.backups_location = self._get_param('backups_location')
         self.network_cidr = self._get_param('network_cidr')
         self.vpc_id = self._get_param('vpc_id')
         self.resource_gp = self._get_param('resource_gp')
@@ -903,7 +909,8 @@ class Environment(CdpModule):
                 sharedProjectId=self.project
             )
             payload['usePublicIp'] = self.public_ip
-            payload['logStorage'] = dict(serviceAccountEmail=self.log_identity, storageLocationBase=self.log_location)
+            payload['logStorage'] = dict(serviceAccountEmail=self.log_identity, storageLocationBase=self.log_location, backupStorageLocationBase=self.backups_location)
+
             if self.freeipa is not None:
                 payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
         else:
@@ -1018,6 +1025,7 @@ def main():
             public_key_id=dict(required=False, type='str', aliases=['public_key', 'ssh_key', 'ssh_key_id']),
             log_location=dict(required=False, type='str', aliases=['storage_location_base']),
             log_identity=dict(required=False, type='str', aliases=['instance_profile']),
+            backups_location=dict(required=False, type='str'),
             network_cidr=dict(required=False, type='str'),
             vpc_id=dict(required=False, type='str', aliases=['vpc', 'network']),  # TODO: Update Docs
             subnet_ids=dict(required=False, type='list', elements='str', aliases=['subnets']),
