@@ -40,7 +40,6 @@ options:
       - The environment name can also be provided, instead of the CRN
       - Required when I(state=present)
     type: str
-    required: Conditional
     aliases:
       - name
   df_crn:
@@ -48,7 +47,6 @@ options:
       - The CRN of the DataFlow Service, if available
       - Required when I(state=absent)
     type: str
-    required: Conditional
   state:
     description:
       - The declarative state of the Dataflow Service
