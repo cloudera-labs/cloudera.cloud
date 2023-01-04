@@ -43,7 +43,6 @@ options:
       - The JSON file containing the CustomFlow definition to be imported.
     type: str
     default: None
-    required: True, if state==present. False, otherwise
   description:
     description:
       - The description of the CustomFlow.
