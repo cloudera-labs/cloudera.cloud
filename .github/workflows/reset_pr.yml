@@ -1,0 +1,26 @@
+---
+
+name: Reset Pull Request validation label
+
+on:
+  pull_request_target:
+    types:
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - 'release/**'
+      - 'devel'
+      - 'devel-pvc-base'
+
+jobs:
+  reset:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset the PR label
+        uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          labels: validated
