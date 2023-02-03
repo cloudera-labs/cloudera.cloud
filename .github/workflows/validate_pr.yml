@@ -40,8 +40,8 @@ jobs:
       - name: Set up Ansible collection dependencies
         run: |
           ansible-builder introspect --write-pip final_python.txt --write-bindep final_bindep.txt /usr/share/ansible/collections
-          [ -f final_python.txt ] && pip install -r final_python.txt
-          [ -f final_bindep.txt ] && bindep --file final_bindep.txt
+          [[ -f final_python.txt ]] && pip install -r final_python.txt || echo "No Python dependencies found."
+          [[ -f final_bindep.txt ]] && bindep --file final_bindep.txt || echo "No system dependencies found."
       
       - name: Report installed Python dependencies
         run: pip freeze
