@@ -27,14 +27,15 @@ jobs:
           sudo update-alternatives --install /usr/bin/python python $(which python3) 1
           pip install --upgrade pip
           pip install ansible-core==2.12 ansible-builder bindep pycodestyle voluptuous pylint pyyaml ansible-lint
+          mkdir -p /usr/share/ansible/collections /usr/share/ansible/roles
           ansible-galaxy collection install -r builder/requirements.yml -p /usr/share/ansible/collections
           ansible-galaxy role install -r builder/requirements.yml -p /usr/share/ansible/roles
 
       - name: Report Ansible version, collections, and roles
         run: |
           ansible --version
-          [ -d /usr/share/ansible/collections ] && ansible-galaxy collection list
-          [ -d /usr/share/ansible/roles ] && ansible-galaxy role list
+          ansible-galaxy collection list
+          ansible-galaxy role list
       
       - name: Set up Ansible collection dependencies
         run: |
