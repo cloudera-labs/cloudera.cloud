@@ -44,7 +44,7 @@ Parameters
    | **Parameter**   | **Choices/Defaults**  | **Comments**                                                                                                                     |
    +-----------------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------+
    | **name**        |                       | The name of the datahub.                                                                                                         |
-   |                 |                       | This name must be unique, must have between 5 and 100 characters, and must contain only lowercase letters, numbers, and hyphens. |
+   |                 |                       | This name must be unique, must have between 5 and 20 characters, and must contain only lowercase letters, numbers, and hyphens. |
    | |br|            |                       | Names are case-sensitive.                                                                                                        |
    |                 |                       |                                                                                                                                  |
    | ``str``         |                       |                                                                                                                                  |

@@ -39,7 +39,7 @@ options:
   name:
     description:
       - The name of the datahub.
-      - This name must be unique, must have between 5 and 100 characters, and must contain only lowercase letters,
+      - This name must be unique, must have between 5 and 20 characters, and must contain only lowercase letters,
         numbers, and hyphens.
       - Names are case-sensitive.
     type: str
