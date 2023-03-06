@@ -14,7 +14,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import json
+import jmespath
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
@@ -35,19 +36,17 @@ requirements:
 options:
   env_crn:
     description: 
-        - The CRN of the CDP Environment to host the Dataflow Service
-        - Required when state is present
+      - The CRN of the CDP Environment to host the Dataflow Service
+      - The environment name can also be provided, instead of the CRN
+      - Required when I(state=present)
     type: str
-    required: False
     aliases:
       - name
-      - crn
   df_crn:
     description: 
-        - The CRN of the DataFlow Service, if available
-        - Required when state is absent
+      - The CRN of the DataFlow Service, if available
+      - Required when I(state=absent)
     type: str
-    required: Conditional
   state:
     description:
       - The declarative state of the Dataflow Service
@@ -78,12 +77,44 @@ options:
     required: False
     aliases:
       - use_public_load_balancer
-  ip_ranges:
+  loadbalancer_ip_ranges:
+    description: The IP ranges authorized to connect to the load balancer
+    type: list
+    required: False
+  k8s_ip_ranges:
     description: The IP ranges authorized to connect to the Kubernetes API server
     type: list
     required: False
-    aliases:
-      - authorized_ip_ranges
+  cluster_subnets:
+    description:
+      - Subnet ids that will be assigned to the Kubernetes cluster
+      - Mutually exclusive with the cluster_subnets_filter option 
+    type: list
+    required: False
+  cluster_subnets_filter:
+    description:
+      - L(JMESPath,https://jmespath.org/) expression to filter the subnets to be used for the Kubernetes cluster
+      - The expression will be applied to the full list of subnets for the specified environment
+      - Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr
+      - The filter expression must only filter the list, but not apply any attribute projection
+      - Mutually exclusive with the cluster_subnets option 
+    type: str
+    required: False
+  loadbalancer_subnets:
+    description:
+      - Subnet ids that will be assigned to the load balancer
+      - Mutually exclusive with the loadbalancer_subnets_filter option 
+    type: list
+    required: False
+  loadbalancer_subnets_filter:
+    description:
+      - L(JMESPath,https://jmespath.org/) expression to filter the subnets to be used for the load balancer
+      - The expression will be applied to the full list of subnets for the specified environment
+      - Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr
+      - The filter expression must only filter the list, but not apply any attribute projection
+      - Mutually exclusive with the cluster_subnets option 
+    type: str
+    required: False
   persist:
     description: Whether or not to retain the database records of related entities during removal.
     type: bool
@@ -94,6 +125,12 @@ options:
     type: bool
     required: False
     default: False
+  force:
+    description: Flag to indicate if the DataFlow deletion should be forced.
+    type: bool
+    required: False
+    aliases:
+      - force_delete
   tags:
     description: Tags to apply to the DataFlow Service 
     type: dict
@@ -139,7 +176,9 @@ EXAMPLES = r'''
     nodes_min: 3
     nodes_max: 10
     public_loadbalancer: True
-    ip_ranges: ['192.168.0.1/24']
+    cluster_subnets_filter: "[?contains(subnetName, 'pvt')]"
+    loadbalancer_subnets_filter: "[?contains(subnetName, 'pub')]"
+    k8s_ip_ranges: ['192.168.0.1/24']
     state: present
     wait: yes
 
@@ -255,9 +294,11 @@ class DFService(CdpModule):
         self.nodes_max = self._get_param('nodes_max')
         self.public_loadbalancer = self._get_param('public_loadbalancer')
         self.lb_ip_ranges = self._get_param('loadbalancer_ip_ranges')
-        self.kube_ip_ranges = self._get_param('kube_ip_ranges')
+        self.k8s_ip_ranges = self._get_param('k8s_ip_ranges')
         self.cluster_subnets = self._get_param('cluster_subnets')
-        self.lb_subnets = self._get_param('lb_subnets')
+        self.cluster_subnets_filter = self._get_param('cluster_subnets_filter')
+        self.lb_subnets = self._get_param('loadbalancer_subnets')
+        self.lb_subnets_filter = self._get_param('loadbalancer_subnets_filter')
         self.persist = self._get_param('persist')
         self.terminate = self._get_param('terminate')
         self.force = self._get_param('force')
@@ -280,6 +321,7 @@ class DFService(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
+        original_env_crn = self.env_crn
         if self.env_crn is not None:
             self.env_crn = self.cdpy.environments.resolve_environment_crn(self.env_crn)
         if self.env_crn is not None or self.df_crn is not None:
@@ -294,8 +336,9 @@ class DFService(CdpModule):
                     self._disable_df()
             elif self.state in ['present']:
                 self.module.warn(
-                    "Dataflow Service already enabled and configuration validation and reconciliation is not supported;" +
-                    "to change a Dataflow Service, explicitly disable and recreate the Service or use the UI")
+                    "Dataflow Service already enabled and configuration validation and reconciliation is not "
+                    "supported; to change a Dataflow Service, explicitly disable and recreate the Service or "
+                    "use the UI")
                 if self.wait:
                     self.service = self._wait_for_enabled()
             else:
@@ -304,13 +347,27 @@ class DFService(CdpModule):
         else:
             # Environment does not have DF database entry, and probably doesn't exist
             if self.state in ['absent']:
-                self.module.log(
-                    "Dataflow Service already disabled in CDP Environment %s" % self.env_crn)
+                self.module.log("Dataflow Service already disabled in CDP Environment %s" % self.env_crn)
             elif self.state in ['present']:
                 if self.env_crn is None:
-                    self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % self.env)
+                    self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % original_env_crn)
                 else:
                     # create DF Service
+                    if self.cluster_subnets_filter or self.lb_subnets_filter:
+                        try:
+                            env_info = self.cdpy.environments.describe_environment(self.env_crn)
+                            subnet_metadata = list(env_info['network']['subnetMetadata'].values())
+                        except Exception:
+                            subnet_metadata = []
+                        if not subnet_metadata:
+                            self.module.fail_json(
+                                msg="Could not retrieve subnet metadata for CDP Environment %s" % self.env_crn)
+
+                        if self.cluster_subnets_filter:
+                            self.cluster_subnets = self._filter_subnets(self.cluster_subnets_filter, subnet_metadata)
+                        if self.lb_subnets_filter:
+                            self.lb_subnets = self._filter_subnets(self.lb_subnets_filter, subnet_metadata)
+
                     if not self.module.check_mode:
                         self.service = self.cdpy.df.enable_service(
                             env_crn=self.env_crn,
@@ -318,7 +375,7 @@ class DFService(CdpModule):
                             max_nodes=self.nodes_max,
                             enable_public_ip=self.public_loadbalancer,
                             lb_ips=self.lb_ip_ranges,
-                            kube_ips=self.kube_ip_ranges,
+                            kube_ips=self.k8s_ip_ranges,
                             # tags=self.tags,  # Currently overstrict blocking of values
                             cluster_subnets=self.cluster_subnets,
                             lb_subnets=self.lb_subnets
@@ -336,6 +393,27 @@ class DFService(CdpModule):
             field=['status', 'state'], state=self.cdpy.sdk.STARTED_STATES,
             delay=self.delay, timeout=self.timeout
         )
+
+    def _filter_subnets(self, query, subnets):
+        """Apply a JMESPath to an array of subnets and return the id of the selected subnets.
+        The query must only filter the array, without applying any projection. The query result must also be an
+        array of subnet objects.
+
+        :param query: JMESpath query to filter the subnet array.
+        :param subnets: An array of subnet objects. Each subnet in the array is an object with the following attributes:
+        subnetId, subnetName, availabilityZone, cidr.
+        :return: An array of subnet ids.
+        """
+        filtered_subnets = []
+        try:
+            filtered_subnets = jmespath.search(query, subnets)
+        except Exception:
+            self.module.fail_json(msg="The specified subnet filter is an invalid JMESPath expression: " % query)
+        try:
+            return [s['subnetId'] for s in filtered_subnets]
+        except Exception:
+            self.module.fail_json(msg='The subnet filter "%s" should return an array of subnet objects '
+                                      'but instead returned this: %s' % (query, json.dumps(filtered_subnets)))
 
     def _disable_df(self):
         # Attempt clean Disable, which also ensures we have tried at least once before we do a forced removal
@@ -385,20 +463,21 @@ class DFService(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            env_crn=dict(type='str'),
+            env_crn=dict(type='str', aliases=['name']),
             df_crn=dict(type='str'),
             nodes_min=dict(type='int', default=3, aliases=['min_k8s_node_count']),
             nodes_max=dict(type='int', default=3, aliases=['max_k8s_node_count']),
             public_loadbalancer=dict(type='bool', default=False, aliases=['use_public_load_balancer']),
             loadbalancer_ip_ranges=dict(type='list', elements='str', default=None),
-            kube_ip_ranges=dict(type='list', elements='str', default=None),
+            k8s_ip_ranges=dict(type='list', elements='str', default=None),
             cluster_subnets=dict(type='list', elements='str', default=None),
+            cluster_subnets_filter=dict(type='str', default=None),
             loadbalancer_subnets=dict(type='list', elements='str', default=None),
+            loadbalancer_subnets_filter=dict(type='str', default=None),
             persist=dict(type='bool', default=False),
             terminate=dict(type='bool', default=False),
             tags=dict(required=False, type='dict', default=None),
-            state=dict(type='str', choices=['present', 'absent'],
-                       default='present'),
+            state=dict(type='str', choices=['present', 'absent'], default='present'),
             force=dict(type='bool', default=False, aliases=['force_delete']),
             wait=dict(type='bool', default=True),
             delay=dict(type='int', aliases=['polling_delay'], default=15),
@@ -408,7 +487,11 @@ def main():
         required_if=[
             ('state', 'present', ('env_crn', ), False),
             ('state', 'absent', ('df_crn', ), False)
-        ]
+        ],
+        mutually_exclusive=[
+            ('cluster_subnets', 'cluster_subnets_filter'),
+            ('loadbalancer_subnets', 'loadbalancer_subnets_filter'),
+        ],
     )
 
     result = DFService(module)

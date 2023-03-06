@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import jmespath
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
@@ -75,13 +76,30 @@ options:
     type: str
     required: False
   subnet:
-    description: The subnet ID in AWS, or the Subnet Name on Azure or GCP
+    description:
+      - The subnet ID in AWS, or the Subnet Name on Azure or GCP
+      - Mutually exclusive with the subnet and subnets options 
     type: str
     required: False
     samples:
       - Azure: fe-az-f0-sbnt-2
       - AWS: subnet-0bb1c79de3EXAMPLE
       - GCP: fe-gc-j8-sbnt-0
+  subnets:
+    description:
+      - List of subnet IDs in case of multi availability zone setup.
+      - Mutually exclusive with the subnet and subnets options 
+    type: list
+    required: False
+  subnets_filter:
+    description:
+      - L(JMESPath,https://jmespath.org/) expression to filter the subnets to be used for the load balancer
+      - The expression will be applied to the full list of subnets for the specified environment
+      - Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr
+      - The filter expression must only filter the list, but not apply any attribute projection
+      - Mutually exclusive with the subnet and subnets options 
+    type: list
+    required: False
   image:
     description: ID of the image used for cluster instances
     type: str
@@ -152,6 +170,11 @@ options:
     required: False
     aliases:
       - datahub_tags
+  extension:
+    description:
+      - Cluster extensions for Data Hub cluster.
+    type: str
+    required: False
   force:
     description:
       - Flag indicating if the datahub should be force deleted.
@@ -394,11 +417,15 @@ class DatahubCluster(CdpModule):
         self.environment = self._get_param('environment')
         self.definition = self._get_param('definition')
         self.subnet = self._get_param('subnet')
+        self.subnets = self._get_param('subnets')
+        self.subnets_filter = self._get_param('subnets_filter')
         self.image_id = self._get_param('image')
         self.image_catalog = self._get_param('catalog')
         self.template = self._get_param('template')
         self.groups = self._get_param('groups')
         self.tags = self._get_param('tags')
+        self.extension = self._get_param('extension')
+        self.multi_az = self._get_param('multi_az')
 
         self.wait = self._get_param('wait')
         self.delay = self._get_param('delay')
@@ -542,16 +569,40 @@ class DatahubCluster(CdpModule):
         )
 
         if self.definition is not None:
-          payload["clusterDefinitionName"]=self.definition
+            payload["clusterDefinitionName"] = self.definition
         else:
-          payload["image"]={"id": self.image_id, "catalogName": self.image_catalog}
-          payload["clusterTemplateName"]=self.template
-          payload["instanceGroups"]=self.groups
+            payload["image"] = {"id": self.image_id, "catalogName": self.image_catalog}
+            payload["clusterTemplateName"] = self.template
+            payload["instanceGroups"] = self.groups
 
-        if self.host_env['cloudPlatform'] == 'GCP':
-            payload['subnetName'] = self.subnet
-        else:
-            payload['subnetId'] = self.subnet
+        if self.subnets_filter:
+            try:
+                env_info = self.cdpy.environments.describe_environment(self.environment)
+                subnet_metadata = list(env_info['network']['subnetMetadata'].values())
+            except Exception:
+                subnet_metadata = []
+            if not subnet_metadata:
+                self.module.fail_json(
+                    msg="Could not retrieve subnet metadata for CDP Environment %s" % self.env_crn)
+
+            subnets = self._filter_subnets(self.subnets_filter, subnet_metadata)
+            if len(subnets) == 1:
+                self.subnet = subnets[0]
+            else:
+                self.subnets = subnets
+
+        if self.subnet:
+            if self.host_env['cloudPlatform'] == 'GCP':
+                payload['subnetName'] = self.subnet
+            else:
+                payload['subnetId'] = self.subnet
+        elif self.subnets:
+            payload['subnetIds'] = self.subnets
+
+        if self.extension is not None:
+            payload['clusterExtension'] = self.extension
+
+        payload['multiAz'] = self.multi_az
 
         if self.tags is not None:
             payload['tags'] = list()
@@ -559,6 +610,27 @@ class DatahubCluster(CdpModule):
                 payload['tags'].append(dict(key=k, value=str(self.tags[k])))
 
         return payload
+
+    def _filter_subnets(self, query, subnets):
+        """Apply a JMESPath to an array of subnets and return the id of the selected subnets.
+        The query must only filter the array, without applying any projection. The query result must also be an
+        array of subnet objects.
+
+        :param query: JMESpath query to filter the subnet array.
+        :param subnets: An array of subnet objects. Each subnet in the array is an object with the following attributes:
+        subnetId, subnetName, availabilityZone, cidr.
+        :return: An array of subnet ids.
+        """
+        filtered_subnets = []
+        try:
+            filtered_subnets = jmespath.search(query, subnets)
+        except Exception:
+            self.module.fail_json(msg="The specified subnet filter is an invalid JMESPath expression: " % query)
+        try:
+            return [s['subnetId'] for s in filtered_subnets]
+        except Exception:
+            self.module.fail_json(msg='The subnet filter "%s" should return an array of subnet objects '
+                                      'but instead returned this: %s' % (query, json.dumps(filtered_subnets)))
 
     def _reconcile_existing_state(self, existing):
         mismatched = list()
@@ -594,19 +666,26 @@ def main():
             state=dict(required=False, type='str', choices=['present', 'started', 'stopped', 'absent'], default='present'),
             definition=dict(required=False, type='str'),
             subnet=dict(required=False, type='str', default=None),
+            subnets=dict(required=False, type='list', elements='str', default=None),
+            subnets_filter=dict(required=False, type='str', default=None),
             image=dict(required=False, type='str', default=None),
             catalog=dict(required=False, type='str', default=None),
             template=dict(required=False, type='str', default=None),
             groups=dict(required=False, type='list', default=None),
             environment=dict(required=False, type='str', aliases=['env'], default=None),
             tags=dict(required=False, type='dict', aliases=['datahub_tags']),
+            extension=dict(required=False, type='dict'),
+            multi_az=dict(required=False, type='bool', default=True),
 
             force=dict(required=False, type='bool', default=False),
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
+        mutually_exclusive=[
+            ('subnet', 'subnets', 'subnets_filter'),
+        ],
         #Punting on additional checks here. There are a variety of supporting datahub invocations that can make this more complex
         #required_together=[
         #    ['subnet', 'image', 'catalog', 'template', 'groups', 'environment'],
