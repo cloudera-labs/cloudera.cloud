@@ -209,6 +209,13 @@ options:
         type: int
         required: False
         default: 2
+      multiAZ:
+        description:
+          - Flag to specify that the FreeIPA instances will be deployed across multi-availability zones.
+          - Only applies to AWS environments.
+        type: bool
+        required: False
+        default: False        
   proxy:
     description:
       - The name of the proxy config to use for the environment.
@@ -301,7 +308,7 @@ EXAMPLES = r'''
     tags:
       project: Arbitrary content
 
-# Create an environment, but don't wait for completion (see env_info)
+# Create an environment with multiAZ FreeIPA, but don't wait for completion (see env_info)
 - cloudera.cloud.env:
     name: example-environment
     state: present
@@ -316,6 +323,7 @@ EXAMPLES = r'''
     inbound_cidr: 0.0.0.0/0
     freeipa:
       instanceCountByGroup: 3
+      multiAZ: yes
     tags:
       project: Arbitrary content
 
@@ -871,7 +879,11 @@ class Environment(CdpModule):
                 payload['authentication'] = dict(publicKey=self.public_key_text)
 
             if self.freeipa is not None:
-                payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
+                payload['freeIpa'] = dict()
+                if self.freeipa['instanceCountByGroup'] is not None:
+                    payload['freeIpa'].update(dict(instanceCountByGroup=self.freeipa['instanceCountByGroup']))
+                if self.freeipa['multiAZ'] is not None:
+                    payload['freeIpa'].update(dict(multiAZ=self.freeipa['multiAZ']))
 
             if self.vpc_id is not None:
                 payload['vpcId'] = self.vpc_id
@@ -1030,7 +1042,7 @@ def main():
             tunnel=dict(required=False, type='bool', aliases=['enable_tunnel', 'ssh_tunnel'], default=False),
             freeipa=dict(required=False, type='dict', options=dict(
               instanceCountByGroup=dict(required=False, type='int')
-            ), default=dict(instanceCountByGroup=2)),
+            ), default=dict(instanceCountByGroup=2,multiAz=False)),
             project=dict(required=False, type='str'),
             proxy=dict(required=False, type='str', aliases=['[proxy_config', 'proxy_config_name']),
             cascade=dict(required=False, type='bool', default=False, aliases=['cascading']),
