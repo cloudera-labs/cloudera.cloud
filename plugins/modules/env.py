@@ -209,7 +209,7 @@ options:
         type: int
         required: False
         default: 2
-      multiAZ:
+      multiAz:
         description:
           - Flag to specify that the FreeIPA instances will be deployed across multi-availability zones.
           - Only applies to AWS environments.
@@ -308,7 +308,7 @@ EXAMPLES = r'''
     tags:
       project: Arbitrary content
 
-# Create an environment with multiAZ FreeIPA, but don't wait for completion (see env_info)
+# Create an environment with multiAz FreeIPA, but don't wait for completion (see env_info)
 - cloudera.cloud.env:
     name: example-environment
     state: present
@@ -323,7 +323,7 @@ EXAMPLES = r'''
     inbound_cidr: 0.0.0.0/0
     freeipa:
       instanceCountByGroup: 3
-      multiAZ: yes
+      multiAz: yes
     tags:
       project: Arbitrary content
 
@@ -882,8 +882,8 @@ class Environment(CdpModule):
                 payload['freeIpa'] = dict()
                 if self.freeipa['instanceCountByGroup'] is not None:
                     payload['freeIpa'].update(dict(instanceCountByGroup=self.freeipa['instanceCountByGroup']))
-                if self.freeipa['multiAZ'] is not None:
-                    payload['freeIpa'].update(dict(multiAZ=self.freeipa['multiAZ']))
+                if self.freeipa['multiAz'] is not None:
+                    payload['freeIpa'].update(dict(multiAz=self.freeipa['multiAz']))
 
             if self.vpc_id is not None:
                 payload['vpcId'] = self.vpc_id
@@ -1041,7 +1041,8 @@ def main():
             description=dict(required=False, type='str', aliases=['desc']),
             tunnel=dict(required=False, type='bool', aliases=['enable_tunnel', 'ssh_tunnel'], default=False),
             freeipa=dict(required=False, type='dict', options=dict(
-              instanceCountByGroup=dict(required=False, type='int')
+              instanceCountByGroup=dict(required=False, type='int'),
+              multiAz=dict(required=False, type='bool')
             ), default=dict(instanceCountByGroup=2,multiAz=False)),
             project=dict(required=False, type='str'),
             proxy=dict(required=False, type='str', aliases=['[proxy_config', 'proxy_config_name']),
