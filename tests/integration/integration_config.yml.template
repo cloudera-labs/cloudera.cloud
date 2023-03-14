@@ -1,6 +1,6 @@
 ---
 
-# Copyright 2022 Cloudera, Inc. All Rights Reserved.
+# Copyright 2023 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,11 +25,38 @@
 # here will proprogate to all targets, so depending on your testing and development,
 # you might want to limit execution to specified targets.
 
-# Specify any environment variables for modules and libraries like CDPCLI, etc.
-env_vars:
-  #CDP_PROFILE:        my-cdp-profile
-  CDP_ACCESS_KEY_ID:  "foobarbaz"
-  CDP_PRIVATE_KEY:    "1234567890"
-
-# Parameters used by all functions of cloudera.cloud
-env_name: example_env
+cdp:
+  admin_group: "str"
+  analytics_enabled: "bool"
+  datalake: "str"
+  endpoint_access: "str"
+  environment: "str"
+  freeipa: "int"
+  raz_enabled: "bool"
+  tunnel_enabled: "bool"
+  user_group: "str"
+  xaccount_credential: "str"
+identity:
+  datalake_admin_role: "str"
+  idbroker_role: "str"
+  log_role: "str"
+  ranger_audit_role: "str"
+  xaccount_role: "str"
+network:
+  private_subnets:
+  - "str"
+  public_subnets:
+  - "str"
+  region: "str"
+  type: "str"
+  vpc: "str"
+security:
+  default_group: "str"
+  knox_group: "str"
+ssh:
+  fingerprint: "str"
+  name: "str"
+  public_key: "str"
+storage:
+  datalake_location: "str"
+  log_location: "str"

@@ -19,7 +19,12 @@
 tests/output
 
 # Remove any integration configuration
-tests/integration/integration_config.yml
+tests/integration/**/integration_config.yml
+tests/integration/inventory
+
+# Ignore Terraform builds
+tests/integration/**/.terraform*
+tests/integration/**/terraform.tfstate*
 
 # Remove the Sphinx build directory
 site/_build
