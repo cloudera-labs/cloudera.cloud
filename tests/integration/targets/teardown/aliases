@@ -13,5 +13,5 @@
 # limitations under the License.
 
 skip/python2
-setup/once/setup_cred
-#needs/target/another
+setup/once/teardown_cred
+disabled
