@@ -1,6 +1,6 @@
 ---
 
-# Copyright 2022 Cloudera, Inc. All Rights Reserved.
+# Copyright 2023 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,52 @@
 
 - name: Describe environment
   cloudera.cloud.env_info:
-    name: "{{ env_name }}"
+    name: "{{ cdp.environment }}"
   register: __env
 
-- debug:
-    var: __env
+- name: Test for Environment existence
+  ansible.builtin.assert:
+    that: __env.environments | length == 0
+    fail_msg: "Test environment already exists: {{ cdp.environment }}"
+
+- name: Create a new AWS environment
+  when: network.type == "aws"
+  cloudera.cloud.env:
+    name: "{{ cdp.environment }}"
+    cloud: "{{ network.type }}"
+    credential: "{{ cdp.xaccount_credential }}"
+    region: "{{ network.region }}"
+    public_key_id: "{{ ssh.name }}"
+    vpc_id: "{{ network.vpc }}"
+    subnet_ids: "{{ network.public_subnets | union(network.private_subnets) }}"
+    default_sg: "{{ security.default_group }}"
+    knox_sg: "{{ security.knox_group }}"
+    log_identity: "{{ identity.log_role }}"
+    log_location: "{{ storage.log_location }}"
+  register: __env
+
+- name: Test for Environment creation
+  ansible.builtin.assert:
+    that:
+      - __env.environment | length > 0
+  
+- name: Destroy the Environment
+  cloudera.cloud.env:
+    name: "{{ cdp.environment }}"
+    state: absent
+  register: __env
+
+- name: Test for Environment destruction
+  ansible.builtin.assert:
+    that:
+      - not __env.environment
+
+- name: Describe environment
+  cloudera.cloud.env_info:
+    name: "{{ cdp.environment }}"
+  register: __env
+
+- name: Test for Environment destruction
+  ansible.builtin.assert:
+    that: __env.environments | length == 0
+    fail_msg: "Test environment was not destroyed: {{ cdp.environment }}"
