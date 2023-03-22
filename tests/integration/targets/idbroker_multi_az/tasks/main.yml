@@ -1,0 +1,56 @@
+---
+
+# Copyright 2023 Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Create new AWS ID Broker mappings
+  when: network.type == "aws"
+  cloudera.cloud.env_idbroker:
+    name: "{{ environment_multi_az }}"
+    data_access: "{{ identity.datalake_admin_role }}"
+    ranger_audit: "{{ identity.ranger_audit_role }}"
+  register: __idbroker
+
+- name: Test for ID Broker mappings creation
+  ansible.builtin.assert:
+    that:
+      - __idbroker.idbroker | length > 0
+
+- name: Test idempotent creation of AWS ID Broker mappings
+  when: network.type == "aws"
+  cloudera.cloud.env_idbroker:
+    name: "{{ environment_multi_az }}"
+    data_access: "{{ identity.datalake_admin_role }}"
+    ranger_audit: "{{ identity.ranger_audit_role }}"
+  register: __idbroker_idempotent
+
+- name: Test for ID Broker mappings idempotent state
+  ansible.builtin.assert:
+    that:
+      - __idbroker_idempotent.idbroker | length > 0
+      - __idbroker.idbroker.dataAccessRole == __idbroker_idempotent.idbroker.dataAccessRole
+      - __idbroker.idbroker.rangerAuditRole == __idbroker_idempotent.idbroker.rangerAuditRole
+      - not __idbroker_idempotent.changed
+
+- name: Clear the ID Broker mappings
+  cloudera.cloud.env_idbroker:
+    name: "{{ environment_multi_az }}"
+    clear_mappings: true
+  register: __idbroker
+
+- name: Test for ID Broker mappings removal
+  ansible.builtin.assert:
+    that:
+      - __idbroker_idempotent.idbroker | length > 0
+      - __idbroker.idbroker.mappings | length == 0

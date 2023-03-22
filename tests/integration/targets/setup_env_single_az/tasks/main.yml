@@ -14,16 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Destroy integration testing multi-AZ Environment
-  cloudera.cloud.env:
-    name: "{{ environment_multi_az }}"
-    cascade: yes
-    state: absent
-  register: __env_multi_az
-
-- name: Destroy integration testing single-AZ Environment
+- name: Construct integration testing AWS single-AZ environment
+  when: network.type == "aws"
   cloudera.cloud.env:
     name: "{{ environment_single_az }}"
-    cascade: yes
-    state: absent
-  register: __env_single_az
+    cloud: "{{ network.type }}"
+    credential: "{{ cdp.xaccount_credential }}"
+    region: "{{ network.region }}"
+    public_key_id: "{{ ssh.name }}"
+    vpc_id: "{{ network.vpc }}"
+    subnet_ids: "{{ network.public_subnets | union(network.private_subnets) }}"
+    default_sg: "{{ security.default_group }}"
+    knox_sg: "{{ security.knox_group }}"
+    log_identity: "{{ identity.log_role }}"
+    log_location: "{{ storage.log_location }}"
+    freeipa:
+      instanceCountByGroup: "{{ cdp.freeipa }}"
+  register: __env_single

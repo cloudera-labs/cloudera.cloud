@@ -13,3 +13,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+- name: Create new AWS ID Broker mappings
+  when: network.type == "aws"
+  cloudera.cloud.env_idbroker:
+    name: "{{ environment_multi_az }}"
+    data_access: "{{ identity.datalake_admin_role }}"
+    ranger_audit: "{{ identity.ranger_audit_role }}"
+  register: __idbroker
