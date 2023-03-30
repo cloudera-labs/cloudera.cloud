@@ -1,0 +1,96 @@
+---
+
+# Copyright 2023 Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Describe multi-AZ Environment
+  cloudera.cloud.env_info:
+    name: "{{ multi_az_environment }}"
+  register: __env
+
+- name: Test for multi-AZ Environment existence
+  ansible.builtin.assert:
+    that: __env.environments | length == 0
+    fail_msg: "Test environment already exists: {{ multi_az_environment }}"
+
+- name: Create a new AWS multi-AZ environment
+  when: network.type == "aws"
+  cloudera.cloud.env:
+    name: "{{ multi_az_environment }}"
+    cloud: "{{ network.type }}"
+    credential: "{{ cdp.xaccount_credential }}"
+    region: "{{ network.region }}"
+    public_key_id: "{{ ssh.name }}"
+    vpc_id: "{{ network.vpc }}"
+    subnet_ids: "{{ network.public_subnets | union(network.private_subnets) }}"
+    default_sg: "{{ security.default_group }}"
+    knox_sg: "{{ security.knox_group }}"
+    log_identity: "{{ identity.log_role }}"
+    log_location: "{{ storage.log_location }}"
+    freeipa:
+      instanceCountByGroup: "{{ cdp.freeipa }}"
+      multiAz: true
+  register: __env
+
+- name: Test for multi-AZ Environment creation
+  ansible.builtin.assert:
+    that:
+      - __env.environment | length > 0
+
+- name: Test idempotent creation of a AWS multi-AZ environment
+  when: network.type == "aws"
+  cloudera.cloud.env:
+    name: "{{ multi_az_environment }}"
+    cloud: "{{ network.type }}"
+    credential: "{{ cdp.xaccount_credential }}"
+    region: "{{ network.region }}"
+    public_key_id: "{{ ssh.name }}"
+    vpc_id: "{{ network.vpc }}"
+    subnet_ids: "{{ network.public_subnets | union(network.private_subnets) }}"
+    default_sg: "{{ security.default_group }}"
+    knox_sg: "{{ security.knox_group }}"
+    log_identity: "{{ identity.log_role }}"
+    log_location: "{{ storage.log_location }}"
+    freeipa:
+      instanceCountByGroup: "{{ cdp.freeipa }}"
+      multiAz: true
+  register: __env_idempotent
+
+- name: Test for multi-AZ Environment idempotent state
+  ansible.builtin.assert:
+    that:
+      - __env_idempotent.environment | length > 0
+      - __env.environment.crn == __env_idempotent.environment.crn
+      - not __env_idempotent.changed
+
+- name: Destroy the multi-AZ Environment
+  cloudera.cloud.env:
+    name: "{{ multi_az_environment }}"
+    state: absent
+  register: __env
+
+- name: Test for multi-AZ Environment destruction
+  ansible.builtin.assert:
+    that:
+      - not __env.environment
+
+- name: Describe multi-AZ environment
+  cloudera.cloud.env_info:
+    name: "{{ multi_az_environment }}"
+  register: __env
+
+- name: Test for multi-AZ Environment destruction
+  ansible.builtin.assert:
+    that: __env.environments | length == 0
+    fail_msg: "Test environment was not destroyed: {{ multi_az_environment }}"

@@ -59,7 +59,7 @@ See the `integration_config.yml.template` for the infrastructure details availab
   ansible-test integration --local
   ```
 
-Once done with the integration tests, you will need to clean up any remaining CDP assets before tearing down the infrastructure (if needed).
+Once done with the integration tests, you will need to clean up any remaining CDP assets before tearing down the infrastructure (if required by your testing setup).
 ```bash
-ansible-test integration --local disabled/teardown
+ansible-test integration --local --allow-disabled teardown
 ```

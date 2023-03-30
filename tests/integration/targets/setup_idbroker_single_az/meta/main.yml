@@ -14,16 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Destroy integration testing multi-AZ Environment
-  cloudera.cloud.env:
-    name: "{{ environment_multi_az }}"
-    cascade: yes
-    state: absent
-  register: __env_multi_az
-
-- name: Destroy integration testing single-AZ Environment
-  cloudera.cloud.env:
-    name: "{{ environment_single_az }}"
-    cascade: yes
-    state: absent
-  register: __env_single_az
+dependencies:
+  - common
+  - setup_env_single_az

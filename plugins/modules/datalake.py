@@ -139,6 +139,13 @@ options:
     type: bool
     required: False
     default: False
+  multi_az:
+    description:
+      - Flag indicating if the datalake is deployed across multi-availability zones.
+      - Only applies to AWS datalakes.
+    type: bool
+    required: False
+    default: False    
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -405,6 +412,7 @@ class Datalake(CdpModule):
         self.timeout = self._get_param('timeout')
         self.force = self._get_param('force')
         self.raz = self._get_param("raz")
+        self.multi_az = self._get_param("multi_az")
 
         # Initialize the return values
         self.datalake = dict()
@@ -556,6 +564,14 @@ class Datalake(CdpModule):
         elif environment['cloudPlatform'] != 'GCP' :
             payload.update(enableRangerRaz=self.raz)
 
+        if self.multi_az:
+            if environment['cloudPlatform'] == 'AWS':
+                payload.update(multiAz=self.multi_az)
+            else:
+                self.module.fail_json(msg='Multi-AZ Datalakes are not supported on GCP and Azure')
+        elif environment['cloudPlatform'] == 'AWS':
+            payload.update(multiAz=self.multi_az)
+
         if self.tags is not None:
             payload['tags'] = list()
             for k in self.tags:
@@ -601,6 +617,12 @@ class Datalake(CdpModule):
                              "need to change the enableRangerRaz, explicitly delete "
                              "and recreate the Datalake.")
 
+        if self.multi_az:
+            self.module.warn("Updating an existing Datalake's 'multiAz' "
+                             "directly is not supported at this time. If you "
+                             "need to change the multiAz, explicitly delete "
+                             "and recreate the Datalake.")
+
         return mismatched
 
     def _validate_datalake_name(self):
@@ -629,7 +651,8 @@ def main():
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
-            raz=dict(required=False, type="bool", default=False)
+            raz=dict(required=False, type="bool", default=False),
+            multi_az=dict(required=False, type="bool", default=False)
         ),
         supports_check_mode=True
     )

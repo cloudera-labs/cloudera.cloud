@@ -1,0 +1,78 @@
+---
+
+# Copyright 2023 Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Describe multi-AZ Datalake
+  cloudera.cloud.datalake_info:
+    name: "{{ datalake_multi_az }}"
+  register: __dl
+
+- name: Test for multi-AZ Datalake existence
+  ansible.builtin.assert:
+    that: __dl.datalakes | length == 0
+    fail_msg: "Test Datalake already exists: {{ datalake_multi_az }}"
+
+- name: Construct an AWS multi-AZ Datalake
+  when: network.type == "aws"
+  cloudera.cloud.datalake:
+    name: "{{ datalake_multi_az }}"
+    environment: "{{ environment_multi_az }}"
+    instance_profile: "{{ identity.idbroker_role }}"
+    storage: "{{ storage.datalake_location }}"
+    multi_az: true
+  register: __dl
+
+- name: Test for multi-AZ Datalake creation
+  ansible.builtin.assert:
+    that:
+      - __dl.datalake | length > 0
+      - __dl.datalake.cloudPlatform == (network.type | upper)
+      - __dl.datalake.datalakeName == datalake_multi_az
+
+- name: Test idempotent creation of an AWS multi-AZ Datalake
+  when: network.type == "aws"
+  cloudera.cloud.datalake:
+    name: "{{ datalake_multi_az }}"
+    environment: "{{ environment_multi_az }}"
+    instance_profile: "{{ identity.idbroker_role }}"
+    storage: "{{ storage.datalake_location }}"
+    multi_az: true
+  register: __dl_idempotent
+
+- name: Test for multi-AZ Datalake idempotent state
+  ansible.builtin.assert:
+    that:
+      - __dl_idempotent.datalake | length > 0
+      - __dl.datalake.crn == __dl_idempotent.datalake.crn
+      - not __dl_idempotent.changed
+
+- name: Destroy multi-AZ Datalake
+  cloudera.cloud.datalake:
+    name: "{{ datalake_multi_az }}"
+    state: absent
+  register: __dl
+
+- name: Test for multi-AZ Datalake destruction return value
+  ansible.builtin.assert:
+    that: not __dl.datalake
+
+- name: Describe multi-AZ Datalake after destruction
+  cloudera.cloud.datalake_info:
+    name: "{{ datalake_multi_az }}"
+  register: __dl
+
+- name: Test for multi-AZ Datalake existence
+  ansible.builtin.assert:
+    that: __dl.datalakes | length == 0
