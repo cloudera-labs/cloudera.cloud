@@ -143,6 +143,13 @@ options:
     required: False
     aliases:
       - instance_profile
+  backup_location:
+    description:
+      - The base location to store backups. This should be an storage uri - i.e. s3a:// for AWS, abfs:// for Azure,  gs:// for GCP.
+    type: str
+    required: False
+    aliases:
+      - backup_storage_location_base      
   network_cidr:
     description:
       - (AWS) The network CIDR. This will create a VPC along with subnets in multiple Availability Zones.
@@ -302,6 +309,7 @@ EXAMPLES = r'''
     region: us-east-1
     log_location: s3a://example-bucket/datalake/logs
     log_identity: arn:aws:iam::981304421142:instance-profile/example-log-role
+    backup_location: s3a://example-bucket/datalake/backups
     public_key_id: example-sshkey
     network_cidr: 10.10.0.0/16
     inbound_cidr: 0.0.0.0/0
@@ -665,6 +673,7 @@ class Environment(CdpModule):
         self.public_key_text = self._get_param('public_key_text')
         self.public_key_id = self._get_param('public_key_id')
         self.log_location = self._get_param('log_location')
+        self.backup_location = self._get_param('backup_location')
         self.log_identity = self._get_param('log_identity')
         self.network_cidr = self._get_param('network_cidr')
         self.vpc_id = self._get_param('vpc_id')
@@ -871,7 +880,10 @@ class Environment(CdpModule):
         if self.cloud not in ['aws', 'azure', 'gcp']:
             self.module.fail_json(msg='Cloud %s is not yet implemented' % self.cloud)
         elif self.cloud == 'aws':
-            payload['logStorage'] = dict(instanceProfile=self.log_identity, storageLocationBase=self.log_location)
+            if self.backup_location is not None: 
+              payload['logStorage'] = dict(instanceProfile=self.log_identity, storageLocationBase=self.log_location, backupStorageLocationBase=self.backup_location)
+            else:
+              payload['logStorage'] = dict(instanceProfile=self.log_identity, storageLocationBase=self.log_location)
 
             if self.public_key_id is not None:
                 payload['authentication'] = dict(publicKeyId=self.public_key_id)
@@ -915,7 +927,12 @@ class Environment(CdpModule):
                 sharedProjectId=self.project
             )
             payload['usePublicIp'] = self.public_ip
-            payload['logStorage'] = dict(serviceAccountEmail=self.log_identity, storageLocationBase=self.log_location)
+
+            if self.backup_location is not None:
+              payload['logStorage'] = dict(serviceAccountEmail=self.log_identity, storageLocationBase=self.log_location,backupStorageLocationBase=self.backup_location)
+            else:
+              payload['logStorage'] = dict(serviceAccountEmail=self.log_identity, storageLocationBase=self.log_location)
+
             if self.freeipa is not None:
                 payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
         else:
@@ -924,7 +941,12 @@ class Environment(CdpModule):
                                              securityGroupIdForKnox=self.knox_sg)
             payload['publicKey'] = self.public_key_text
             payload['usePublicIp'] = self.public_ip
-            payload['logStorage'] = dict(managedIdentity=self.log_identity, storageLocationBase=self.log_location)
+
+            if self.backup_location is not None:
+              payload['logStorage'] = dict(managedIdentity=self.log_identity, storageLocationBase=self.log_location, backupStorageLocationBase=self.backup_location)
+            else:
+              payload['logStorage'] = dict(managedIdentity=self.log_identity, storageLocationBase=self.log_location)
+
             if self.vpc_id:
                 payload['existingNetworkParams'] = dict(
                     networkId=self.vpc_id, resourceGroupName=self.resource_gp, subnetIds=self.subnet_ids
@@ -964,6 +986,10 @@ class Environment(CdpModule):
             if self.log_location is not None and \
                     existing['logStorage']['awsDetails']['storageLocationBase'] != self.log_location:
                 mismatch.append(['log_location', existing['logStorage']['awsDetails']['storageLocationBase']])
+
+            if self.backup_location is not None and \
+                    existing['backupStorage']['awsDetails']['storageLocationBase'] != self.backup_location:
+                mismatch.append(['backup_location', existing['backupStorage']['awsDetails']['storageLocationBase']])
 
             if self.public_key_id is not None or self.public_key_text is not None:
                 auth = existing['authentication']
@@ -1029,6 +1055,7 @@ def main():
             public_key_text=dict(required=False, type='str', aliases=['ssh_key_text']),
             public_key_id=dict(required=False, type='str', aliases=['public_key', 'ssh_key', 'ssh_key_id']),
             log_location=dict(required=False, type='str', aliases=['storage_location_base']),
+            backup_location=dict(required=False, type='str', aliases=['backup_storage_location_base']),
             log_identity=dict(required=False, type='str', aliases=['instance_profile']),
             network_cidr=dict(required=False, type='str'),
             vpc_id=dict(required=False, type='str', aliases=['vpc', 'network']),  # TODO: Update Docs
