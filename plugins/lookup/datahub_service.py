@@ -85,40 +85,24 @@ RETURN = '''
 '''
 
 from ansible.errors import AnsibleError
-from ansible.module_utils.common.text.converters import to_text, to_native
-from ansible.plugins.lookup import LookupBase
-from ansible.utils.display import Display
+from ansible.module_utils.common.text.converters import to_native
 
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
-display = Display()
+from ansible_collections.cloudera.cloud.plugins.lookup.cdp_service import CdpServiceLookupModule
 
-class LookupModule(LookupBase):
+
+class LookupModule(CdpServiceLookupModule):
     def run(self, terms, variables=None, **kwargs):
         self.set_options(var_options=variables, direct=kwargs)
 
-        lookup = 'knoxService' if self.get_option('knox_service') else 'serviceName'
-
-        try:
-            results = []        
+        try:       
             datahub = Cdpy().datahub.describe_cluster(self.get_option('datahub'))
-
+            
             if datahub is None:
                 raise AnsibleError("No Datahub found for '%s'" % self.get_option('datahub'))
-
-            for term in LookupModule._flatten(terms):
-                display.vvv("datahub_service lookup connecting to '%s[%s]'" % (self.get_option('datahub'), term))
-                
-                services = [s for s in datahub['endpoints']['endpoints'] if s[lookup] == term and 'serviceUrl' in s]
-                
-                if services:
-                    results.append([to_text(s['serviceUrl']) for s in services])
-                else:
-                    results.append(self.get_option('default'))
-
-            return results
-        except KeyError as e:
-            raise AnsibleError("Error parsing Datahub result for '%s':'" % (self.get_option('datahub'), to_native(e)))
+            
+            return self.parse_services(terms, self.get_option('datahub'), datahub, 'datahub')
         except CdpError as e:
             raise AnsibleError("Error connecting to service '%s': %s" % (self.get_option('datahub'), to_native(e)))
