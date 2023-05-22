@@ -88,15 +88,16 @@ RETURN = '''
 '''
 
 from ansible.errors import AnsibleError
+from ansible.plugins.lookup import LookupBase
 from ansible.module_utils.common.text.converters import to_native
 
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
-from ansible_collections.cloudera.cloud.plugins.lookup.cdp_service import CdpServiceLookupModule
+from ansible_collections.cloudera.cloud.plugins.lookup.cdp_service import parse_services
 
 
-class LookupModule(CdpServiceLookupModule):
+class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         self.set_options(var_options=variables, direct=kwargs)
 
@@ -116,6 +117,6 @@ class LookupModule(CdpServiceLookupModule):
                 elif len(env) > 1:
                     raise AnsibleError("Multiple Datalakes found for Enviroment '%s'" % self.get_option('environment'))
                 dl = env[0]
-            return self.parse_services(terms, dl['datalakeName'], dl, 'datalake')
+            return parse_services(terms, dl['datalakeName'], dl, 'datalake', self.get_option('knox_service'), self.get_option('default'))
         except CdpError as e:
             raise AnsibleError("Error connecting to CDP: %s" % to_native(e))
