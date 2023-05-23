@@ -49,6 +49,7 @@ DOCUMENTATION = '''
             type: string
     notes:
         - Requires C(cdpy).
+        - If you encounter I(worker found in a dead state) and are running OSX, set the environment variable, C(OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES).
     seealso:
         - module: cloudera.cloud.datahub_template_info
           description: Cloudera CDP Public Cloud Datahub template module
