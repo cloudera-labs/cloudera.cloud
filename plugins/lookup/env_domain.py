@@ -18,7 +18,7 @@ __metaclass__ = type
 DOCUMENTATION = '''
     lookup: env_domain
     author: Ronald Suplina (@rsuplina) <rsuplina@cloudera.com>
-    short_description: Get infromation about Freeipa host domains and private ips for selected Environment
+    short_description: Get infromation about Freeipa CDP domain and freeipa host private ips for selected Environment
     description:
         - Allows you to retrieve information about Freeipa Domain for a given CDP Public Cloud Environment.
         - If the Environment is not found or is ambigious, the lookup will return an error.
@@ -41,11 +41,11 @@ DOCUMENTATION = '''
 
 
 EXAMPLES = '''
-- name: Retrieve the Freeipa domian for a single CDP Public Cloud Environment
+- name: Retrieve the Freeipa domain for a single CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_domain', 'example-env') }}"
 
-- name: Retrieve the Freeipa domian and Private Freeipa host ips for a CDP Public Cloud Environment
+- name: Retrieve the Freeipa domain and Private Freeipa host ips for a CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_domain', 'example-env' , detailed=True  ) }}"
     
