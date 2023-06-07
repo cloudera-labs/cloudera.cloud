@@ -16,7 +16,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: env_freeipa
+    lookup: env_freeipa_fqdn
     author: Ronald Suplina (@rsuplina) <rsuplina@cloudera.com>
     short_description: Get infromation about Freeipa hosts for selected Environment
     description:
@@ -43,15 +43,15 @@ DOCUMENTATION = '''
 EXAMPLES = '''
 - name: Retrieve the details for the Freeipa hosts for a single CDP Public Cloud Environment
   ansible.builtin.debug:
-    msg: "{{ lookup('cloudera.cloud.env_freeipa', environment='se-sandboxx-aws') }}"
+    msg: "{{ lookup('cloudera.cloud.env_freeipa_fqdn', environment='se-sandboxx-aws') }}"
 
 - name: Retrieve the details as list for the Freeipa hosts for a single CDP Public Cloud Environment
   ansible.builtin.debug:
-    msg: "{{ lookup('cloudera.cloud.env_freeipa', environment='se-sandboxx-aws', wantlist=True) }}"
+    msg: "{{ lookup('cloudera.cloud.env_freeipa_fqdn', environment='se-sandboxx-aws', wantlist=True) }}"
 
 - name: Retrieve more detailied information for the Freeipa hosts for a single CDP Public Cloud Environment
   ansible.builtin.debug:
-    msg: "{{ lookup('cloudera.cloud.env_freeipa', environment='se-sandboxx-aws', detailed=True) }}"
+    msg: "{{ lookup('cloudera.cloud.env_freeipa_fqdn', environment='se-sandboxx-aws', detailed=True) }}"
     
 '''
 
