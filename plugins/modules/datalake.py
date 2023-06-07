@@ -141,8 +141,7 @@ options:
     default: False
   multi_az:
     description:
-      - Flag indicating if the datalake is deployed across multi-availability zones.
-      - Only applies to AWS datalakes.
+      - (AWS) Flag indicating if the datalake is deployed across multi-availability zones.
     type: bool
     required: False
     default: False    
