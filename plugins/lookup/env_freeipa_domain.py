@@ -16,7 +16,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: env_domain
+    lookup: env_freeipa_domain
     author: Ronald Suplina (@rsuplina) <rsuplina@cloudera.com>
     short_description: Get infromation about Freeipa CDP domain and freeipa host private ips for selected Environment
     description:
@@ -43,11 +43,11 @@ DOCUMENTATION = '''
 EXAMPLES = '''
 - name: Retrieve the Freeipa domain for a single CDP Public Cloud Environment
   ansible.builtin.debug:
-    msg: "{{ lookup('cloudera.cloud.env_domain', 'example-env') }}"
+    msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env') }}"
 
 - name: Retrieve the Freeipa domain and Private Freeipa host ips for a CDP Public Cloud Environment
   ansible.builtin.debug:
-    msg: "{{ lookup('cloudera.cloud.env_domain', 'example-env' , detailed=True  ) }}"
+    msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env' , detailed=True  ) }}"
     
  
 '''
