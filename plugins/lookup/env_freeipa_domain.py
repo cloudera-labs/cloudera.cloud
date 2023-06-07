@@ -18,9 +18,10 @@ __metaclass__ = type
 DOCUMENTATION = '''
     lookup: env_freeipa_domain
     author: Ronald Suplina (@rsuplina) <rsuplina@cloudera.com>
-    short_description: Get infromation about Freeipa CDP domain and freeipa host private ips for selected Environment
+    short_description: Get information about FreeIPA CDP domain and FreeIPA host private ips for selected Environment
     description:
-        - Allows you to retrieve information about Freeipa Domain for a given CDP Public Cloud Environment.
+        - Allows you to retrieve information about FreeIPA Domain for a given CDP Public Cloud Environment.
+        - Provides information required for FreeIPA install Role prerequisite task of updating '/etc/resolv'
         - If the Environment is not found or is ambigious, the lookup will return an error.
     options:
         _terms:
@@ -30,7 +31,7 @@ DOCUMENTATION = '''
             required: True
         detailed:
             description:
-                -  Whether to return private ip's of Freeipa hosts for selected CDP Public Cloudera Environment.
+                -  Whether to return private ip's of FreeIPA hosts for selected CDP Public Cloudera Environment.
             required: False
             type: boolean
             default: False
@@ -41,11 +42,11 @@ DOCUMENTATION = '''
 
 
 EXAMPLES = '''
-- name: Retrieve the Freeipa domain for a single CDP Public Cloud Environment
+- name: Retrieve the FreeIPA domain for a single CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env') }}"
 
-- name: Retrieve the Freeipa domain and Private Freeipa host ips for a CDP Public Cloud Environment
+- name: Retrieve the FreeIPA domain and Private FreeIPA host ips for a CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env' , detailed=True  ) }}"
     
@@ -54,37 +55,42 @@ EXAMPLES = '''
 
 RETURN = '''
   _list:
-    description: List of Freeipa domains for selected Environments
+    description: List of FreeIPA domains for selected Environments
     type: list
     elements: list
 '''
+
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 from ansible.module_utils.common.text.converters import to_text, to_native
 from ansible.utils.display import Display
+
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
 
 display = Display()
+
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         self.set_options(var_options=variables, direct=kwargs)    
+
         try: 
             results = []
             for term in LookupBase._flatten(terms):
                 environment = Cdpy().environments.describe_environment(term)
                 freeipa_client_domain = environment['freeipa']['domain']
-                results = [{'domain': freeipa_client_domain}]
-
-            if self.get_option('detailed'):
-                for term in LookupBase._flatten(terms):
-                    environment = Cdpy().environments.describe_environment(term)   
+                
+                if self.get_option('detailed'):
                     server_ips = environment['freeipa']['serverIP']
-                    results = [{'domain': freeipa_client_domain,'server_ips' : server_ips}]     
+                    results = [{'domain': freeipa_client_domain,'server_ips' : server_ips}]    
+                else:
+                    results = [{'domain': freeipa_client_domain}]
             return results
 
         except KeyError as e:
             raise AnsibleError("Error parsing result: %s" % to_native(e))
         except CdpError as e:
             raise AnsibleError("Error connecting to CDP: %s" % to_native(e))
+
+
