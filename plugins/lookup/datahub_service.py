@@ -85,24 +85,22 @@ RETURN = '''
 '''
 
 from ansible.errors import AnsibleError
+from ansible.plugins.lookup import LookupBase
 from ansible.module_utils.common.text.converters import to_native
 
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
-from ansible_collections.cloudera.cloud.plugins.lookup.cdp_service import CdpServiceLookupModule
+from ansible_collections.cloudera.cloud.plugins.lookup.cdp_service import parse_services
 
 
-class LookupModule(CdpServiceLookupModule):
+class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         self.set_options(var_options=variables, direct=kwargs)
-
         try:       
             datahub = Cdpy().datahub.describe_cluster(self.get_option('datahub'))
-            
             if datahub is None:
                 raise AnsibleError("No Datahub found for '%s'" % self.get_option('datahub'))
-            
-            return self.parse_services(terms, self.get_option('datahub'), datahub, 'datahub')
+            return parse_services(terms, self.get_option('datahub'), datahub, 'datahub', self.get_option('knox_service'), self.get_option('default'))
         except CdpError as e:
             raise AnsibleError("Error connecting to service '%s': %s" % (self.get_option('datahub'), to_native(e)))
