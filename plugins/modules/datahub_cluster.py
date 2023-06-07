@@ -569,10 +569,10 @@ class DatahubCluster(CdpModule):
         )
 
         if self.definition is not None:
-            payload["clusterDefinitionName"] = self.definition
+            payload["clusterDefinition"] = self.definition
         else:
             payload["image"] = {"id": self.image_id, "catalogName": self.image_catalog}
-            payload["clusterTemplateName"] = self.template
+            payload["clusterTemplate"] = self.template
             payload["instanceGroups"] = self.groups
 
         if self.subnets_filter:
