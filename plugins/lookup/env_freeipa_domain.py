@@ -46,7 +46,7 @@ EXAMPLES = '''
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env') }}"
 
-- name: Retrieve the FreeIPA domain and Private FreeIPA host ips for a CDP Public Cloud Environment
+- name: Retrieve the FreeIPA domain and host IP addresses  for a CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env' , detailed=True  ) }}"
     
