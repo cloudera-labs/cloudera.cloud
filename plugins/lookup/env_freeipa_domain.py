@@ -18,10 +18,10 @@ __metaclass__ = type
 DOCUMENTATION = '''
     lookup: env_freeipa_domain
     author: Ronald Suplina (@rsuplina) <rsuplina@cloudera.com>
-    short_description: Get information about FreeIPA CDP domain and FreeIPA host private ips for selected Environment
+    short_description: Get information about the FreeIPA domain and DNS server IP address(es) for the selected CDP Public Cloud Environment
     description:
         - Allows you to retrieve information about FreeIPA Domain for a given CDP Public Cloud Environment.
-        - Provides information required for FreeIPA install Role prerequisite task of updating '/etc/resolv'
+        - You can use these details to update client DNS, e.g. set up entries in /etc/resolv.conf
         - If the Environment is not found or is ambigious, the lookup will return an error.
     options:
         _terms:
@@ -31,7 +31,7 @@ DOCUMENTATION = '''
             required: True
         detailed:
             description:
-                -  Whether to return private ip's of FreeIPA hosts for selected CDP Public Cloudera Environment.
+                -  Flag to return the IP address of each FreeIP host for a selected CDP Public Cloud Environment.
             required: False
             type: boolean
             default: False
@@ -42,7 +42,7 @@ DOCUMENTATION = '''
 
 
 EXAMPLES = '''
-- name: Retrieve the FreeIPA domain for a single CDP Public Cloud Environment
+- name: Retrieve the FreeIPA domain and host IP addresses for a CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env') }}"
 
@@ -57,7 +57,7 @@ RETURN = '''
   _list:
     description: List of FreeIPA domains for selected Environments
     type: list
-    elements: list
+    elements: complex
 '''
 
 from ansible.errors import AnsibleError
@@ -85,7 +85,7 @@ class LookupModule(LookupBase):
                     server_ips = environment['freeipa']['serverIP']
                     results = [{'domain': freeipa_client_domain,'server_ips' : server_ips}]    
                 else:
-                    results = [{'domain': freeipa_client_domain}]
+                    results =  [ freeipa_client_domain ]
             return results
 
         except KeyError as e:
