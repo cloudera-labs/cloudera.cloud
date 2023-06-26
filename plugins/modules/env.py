@@ -292,6 +292,14 @@ options:
     type: list
     elements: str
     required: False
+  zones:
+    description:
+      - (GCP) The list of zones within the region to use for compute instances.
+    type: list
+    elements: str
+    required: False
+    aliases:
+      - availability_zones
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -698,6 +706,8 @@ class Environment(CdpModule):
 
         self.endpoint_access_scheme = self._get_param('endpoint_access_scheme')
         self.endpoint_access_subnets = self._get_param('endpoint_access_subnets')
+        
+        self.zones = self._get_param('zones')
 
         self.use_single_resource_group=self._get_param('use_single_resource_group')
 
@@ -935,6 +945,9 @@ class Environment(CdpModule):
 
             if self.freeipa is not None:
                 payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
+                
+            if self.zones is not None:
+                payload['availabilityZones'] = self.zones
         else:
             # For Azure
             payload['securityAccess'] = dict(defaultSecurityGroupId=self.default_sg,
@@ -1079,6 +1092,7 @@ def main():
             datahub_start=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
+            zones=dict(required=False, type='list', elements='str', aliases=['availability_zones']),
             endpoint_access_subnets=dict(required=False, type='list', elements='str'),
             endpoint_access_scheme=dict(required=False, type='str', choices=['PUBLIC', 'PRIVATE']),
             use_single_resource_group=dict(required=False, type='bool', default=False),
