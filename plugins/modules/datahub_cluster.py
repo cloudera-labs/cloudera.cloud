@@ -95,7 +95,7 @@ options:
     description:
       - L(JMESPath,https://jmespath.org/) expression to filter the subnets to be used for the load balancer
       - The expression will be applied to the full list of subnets for the specified environment
-      - Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr
+      - Each subnet in the list is an object with the following attributes - subnetId, subnetName, availabilityZone, cidr
       - The filter expression must only filter the list, but not apply any attribute projection
       - Mutually exclusive with the subnet and subnets options 
     type: list
