@@ -234,7 +234,7 @@ options:
   force:
     description:
       - Flag to remove CDP and cloud provider resources, but ignore cloud provider resources deletion errors.
-      - NOTE: this option might leave cloud provider resources after deletion.
+      - NOTE, this option might leave cloud provider resources after deletion.
     type: bool
     required: False
     default: False
