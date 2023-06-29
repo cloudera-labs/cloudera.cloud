@@ -175,6 +175,13 @@ options:
       - Cluster extensions for Data Hub cluster.
     type: str
     required: False
+  multi_az:
+    description:
+      - (AWS) Flag indicating whether to defer to the CDP Environment for availability zone/subnet placement.
+      - Useful for when you are not sure which subnet is available to the datahub cluster.
+    type: bool
+    required: False
+    default: True
   force:
     description:
       - Flag indicating if the datahub should be force deleted.
@@ -569,10 +576,16 @@ class DatahubCluster(CdpModule):
         )
 
         if self.definition is not None:
-            payload["clusterDefinition"] = self.definition
+            if self.host_env['cloudPlatform'] == 'AWS':
+                payload["clusterDefinition"] = self.definition
+            else:
+                payload["clusterDefinitionName"] = self.definition
         else:
             payload["image"] = {"id": self.image_id, "catalogName": self.image_catalog}
-            payload["clusterTemplate"] = self.template
+            if self.host_env['cloudPlatform'] == 'AWS':
+                payload["clusterTemplate"] = self.template
+            else:
+                payload["clusterTemplateName"] = self.template
             payload["instanceGroups"] = self.groups
 
         if self.subnets_filter:
@@ -602,7 +615,8 @@ class DatahubCluster(CdpModule):
         if self.extension is not None:
             payload['clusterExtension'] = self.extension
 
-        payload['multiAz'] = self.multi_az
+        if self.host_env['cloudPlatform'] == 'AWS':
+            payload['multiAz'] = self.multi_az
 
         if self.tags is not None:
             payload['tags'] = list()
@@ -676,7 +690,6 @@ def main():
             tags=dict(required=False, type='dict', aliases=['datahub_tags']),
             extension=dict(required=False, type='dict'),
             multi_az=dict(required=False, type='bool', default=True),
-
             force=dict(required=False, type='bool', default=False),
             wait=dict(required=False, type='bool', default=True),
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
