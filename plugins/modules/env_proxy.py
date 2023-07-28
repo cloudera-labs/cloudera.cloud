@@ -67,6 +67,12 @@ options:
     choices:
       - http
       - https
+  noProxyHosts:
+    description:
+      - List of hosts that should note be proxied.
+      - Format can be CIDR, [.]host[:port] (can be a subdomain) or IP[:port]. Wildcards are not accepted
+    type: list
+    required: False
   user:
     description:
       - The proxy user
@@ -176,6 +182,7 @@ class EnvironmentProxy(CdpModule):
         self.protocol = self._get_param('protocol')
 
         self.description = self._get_param('description')
+        self.no_proxy_hosts = self._get_param('noProxyHosts')
         self.user = self._get_param('user')
         self.password = self._get_param('password')
 
@@ -191,17 +198,17 @@ class EnvironmentProxy(CdpModule):
     def process(self):
         existing = self.cdpy.environments.describe_proxy_config(self.name)
 
-        if existing is None:
+        if existing is None or len(existing) == 0:
             if self.state == 'present':
                 self._create_core_payload()
                 self.changed = True
                 self._create_auth_payload()
-                self.proxy_config = self.cdpy.environments.create_proxy_config(self._payload)
+                self.proxy_config = self.cdpy.environments.create_proxy_config(**self._payload)
         else:
             if self.state == 'present':
                 self._create_core_payload()
 
-                test = dict(existing[0])
+                test = existing
                 del test['crn']
 
                 if self._payload != test:
@@ -214,9 +221,9 @@ class EnvironmentProxy(CdpModule):
 
                 if self.changed:
                     self.cdpy.environments.delete_proxy_config(self.name)
-                    self.proxy_config = self.cdpy.environments.create_proxy_config(self._payload)
+                    self.proxy_config = self.cdpy.environments.create_proxy_config(**self._payload)
                 else:
-                    self.proxy_config = existing[0]
+                    self.proxy_config = existing
             else:
                 self.changed = True
                 self.cdpy.environments.delete_proxy_config(self.name)
@@ -231,6 +238,10 @@ class EnvironmentProxy(CdpModule):
 
         if self.description is not None:
             self._payload.update(description=self.description)
+
+        if self.no_proxy_hosts is not None:
+            # convert no_proxy_hosts list to a comma separated string
+            self._payload.update(noProxyHosts=(','.join(self.no_proxy_hosts)))
 
     def _create_auth_payload(self):
         if self.user is not None:
@@ -248,6 +259,7 @@ def main():
             host=dict(required=False, type='str'),
             port=dict(required=False, type='int'),
             protocol=dict(required=False, type='str'),
+            noProxyHosts=dict(required=False, type='list', elements='str'),
             user=dict(required=False, type='str'),
             password=dict(required=False, type='str', no_log=True),
             state=dict(required=False, type='str', choices=['present', 'absent'], default='present')
