@@ -259,7 +259,7 @@ def main():
             host=dict(required=False, type='str'),
             port=dict(required=False, type='int'),
             protocol=dict(required=False, type='str'),
-            noProxyHosts=dict(required=False, type='list', elements='str', default=None),
+            noProxyHosts=dict(required=False, type='list', elements='str'),
             user=dict(required=False, type='str'),
             password=dict(required=False, type='str', no_log=True),
             state=dict(required=False, type='str', choices=['present', 'absent'], default='present')
