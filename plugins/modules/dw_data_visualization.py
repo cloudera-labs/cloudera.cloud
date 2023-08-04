@@ -24,68 +24,58 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: dw_cluster
-short_description: Create or Delete CDP Data Warehouse Clusters
+module: dw_data_visualization
+short_description: Create or Delete CDP Data Visualization Instance
 description:
-    - Create or Delete CDP Data Warehouse Clusters
+    - Create or Delete CDP Data Visualization Instance
 author:
   - "Dan Chaffelson (@chaffelson)"
   - "Saravanan Raju (@raju-saravanan)"
   - "Webster Mudge (@wmudge)"
+  - "Ronald Suplina (@rsuplina)"
 requirements:
   - cdpy
 options:
+  environment:
+    description:
+      - The name of the target environment.
+      - Mutually exclusive with I(cluster_id).
+    type: str
+    aliases:
+      - env
+      - env_crn
   cluster_id:
     description:
       - The identifier of the Data Warehouse Cluster.
-      - Required if I(state=absent) and I(env) is not specified.
+      - Mutually exclusive with I(environment).
     type: str
-    aliases:
-      - id
-      - name
-  env:
-    description:
-      - The name of the target environment.
-      - Required if I(state=present).
-      - Required if I(state=absent) and I(cluster_id) is not specified.
-    type: str
-    aliases:
-      - environment
-      - env_crn
-  overlay:
+  name:
     description: 
-      - Flag to use private IP addresses for Pods within the cluster. 
-      - Otherwise, use IP addresses within the VPC.
-    type: bool
-    default: False    
-  private_load_balancer:
-    description: Flag to set up a load balancer for private subnets.
-    type: bool
-    default: False    
-  aws_public_subnets:
-    description:
-      - List of zero or more Public AWS Subnet IDs used for deployment.
-      - Required if I(state=present) and the I(env) is deployed to AWS.
-    type: list
-    elements: str
-  aws_private_subnets:
-    description:
-      - List of zero or more Private AWS Subnet IDs used for deployment.
-      - Required if I(state=present) and the I(env) is deployed to AWS.
-    type: list
-    elements: str
-  az_subnet:
-    description:
-      - The Azure Subnet Name.
-      - Required if I(state=present) and the I(env) is deployed to Azure.
+      - The name of the Data Visualization Instance.
+      - This name must be unique, must have between 5 and 20 characters, and must contain only lowercase letters,
+        numbers, and hyphens.
     type: str
-  az_enable_az:
-    description: 
-      - Flag to enable Availability Zone mode.
-      - Required if I(state=present) and the I(env) is deployed to Azure.
-    type: bool
+  config:
+    description:
+      - User and Admin groups that can access the Data Visualization Instance.
+      - "userGroups: List of user groups that have access to the instance. Example: ['group1', 'group2']"
+      - "adminGroups: List of admin groups that have full control over the instance. Example: ['admin_group1', 'admin_group2']"
+    type: dict
+    suboptions:
+      userGroups:
+        description:
+          - List of user groups that have access to the Data Visualization Instance.
+          - Must be a list of strings, e.g., ['group1', 'group2'].
+        type: list
+        elements: str
+      adminGroups:
+        description:
+          - List of admin groups that have full control over the Data Visualization Instance.
+          - Must be a list of strings, e.g., ['admin_group1', 'admin_group2'].
+        type: list
+        elements: str
   state:
-    description: The state of the Data Warehouse Cluster
+    description: The state of the Data Visualization Instance
     type: str
     default: present
     choices:
@@ -93,19 +83,13 @@ options:
       - absent
   wait:
     description:
-      - Flag to enable internal polling to wait for the Data Warehouse Cluster to achieve the declared state.
+      - Flag to enable internal polling to wait for the Data Visualization Instance to achieve the declared state.
       - If set to FALSE, the module will return immediately.
     type: bool
     default: True
-  force:
-    description:
-      - Flag to enable force deletion of the Data Warehouse Cluster.
-      - This will not destroy the underlying cloud provider assets.
-    type: bool
-    default: False
   delay:
     description:
-      - The internal polling interval (in seconds) while the module waits for the Data Warehouse Cluster to achieve the declared
+      - The internal polling interval (in seconds) while the module waits for the Data Visualization Instance to achieve the declared
         state.
     type: int
     default: 15
@@ -113,7 +97,7 @@ options:
       - polling_delay
   timeout:
     description:
-      - The internal polling timeout (in seconds) while the module waits for the Data Warehouse Cluster to achieve the declared
+      - The internal polling timeout (in seconds) while the module waits for the Data Visualization Instance to achieve the declared
         state.
     type: int
     default: 3600
@@ -127,78 +111,53 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
-# Request Azure Cluster creation
-- cloudera.cloud.dw_cluster:
-    env_crn: crn:cdp:environments...
-    az_subnet: my-subnet-name
-    az_enable_az: yes
+# Create Data Visualization Instance
+- cloudera.cloud.dw_data_visualization:
+    environment: example-env
+    name: example-name
+    config:
+      userGroups:  "[ example_user_group ]"
+      adminGroups: "[ example_admin_group ]"
+    state: present
 
-# Request AWS Cluster Creation
-- cloudera.cloud.dw_cluster:
-    env_crn: crn:cdp:environments...
-    aws_public_subnets: [subnet-id-1, subnet-id-2]
-    aws_private_subnets: [subnet-id-3, subnet-id-4]
-
-# Delete a Data Warehouse Cluster
-- cloudera.cloud.dw_cluster:
+# Delete Data Visualization Instance
+- cloudera.cloud.dw_data_visualization:
+    environment: example-env
+    name: example-name
+    config:
+      userGroups:  "[ example_user_group ]"
+      adminGroups: "[ example_admin_group ]"
     state: absent
-    cluster_id: my-id
-    
-# Delete the Data Warehouse Cluster within the Environment
-- cloudera.cloud.dw_cluster:
-    state: absent
-    env: crn:cdp:environments...
 '''
 
 RETURN = r'''
 ---
 cluster:
-  description: Details for the Data Warehouse cluster
+  description: Details for the Data Visualization Instance
   type: dict
   contains:
+    creatorCrn:
+      description: The CRN of the creator of the Data Visualization Instance.
+      returned: always
+      type: str
     id:
-      description: The cluster identifier.
+      description: The unique id of the Data Visualization instance
       returned: always
       type: str
-    environmentCrn:
-      description: The CRN of the cluster's Environment
+    imageVersion:
+      description: The current version of Data Visualization 
       returned: always
       type: str
-    crn:
-      description: The cluster's CRN.
+    name:
+      description: The name of the Data Visualization instance
       returned: always
       type: str
-    creationDate:
-      description: The creation timestamp of the cluster in UTC.
+    size:
+      description: The size of the Data Visualization instance
       returned: always
       type: str
     status:
-      description: The status of the cluster
-      returned: always
-      type: str
-    creator:
-      description: The cluster creator details.
-      returned: always
-      type: dict
-      contains:
-        crn:
-          description: The Actor CRN.
-          type: str
-          returned: always
-        email:
-          description: Email address (users).
-          type: str
-          returned: when supported
-        workloadUsername:
-          description: Username (users).
-          type: str
-          returned: when supported
-        machineUsername:
-          description: Username (machine users).
-          type: str
-          returned: when supported
-    cloudPlatform:
-      description: The cloud platform of the environment that was used to create this cluster.
+      description: The status of the Data Visualization instance
       returned: always
       type: str
 sdk_out:
