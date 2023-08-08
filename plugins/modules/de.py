@@ -91,6 +91,12 @@ options:
     - Creates a CDE endpoint (Load Balancer) in a publicly accessible subnet
     type: bool
     required: False
+  loadbalancer_ips:
+    description:
+    - List of CIDRs allowed to access the load balancer.
+    type: list
+    elements: str
+    required: False
   enable_workload_analytics:
     description:
     - If set false, diagnostic information about job and query execution is sent to Cloudera Workload Manager
@@ -134,7 +140,7 @@ options:
     required: False
   whitelist_ips:
     description:
-    - List of CIDRs that would be allowed to access kubernetes master API server
+    - List of CIDRs that would be allowed to access Kubernetes master API server
     type: array
     elements: str
     required: False
@@ -347,6 +353,7 @@ class DEService(CdpModule):
         self.tags = self._get_param('tags')
         self.use_ssd = self._get_param('use_ssd')
         self.whitelist_ips = self._get_param('whitelist_ips')
+        self.loadbalancer_ips = self._get_param('loadbalancer_ips')
 
         self.state = self._get_param('state')
         self.force = self._get_param('force')
@@ -440,6 +447,7 @@ class DEService(CdpModule):
             maximum_spot_instances=self.maximum_spot_instances,
             chart_value_overrides=self.chart_value_overrides,
             enable_public_endpoint=self.enable_public_endpoint,
+            loadbalancer_allowlist=self.loadbalancer_ips,
             enable_workload_analytics=self.enable_workload_analytics,
             initial_instances=self.initial_instances,
             initial_spot_instances=self.initial_spot_instances,
@@ -493,6 +501,7 @@ def main():
             maximum_spot_instances=dict(required=False, type='int', default=0),
             chart_value_overrides=dict(required=False, type='list', default=None),
             enable_public_endpoint=dict(required=False, type='bool', default=True),
+            loadbalancer_ips=dict(required=False, type='list', elements='str', default=None),
             enable_workload_analytics=dict(required=False, type='bool', default=True),
             initial_instances=dict(required=False, type='int', default=1),
             initial_spot_instances=dict(required=False, type='int', default=0),
