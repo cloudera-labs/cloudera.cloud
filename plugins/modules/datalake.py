@@ -139,6 +139,20 @@ options:
     type: bool
     required: False
     default: False
+  recipes:
+    description: 
+      - Recipes that will be attached on the datalake instances groups
+    type: array
+    elements: dict
+    required: False
+    contains:
+      instanceGroupName:
+        description: Datalake instance/host group group name, e.g. `master` or `idbroker`.
+        type: str
+      recipeNames:
+        description: Names of the recipes
+        type: array
+        elements: str
   multi_az:
     description:
       - (AWS) Flag indicating if the datalake is deployed across multi-availability zones.
@@ -411,6 +425,7 @@ class Datalake(CdpModule):
         self.timeout = self._get_param('timeout')
         self.force = self._get_param('force')
         self.raz = self._get_param("raz")
+        self.recipes = self._get_param("recipes")
         self.multi_az = self._get_param("multi_az")
 
         # Initialize the return values
@@ -571,6 +586,9 @@ class Datalake(CdpModule):
         elif environment['cloudPlatform'] == 'AWS':
             payload.update(multiAz=self.multi_az)
 
+        if self.recipes:
+            payload.update(recipes=self.recipes)
+            
         if self.tags is not None:
             payload['tags'] = list()
             for k in self.tags:
@@ -651,7 +669,8 @@ def main():
             delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
             timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
             raz=dict(required=False, type="bool", default=False),
-            multi_az=dict(required=False, type="bool", default=False)
+            multi_az=dict(required=False, type="bool", default=False),
+            recipes=dict(required=False, type="list", elements="dict",options=dict(instanceGroupName=dict(required=True,type="str"),recipeNames=dict(required=True,type="list",elements="str")))
         ),
         supports_check_mode=True
     )
