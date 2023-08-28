@@ -24,13 +24,14 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: dw_cluster_info
-short_description: Gather information about CDP Data Warehouse Clusters
+module: dw_data_visualization_info
+short_description: Gather information about CDP Data Visualization Instances
 description:
-    - Gather information about CDP Data Warehouse Clusters
+    - Gather information about CDP Data Visualization Instances
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Ronald Suplina (@rsuplina)"
 requirements:
   - cdpy
 options:
@@ -39,15 +40,29 @@ options:
       - The identifier of the Data Warehouse Cluster.
       - Mutually exclusive with I(environment).
     type: str
-    aliases:
-      - id
   environment:
     description:
-      - The name or CRN of the Environment in which to find and describe Data Warehouse Clusters.
+      - The name or CRN of the Environment in which to find and describe Data Visualization Instances
       - Mutually exclusive with I(cluster_id).
     type: str
     aliases:
       - env
+  data_visualization_id:
+    description:
+      - The ID of Data Visualization Instance
+      - Mutually exclusive with I(data_visualization_name).
+    type: str
+    aliases:
+      - id
+    required: False
+  data_visualization_name:
+    description:
+      - The name of Data Visualization Instance
+      - Mutually exclusive with I(data_visualization_id).
+    type: str
+    aliases:
+      - name
+    required: False
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -56,69 +71,51 @@ extends_documentation_fragment:
 EXAMPLES = r'''
 # Note: These examples do not set authentication details.
 
-# List information about all Data Warehouse Clusters
-- cloudera.cloud.dw_cluster_info:
-
-# Gather information about all Data Warehouse Clusters within an Environment
-- cloudera.cloud.dw_cluster_info:
+# Gather information about Data Visualization Instances within an CDW Environment
+- cloudera.cloud.dw_data_visualization_info:
     env: example-environment
     
-# Gather information about an identified Cluster
-- cloudera.cloud.dw_cluster_info:
+# Gather information about Data Visualization Instances within an CDW Environment
+- cloudera.cloud.dw_data_visualization_info:
     cluster_id: env-xyzabc
+
+# Gather information about specific Data Visualization Instance within an CDW Environment
+- cloudera.cloud.dw_data_visualization_info:
+    cluster_id: env-xyzabc
+    data_visualization_name: example-name
+
 '''
 
 RETURN = r'''
 ---
 clusters:
-  description: The information about the named Cluster or Clusters
+  description: The information about the named Data Visualization Instance or Instances
   returned: always
   type: list
   elements: dict
   contains:
+    creatorCrn:
+      description: The CRN of the creator of the Data Visualization Instance
+      returned: always
+      type: str
     id:
-      description: The cluster identifier.
+      description: The unique id of the Data Visualization instance
       returned: always
       type: str
-    environmentCrn:
-      description: The CRN of the cluster's Environment
+    imageVersion:
+      description: The current version of Data Visualization 
       returned: always
       type: str
-    crn:
-      description: The cluster's CRN.
+    name:
+      description: The name of the Data Visualization instance
       returned: always
       type: str
-    creationDate:
-      description: The creation timestamp of the cluster in UTC.
+    size:
+      description: The size of the Data Visualization instance
       returned: always
       type: str
     status:
-      description: The status of the cluster
-      returned: always
-      type: str
-    creator:
-      description: The cluster creator details.
-      returned: always
-      type: dict
-      contains:
-        crn:
-          description: The Actor CRN.
-          type: str
-          returned: always
-        email:
-          description: Email address (users).
-          type: str
-          returned: when supported
-        workloadUsername:
-          description: Username (users).
-          type: str
-          returned: when supported
-        machineUsername:
-          description: Username (machine users).
-          type: str
-          returned: when supported
-    cloudPlatform:
-      description: The cloud platform of the environment that was used to create this cluster.
+      description: The status of the Data Visualization instance
       returned: always
       type: str
 sdk_out:
