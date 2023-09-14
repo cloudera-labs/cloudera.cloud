@@ -7,7 +7,6 @@ on:
     branches:
       - 'release/**'
       - 'devel'
-      - 'devel-pvc-base'
     
 jobs:
   validate:
