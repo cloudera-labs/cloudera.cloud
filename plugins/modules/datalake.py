@@ -28,7 +28,7 @@ module: datalake
 short_description: Manage CDP Datalakes
 description:
     - Create and delete CDP Datalakes.
-    - To start and stop a datalake, use the M(env) module to change the associated CDP Environment's state.
+    - To start and stop a datalake, use the M(cloudera.cloud.env) module to change the associated CDP Environment's state.
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
