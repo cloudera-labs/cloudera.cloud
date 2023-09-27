@@ -4,7 +4,7 @@ Thank you for considering contributions to the `cloudera.cloud` Ansible collecti
 
 ## Submitting a pull request
 
-You can start work on issues that are not yet part of a [Milestone](https://github.com/cloudera-labs/cloudera.cloud/milestones). Before you start working, please announce that you want to do so by commenting on the issue. ([Create an issue](https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=enhancement) if there isn't one yet, and you can also check out our [Discussions](https://github.com/cloudera-labs/cloudera.cloud/discussions) for ideas.) We will try to ensure that all active work is assigned to a Milestone.
+You can start work on issues that are not yet part of a [Milestone](https://github.com/cloudera-labs/cloudera.cloud/milestones). Before you start working, please announce that you want to do so by commenting on the issue. _([Create an issue](https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=enhancement) if there isn't one yet, and you can also check out our [Discussions](https://github.com/cloudera-labs/cloudera.cloud/discussions) for ideas.)_ We try to ensure that all active work is assigned to a Milestone.
 
 When your work is ready for review, branch from the `devel` branch using and submit a pull request against the same while referencing an issue.
 

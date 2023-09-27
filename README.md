@@ -2,9 +2,9 @@
 
 [![API documentation](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml/badge.svg?branch=main&event=push)](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml)
 
-`cloudera.cloud` is an Ansible collection that lets you manage your **[Cloudera Data Platform (CDP)](https://www.cloudera.com/products/cloudera-data-platform.html) Public Cloud** resources in AWS, Azure, and Google Cloud. With this collection, you can:
+`cloudera.cloud` is an Ansible collection that lets you manage your **[Cloudera Data Platform (CDP)](https://www.cloudera.com/products/cloudera-data-platform.html) Public Cloud** resources. With this collection, you can:
 
-* Create and manage Datalakes and Environments.
+* Create and manage [Datalakes](https://www.cloudera.com/products/open-data-lakehouse.html) and Environments.
 * Manage Users and Groups.
 * Create and manage [Data Hubs](https://www.cloudera.com/products/data-hub.html) and Data Services, such as:
   * [Cloudera Data Flow (CDF)](https://www.cloudera.com/products/dataflow.html)
