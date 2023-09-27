@@ -123,10 +123,9 @@ resource "local_file" "integration_config" {
 
 // Set up the infrastructure
 module "semi_private" {
-  source = "git::https://github.infra.cloudera.com/GOES/terraform_cdp_pre_reqs.git"
+  source = "git::https://github.com/cloudera-labs/terraform-cdp-modules.git//modules/terraform-cdp-aws-pre-reqs?ref=v0.3.0"
 
   env_tags = {
-    owner       = "wmudge@cloudera.com"
     deploy-tool = "ansible-test"
     deployment  = var.prefix
   }
