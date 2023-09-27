@@ -22,6 +22,18 @@ on:
         required: false
         type: boolean
         default: false
+      antsibull-docs-repository:
+        description: |
+          The repository and project for antsibull-docs to install via Pip.
+        required: false
+        type: string
+        default: cloudera-labs/antsibull-docs
+      antsibull-docs-version:
+        description: |
+          The version of antsibull-docs within the antsibull-docs-repository to install via Pip.
+        required: false
+        type: string
+        default: cldr-docsite
 
 jobs:
   lint-ansible-docs:
@@ -48,7 +60,7 @@ jobs:
           python-version: 3.11
 
       - name: Install Ansible
-        run: pip install ansible-core
+        run: pip install ansible-core https://github.com/${{ inputs.antsibull-docs-repository }}/archive/${{ inputs.antsibull-docs-version }}.tar.gz
 
       - name: Display Ansible details
         run: ansible --version
