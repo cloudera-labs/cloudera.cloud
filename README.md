@@ -52,6 +52,8 @@ install directly:
 ansible-galaxy collection install <collection-tarball>
 ```
 
+See [Building the Collection](#building-the-collection) for details on creating a local tarball.
+
 ## Requirements
 
 `cloudera.cloud` expects `ansible-core>=2.12`.
@@ -71,8 +73,6 @@ For example, here we use the
 [cloudera.cloud.env_info module](https://cloudera-labs.github.io/cloudera.cloud/env_info_module.html) to list all available CDP environments:
 
 ```yaml
----
-
 - hosts: localhost
   connection: local
   gather_facts: no
