@@ -64,6 +64,7 @@ jobs:
 
       - name: Execute antsibull-docs with --fail-on-error
         run: |
+          echo "Building ${{ inputs.collection-namespace}}.${{ inputs.collection-name }}"
           mkdir -p temp-rst
           chmod og-w temp-rst
           antsibull-docs \
@@ -73,11 +74,11 @@ jobs:
             --squash-hierarchy \
             --dest-dir temp-rst \
             --fail-on-error \
-            ${{ fromJSON(inputs.collection-namespace) }}.${{ fromJSON(inputs.collection-name) }}
+            ${{ inputs.collection-namespace }}.${{ inputs.collection-name }}
         working-directory: ${{ steps.vars.outputs.checkout-path }}/docsbuild
 
       - name: Upload antsibull-doc log artifact
-        if: always() && fromJSON(inputs.antsibull-log-upload)
+        if: always() && inputs.antsibull-log-upload
         uses: actions/upload-artifact@v3
         with:
           path: ${{ steps.vars.outputs.checkout-path }}/docsbuild/antsibull.log
