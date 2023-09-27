@@ -95,16 +95,23 @@ class LookupModule(LookupBase):
             
             all_instance_groups = {ig['name']:ig for ig in datahub['instanceGroups']}
             results = []
+            flattened_terms = LookupBase._flatten(terms)
             
-            for term in LookupBase._flatten(terms):
-                display.vvv("Filtering instance groups for %s[%s]" % (self.get_option('datahub'), term))
-                if term in all_instance_groups:
-                    if self.get_option('detailed'):
-                        results.append(all_instance_groups[term]['instances'])
+            if flattened_terms:
+                for term in flattened_terms:
+                    display.vvv("Filtering instance groups for %s[%s]" % (self.get_option('datahub'), term))
+                    if term in all_instance_groups:
+                        if self.get_option('detailed'):
+                            results.append(all_instance_groups[term]['instances'])
+                        else:
+                            results.append([i['fqdn'] for i in all_instance_groups[term]['instances']])
                     else:
-                        results.append([i['fqdn'] for i in all_instance_groups[term]['instances']])
+                        results.append(self.get_option('default'))
+            else:
+                if self.get_option('detailed'):
+                    results.append([all_instance_groups[group]['instances'] for group in all_instance_groups])
                 else:
-                    results.append(self.get_option('default'))
+                    results.append([i['fqdn'] for group in all_instance_groups for i in all_instance_groups[group]['instances']])
             return results
         except KeyError as e:
             raise AnsibleError("Error parsing result: %s" % to_native(e))
