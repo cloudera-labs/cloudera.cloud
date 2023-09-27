@@ -29,15 +29,8 @@ DOCUMENTATION = '''
             description:
                 - An endpoint C(serviceName) or list of them to lookup within the Datahub.
                 - If I(knox_service=True), then these values will lookup against the endpoint C(knoxService).
+                - For example, C(CM-API), C(CM-UI), C(RESOURCEMANAGER), C(IMPALAD), C(STREAMING_SQL_ENGINE), and C(NIFI_REGISTRY_SERVER).
             required: True
-            sample:
-                - CM-API
-                - CM-UI
-                - RESOURCEMANAGER
-                - IMPALAD
-                - STREAMING_SQL_ENGINE
-                - NIFI_REGISTRY_SERVER
-                - NIFI_NODE
         datahub:
             description: Name of the Datahub to query
             type: string
@@ -91,7 +84,7 @@ from ansible.module_utils.common.text.converters import to_native
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
-from ansible_collections.cloudera.cloud.plugins.lookup.cdp_service import parse_services
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_service import parse_services
 
 
 class LookupModule(LookupBase):

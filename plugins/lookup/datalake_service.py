@@ -29,12 +29,8 @@ DOCUMENTATION = '''
             description:
                 - An endpoint C(serviceName) or list of them to lookup within the Datalake.
                 - If I(knox_service=True), then these values will lookup against the endpoint C(knoxService).
+                - For example, C(CM-API), C(CM-UI), C(ATLAS_SERVER), and C(RANGER_ADMIN).
             required: True
-            sample:
-                - CM-API
-                - CM-UI
-                - ATLAS_SERVER
-                - RANGER_ADMIN
         environment:
             description: Name of the Environment of the Datalake to query
             type: string
