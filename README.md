@@ -91,6 +91,8 @@ The collection's Python dependencies alone, _not_ the required Python libraries 
 
 `ansible-builder` can discover and install all Python dependencies - current collection and dependencies - if you wish to use that application to construct your environment. Otherwise, you will need to read each collection and role dependency and follow its installation instructions.
 
+See the [Collection Metadata](https://ansible.readthedocs.io/projects/builder/en/latest/collection_metadata/) section for further details on how to install (and manage) collection dependencies.
+
 You may wish to use a _virtual environment_ to manage the Python dependencies.
 
 ## Using the Collection
@@ -113,10 +115,8 @@ For example, here we use the
       ansible.builtin.debug:
         var: output
 ```
-
-> **NOTE:** The CDP modules expect standard CDP authentication configurations,
-e.g. `CDP_PROFILE`, as described by the *Configuring* section of 
-[CDP CLI/SDK](https://github.com/cloudera/cdpcli#configuring).
+> [!IMPORTANT]
+> The CDP modules expect standard CDP authentication configurations, e.g. `CDP_PROFILE`, as described by the *Configuring* section of [CDP CLI/SDK](https://github.com/cloudera/cdpcli#configuring).
 
 ## Building the Collection
 
