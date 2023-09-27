@@ -88,7 +88,7 @@ its modules:
 
   * [`cdpy`](https://github.com/cloudera-labs/cdpy)
 
-`ansible-galaxy` should install these dependencies automatically; you may wish to use a _virtual environment_. `ansible-builder` will install the Python dependencies if you wish to use that application to construct your environment.
+`ansible-builder` will install the Python dependencies if you wish to use that application to construct your environment. You may wish to use a _virtual environment_.
 
 ## Using the Collection
 
