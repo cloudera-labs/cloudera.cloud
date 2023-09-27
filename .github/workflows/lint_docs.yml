@@ -1,0 +1,73 @@
+---
+
+name: Lint documentation
+
+on:
+  workflow_call:
+    inputs:
+      antsibull-log-upload:
+        description: |
+          If 'true', the antsibull-doc log will be uploaded as an artifact.
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  lint-ansible-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Configure environment
+        id: vars
+        uses: actions/github-script@v6
+        with:
+          script: |
+            name = process.env.GITHUB_REPOSITORY.split('/')[1]
+            path = name.replace('.', '/')
+
+            core.exportVariable('ANSIBLE_COLLECTIONS_PATHS', process.env.GITHUB_WORKSPACE)
+
+            const checkoutPath = `ansible_collections/${path}`
+            core.setOutput('checkout-path', checkoutPath)
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install Ansible
+        run: pip install ansible-core
+
+      - name: Display Ansible details
+        run: ansible --version
+
+      - name: Checkout project
+        uses: actions/checkout@v3
+        with:
+          path: ${{ steps.vars.outputs.checkout-path }}
+
+      - name: Install Python requirements
+        run: pip install -r ${{ steps.vars.outputs.checkout-path }}/docsbuild/requirements.txt
+        
+      - name: Execute antsibull-docs with --fail-on-error
+        run: |
+          mkdir -p ${{ steps.vars.outputs.checkout-path }}/docsbuild/temp-rst
+          chmod og-w ${{ steps.vars.outputs.checkout-path }}/docsbuild/temp-rst
+          antsibull-docs \
+            --config-file ${{ steps.vars.outputs.checkout-path }}/docsbuild/antsibull-docs.cfg \
+            collection \
+            --use-current \
+            --squash-hierarchy \
+            --dest-dir temp-rst \
+            --fail-on-error \
+            cloudera.cloud
+        continue-on-error: true
+
+      - name: Upload antsibull-doc log artifact
+        if: fromJSON(inputs.antsibull-log-upload)
+        uses: actions/upload-artifact@v3
+        with:
+          path: ${{ steps.vars.outputs.checkout-path }}/docsbuild/antsibull.log
+          name: antsibull-${{ github.sha }}.log
+          retention-days: 7

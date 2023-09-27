@@ -1,0 +1,19 @@
+---
+
+name: Validate Pull Request documentation
+
+on:
+  pull_request:
+    branches:
+      - 'release/**'
+      - 'devel'
+    
+  workflow_dispatch:
+
+jobs:
+  validate-docs:
+    name: Validate Ansible Docs
+    uses: ./.github/workflows/lint_docs.yml
+    with:
+      antsibull-log-upload: true
+      
