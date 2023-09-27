@@ -2,6 +2,20 @@
 
 [![API documentation](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml/badge.svg?branch=main&event=push)](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml)
 
+`cloudera.cloud` is an Ansible collection that lets you manage your **[Cloudera Data Platform (CDP)](https://www.cloudera.com/products/cloudera-data-platform.html) Public Cloud** resources in AWS, Azure, and Google Cloud. With this collection, you can:
+
+* Create and manage Datalakes and Environments.
+* Manage Users and Groups.
+* Create and manage [Data Hubs](https://www.cloudera.com/products/data-hub.html) and Data Services, such as:
+  * [Cloudera Data Flow (CDF)](https://www.cloudera.com/products/dataflow.html)
+  * [Cloudera Data Engineering (CDE)](https://www.cloudera.com/products/data-engineering.html)
+  * [Cloudera Data Warehouse (CDW)](https://www.cloudera.com/products/data-warehouse.html)
+  * [Cloudera Machine Learning (CML)](https://www.cloudera.com/products/machine-learning.html)
+  * [Cloudera Operational Database](https://www.cloudera.com/products/operational-db.html)
+  * [Cloudera Stream Processing (CSP)](https://www.cloudera.com/products/stream-processing.html)
+
+If you have any questions, want to chat about the collection's capabilities and usage, need help using the collection, or just want to stay updated, join us at our [Discussions](https://github.com/cloudera-labs/cloudera.cloud/discussions).
+
 ## Quickstart
 
 1. [Install the collection](#installation)
@@ -12,12 +26,17 @@
 
 See the [API documentation](https://cloudera-labs.github.io/cloudera.cloud/) for details for each plugin and role within the collection. 
 
+## Roadmap
+
+If you want to see what we are working on, check out the [Milestones](https://github.com/cloudera-labs/cloudera.cloud/milestones) and [active issues](https://github.com/cloudera-labs/cloudera.cloud/issues?q=is%3Aissue+is%3Aopen+milestone%3A*) or read up on the [Ideas](https://github.com/cloudera-labs/cloudera.cloud/discussions/categories/ideas) we have in mind.
+
+## Contribute
+
+For more information on how to get involved with the `cloudera.cloud` Ansible collection, head over to [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Installation
 
-To install the `cloudera.cloud` collection, you have several options. Please
-note that to date, we have not yet published this collection to the public Ansible
-Galaxy server, so you cannot install it via direct namespace, rather you must
-specify by Git project and (optionally) branch.
+To install the `cloudera.cloud` collection, you have several options. Please note that we have not yet published this collection to the public Ansible Galaxy server, so you cannot install it via direct namespace, rather you must specify by Git project and (optionally) branch.
 
 ### Option #1: Install from GitHub
 
@@ -118,63 +137,6 @@ pip install requirements.txt
 ```
 
 Your local documentation will be found at `docsbuild/build/html`.
-
-## Contributing
-
-Please create a feature branch from the `devel` branch and submit a PR against the same while referencing an issue.
-
-Note that we require signed commits inline with [Developer Certificate of Origin](https://developercertificate.org/) best-practices for open source collaboration.
-
-A signed commit is a simple one-liner at the end of your commit message that states that you wrote the patch or otherwise have the right to pass the change into open source.  Signing your commits means you agree to:
-
-```
-Developer Certificate of Origin
-Version 1.1
-
-Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
-660 York Street, Suite 102,
-San Francisco, CA 94110 USA
-
-Everyone is permitted to copy and distribute verbatim copies of this
-license document, but changing it is not allowed.
-
-
-Developer's Certificate of Origin 1.1
-
-By making a contribution to this project, I certify that:
-
-(a) The contribution was created in whole or in part by me and I
-    have the right to submit it under the open source license
-    indicated in the file; or
-
-(b) The contribution is based upon previous work that, to the best
-    of my knowledge, is covered under an appropriate open source
-    license and I have the right under that license to submit that
-    work with modifications, whether created in whole or in part
-    by me, under the same open source license (unless I am
-    permitted to submit under a different license), as indicated
-    in the file; or
-
-(c) The contribution was provided directly to me by some other
-    person who certified (a), (b) or (c) and I have not modified
-    it.
-
-(d) I understand and agree that this project and the contribution
-    are public and that a record of the contribution (including all
-    personal information I submit with it, including my sign-off) is
-    maintained indefinitely and may be redistributed consistent with
-    this project or the open source license(s) involved.
-```
-
-(See [developercertificate.org](https://developercertificate.org/))
-
-To agree, make sure to add line at the end of every git commit message, like this:
-
-```
-Signed-off-by: John Doe <jdoe@example.com>
-```
-
-TIP! Add the sign-off automatically when creating the commit via the `-s` flag, e.g. `git commit -s`.
 
 ## License and Copyright
 
