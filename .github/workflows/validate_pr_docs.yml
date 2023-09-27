@@ -16,4 +16,4 @@ jobs:
     uses: ./.github/workflows/lint_docs.yml
     with:
       antsibull-log-upload: true
-      
+      collection-name: cloud

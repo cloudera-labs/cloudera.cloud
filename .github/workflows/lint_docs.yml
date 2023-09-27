@@ -5,6 +5,17 @@ name: Lint documentation
 on:
   workflow_call:
     inputs:
+      collection-namespace:
+        description: |
+          The namespace of the collection.
+        required: false
+        type: string
+        default: cloudera
+      collection-name:
+        description: |
+          The name of the collection within the namespace.
+        required: true
+        type: string
       antsibull-log-upload:
         description: |
           If 'true', the antsibull-doc log will be uploaded as an artifact.
@@ -62,7 +73,7 @@ jobs:
             --squash-hierarchy \
             --dest-dir temp-rst \
             --fail-on-error \
-            cloudera.cloud
+            ${{ fromJSON(inputs.collection-namespace) }}.${{ fromJSON(inputs.collection-name) }}
         working-directory: ${{ steps.vars.outputs.checkout-path }}/docsbuild
 
       - name: Upload antsibull-doc log artifact
