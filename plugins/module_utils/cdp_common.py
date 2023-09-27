@@ -19,6 +19,8 @@
 A common Ansible Module for shared functions in the Cloudera CDP Collection
 """
 
+import json
+
 from functools import wraps
 
 from cdpy.cdpy import Cdpy
@@ -80,7 +82,8 @@ class CdpModule(object):
 
     def _cdp_module_throw_error(self, error: 'CdpError'):
         """Error handler for CDPy SDK"""
-        self.module.fail_json(msg=str(error.message), error=str(error.__dict__), violations=error.violations)
+        # error=str(error.__dict__)
+        self.module.fail_json(msg=str(error.message), error=error, violations=error.violations)
 
     def _cdp_module_throw_warning(self, warning: 'CdpWarning'):
         """Warning handler for CDPy SDK"""
