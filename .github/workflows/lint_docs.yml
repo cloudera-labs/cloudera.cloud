@@ -48,21 +48,22 @@ jobs:
           path: ${{ steps.vars.outputs.checkout-path }}
 
       - name: Install Python requirements
-        run: pip install -r ${{ steps.vars.outputs.checkout-path }}/docsbuild/requirements.txt
-        
+        run: pip install -r requirements.txt
+        working-directory: ${{ steps.vars.outputs.checkout-path }}/docsbuild
+
       - name: Execute antsibull-docs with --fail-on-error
         run: |
-          mkdir -p ${{ steps.vars.outputs.checkout-path }}/docsbuild/temp-rst
-          chmod og-w ${{ steps.vars.outputs.checkout-path }}/docsbuild/temp-rst
+          mkdir -p temp-rst
+          chmod og-w temp-rst
           antsibull-docs \
-            --config-file ${{ steps.vars.outputs.checkout-path }}/docsbuild/antsibull-docs.cfg \
+            --config-file antsibull-docs.cfg \
             collection \
             --use-current \
             --squash-hierarchy \
             --dest-dir temp-rst \
             --fail-on-error \
             cloudera.cloud
-        continue-on-error: true
+        working-directory: ${{ steps.vars.outputs.checkout-path }}/docsbuild
 
       - name: Upload antsibull-doc log artifact
         if: fromJSON(inputs.antsibull-log-upload)
