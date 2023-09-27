@@ -1,7 +1,6 @@
 ---
 
 sections:
-  - title: Yet Another Section
+  - title: Usage and Configuration
     toctree:
       - test
-      - foo

@@ -1,9 +1,9 @@
-.. _ansible_collections.cloudera.cloud.docsite.test:
+.. ansible_collections.cloudera.cloud.docsite.test
 
 How to Write Docs in reStructuredText
 =====================================
 
-Here is the `reStructuredText Primer`_.
+Here is the `reStructuredText Primer <https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_
 
 Some :code:`inline code` to demonstrate a :code:`role` in rST.
 
@@ -27,7 +27,3 @@ tk tk, k::
 
 
 .. A comment
-
-.. Below is the reference used in the first paragraph's link
-
-.. _reStructuredText Primer: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
