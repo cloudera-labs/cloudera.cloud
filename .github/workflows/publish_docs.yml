@@ -16,6 +16,7 @@ jobs:
     with:
       pages-upload: true
       directory-upload: true
+      antsibull-log-upload: true
 
   publish-ansible-docs:
     name: Publish Ansible Docs

@@ -16,6 +16,13 @@ on:
           If 'true', the collection documentation will be uploaded as a Github Pages artifact.
         required: false
         type: string
+        default: false
+      antsibull-log-upload:
+        description: |
+          If 'true', the antsibull-doc log will be uploaded as an artifact.
+        required: false
+        type: string
+        default: false
 
 jobs:
   build-ansible-docs:
@@ -23,6 +30,19 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Configure environment
+        id: vars
+        uses: actions/github-script@v6
+        with:
+          script: |
+            name = process.env.GITHUB_REPOSITORY.split('/')[1]
+            path = name.replace('.', '/')
+
+            core.exportVariable('ANSIBLE_COLLECTIONS_PATHS', process.env.GITHUB_WORKSPACE)
+
+            const checkoutPath = `ansible_collections/${path}`
+            core.setOutput('checkout-path', checkoutPath)
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -31,30 +51,43 @@ jobs:
       - name: Install Ansible
         run: pip install ansible-core
 
+      - name: Display Ansible details
+        run: ansible --version
+
       - name: Checkout project
         uses: actions/checkout@v3
-
-      - name: Install collection
-        run: ansible-galaxy collection install .
+        with:
+          path: ${{ steps.vars.outputs.checkout-path }}
 
       - name: Install Python requirements
-        run: pip install -r docsbuild/requirements.txt
+        run: pip install -r ${{ steps.vars.outputs.checkout-path }}/docsbuild/requirements.txt
 
       - name: Build documentation
-        run: ./docsbuild/build.sh
+        run: ${{ steps.vars.outputs.checkout-path }}/docsbuild/build.sh
+
+      - name: List documentation files
+        run: ls -laR ${{ steps.vars.outputs.checkout-path }}/docsbuild/build/html
+
+      - name: Upload antsibull-doc log artifact
+        if: fromJSON(inputs.antsibull-log-upload)
+        uses: actions/upload-artifact@v3
+        with:
+          path: ${{ steps.vars.outputs.checkout-path }}/docsbuild/antsibull.log
+          name: antsibull-${{ github.sha }}.log
+          retention-days: 7
 
       - name: Upload directory artifact
         if: fromJSON(inputs.directory-upload)
         uses: actions/upload-artifact@v3
         with:
-          path: ./docsbuild/build/html
+          path: ${{ steps.vars.outputs.checkout-path }}/docsbuild/build/html
           name: ${{ github.event.repository.name }}_docs_${{ github.sha }}
           retention-days: 1
 
       - name: Fix permissions for Github Pages
         if: fromJSON(inputs.pages-upload)
         run: |
-          chmod -c -R +rX "./docsbuild/build/html" | while read line; do
+          chmod -c -R +rX "${{ steps.vars.outputs.checkout-path }}/docsbuild/build/html" | while read line; do
             echo "::warning title=Invalid file permissions automatically fixed::$line"
           done
 
@@ -62,6 +95,6 @@ jobs:
         if: fromJSON(inputs.pages-upload)
         uses: actions/upload-pages-artifact@v2
         with:
-          path: ./docsbuild/build/html
+          path: ${{ steps.vars.outputs.checkout-path }}/docsbuild/build/html
           name: github-pages
           retention-days: 1
