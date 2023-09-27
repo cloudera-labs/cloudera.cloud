@@ -25,6 +25,7 @@ tests/integration/inventory
 # Ignore Terraform builds
 tests/integration/**/.terraform*
 tests/integration/**/terraform.tfstate*
+tests/integration/**/terraform.tfvars
 
 # Remove the Sphinx build directory
 site/_build

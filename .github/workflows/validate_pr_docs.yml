@@ -13,7 +13,8 @@ on:
 jobs:
   validate-docs:
     name: Validate Ansible Docs
-    uses: ./.github/workflows/lint_docs.yml
+    uses: cloudera-labs/github-actions/.github/workflows/lint-ansible-docs.yml@v1
     with:
       antsibull-log-upload: true
+      collection-namespace: cloudera
       collection-name: cloud
