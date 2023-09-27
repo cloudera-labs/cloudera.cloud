@@ -47,3 +47,17 @@ nitpicky = True
 html_css_files = [
     'css/cloudera.css',
 ]
+
+html_last_updated_fmt = '%b %d, %Y'
+
+html_theme_options = {
+    'vcs_pageview_mode': 'edit',
+    'documentation_home_url': 'https://github.com/cloudera-labs/',
+    'topbar_links': {
+        'Cloudera Docs': 'https://docs.cloudera.com/',
+    },
+}
+
+html_content = {
+    'display_github': 'True',
+}
