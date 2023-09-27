@@ -11,8 +11,8 @@
 project = 'cloudera.cloud'
 copyright = 'Cloudera, Inc.'
 
-title = 'Cloudera Foundry'
-html_short_title = 'Cloudera Foundry'
+title = 'Cloudera Labs'
+html_short_title = 'Cloudera Labs'
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx_antsibull_ext']
 

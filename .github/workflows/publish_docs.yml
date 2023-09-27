@@ -1,0 +1,44 @@
+---
+
+name: Publish Documentation
+
+on:
+  push:
+    branches:
+      - 'main' 
+  
+  workflow_dispatch:
+
+jobs:
+  build-ansible-docs:
+    name: Build Ansible Docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      artifact-url: ${{ steps.build.outputs.artifact-url }}
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install Ansible
+        run: pip install ansible-core
+
+      - name: Checkout project
+        uses: actions/checkout@v3
+
+      - name: Install collection locally
+        run: ansible-galaxy collection install .
+
+      - name: Install Python requirements
+        run: pip install -r docsbuild/requirements.txt
+      
+      - name: Build documentation
+        id: build
+        uses: ansible-community/github-docs-build/actions/ansible-docs-build-html@main
+        with:
+          build-script: docsbuild/build.sh
+          build-html: docsbuild/build/html
+          artifact-upload: true
