@@ -83,12 +83,15 @@ See [Building the Collection](#building-the-collection) for details on creating 
 
 `cloudera.cloud` expects `ansible-core>=2.10`.
 
-The collection also requires the following Python libraries install to operate 
-its modules:
+The collection also requires the following Python libraries install to operate its modules:
 
   * [`cdpy`](https://github.com/cloudera-labs/cdpy)
 
-`ansible-builder` will install the Python dependencies if you wish to use that application to construct your environment. You may wish to use a _virtual environment_.
+The collection's Python dependencies alone, _not_ the required Python libraries of its collection dependencies, are in `requirements.txt`.
+
+`ansible-builder` can discover and install all Python dependencies - current collection and dependencies - if you wish to use that application to construct your environment. Otherwise, you will need to read each collection and role dependency and follow its installation instructions.
+
+You may wish to use a _virtual environment_ to manage the Python dependencies.
 
 ## Using the Collection
 
