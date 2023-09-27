@@ -14,6 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import json
 import jmespath
 from ansible.module_utils.basic import AnsibleModule
@@ -33,6 +34,7 @@ author:
   - "Dan Chaffelson (@chaffelson)"
 requirements:
   - cdpy
+  - jmespath
 options:
   env_crn:
     description: 
@@ -88,31 +90,31 @@ options:
   cluster_subnets:
     description:
       - Subnet ids that will be assigned to the Kubernetes cluster
-      - Mutually exclusive with the cluster_subnets_filter option 
+      - Mutually exclusive with the I(cluster_subnets_filter) option 
     type: list
     required: False
   cluster_subnets_filter:
     description:
       - L(JMESPath,https://jmespath.org/) expression to filter the subnets to be used for the Kubernetes cluster
       - The expression will be applied to the full list of subnets for the specified environment
-      - Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr
+      - "Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr"
       - The filter expression must only filter the list, but not apply any attribute projection
-      - Mutually exclusive with the cluster_subnets option 
+      - Mutually exclusive with the I(cluster_subnets) option.
     type: str
     required: False
   loadbalancer_subnets:
     description:
       - Subnet ids that will be assigned to the load balancer
-      - Mutually exclusive with the loadbalancer_subnets_filter option 
+      - Mutually exclusive with the I(loadbalancer_subnets_filter) option 
     type: list
     required: False
   loadbalancer_subnets_filter:
     description:
       - L(JMESPath,https://jmespath.org/) expression to filter the subnets to be used for the load balancer
       - The expression will be applied to the full list of subnets for the specified environment
-      - Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr
+      - "Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr"
       - The filter expression must only filter the list, but not apply any attribute projection
-      - Mutually exclusive with the cluster_subnets option 
+      - Mutually exclusive with the I(loadbalancer_subnets) option.
     type: str
     required: False
   persist:

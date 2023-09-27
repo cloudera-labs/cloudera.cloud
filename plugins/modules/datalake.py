@@ -142,16 +142,16 @@ options:
   recipes:
     description: 
       - Recipes that will be attached on the datalake instances groups
-    type: array
+    type: list
     elements: dict
     required: False
-    contains:
+    suboptions:
       instanceGroupName:
         description: Datalake instance/host group group name, e.g. `master` or `idbroker`.
         type: str
       recipeNames:
         description: Names of the recipes
-        type: array
+        type: list
         elements: str
   multi_az:
     description:

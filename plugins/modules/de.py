@@ -51,10 +51,9 @@ options:
   instance_type:
     description:
       - Instance type of the cluster for CDE Service
+      - For example, (AWS) C(m5.2xlarge)
     type: str
     required: False
-    sample:
-      - (AWS) m5.2xlarge
   minimum_instances:
     description:
     - Minimum Instances for the CDE Service
@@ -79,11 +78,12 @@ options:
     description:
     - Chart overrides for enabling a service
     type: list
+    elements: dict
     required: False
-    contains:
+    suboptions:
       chart_name:
         description:
-          - The key/value pair for the chart_name/override
+          - The key-value pair for the chart_name-override
         type: str
         required: False
   enable_public_endpoint:
@@ -127,7 +127,7 @@ options:
     - User defined labels that tag all provisioned cloud resources
     type: dict
     required: False
-    contains:
+    suboptions:
       key:
         description:
           - The key/value pair for the tag
@@ -141,7 +141,7 @@ options:
   whitelist_ips:
     description:
     - List of CIDRs that would be allowed to access Kubernetes master API server
-    type: array
+    type: list
     elements: str
     required: False
   force:
@@ -206,6 +206,7 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+---
 service:
   description: DE service description
   type: complex
@@ -238,7 +239,7 @@ service:
     chartValueOverrides:
       description: Status of the CDE Service.
       returned: always
-      type: array
+      type: list
       elements: complex
       contains:
         ChartValueOverridesResponse:

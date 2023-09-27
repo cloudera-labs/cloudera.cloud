@@ -134,16 +134,18 @@ workspaces:
     healthInfoLists:
       description: The health info information of the workspace.
       type: list
+      elements: dict
       contains:
         HealthInfo:
-          description: Healthinfo  object  contains  the health information of a resource.
-          type: array
+          description: Healthinfo  object contains the health information of a resource.
+          type: list
           returned: always
           contains:
             details:
               description: The detail of the health info.
               returned: always
-              type: array
+              type: list
+              elements: str
             isHealthy:
               description: The boolean that indicates the health status.
               returned: always
@@ -167,7 +169,7 @@ workspaces:
     instanceGroups:
       description: The instance groups details for the cluster.
       returned: always
-      type: array
+      type: list
       elements: dict
       contains:
         instanceCount:
@@ -237,7 +239,7 @@ workspaces:
     loadBalancerIPWhitelists:
       description: The whitelist of ips for loadBalancer.
       returned: always
-      type: array
+      type: list
     modelMetricsEnabled:
       description: Flag indicating if model metrics export is enabled for the cluster.
       returned: when supported

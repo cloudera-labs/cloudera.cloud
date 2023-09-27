@@ -73,7 +73,7 @@ RETURN = r'''
 ---
 datahubs:
   description: The information about the named Datahub or Datahubs
-  type: array
+  type: list
   returned: on success
   elements: dict
   contains:
@@ -102,7 +102,7 @@ datahubs:
           type: int
         instanceGroups:
           description: tktk
-          type: array
+          type: list
           contains:
             instanceGroup:
               description: tktk
@@ -137,7 +137,7 @@ datahubs:
           type: str
         imageDetails:
           description: tktk
-          type: array
+          type: list
           contains:
             name:
               description: tktk
@@ -179,7 +179,7 @@ datahubs:
               type: str
         endpoints:
           description: tktk
-          type: array
+          type: list
           contains:
             endpoint:
               description: tktk

@@ -95,7 +95,7 @@ options:
       - Configuration for exporting model metrics to an existing Postgres database.
     type: dict
     required: False
-    contains:
+    suboptions:
       existingDatabaseHost:
         description:
           - The Postgres hostname
@@ -143,7 +143,7 @@ options:
       - Configuration for the Kubernetes provisioning of the ML Workspace.
     type: dict
     required: False
-    contains:
+    suboptions:
       environmentName:
         description:
           - The Environment for the ML Workspace
@@ -152,16 +152,16 @@ options:
       instanceGroups:
         description:
           - The instance groups for the ML Workspace provisioning request
-        type: array
+        type: list
         elements: dict
         required: True
-        contains:
+        suboptions:
           autoscaling:
             description:
               - The autoscaling configuration for the instance group
             type: dict
             required: False
-            contains:
+            suboptions:
               enabled:
                 description:
                   - The flag enabling autoscaling
@@ -181,7 +181,7 @@ options:
           ingressRules:
             description:
               - The networking rules for the ingress
-            type: array
+            type: list
             elements: str
             required: False
           instanceCount:
@@ -192,17 +192,16 @@ options:
             default: 0
           instanceTier:
             description:
-              - The provision tier of the instances
+              - The provision tier of the instances.
+              - For example, C(ON_DEMAND).
             type: str
             required: False
-            sample: ON_DEMAND
           instanceType:
             description:
-              - The cloud provider instance type for the instance
+              - The cloud provider instance type for the instance.
+              - For example, (AWS) C(m5.2xlarge).
             type: str
             required: True
-            sample:
-              - (AWS) m5.2xlarge
           name:
             description:
               - A unique name of the instance group
@@ -213,7 +212,7 @@ options:
               - Configuration of the root volume for each instance
             type: dict
             required: False
-            contains:
+            suboptions:
               size:
                 description:
                   - The volume size (in GB)
@@ -225,21 +224,19 @@ options:
           - I(AWS) only.
         type: dict
         required: False
-        contains:
+        suboptions:
           plugin:
             description:
               - The identifier for the specific Container Network Interface (CNI) vendor
+              - For example, I(calico), I(weave).
             type: str
             required: False
-            sample:
-              - calico,
-              - weave
           topology:
             description:
               - The options for overlay topology
             type: dict
             required: False
-            contains:
+            suboptions:
               subnets:
                 description:
                   - Configuration for the topology subnets
@@ -251,7 +248,7 @@ options:
           - Tags to add to the cloud provider resources
         type: dict
         required: False
-        contains:
+        suboptions:
           key:
             description:
               - The key/value pair for the tag
@@ -429,16 +426,17 @@ workspace:
     healthInfoLists:
       description: The health info information of the workspace.
       type: list
+      elements: dict
       contains:
         HealthInfo:
           description: Healthinfo  object  contains  the health information of a resource.
-          type: array
+          type: list
           returned: always
           contains:
             details:
               description: The detail of the health info.
               returned: always
-              type: array
+              type: list
             isHealthy:
               description: The boolean that indicates the health status.
               returned: always
@@ -462,7 +460,7 @@ workspace:
     instanceGroups:
       description: The instance groups details for the cluster.
       returned: always
-      type: array
+      type: list
       elements: dict
       contains:
         instanceCount:
@@ -532,7 +530,7 @@ workspace:
     loadBalancerIPWhitelists:
       description: The whitelist of ips for loadBalancer.
       returned: always
-      type: array
+      type: list
     modelMetricsEnabled:
       description: Flag indicating if model metrics export is enabled for the cluster.
       returned: when supported

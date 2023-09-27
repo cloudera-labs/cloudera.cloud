@@ -141,7 +141,7 @@ flows:
     versions:
       description: The list of artifactDetail versions.
       returned: When imported is True
-      type: array
+      type: list
       contains:
         crn:
           description: The artifact version CRN.

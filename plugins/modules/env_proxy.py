@@ -76,13 +76,13 @@ options:
   user:
     description:
       - The proxy user
-      - NOTE: Defining this parameter will always force an proxy configuration update
+      - NOTE - Defining this parameter will always force an proxy configuration update
     type: str
     required: False
   password:
     description:
       - The proxy password
-      - NOTE: Defining this parameter will always force an proxy configuration update.
+      - NOTE - Defining this parameter will always force an proxy configuration update.
     type: str
     required: False
   state:
@@ -118,55 +118,56 @@ EXAMPLES = r'''
 '''
 
 RETURN = r'''
+---
 proxy:
-    description: Details on the proxy
-    type: dict
-    returned: on success
-    contains:
-        crn:
-            description: The CRN of the proxy config.
-            returned: always
-            type: str
-            sample: crn:cdp:environments:us-west-1:558bc1d2-8867-4357-8524-311d51259233:credential:eb6c5fc8-38fe-4c3c-8194-1a0f05edc010
-        description:
-            description: A description for the proxy config.
-            returned: when supported
-            type: str
-            sample: Example proxy configuration
-        host:
-            description: The proxy host.
-            returned: always
-            type: str
-            sample: example.cloudera.com
-        port:
-            description: The proxy port.
-            returned: always
-            type: int
-            sample: 8443
-        protocol:
-            description: The proxy protocol.
-            returned: always
-            type: str
-            sample: https
-        proxyConfigName:
-            description: The name of the proxy config.
-            returned: always
-            type: str
-            sample: example-proxy-config
-        user:
-            description: The proxy user.
-            returned: when supported
-            type: str
-            sample: proxy_username
+  description: Details on the proxy
+  type: dict
+  returned: on success
+  contains:
+    crn:
+      description: The CRN of the proxy config.
+      returned: always
+      type: str
+      sample: crn:cdp:environments:us-west-1:558bc1d2-8867-4357-8524-311d51259233:credential:eb6c5fc8-38fe-4c3c-8194-1a0f05edc010
+    description:
+      description: A description for the proxy config.
+      returned: when supported
+      type: str
+      sample: Example proxy configuration
+    host:
+      description: The proxy host.
+      returned: always
+      type: str
+      sample: example.cloudera.com
+    port:
+      description: The proxy port.
+      returned: always
+      type: int
+      sample: 8443
+    protocol:
+      description: The proxy protocol.
+      returned: always
+      type: str
+      sample: https
+    proxyConfigName:
+      description: The name of the proxy config.
+      returned: always
+      type: str
+      sample: example-proxy-config
+    user:
+      description: The proxy user.
+      returned: when supported
+      type: str
+      sample: proxy_username
 sdk_out:
-    description: Returns the captured CDP SDK log.
-    returned: when supported
-    type: str
+  description: Returns the captured CDP SDK log.
+  returned: when supported
+  type: str
 sdk_out_lines:
-    description: Returns a list of each line of the captured CDP SDK log.
-    returned: when supported
-    type: list
-    elements: str
+  description: Returns a list of each line of the captured CDP SDK log.
+  returned: when supported
+  type: list
+  elements: str
 '''
 
 
