@@ -24,3 +24,4 @@ class ModuleDocFragment(object):
         type: str
         required: False
     '''
+    RETURN = r''''''
