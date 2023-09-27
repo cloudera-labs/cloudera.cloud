@@ -60,13 +60,16 @@ jobs:
           path: ${{ steps.vars.outputs.checkout-path }}
 
       - name: Install Python requirements
-        run: pip install -r ${{ steps.vars.outputs.checkout-path }}/docsbuild/requirements.txt
+        run: pip install -r requirements.txt
+        working-directory: ${{ steps.vars.outputs.checkout-path }}/docsbuild
 
       - name: Build documentation
-        run: ${{ steps.vars.outputs.checkout-path }}/docsbuild/build.sh
+        run: build.sh
+        working-directory: ${{ steps.vars.outputs.checkout-path }}/docsbuild
 
       - name: List constructed documentation files
-        run: ls -laR ${{ steps.vars.outputs.checkout-path }}/docsbuild/build/html
+        run: ls -laR build/html
+        working-directory: ${{ steps.vars.outputs.checkout-path }}/docsbuild
 
       - name: Upload antsibull-doc log artifact
         if: fromJSON(inputs.antsibull-log-upload)
@@ -87,9 +90,10 @@ jobs:
       - name: Fix permissions for Github Pages
         if: fromJSON(inputs.pages-upload)
         run: |
-          chmod -c -R +rX "${{ steps.vars.outputs.checkout-path }}/docsbuild/build/html" | while read line; do
+          chmod -c -R +rX "build/html" | while read line; do
             echo "::warning title=Invalid file permissions automatically fixed::$line"
           done
+        working-directory: ${{ steps.vars.outputs.checkout-path }}/docsbuild
 
       - name: Upload Github Pages artifact
         if: fromJSON(inputs.pages-upload)
