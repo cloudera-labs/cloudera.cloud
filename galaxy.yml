@@ -18,9 +18,7 @@ namespace: cloudera
 name: cloud
 version: 2.0.0-rc1
 readme: README.md
-authors:
-- Webster Mudge <wmudge@cloudera.com>
-- Daniel Chaffelson <dchaffelson@cloudera.com>
+authors: []
 
 description: >
   A set of modules and other artifacts for interacting with the services and endpoints
@@ -30,7 +28,7 @@ tags:
 - cloudera
 - cdp
 - azure
-- ec2
+- aws
 - gcp
 
 dependencies: {}
