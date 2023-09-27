@@ -15,13 +15,13 @@ on:
         description: |
           If 'true', the collection documentation will be uploaded as a Github Pages artifact.
         required: false
-        type: string
+        type: boolean
         default: false
       antsibull-log-upload:
         description: |
           If 'true', the antsibull-doc log will be uploaded as an artifact.
         required: false
-        type: string
+        type: boolean
         default: false
 
 jobs:
@@ -65,7 +65,7 @@ jobs:
       - name: Build documentation
         run: ${{ steps.vars.outputs.checkout-path }}/docsbuild/build.sh
 
-      - name: List documentation files
+      - name: List constructed documentation files
         run: ls -laR ${{ steps.vars.outputs.checkout-path }}/docsbuild/build/html
 
       - name: Upload antsibull-doc log artifact
