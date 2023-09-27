@@ -1,12 +1,4 @@
 ---
 
 # The following `.. envvar::` directives are defined in the extra docsite docs:
-envvar_directives:
-  - DOCKER_HOST
-  - DOCKER_API_VERSION
-  - DOCKER_TIMEOUT
-  - DOCKER_CERT_PATH
-  - DOCKER_SSL_VERSION
-  - DOCKER_TLS
-  - DOCKER_TLS_HOSTNAME
-  - DOCKER_TLS_VERIFY
+envvar_directives: []
