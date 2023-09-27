@@ -1,0 +1,7 @@
+---
+
+sections:
+  - title: Yet Another Section
+    toctree:
+      - test
+      - foo
