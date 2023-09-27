@@ -4,9 +4,11 @@ Thank you for considering contributions to the `cloudera.cloud` Ansible collecti
 
 ## Submitting a pull request
 
-You can start work on issues that are not yet part of a [Milestone](https://github.com/cloudera-labs/cloudera.cloud/milestones). Before you start working, please announce that you want to do so by commenting on the issue. _([Create an issue](https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=enhancement) if there isn't one yet, and you can also check out our [Discussions](https://github.com/cloudera-labs/cloudera.cloud/discussions) for ideas.)_ We try to ensure that all active work is assigned to a Milestone.
+You can start work on issues that are not yet part of a [Milestone](https://github.com/cloudera-labs/cloudera.cloud/milestones) -- anything in our issue tracker that isn't assigned to a Milestone is considered the [backlog](https://github.com/cloudera-labs/cloudera.cloud/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone). 
 
-When your work is ready for review, branch from the `devel` branch using and submit a pull request against the same while referencing an issue.
+Before you start working, please announce that you want to do so by commenting on the issue. _([Create an issue](https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=enhancement) if there isn't one yet, and you can also check out our [Discussions](https://github.com/cloudera-labs/cloudera.cloud/discussions) for ideas.)_ We try to ensure that all active work is assigned to a Milestone in order to keep our backlog accurate.
+
+**When your work is ready for review, branch from the `devel` branch using and submit a pull request against the same while referencing an issue.**
 
 As a _best practice_, you can prefix your branches with:
 
@@ -16,7 +18,7 @@ As a _best practice_, you can prefix your branches with:
 |`fix/`|A non-urgent bug fix|`fix/refactor-module-output-params`|
 |`hotfix/`|An urgent bug fix|`hotfix/patch-insecure-module`|
 
-NOTE: a **hotfix** should branch from `main`. It will then be committed to both `main` and `devel`.
+> :fire_extinguisher: **NOTE:** a **hotfix** should branch from `main`. It will then be committed to both the `main` and `devel` branches.
 
 ## Signing your commits
 

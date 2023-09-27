@@ -28,7 +28,13 @@ See the [API documentation](https://cloudera-labs.github.io/cloudera.cloud/) for
 
 ## Roadmap
 
-If you want to see what we are working on, check out the [Milestones](https://github.com/cloudera-labs/cloudera.cloud/milestones) and [active issues](https://github.com/cloudera-labs/cloudera.cloud/issues?q=is%3Aissue+is%3Aopen+milestone%3A*) or read up on the [Ideas](https://github.com/cloudera-labs/cloudera.cloud/discussions/categories/ideas) we have in mind.
+If you want to see what we are working on or have pending, check out:
+
+*  the [Milestones](https://github.com/cloudera-labs/cloudera.cloud/milestones) and [active issues](https://github.com/cloudera-labs/cloudera.cloud/issues?q=is%3Aissue+is%3Aopen+milestone%3A*) to see our current activity,
+* the [issue backlog](https://github.com/cloudera-labs/cloudera.cloud/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone) to see what work is pending or under consideration, and
+* read up on the [Ideas](https://github.com/cloudera-labs/cloudera.cloud/discussions/categories/ideas) we have in mind.
+
+Are we missing something? Let us know by [creating a new issue](https://github.com/cloudera-labs/cloudera.cloud/issues/new) or [posting a new idea](https://github.com/cloudera-labs/cloudera.cloud/discussions/new?category=ideas)!
 
 ## Contribute
 
