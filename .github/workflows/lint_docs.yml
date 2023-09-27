@@ -66,7 +66,7 @@ jobs:
         working-directory: ${{ steps.vars.outputs.checkout-path }}/docsbuild
 
       - name: Upload antsibull-doc log artifact
-        if: fromJSON(inputs.antsibull-log-upload)
+        if: always() && fromJSON(inputs.antsibull-log-upload)
         uses: actions/upload-artifact@v3
         with:
           path: ${{ steps.vars.outputs.checkout-path }}/docsbuild/antsibull.log
