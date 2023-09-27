@@ -7,20 +7,6 @@ edit_on_github:
 
 extra_links:
   - description: Submit a bug report
-    url: https://github.com/ansible-collections/community.docker/issues/new?assignees=&labels=&template=bug_report.md
+    url: https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=bug
   - description: Request a feature
-    url: https://github.com/ansible-collections/community.docker/issues/new?assignees=&labels=&template=feature_request.md
-
-communication:
-  matrix_rooms:
-    - topic: General usage and support questions
-      room: '#users:ansible.im'
-  irc_channels:
-    - topic: General usage and support questions
-      network: Libera
-      channel: '#ansible'
-  mailing_lists:
-    - topic: Ansible Project List
-      url: https://groups.google.com/g/ansible-project
-    - topic: More Stuff
-      url: https://www.cloudera.com
+    url: https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=enhancement
