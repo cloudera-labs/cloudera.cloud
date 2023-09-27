@@ -1,0 +1,12 @@
+---
+
+# Below is an example of additional documentation that would be placed into the
+# left-hand TOC/navbar.
+#
+# The anchor/ID in the page would be ".. ansible_collections.cloudera.cloud.docsite.usage"
+# and would be located at docs/docsite/rst/usage.rst
+
+# sections:
+#   - title: Usage and Configuration
+#     toctree:
+#       - usage  

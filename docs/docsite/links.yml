@@ -1,0 +1,12 @@
+---
+
+edit_on_github:
+  repository: cloudera-labs/cloudera.cloud
+  branch: main
+  path_prefix: ''
+
+extra_links:
+  - description: Submit a bug report
+    url: https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=bug
+  - description: Request a feature
+    url: https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=enhancement

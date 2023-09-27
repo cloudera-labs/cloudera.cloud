@@ -44,7 +44,6 @@ options:
     type: bool
     required: False
     default: True
-
 notes:
   - The feature this module is for is in Technical Preview
 extends_documentation_fragment:
@@ -107,7 +106,7 @@ flows:
     versions:
       description: The list of artifactDetail versions.
       returned: when include_details is True
-      type: array
+      type: list
       contains:
         crn:
           description: The flow version CRN.

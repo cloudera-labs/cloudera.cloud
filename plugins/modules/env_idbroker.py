@@ -88,7 +88,8 @@ options:
       - Mutually exclusive with C(clear_mappings).
     required: False
     type: list
-    contains:
+    elements: dict
+    suboptions:
       accessor:
         description:
           - The CRN of the actor or group.

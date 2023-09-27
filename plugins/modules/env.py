@@ -208,7 +208,7 @@ options:
       - The FreeIPA service for the environment.
     type: dict
     required: False
-    contains:
+    suboptions:
       instanceCountByGroup:
         description:
           - The number of FreeIPA instances to create per group when creating FreeIPA in the environment.

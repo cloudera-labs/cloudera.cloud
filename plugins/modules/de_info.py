@@ -108,7 +108,7 @@ services:
     chartValueOverrides:
       description: Status of the CDE Service.
       returned: if full service description
-      type: array
+      type: list
       elements: complex
       contains:
         ChartValueOverridesResponse:

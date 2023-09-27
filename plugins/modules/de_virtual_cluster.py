@@ -73,7 +73,7 @@ options:
     - Chart overrides for creating a virtual cluster. 
     type: list
     required: False
-    contains:
+    suboptions:
       chart_name:
         description:
           - The key/value pair for the chart_name/override
@@ -125,14 +125,13 @@ EXAMPLES = r'''
     wait: True
     delay: 30
     timeout: 600
-
-# Note: virtual clusters can be removed manually (CDP CLI/API or Web UI), or by removing the parent CDE service (and all other virtual clusters)
 '''
 
 
 RETURN = r'''
+---
 virtual_cluster:
-  description: DE virtual cluste
+  description: DE virtual cluster
   type: complex
   returned: always
   contains:
@@ -149,18 +148,16 @@ virtual_cluster:
           description: Workload usernames of CDP users granted access to the Virtual Cluster. 
           returned: always
           type: list
-          contains:
-            description: Workload username
-            returned: always
-            type: str
+          elements: str
     chartValueOverrides:
       description: Chart overrides for the CDE virtual cluster.
       returned: always
-      type: array
-      elements: complex
+      type: list
+      elements: dict
       contains:
         ChartValueOverridesResponse:
           type: list
+          elements: dict
           returned: always
           contains:
             chartName:

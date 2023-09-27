@@ -16,12 +16,12 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 DOCUMENTATION = '''
-    lookup: datahub_instance
+    lookup: datalake_instance
     author: Webster Mudge (@wmudge) <wmudge@cloudera.com>
-    short_description: Get the instances for a CDP Public Cloud Datahub
+    short_description: Get the instances for a CDP Public Cloud Datalake
     description:
-        - Allows you to retrieve the instances by one or more instance groups for a CDP Public Cloud Datahub.
-        - If the Datahub is not found or is ambigious, the lookup will return an error.
+        - Allows you to retrieve the instances by one or more instance groups for a CDP Public Cloud Environment.
+        - If the Environment or its Datalake is not found or is ambigious, the lookup will return an error.
         - If the instance group is not found, the lookup will return the C(default) value.
     options:
         _terms:
@@ -29,40 +29,42 @@ DOCUMENTATION = '''
                 - Instance group name
             type: string
             required: True
-        datahub:
+        environment:
             description:
-                - Name of the Datahub
+                - Name of the Environment to query
             required: True
             type: string
         detailed:
             description:
-                - Whether to return the full entry for the matching Datahub instance group
+                - Whether to return the full entry for the matching Datalake instance group
             required: False
             type: boolean
             default: False
         default:
-            description: What return when the instance group is not found on the Datahub
+            description: What return when the instance group is not found on the Datalake
             type: any
             default: []
     notes:
         - Requires C(cdpy).
     seealso:
-        - module: cloudera.cloud.datahub_cluster_info
-          description: Cloudera CDP Public Cloud Datahub cluster module
+        - module: cloudera.cloud.env_info
+          description: Cloudera CDP Public Cloud Environment module
+        - module: cloudera.cloud.datalake_info
+          description: Cloudera CDP Public Cloud Datalake module
 '''
 
 EXAMPLES = '''
-- name: Retrieve the instances for the NiFi instance group for a CDP Public Cloud Flow Management datahub
+- name: Retrieve the instances for the ID Broker instance group for a CDP Public Cloud environment
   ansible.builtin.debug:
-    msg: "{{ query('cloudera.cloud.datahub_instance', 'nifi', datahub='example-flow-dh') }}"
+    msg: "{{ query('cloudera.cloud.datalake_instance', 'idbroker', environment='example-env') }}"
     
 - name: Retrieve the full details for the instance
   ansible.builtin.debug:
-    msg: "{{ query('cloudera.cloud.datahub_instance', 'nifi', datahub='example-flow-dh', detailed=True) }}"
+    msg: "{{ query('cloudera.cloud.datalake_instance', 'idbroker', environment='example-env', detailed=True) }}"
   
 - name: Retrieve the instance details for multiple instance groups
   ansible.builtin.debug:
-    msg: "{{ lookup('cloudera.cloud.datahub_instance', ['nifi', 'management'], datahub='example-flow-dh', wantlist=True) }}"
+    msg: "{{ lookup('cloudera.cloud.datalake_instance', ['idbroker', 'master'], environment='example-env', wantlist=True) }}"
 '''
 
 RETURN = '''
@@ -80,8 +82,6 @@ from ansible.utils.display import Display
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_service import parse_environment
-
 display = Display()
 
 class LookupModule(LookupBase):
@@ -89,20 +89,22 @@ class LookupModule(LookupBase):
         self.set_options(var_options=variables, direct=kwargs)
 
         try:
-            datahub = Cdpy().datahub.describe_cluster(self.get_option('datahub'))
-            if datahub is None:
-                raise AnsibleError("No Datahub found for '%s'" % self.get_option('datahub'))
+            env = Cdpy().datalake.describe_all_datalakes(self.get_option('environment'))                
+            if not env:
+                raise AnsibleError("No Environment found for '%s'" % self.get_option('environment'))
+            elif len(env) > 1:
+                raise AnsibleError("Multiple Datalakes found for Enviroment '%s'" % self.get_option('environment'))
             
-            all_instance_groups = {ig['name']:ig for ig in datahub['instanceGroups']}
+            all_instance_groups = {ig['name']:ig for ig in env[0]['instanceGroups']}
             results = []
             
             for term in LookupBase._flatten(terms):
-                display.vvv("Filtering instance groups for %s[%s]" % (self.get_option('datahub'), term))
+                display.vvv("Filtering instance groups for %s[%s]" % (self.get_option('environment'), term))
                 if term in all_instance_groups:
                     if self.get_option('detailed'):
                         results.append(all_instance_groups[term]['instances'])
                     else:
-                        results.append([i['fqdn'] for i in all_instance_groups[term]['instances']])
+                        results.append([i['id'] for i in all_instance_groups[term]['instances']])
                 else:
                     results.append(self.get_option('default'))
             return results

@@ -81,10 +81,6 @@ options:
       - Mutually exclusive with the subnet and subnets options 
     type: str
     required: False
-    samples:
-      - Azure: fe-az-f0-sbnt-2
-      - AWS: subnet-0bb1c79de3EXAMPLE
-      - GCP: fe-gc-j8-sbnt-0
   subnets:
     description:
       - List of subnet IDs in case of multi availability zone setup.
@@ -111,10 +107,10 @@ options:
   groups:
     description:
       - Instance group details.
-    type: array
+    type: list
     elements: dict
     required: False
-    contains:
+    suboptions:
       nodeCount:
         description: tktk
         type: int
@@ -136,7 +132,7 @@ options:
       volumeEncryption:
         description: tktk
         type: dict
-        contains:
+        suboptions:
           enableEncryption:
             description: tktk
             type: bool
@@ -145,15 +141,15 @@ options:
             type: str
       recipeNames:
         description: tktk
-        type: array
-        contains:
+        type: list
+        suboptions:
           recipeName:
             description: tktk
             type: string
       attachedVolumeConfiguration:
         description: tktk
-        type: array
-        contains:
+        type: list
+        suboptions:
           volumeSize:
             description: tktk
             type: int
@@ -299,7 +295,7 @@ datahub:
       type: int
     instanceGroups:
       description: tktk
-      type: array
+      type: list
       contains:
         instanceGroup:
           description: tktk
@@ -334,7 +330,7 @@ datahub:
       type: str
     imageDetails:
       description: tktk
-      type: array
+      type: list
       contains:
         name:
           description: tktk
@@ -376,7 +372,7 @@ datahub:
           type: str
     endpoints:
       description: tktk
-      type: array
+      type: list
       contains:
         endpoint:
           description: tktk

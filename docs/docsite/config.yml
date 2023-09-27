@@ -1,0 +1,4 @@
+---
+
+# The following `.. envvar::` directives are defined in the extra docsite docs:
+envvar_directives: []

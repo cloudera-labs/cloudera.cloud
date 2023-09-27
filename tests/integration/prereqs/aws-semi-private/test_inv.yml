@@ -1,0 +1,3 @@
+---
+# Build the Ansible inventory from the TF state
+plugin: cloud.terraform.terraform_provider

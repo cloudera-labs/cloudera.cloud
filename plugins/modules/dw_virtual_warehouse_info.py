@@ -141,7 +141,7 @@ virtual_warehouses:
       description: Details about the Virtual Warehouse creator.
       returned: always
       type: dict
-      suboptions:
+      contains:
         crn:
           description: The creator's Actor CRN.
           type: str

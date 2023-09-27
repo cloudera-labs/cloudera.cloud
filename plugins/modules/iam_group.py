@@ -62,7 +62,7 @@ options:
     type: list
     required: False
     elements: dict
-    contains:
+    suboptions:
       resource:
         description:
           - The resource CRN for the rights assignment.

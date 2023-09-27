@@ -87,8 +87,8 @@ RETURN = r'''
 ---
 customflow:
   description: The CustomFlow Definition
-  type: dict (or None if state = absent and flow does not exist)
-  returned: always
+  type: dict
+  returned: when supported
   contains:
     crn:
       description:  

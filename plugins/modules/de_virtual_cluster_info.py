@@ -87,14 +87,11 @@ virtual_cluster:
           description: Workload usernames of CDP users granted access to the Virtual Cluster. 
           returned: always
           type: list
-          contains:
-            description: Workload username
-            returned: always
-            type: str
+          elements: str
     chartValueOverrides:
       description: Chart overrides for the CDE virtual cluster.
       returned: always
-      type: array
+      type: list
       elements: complex
       contains:
         ChartValueOverridesResponse:

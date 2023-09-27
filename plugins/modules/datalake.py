@@ -28,7 +28,7 @@ module: datalake
 short_description: Manage CDP Datalakes
 description:
     - Create and delete CDP Datalakes.
-    - To start and stop a datalake, use the M(env) module to change the associated CDP Environment's state.
+    - To start and stop a datalake, use the M(cloudera.cloud.env) module to change the associated CDP Environment's state.
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
@@ -142,16 +142,16 @@ options:
   recipes:
     description: 
       - Recipes that will be attached on the datalake instances groups
-    type: array
+    type: list
     elements: dict
     required: False
-    contains:
+    suboptions:
       instanceGroupName:
         description: Datalake instance/host group group name, e.g. `master` or `idbroker`.
         type: str
       recipeNames:
         description: Names of the recipes
-        type: array
+        type: list
         elements: str
   multi_az:
     description:
