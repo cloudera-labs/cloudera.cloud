@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-namespace: cloudera
-name: cloud
-version: 2.0.0-rc1
-readme: README.md
-authors: []
+namespace:  cloudera
+name:       cloud
+version:    2.0.0-rc1
+readme:     README.md
+authors:    []
 
 description: >
   A set of modules and other artifacts for interacting with the services and endpoints
@@ -33,10 +33,10 @@ tags:
 
 dependencies: {}
 
-repository: https://github.com/cloudera-labs/cloudera.cloud
-documentation: https://cloudera-labs.github.io/cloudera.cloud
-homepage: https://github.com/cloudera-labs/cloudera.cloud
-issues: https://github.com/cloudera-labs/cloudera.cloud/issues
+repository:     https://github.com/cloudera-labs/cloudera.cloud
+homepage:       https://github.com/cloudera-labs/cloudera.cloud
+issues:         https://github.com/cloudera-labs/cloudera.cloud/issues
+documentation:  https://cloudera-labs.github.io/cloudera.cloud
 
 build_ignore:
 - '.*'
