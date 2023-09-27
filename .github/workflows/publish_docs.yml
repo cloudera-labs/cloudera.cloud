@@ -1,6 +1,6 @@
 ---
 
-name: Publish Documentation
+name: Publish documentation
 
 on:
   push:
@@ -12,33 +12,24 @@ on:
 jobs:
   build-ansible-docs:
     name: Build Ansible Docs
+    uses: ./.github/workflows/construct_docs.yml
+    with:
+      pages-upload: true
+      directory-upload: true
+
+  publish-ansible-docs:
+    name: Publish Ansible Docs
+    needs: build-ansible-docs
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-    outputs:
-      artifact-url: ${{ steps.build.outputs.artifact-url }}
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Deploy Github Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
         with:
-          python-version: 3.11
-
-      - name: Install Ansible
-        run: pip install ansible-core
-
-      - name: Checkout project
-        uses: actions/checkout@v3
-
-      - name: Install collection locally
-        run: ansible-galaxy collection install .
-
-      - name: Install Python requirements
-        run: pip install -r docsbuild/requirements.txt
-      
-      - name: Build documentation
-        id: build
-        uses: ansible-community/github-docs-build/actions/ansible-docs-build-html@main
-        with:
-          build-script: docsbuild/build.sh
-          build-html: docsbuild/build/html
-          artifact-upload: true
+          artifact_name: github-pages

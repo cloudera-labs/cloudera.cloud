@@ -1,0 +1,67 @@
+---
+
+name: Construct documentation
+
+on:
+  workflow_call:
+    inputs:
+      directory-upload:
+        description: |
+          If 'true', the collection documentation will be uploaded in a directory artifact.
+        required: false
+        type: boolean
+        default: false
+      pages-upload:
+        description: |
+          If 'true', the collection documentation will be uploaded as a Github Pages artifact.
+        required: false
+        type: string
+
+jobs:
+  build-ansible-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install Ansible
+        run: pip install ansible-core
+
+      - name: Checkout project
+        uses: actions/checkout@v3
+
+      - name: Install collection
+        run: ansible-galaxy collection install .
+
+      - name: Install Python requirements
+        run: pip install -r docsbuild/requirements.txt
+
+      - name: Build documentation
+        run: ./docsbuild/build.sh
+
+      - name: Upload directory artifact
+        if: fromJSON(inputs.directory-upload)
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./docsbuild/build/html
+          name: ${{ github.event.repository.name }}_docs_${{ github.sha }}
+          retention-days: 1
+
+      - name: Fix permissions for Github Pages
+        if: fromJSON(inputs.pages-upload)
+        run: |
+          chmod -c -R +rX "./docsbuild/build/html" | while read line; do
+            echo "::warning title=Invalid file permissions automatically fixed::$line"
+          done
+
+      - name: Upload Github Pages artifact
+        if: fromJSON(inputs.pages-upload)
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./docsbuild/build/html
+          name: github-pages
+          retention-days: 1
