@@ -20,8 +20,8 @@ Requirements
 tk tk, k::
   
   This is not processed text,
-  but the indentation in the soure should
-  goe away, per the Primer.
+  but the indentation in the source should
+  go away, per the Primer.
 
   More text
 

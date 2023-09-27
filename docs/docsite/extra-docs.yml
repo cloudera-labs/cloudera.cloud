@@ -1,6 +1,6 @@
 ---
 
-sections:
-  - title: Usage and Configuration
-    toctree:
-      - test
+# sections:
+#   - title: Usage and Configuration
+#     toctree:
+#       - test
