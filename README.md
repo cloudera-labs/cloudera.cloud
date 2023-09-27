@@ -81,21 +81,21 @@ See [Building the Collection](#building-the-collection) for details on creating 
 
 ## Requirements
 
-`cloudera.cloud` expects `ansible-core>=2.12`.
+`cloudera.cloud` expects `ansible-core>=2.10`.
 
 The collection also requires the following Python libraries install to operate 
 its modules:
 
   * [`cdpy`](https://github.com/cloudera-labs/cdpy)
 
-`ansible-galaxy` should install these dependencies automatically; you may wish to use a _virtual environment_.
+`ansible-galaxy` should install these dependencies automatically; you may wish to use a _virtual environment_. `ansible-builder` will install the Python dependencies if you wish to use that application to construct your environment.
 
 ## Using the Collection
 
 Once installed, reference the collection in your playbooks and roles.
 
 For example, here we use the
-[cloudera.cloud.env_info module](https://cloudera-labs.github.io/cloudera.cloud/env_info_module.html) to list all available CDP environments:
+[`cloudera.cloud.env_info` module](https://cloudera-labs.github.io/cloudera.cloud/env_info_module.html) to list all available CDP environments:
 
 ```yaml
 - hosts: localhost
