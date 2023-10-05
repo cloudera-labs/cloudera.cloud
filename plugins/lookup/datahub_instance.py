@@ -83,8 +83,6 @@ from ansible.utils.display import Display
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_service import parse_environment
-
 display = Display()
 
 class LookupModule(LookupBase):

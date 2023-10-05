@@ -93,7 +93,7 @@ from ansible.module_utils.common.text.converters import to_native
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
-from ansible_collections.cloudera.cloud.plugins.lookup.cdp_service import parse_services
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_service import parse_services
 
 
 class LookupModule(LookupBase):
