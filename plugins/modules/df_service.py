@@ -367,8 +367,10 @@ class DFService(CdpModule):
 
                         if self.cluster_subnets_filter:
                             self.cluster_subnets = self._filter_subnets(self.cluster_subnets_filter, subnet_metadata)
+                            self.module.warn("Found the following cluster subnets: %s" % ", ".join(self.cluster_subnets))
                         if self.lb_subnets_filter:
                             self.lb_subnets = self._filter_subnets(self.lb_subnets_filter, subnet_metadata)
+                            self.module.warn("Found the following load balancer subnets: %s" % ", ".join(self.lb_subnets))
 
                     if not self.module.check_mode:
                         self.service = self.cdpy.df.enable_service(
