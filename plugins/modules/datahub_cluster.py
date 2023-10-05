@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
 import jmespath
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
@@ -534,7 +536,8 @@ class DatahubCluster(CdpModule):
                             params=dict(name=self.name),
                             field=None,
                             delay=self.delay,
-                            timeout=self.timeout
+                            timeout=self.timeout,
+                            ignore_failures=True
                         )
         else:
             self.module.fail_json(msg='Invalid state: %s' % self.state)
@@ -595,6 +598,7 @@ class DatahubCluster(CdpModule):
                     msg="Could not retrieve subnet metadata for CDP Environment %s" % self.env_crn)
 
             subnets = self._filter_subnets(self.subnets_filter, subnet_metadata)
+            self.module.warn("Found subnets: %s" % ", ".join(subnets))
             if len(subnets) == 1:
                 self.subnet = subnets[0]
             else:
