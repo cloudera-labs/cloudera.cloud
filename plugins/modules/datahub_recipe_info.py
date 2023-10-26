@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: datahub_recipe_info
 short_description: Gather information about CDP Datahub recipes
@@ -53,9 +55,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 - name: List all Datahub recipes
@@ -70,9 +72,9 @@ EXAMPLES = r'''
     name: example-recipe
     return_content: yes
   register: my_recipe
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 recipes:
   description: The information about the named recipe or recipes
@@ -103,7 +105,7 @@ recipes:
     type:
       description: 
         - The type of recipe. 
-        - "Supported values are: C(PRE_CLOUDERA_MANAGER_START), C(PRE_TERMINATION), C(POST_CLOUDERA_MANAGER_START), C(POST_CLUSTER_INSTALL)."
+        - "Supported values are: C(POST_CLOUDERA_MANAGER_START), C(PRE_TERMINATION), C(PRE_SERVICE_DEPLOYMENT), C(POST_SERVICE_DEPLOYMENT)."
       returned: when supported
       type: str
 sdk_out:
@@ -115,7 +117,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DatahubRecipeInfo(CdpModule):
@@ -123,8 +125,8 @@ class DatahubRecipeInfo(CdpModule):
         super(DatahubRecipeInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.content = self._get_param('return_content')
+        self.name = self._get_param("name")
+        self.content = self._get_param("return_content")
 
         # Initialize return values
         self.recipes = []
@@ -137,11 +139,19 @@ class DatahubRecipeInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.all_recipes = self.cdpy.sdk.call(svc='datahub', func='list_recipes', ret_field='recipes')     
-        
+        self.all_recipes = self.cdpy.sdk.call(
+            svc="datahub", func="list_recipes", ret_field="recipes"
+        )
+
         if self.name:
-            recipe = next((t for t in self.all_recipes if t['crn'] == self.name 
-                               or t['recipeName'] == self.name), None)
+            recipe = next(
+                (
+                    r
+                    for r in self.all_recipes
+                    if r["crn"] == self.name or r["recipeName"] == self.name
+                ),
+                None,
+            )
             if recipe is not None:
                 if self.content:
                     self.recipes.append(self._describe_recipe(recipe))
@@ -157,22 +167,30 @@ class DatahubRecipeInfo(CdpModule):
                 self.recipes = self.all_recipes
 
     def _describe_recipe(self, recipe):
-        full = self.cdpy.datahub.describe_cluster_template(recipe['crn'])
-        full = self.cdpy.sdk.call(svc='datahub', func='describe_recipe', recipeName=recipe['crn'])
+        full = self.cdpy.datahub.describe_cluster_template(recipe["crn"])
+        full = self.cdpy.sdk.call(
+            svc="datahub", func="describe_recipe", recipeName=recipe["crn"]
+        )
         if full is not None:
             return full
         else:
-            self.module.fail_json(msg="Failed to retrieve recipe content, '%s'" %
-                                  recipe['recipeName'])
-        
+            self.module.fail_json(
+                msg="Failed to retrieve recipe content, '%s'" % recipe["recipeName"]
+            )
+
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['recipe', 'crn']),
-            return_content=dict(required=False, type='bool', default=False, aliases=['recipe_content', 'content'])
+            name=dict(required=False, type="str", aliases=["recipe", "crn"]),
+            return_content=dict(
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["recipe_content", "content"],
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DatahubRecipeInfo(module)
@@ -184,5 +202,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
