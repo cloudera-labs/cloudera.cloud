@@ -123,7 +123,7 @@ EXAMPLES = r"""
     datahub: example-datahub
     instances: "{{ instance_id }}"
     wait: yes # implied
-  loop: {{ query('cloudera.cloud.datahub_instance', 'core_broker', datahub='example-datahub', detailed=True) | flatten | map(attribute='id') | list }}
+  loop: "{{ query('cloudera.cloud.datahub_instance', 'core_broker', datahub='example-datahub', detailed=True) | flatten | map(attribute='id') | list }}"
   loop_control:
     loop_var: instance_id
 """
