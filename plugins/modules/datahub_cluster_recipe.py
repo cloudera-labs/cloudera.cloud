@@ -33,6 +33,7 @@ short_description: Manage CDP Datahub recipes on an instance group
 description:
     - Create, update, and delete CDP Datahub recipes to an instance group of a CDP Datahub.
     - A recipe is a script that runs on all nodes of a specified instance group of a Datahub.
+    - See the L(Cloudera documentation on recipes,https://docs.cloudera.com/data-hub/cloud/recipes/topics/mc-creating-custom-scripts-recipes.html) for details.
 author:
   - "Webster Mudge (@wmudge)"
 requirements:
