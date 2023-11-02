@@ -15,67 +15,125 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from time import time, sleep
+
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
-module: datahub_cluster_info
-short_description: Gather information about CDP Datahubs
+module: datahub_cluster_repair
+short_description: Repair CDP Datahub instances or instance groups
 description:
-    - Gather information about CDP Datahub Clusters
+    - Execute a repair (remove and/or replace) on one or more instances or instance groups within a CDP Datahub.
 author:
   - "Webster Mudge (@wmudge)"
-  - "Dan Chaffelson (@chaffelson)"
 requirements:
   - cdpy
 options:
-  name:
+  datahub:
     description:
-      - If a name is provided, that Datahub will be described.
-      - If no name provided, all Datahubs will be listed and (optionally) constrained by the C(environment) parameter.
-    type: str
-    required: False
-    aliases:
-      - datahub
-  environment:
+      - The name or CRN of the datahub.
+    required: True
+  instance_groups:
     description:
-      - The name of the Environment in which to find and describe the Datahubs.
-    type: str
-    required: False
+      - A list of CDP Datahub instance group names.
+      - Required if I(instances) is not defined.
+    type: list
+    elements: str
     aliases:
-      - env
+      - groups
+  instances:
+    description:
+      - A list of CDP Datahub instance IDs .
+      - Required if I(instance_groups) is not defined.
+    type: list
+    elements: str
+  restart:
+    description:
+      - Flag to restart (replace) removed instances.
+    type: bool
+    default: True
+  delete_volumes:
+    description:
+      - Flag to recreate disk volumes on instances.
+      - If C(false), the existing volumes will be reattached to the new instances.
+    type: bool
+    default: False
+  wait:
+    description:
+      - Flag to wait for the repair to complete.
+    type: bool
+    default: True
+  delay:
+    description:
+      - Number of seconds for the I(wait) polling interval.
+    type: int
+    default: 15
+  timeout:
+    description:
+      - Number of elapsed seconds for the I(wait) polling timeout.
+    type: int
+    default: 1200
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+notes:
+  - This module supports C(check_mode).
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# List basic information about all Datahubs
-- cloudera.cloud.datahub_cluster_info:
+- name: Replace a single instance group
+  cloudera.cloud.datahub_cluster_repair:
+    datahub: example-datahub
+    instance_groups: core_broker
 
-# Gather detailed information about a named Datahub
-- cloudera.cloud.datahub_cluster_info:
-    name: example-datahub
+- name: Replace multiple instance groups
+  cloudera.cloud.datahub_cluster_repair:
+    datahub: example-datahub
+    instance_groups:
+      - core_broker
+      - master
+      
+- name: Replace a single instance
+  cloudera.cloud.datahub_cluster_repair:
+    datahub: example-datahub
+    instances: i-08fa9ff7694dca0a8
+    
+- name: Replace multiple instances and remove their volumes
+  cloudera.cloud.datahub_cluster_repair:
+    datahub: example-datahub
+    instances:
+      - i-08fa9ff7694dca0a8
+      - i-0ea1b60d9a103ab36
+    delete_volumes: yes
+      
+- name: Replace multiple instances sequentially (i.e. rollout)
+  cloudera.cloud.datahub_cluster_repair:
+    datahub: example-datahub
+    instances: "{{ instance_id }}"
+    wait: yes # implied
+  loop: "{{ query('cloudera.cloud.datahub_instance', 'core_broker', datahub='example-datahub', detailed=True) | flatten | map(attribute='id') | list }}"
+  loop_control:
+    loop_var: instance_id
+"""
 
-# Gather detailed information about a Datahub in an Environment
-- cloudera.cloud.datahub_cluster_info:
-    environment: example-env-name
-'''
-
-RETURN = r'''
+RETURN = r"""
 ---
-datahubs:
-  description: The information about the named Datahub or Datahubs
-  type: list
-  returned: on success
-  elements: dict
+datahub:
+  description: The information about the Datahub
+  type: dict
+  returned: always
   contains:
     cloudPlatform:
       description:
@@ -335,45 +393,151 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
-class DatahubClusterInfo(CdpModule):
+class DatahubClusterRepair(CdpModule):
     def __init__(self, module):
-        super(DatahubClusterInfo, self).__init__(module)
+        super(DatahubClusterRepair, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('environment')
+        self.datahub = self._get_param("datahub")
+        self.instance_groups = self._get_param("instance_groups")
+        self.instances = self._get_param("instances")
+        self.restart = self._get_param("restart")
+        self.delete_volumes = self._get_param("delete_volumes")
+        self.wait = self._get_param("wait")
+        self.delay = self._get_param("delay")
+        self.timeout = self._get_param("timeout")
 
         # Initialize return values
-        self.datahubs = []
+        self.output = dict()
+        self.changed = False
 
         # Execute logic process
         self.process()
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if self.name:  # Note that both None and '' will trigger this
-            datahub_single = self.cdpy.datahub.describe_cluster(self.name)
-            if datahub_single is not None:
-                self.datahubs.append(datahub_single)
+        existing = self.cdpy.datahub.describe_cluster(self.datahub)
+
+        if not existing:
+            self.module.fail_json(msg=f"Datahub not found: {self.datahub}")
+
+        if not self.module.check_mode:
+            self.changed = True
+
+            node_count = existing["nodeCount"]
+
+            if self.wait:
+                existing = self.cdpy.sdk.wait_for_state(
+                    describe_func=self.cdpy.datahub.describe_cluster,
+                    params=dict(name=self.datahub),
+                    state=["AVAILABLE", "NODE_FAILURE"],
+                    delay=self.delay,
+                    timeout=self.timeout,
+                )
+                self._wait_for_instance_state(
+                    existing, ["HEALTHY", "UNHEALTHY"], node_count
+                )
+
+            instance_payload = dict(
+                deleteVolumes=self.delete_volumes,
+            )
+
+            if self.instances:
+                discovered_instances = [
+                    i["id"]
+                    for ig in existing["instanceGroups"]
+                    for i in ig["instances"]
+                ]
+                if set(self.instances).difference(set(discovered_instances)):
+                    self.module.fail_json(
+                        msg=f"Instance(s) not found in Datahub: {str(self.instances)}"
+                    )
+
+                instance_payload.update(instanceIds=self.instances)
+            else:
+                discovered_instances = [
+                    i["id"]
+                    for ig in existing["instanceGroups"]
+                    if ig["name"] in self.instance_groups
+                    for i in ig["instances"]
+                ]
+                if not discovered_instances:
+                    self.module.fail_json(
+                        msg=f"No instances found for instance group(s) in Datahub: {str(self.instance_groups)}"
+                    )
+
+                instance_payload.update(instanceIds=discovered_instances)
+
+            payload = dict(
+                clusterName=self.datahub,
+                removeOnly=not self.restart,
+                instances=instance_payload,
+            )
+
+            # Empty return
+            self.cdpy.sdk.call(svc="datahub", func="repair_cluster", **payload)
+
+            if self.wait:
+                existing = self.cdpy.sdk.wait_for_state(
+                    describe_func=self.cdpy.datahub.describe_cluster,
+                    params=dict(name=self.datahub),
+                    state="AVAILABLE",
+                    delay=self.delay,
+                    timeout=self.timeout,
+                )
+                self._wait_for_instance_state(existing, "HEALTHY", node_count)
+
+            self.output = self.cdpy.datahub.describe_cluster(self.datahub)
         else:
-            self.datahubs = self.cdpy.datahub.describe_all_clusters(self.env)
-            # The sdk will ignore env = None and list all Datahubs, making this a shortcut
+            self.output = existing
+
+    def _wait_for_instance_state(self, datahub, state, node_count):
+        current = datahub
+        state = state if isinstance(state, list) else [state]
+
+        def parse_instances():
+            return [
+                i["id"]
+                for ig in current["instanceGroups"]
+                for i in ig["instances"]
+                if i["state"] not in state
+            ]
+
+        start_time = time()
+        while time() < start_time + self.timeout:
+            outstanding_instances = parse_instances()
+            if outstanding_instances or current["nodeCount"] != node_count:
+                self.module.warn(
+                    f"Waiting for state(s) [{str(state)}] for instances: {str(outstanding_instances)}; Node count: {str(current['nodeCount'])}/{str(node_count)}"
+                )
+                sleep(self.delay)
+                current = self.cdpy.datahub.describe_cluster(self.datahub)
+                outstanding_instances = parse_instances()
+            else:
+                break
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['datahub']),
-            environment=dict(required=False, type='str', aliases=['env'])
+            datahub=dict(required=True),
+            instance_groups=dict(type="list", elements="str", aliases=["groups"]),
+            instances=dict(type="list", elements="str"),
+            restart=dict(type="bool", default=True),
+            delete_volumes=dict(type="bool", default=False),
+            wait=dict(type="bool", default=True),
+            delay=dict(type="int", aliases=["polling_delay"], default=15),
+            timeout=dict(type="int", aliases=["polling_timeout"], default=600),
         ),
-        supports_check_mode=True
+        required_one_of=[["instance_groups", "instances"]],
+        supports_check_mode=True,
     )
 
-    result = DatahubClusterInfo(module)
-    output = dict(changed=False, datahubs=result.datahubs)
+    result = DatahubClusterRepair(module)
+    output = dict(changed=result.changed, datahub=result.output)
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
@@ -381,5 +545,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
