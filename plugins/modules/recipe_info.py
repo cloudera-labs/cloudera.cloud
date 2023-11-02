@@ -26,11 +26,12 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = r"""
 ---
-module: datahub_recipe_info
-short_description: Gather information about CDP Datahub recipes
+module: recipe_info
+short_description: Gather information about CDP recipes
 description:
-    - Gather information about CDP Datahub recipes.
-    - A recipe is a script that runs on all nodes of a specified instance group of a Datahub.
+    - Gather information about CDP recipes.
+    - A recipe is a script that runs on nodes of Data Hub, Datalake, or FreeIPA nodes.
+    - See the L(Cloudera documentation on recipes,https://docs.cloudera.com/data-hub/cloud/recipes/topics/mc-creating-custom-scripts-recipes.html) for details.
 author:
   - "Webster Mudge (@wmudge)"
 requirements:
@@ -60,15 +61,15 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-- name: List all Datahub recipes
-  cloudera.cloud.datahub_recipe_info:
+- name: List all recipes
+  cloudera.cloud.recipe_info:
 
 - name: Gather information about a named recipe
-  cloudera.cloud.datahub_recipe_info:
+  cloudera.cloud.recipe_info:
     name: example-recipe
     
 - name: Gather detailed information about a named recipe
-  cloudera.cloud.datahub_recipe_info:
+  cloudera.cloud.recipe_info:
     name: example-recipe
     return_content: yes
   register: my_recipe
@@ -120,9 +121,9 @@ sdk_out_lines:
 """
 
 
-class DatahubRecipeInfo(CdpModule):
+class RecipeInfo(CdpModule):
     def __init__(self, module):
-        super(DatahubRecipeInfo, self).__init__(module)
+        super(RecipeInfo, self).__init__(module)
 
         # Set variables
         self.name = self._get_param("name")
@@ -193,7 +194,7 @@ def main():
         supports_check_mode=True,
     )
 
-    result = DatahubRecipeInfo(module)
+    result = RecipeInfo(module)
     output = dict(changed=False, recipes=result.recipes)
 
     if result.debug:

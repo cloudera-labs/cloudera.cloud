@@ -28,11 +28,12 @@ ANSIBLE_METADATA = {
 
 DOCUMENTATION = r"""
 ---
-module: datahub_recipe
-short_description: Manage a CDP Datahub recipe
+module: recipe
+short_description: Manage a CDP recipe
 description:
-    - Create, update, and delete a CDP Datahub recipe.
-    - A recipe is a script that runs on all nodes of a specified instance group of a Datahub.
+    - Create, update, and delete a CDP recipe.
+    - A recipe is a script that runs on nodes of Data Hub, Datalake, or FreeIPA nodes.
+    - See the L(Cloudera documentation on recipes,https://docs.cloudera.com/data-hub/cloud/recipes/topics/mc-creating-custom-scripts-recipes.html) for details.
 author:
   - "Webster Mudge (@wmudge)"
 requirements:
@@ -88,7 +89,7 @@ EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 - name: Create a recipe
-  cloudera.cloud.datahub_recipe:
+  cloudera.cloud.recipe:
     name: example-recipe
     type: PRE_TERMINATION
     content: |
@@ -96,7 +97,7 @@ EXAMPLES = r"""
       echo "Done"
 
 - name: Delete a recipe
-  cloudera.cloud.datahub_recipe:
+  cloudera.cloud.recipe:
     name: example-recipe
     state: absent
 """
@@ -153,9 +154,9 @@ TYPES = [
 ]
 
 
-class DatahubRecipe(CdpModule):
+class Recipe(CdpModule):
     def __init__(self, module):
-        super(DatahubRecipe, self).__init__(module)
+        super(Recipe, self).__init__(module)
 
         # Set variables
         self.state = self._get_param("state")
@@ -251,7 +252,7 @@ def main():
         supports_check_mode=True,
     )
 
-    result = DatahubRecipe(module)
+    result = Recipe(module)
     output = dict(changed=result.changed, recipe=result.recipe)
 
     if result.debug:
