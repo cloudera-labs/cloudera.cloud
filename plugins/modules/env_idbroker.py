@@ -395,7 +395,7 @@ def main():
 
     output = dict(
         changed=result.changed,
-        mappings=result.idbroker,
+        idbroker=result.idbroker,
     )
 
     if result.debug:
