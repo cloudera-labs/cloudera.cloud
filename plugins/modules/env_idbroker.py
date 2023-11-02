@@ -395,7 +395,8 @@ def main():
 
     output = dict(
         changed=result.changed,
-        mappings=result.idbroker,
+        idbroker=result.idbroker,
+        mappings=result.idbroker, # TODO: Remove this legacy key
     )
 
     if result.debug:
