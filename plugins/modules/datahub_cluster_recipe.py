@@ -106,7 +106,7 @@ instance_group:
       description: Name of the CDP Datahub.
       returned: always
       type: str
-    detached_recipes::
+    detached_recipes:
       description: List of recipes detached from the instance group.
       returned: always
       type: list
