@@ -62,15 +62,15 @@ options:
     description: Flag to set up a load balancer for private subnets.
     type: bool
     default: False    
-  aws_public_subnets:
+  aws_lb_subnets:
     description:
-      - List of zero or more Public AWS Subnet IDs used for deployment.
+      - List of zero or more AWS Subnet IDs where the cluster load balancer should be deployed.
       - Required if I(state=present) and the I(env) is deployed to AWS.
     type: list
     elements: str
-  aws_private_subnets:
+  aws_worker_subnets:
     description:
-      - List of zero or more Private AWS Subnet IDs used for deployment.
+      - List of zero or more AWS Subnet IDs where the cluster worker nodes should be deployed.
       - Required if I(state=present) and the I(env) is deployed to AWS.
     type: list
     elements: str
@@ -136,8 +136,8 @@ EXAMPLES = r'''
 # Request AWS Cluster Creation
 - cloudera.cloud.dw_cluster:
     env_crn: crn:cdp:environments...
-    aws_public_subnets: [subnet-id-1, subnet-id-2]
-    aws_private_subnets: [subnet-id-3, subnet-id-4]
+    aws_lb_subnets: [subnet-id-1, subnet-id-2]
+    aws_worker_subnets: [subnet-id-3, subnet-id-4]
 
 # Delete a Data Warehouse Cluster
 - cloudera.cloud.dw_cluster:
@@ -224,8 +224,8 @@ class DwCluster(CdpModule):
         self.private_load_balancer = self._get_param('private_load_balancer')
         self.az_subnet = self._get_param('az_subnet')
         self.az_enable_az = self._get_param('az_enable_az')
-        self.aws_public_subnets = self._get_param('aws_public_subnets')
-        self.aws_private_subnets = self._get_param('aws_private_subnets')
+        self.aws_lb_subnets = self._get_param('aws_lb_subnets')
+        self.aws_worker_subnets = self._get_param('aws_worker_subnets')
         self.force = self._get_param('force')
         self.state = self._get_param('state')
         self.wait = self._get_param('wait')
@@ -311,7 +311,7 @@ class DwCluster(CdpModule):
                     else:
                         self.name = self.cdpy.dw.create_cluster(
                             env_crn=env_crn, overlay=self.overlay, private_load_balancer=self.private_load_balancer,
-                            aws_public_subnets=self.aws_public_subnets, aws_private_subnets=self.aws_private_subnets,
+                            aws_lb_subnets=self.aws_lb_subnets, aws_worker_subnets=self.aws_worker_subnets,
                             az_subnet=self.az_subnet, az_enable_az=self.az_enable_az
                         )
                         if self.wait:
@@ -337,8 +337,8 @@ def main():
             private_load_balancer=dict(type='bool', default=False),
             az_subnet=dict(type='str'),
             az_enable_az=dict(type='bool'),
-            aws_public_subnets=dict(type='list'),
-            aws_private_subnets=dict(type='list'),
+            aws_lb_subnets=dict(type='list', aliases=['aws_public_subnets']),
+            aws_worker_subnets=dict(type='list', aliases=['aws_private_subnets']),
             state=dict(type='str', choices=['present', 'absent'], default='present'),
             force=dict(type='bool', default=False),
             wait=dict(type='bool', default=True),
@@ -347,7 +347,7 @@ def main():
         ),
         required_together=[
             ['az_subnet', 'az_enable_az'],
-            ['aws_public_subnets', 'aws_private_subnets']
+            ['aws_lb_subnets', 'aws_worker_subnets']
         ],
         required_if=[
             ['state', 'absent', ['cluster_id', 'env'], True],
