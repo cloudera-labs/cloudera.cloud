@@ -91,6 +91,11 @@ options:
     - Creates a CDE endpoint (Load Balancer) in a publicly accessible subnet
     type: bool
     required: False
+  enable_private_network:
+    description:
+    - Create a fully private CDE instance
+    type: bool
+    required: False
   loadbalancer_ips:
     description:
     - List of CIDRs allowed to access the load balancer.
@@ -346,6 +351,7 @@ class DEService(CdpModule):
         self.maximum_spot_instances = self._get_param('maximum_spot_instances')
         self.chart_value_overrides = self._get_param('chart_value_overrides')
         self.enable_public_endpoint = self._get_param('enable_public_endpoint')
+        self.enable_private_network = self._get_param('enable_private_network')
         self.enable_workload_analytics = self._get_param('enable_workload_analytics')
         self.initial_instances = self._get_param('initial_instances')
         self.initial_spot_instances = self._get_param('initial_spot_instances')
@@ -448,6 +454,7 @@ class DEService(CdpModule):
             maximum_spot_instances=self.maximum_spot_instances,
             chart_value_overrides=self.chart_value_overrides,
             enable_public_endpoint=self.enable_public_endpoint,
+            enable_private_network=self.enable_private_network,
             loadbalancer_allowlist=self.loadbalancer_ips,
             enable_workload_analytics=self.enable_workload_analytics,
             initial_instances=self.initial_instances,
@@ -502,6 +509,7 @@ def main():
             maximum_spot_instances=dict(required=False, type='int', default=0),
             chart_value_overrides=dict(required=False, type='list', default=None),
             enable_public_endpoint=dict(required=False, type='bool', default=True),
+            enable_private_network=dict(required=False, type='bool', default=False),
             loadbalancer_ips=dict(required=False, type='list', elements='str', default=None),
             enable_workload_analytics=dict(required=False, type='bool', default=True),
             initial_instances=dict(required=False, type='int', default=1),

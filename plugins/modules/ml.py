@@ -274,7 +274,7 @@ options:
       - enable_public_loadbalancer
   private_cluster:
     description:
-      - Flag to specify if a private cluster should be created.
+      - Flag to specify if a private K8s cluster should be created.
     type: bool
     required: False
     default: False
