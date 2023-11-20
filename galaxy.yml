@@ -16,7 +16,7 @@
 
 namespace:  cloudera
 name:       cloud
-version:    2.1.1
+version:    2.2.0
 readme:     README.md
 authors:    []
 
@@ -40,6 +40,10 @@ documentation:  https://cloudera-labs.github.io/cloudera.cloud
 
 build_ignore:
 - '.*'
+- '*.log'
+- '*.tar.gz'
 - docs
-- docsrc
-- site
+- docsbuild
+- tests
+- pytest.ini
+- builder
