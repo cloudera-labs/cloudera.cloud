@@ -272,6 +272,14 @@ options:
     default: False
     aliases:
       - enable_public_loadbalancer
+  private_cluster:
+    description:
+      - Flag to specify if a private K8s cluster should be created.
+    type: bool
+    required: False
+    default: False
+    aliases:
+      - enable_private_cluster
   force:
     description:
       - Flag to force delete a workspace even if errors occur during deletion.
@@ -586,6 +594,7 @@ class MLWorkspace(CdpModule):
         self.nfs_version = self._get_param('nfs_version')
         self.ip_addresses = self._get_param('ip_addresses')
         self.public_loadbalancer = self._get_param('public_loadbalancer')
+        self.private_cluster = self._get_param('private_cluster')
         self.k8s_request = self._get_param('k8s_request')
 
         self.force = self._get_param('force')
@@ -665,6 +674,7 @@ class MLWorkspace(CdpModule):
                         nfsVersion=self.nfs_version,
                         loadBalancerIPWhitelists=self.ip_addresses,
                         usePublicLoadBalancer=self.public_loadbalancer,
+                        privateCluster=self.private_cluster,
                         provisionK8sRequest=self.k8s_request
                     )
                     if self.k8s_request and self.k8s_request['tags'] is not None:
@@ -775,6 +785,8 @@ def main():
                               'loadbalancer_access_ips']),
             public_loadbalancer=dict(required=False, type='bool', default=False, aliases=[
                                      'enable_public_loadbalancer']),
+            private_cluster=dict(required=False, type='bool', default=False, aliases=[
+                                     'enable_private_cluster']),
             force=dict(required=False, type='bool',
                        default=False, aliases=['force_delete']),
             storage=dict(required=False, type='bool',

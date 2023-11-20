@@ -79,6 +79,14 @@ options:
     required: False
     aliases:
       - use_public_load_balancer
+  private_cluster:
+    description:
+      - Flag to specify if a private K8s cluster should be created.
+    type: bool
+    required: False
+    default: False
+    aliases:
+      - enable_private_cluster
   loadbalancer_ip_ranges:
     description: The IP ranges authorized to connect to the load balancer
     type: list
@@ -295,6 +303,7 @@ class DFService(CdpModule):
         self.nodes_min = self._get_param('nodes_min')
         self.nodes_max = self._get_param('nodes_max')
         self.public_loadbalancer = self._get_param('public_loadbalancer')
+        self.private_cluster = self._get_param('private_cluster')
         self.lb_ip_ranges = self._get_param('loadbalancer_ip_ranges')
         self.k8s_ip_ranges = self._get_param('k8s_ip_ranges')
         self.cluster_subnets = self._get_param('cluster_subnets')
@@ -378,6 +387,7 @@ class DFService(CdpModule):
                             min_nodes=self.nodes_min,
                             max_nodes=self.nodes_max,
                             enable_public_ip=self.public_loadbalancer,
+                            private_cluster=self.private_cluster,
                             lb_ips=self.lb_ip_ranges,
                             kube_ips=self.k8s_ip_ranges,
                             # tags=self.tags,  # Currently overstrict blocking of values
@@ -472,6 +482,7 @@ def main():
             nodes_min=dict(type='int', default=3, aliases=['min_k8s_node_count']),
             nodes_max=dict(type='int', default=3, aliases=['max_k8s_node_count']),
             public_loadbalancer=dict(type='bool', default=False, aliases=['use_public_load_balancer']),
+            private_cluster=dict(type='bool', default=False, aliases=['enable_private_cluster']),
             loadbalancer_ip_ranges=dict(type='list', elements='str', default=None),
             k8s_ip_ranges=dict(type='list', elements='str', default=None),
             cluster_subnets=dict(type='list', elements='str', default=None),
