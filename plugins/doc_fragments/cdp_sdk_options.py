@@ -34,6 +34,15 @@ class ModuleDocFragment(object):
             default: False
             aliases:
                 - debug_endpoints
+        cdp_region:
+            description:
+                - Specify the Cloudera Data Platform endpoint region.
+            type: str
+            required: False
+            default: "default"
+            aliases:
+                - cdp_endpoint_region
+                - endpoint_region
     '''
 
     RETURN = r'''

@@ -26,14 +26,12 @@ from cdpy.common import CdpError, CdpWarning
 
 
 __credits__ = ["cleroy@cloudera.com"]
-__maintainer__ = [
-    "dchaffelson@cloudera.com",
-    "wmudge@cloudera.com"
-]
+__maintainer__ = ["dchaffelson@cloudera.com", "wmudge@cloudera.com"]
 
 
 class CdpModule(object):
     """A base CDP module class for common parameters, fields, and methods."""
+
     class _Decorators(object):
         @classmethod
         def process_debug(cls, f):
@@ -50,11 +48,11 @@ class CdpModule(object):
     def __init__(self, module):
         # Set common parameters
         self.module = module
-        self.tls = self._get_param('verify_tls', False)
-        self.debug = self._get_param('debug', False)
-        self.strict = self._get_param('strict', False)
-        self.agent_header = self._get_param('agent_header', 'ClouderaFoundry')
-        self.cp_region = self._get_param('cp_region', 'default')
+        self.tls = self._get_param("verify_tls", False)
+        self.debug = self._get_param("debug", False)
+        self.strict = self._get_param("strict", False)
+        self.agent_header = self._get_param("agent_header", "ClouderaFoundry")
+        self.cdp_region = self._get_param("cdp_region", "default")
 
         # Initialize common return values
         self.log_out = None
@@ -69,7 +67,7 @@ class CdpModule(object):
             error_handler=self._cdp_module_throw_error,
             warning_handler=self._cdp_module_throw_warning,
             agent_header=self.agent_header,
-            cp_region=self.cp_region
+            cp_region=self.cdp_region,  # Note, parameter name switch
         )
 
     # Private functions
@@ -80,11 +78,15 @@ class CdpModule(object):
             return self.module.params[param] if param in self.module.params else default
         return default
 
-    def _cdp_module_throw_error(self, error: 'CdpError'):
+    def _cdp_module_throw_error(self, error: "CdpError"):
         """Error handler for CDPy SDK"""
-        self.module.fail_json(msg=str(error.message), error=str(error.__dict__), violations=error.violations)
+        self.module.fail_json(
+            msg=str(error.message),
+            error=str(error.__dict__),
+            violations=error.violations,
+        )
 
-    def _cdp_module_throw_warning(self, warning: 'CdpWarning'):
+    def _cdp_module_throw_warning(self, warning: "CdpWarning"):
         """Warning handler for CDPy SDK"""
         if self.module._debug or self.module._verbosity >= 2:
             self.module.warn(warning.message)
@@ -94,9 +96,18 @@ class CdpModule(object):
         """Default Ansible Module spec values for convenience"""
         return dict(
             **spec,
-            verify_tls=dict(required=False, type='bool', default=True, aliases=['tls']),
-            debug=dict(required=False, type='bool', default=False, aliases=['debug_endpoints']),
-            strict=dict(required=False, type='bool', default=False, aliases=['strict_errors']),
-            agent_header=dict(required=False, type='str', default='ClouderaFoundry'),
-            cp_region=dict(required=False, type='str', default='default')
+            verify_tls=dict(required=False, type="bool", default=True, aliases=["tls"]),
+            debug=dict(
+                required=False, type="bool", default=False, aliases=["debug_endpoints"]
+            ),
+            strict=dict(
+                required=False, type="bool", default=False, aliases=["strict_errors"]
+            ),
+            agent_header=dict(required=False, type="str", default="ClouderaFoundry"),
+            cdp_region=dict(
+                required=False,
+                type="str",
+                default="default",
+                aliases=["cdp_endpoint_region", "endpoint_region"],
+            )
         )
