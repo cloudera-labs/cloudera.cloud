@@ -84,6 +84,47 @@ options:
       - Flag to enable Availability Zone mode.
       - Required if I(state=present) and the I(env) is deployed to Azure.
     type: bool
+  az_managed_identity:
+    description:
+      - Resource ID of the managed identity used by AKS.
+      - Required if I(state=present) and the I(env) is deployed to Azure.
+    type: str
+  az_enable_private_aks:
+    description:
+      - Flag to enable Azure Private AKS mode.
+    type: bool
+  az_enable_private_sql:
+    description:
+      - Flag to enable private SQL for the cluster deployment.
+    type: bool  
+  az_enable_spot_instances:
+    description:
+      - Flag to enable spot instances for Virtual warehouses.
+    type: bool
+  az_log_analytics_workspace_id:
+    description:
+      - Workspace ID for Azure log analytics.
+      - Used to monitor the Azure Kubernetes Service (AKS) cluster.
+    type: str  
+  az_network_outbound_type:
+    description:
+      - Network outbound type. 
+      - This setting controls the egress traffic for cluster nodes in Azure Kubernetes Service
+    type: str
+    choices:
+      - LoadBalancer
+      - UserAssignedNATGateway
+      - UserDefinedRouting
+  az_aks_private_dns_zone:
+    description:
+      - ID for the private DNS zone used by AKS.
+    type: str
+  az_compute_instance_types:
+    description:
+      - List of Azure Compute Instance Types that the AKS environment is restricted to use.
+      - Only a single instance type can be listed.
+    type: list
+    elements: str
   state:
     description: The state of the Data Warehouse Cluster
     type: str
@@ -132,6 +173,7 @@ EXAMPLES = r'''
     env_crn: crn:cdp:environments...
     az_subnet: my-subnet-name
     az_enable_az: yes
+    az_managed_identity: my-aks-managed-identity
 
 # Request AWS Cluster Creation
 - cloudera.cloud.dw_cluster:
@@ -224,6 +266,14 @@ class DwCluster(CdpModule):
         self.private_load_balancer = self._get_param('private_load_balancer')
         self.az_subnet = self._get_param('az_subnet')
         self.az_enable_az = self._get_param('az_enable_az')
+        self.az_managed_identity = self._get_param('az_managed_identity')
+        self.az_enable_private_aks = self._get_param('az_enable_private_aks')
+        self.az_enable_private_sql = self._get_param('az_enable_private_sql')
+        self.az_enable_spot_instances = self._get_param('az_enable_spot_instances')
+        self.az_log_analytics_workspace_id = self._get_param('az_log_analytics_workspace_id')
+        self.az_network_outbound_type = self._get_param('az_network_outbound_type')
+        self.az_aks_private_dns_zone = self._get_param('az_aks_private_dns_zone')
+        self.az_compute_instance_types = self._get_param('az_compute_instance_types')
         self.aws_lb_subnets = self._get_param('aws_lb_subnets')
         self.aws_worker_subnets = self._get_param('aws_worker_subnets')
         self.force = self._get_param('force')
@@ -312,8 +362,13 @@ class DwCluster(CdpModule):
                         self.name = self.cdpy.dw.create_cluster(
                             env_crn=env_crn, overlay=self.overlay, private_load_balancer=self.private_load_balancer,
                             aws_lb_subnets=self.aws_lb_subnets, aws_worker_subnets=self.aws_worker_subnets,
-                            az_subnet=self.az_subnet, az_enable_az=self.az_enable_az
+                            az_subnet=self.az_subnet, az_enable_az=self.az_enable_az, az_managed_identity=self.az_managed_identity,
+                            az_enable_private_aks=self.az_enable_private_aks, az_enable_private_sql=self.az_enable_private_sql,
+                            az_enable_spot_instances=self.az_enable_spot_instances, az_log_analytics_workspace_id=self.az_log_analytics_workspace_id,
+                            az_network_outbound_type=self.az_network_outbound_type, az_aks_private_dns_zone=self.az_aks_private_dns_zone,
+                            az_compute_instance_types=self.az_compute_instance_types
                         )
+
                         if self.wait:
                             self.cluster = self.cdpy.sdk.wait_for_state(
                                 describe_func=self.cdpy.dw.describe_cluster,
@@ -337,6 +392,14 @@ def main():
             private_load_balancer=dict(type='bool', default=False),
             az_subnet=dict(type='str'),
             az_enable_az=dict(type='bool'),
+            az_managed_identity=dict(type='str'),
+            az_enable_private_aks=dict(type='bool'),
+            az_enable_private_sql=dict(type='bool'),
+            az_enable_spot_instances=dict(type='bool'),
+            az_log_analytics_workspace_id=dict(type='str'),
+            az_network_outbound_type=dict(type='str', choices=['LoadBalancer','UserAssignedNATGateway','UserDefinedRouting']),
+            az_aks_private_dns_zone=dict(type='str'),
+            az_compute_instance_types=dict(type='list'),
             aws_lb_subnets=dict(type='list', aliases=['aws_public_subnets']),
             aws_worker_subnets=dict(type='list', aliases=['aws_private_subnets']),
             state=dict(type='str', choices=['present', 'absent'], default='present'),
@@ -346,7 +409,7 @@ def main():
             timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
         required_together=[
-            ['az_subnet', 'az_enable_az'],
+            ['az_subnet', 'az_enable_az', 'az_managed_identity'],
             ['aws_lb_subnets', 'aws_worker_subnets']
         ],
         required_if=[
