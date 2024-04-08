@@ -88,10 +88,12 @@ options:
   scale:
     description:
       - The scale of the datalake.
+      - Note that the choice of MEDIUM_DUTY_HA is deprecated since datalake version 7.2.18.
     type: str
     required: False
     choices:
       - LIGHT_DUTY
+      - ENTERPRISE
       - MEDIUM_DUTY_HA
     default: LIGHT_DUTY
   tags:
