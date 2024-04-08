@@ -88,7 +88,7 @@ options:
   scale:
     description:
       - The scale of the datalake.
-      - Note that the choice of MEDIUM_DUTY_HA is deprecated since datalake version 7.2.18.
+      - Note that the choice of MEDIUM_DUTY_HA is unsupported since datalake version 7.2.18.
     type: str
     required: False
     choices:
