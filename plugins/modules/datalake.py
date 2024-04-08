@@ -88,10 +88,12 @@ options:
   scale:
     description:
       - The scale of the datalake.
+      - Note that the choice of MEDIUM_DUTY_HA is unsupported since datalake version 7.2.18.
     type: str
     required: False
     choices:
       - LIGHT_DUTY
+      - ENTERPRISE
       - MEDIUM_DUTY_HA
     default: LIGHT_DUTY
   tags:
@@ -661,7 +663,7 @@ def main():
 
             environment=dict(required=False, type='str', aliases=['env']),
             runtime=dict(required=False, type='str'),
-            scale=dict(required=False, type='str', choices=['LIGHT_DUTY', 'MEDIUM_DUTY_HA']),
+            scale=dict(required=False, type='str', choices=['LIGHT_DUTY', 'ENTERPRISE', 'MEDIUM_DUTY_HA']),
             tags=dict(required=False, type='dict', aliases=['datalake_tags']),
 
             force=dict(required=False, type='bool', default=False),
