@@ -1,19 +1,88 @@
----
-
-# Copyright 2023 Cloudera, Inc. All Rights Reserved.
-#
+# Copyright 2024 Cloudera, Inc.
+# 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
+#     https://www.apache.org/licenses/LICENSE-2.0
+# 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+---
+
 requires_ansible: ">=2.10"
 
-# action_groups: {}
+action_groups:
+  cdp:
+    - account_auth
+    - account_auth_info
+    - account_cred_info
+    - datahub_cluster
+    - datahub_cluster_info
+    - datahub_cluster_recipe
+    - datahub_cluster_repair
+    - datahub_definition_info
+    - datahub_template_info
+    - datalake
+    - datalake_info
+    - datalake_runtime_info
+    - de
+    - de_info
+    - de_virtual_cluster
+    - de_virtual_cluster_info
+    - df_customflow
+    - df_customflow_info
+    - df_customflow_version
+    - df_deployment
+    - df_deployment_info
+    - df_readyflow
+    - df_readyflow_info
+    - df_service
+    - df_service_info
+    - dw_cluster
+    - dw_cluster_info
+    - dw_data_visualization
+    - dw_data_visualization_info
+    - dw_database_catalog
+    - dw_database_catalog_info
+    - dw_virtual_warehouse
+    - dw_virtual_warehouse_info
+    - env
+    - env_auth
+    - env_auth_info
+    - env_automated_user_sync_info
+    - env_cred
+    - env_cred_info
+    - env_idbroker
+    - env_idbroker_info
+    - env_info
+    - env_proxy
+    - env_proxy_info
+    - env_telemetry
+    - env_user_sync
+    - env_user_sync_info
+    - freeipa_info
+    - iam_group
+    - iam_group_info
+    - iam_resource_role_info
+    - iam_user_info
+    - ml
+    - ml_info
+    - ml_workspace_access
+    - opdb
+    - opdb_info
+    - recipe
+    - recipe_info
+  datahub_cluster:
+    - datahub_cluster_info
+    - datahub_cluster_recipe
+    - datahub_cluster_repair
+    - datahub_cluster
+  df_custom_flow:
+    - df_customflow_info
+    - df_customflow_version
+    - df_customflow
