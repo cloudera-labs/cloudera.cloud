@@ -17,6 +17,7 @@
 requires_ansible: ">=2.10"
 
 action_groups:
+  # TODO Convert to use 'extend_group'
   cdp:
     - account_auth
     - account_auth_info
