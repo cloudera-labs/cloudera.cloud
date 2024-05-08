@@ -291,8 +291,6 @@ class DwCluster(CdpModule):
         self.az_subnet = self._get_nested_param('azure', 'subnet')
         self.az_managed_identity = self._get_nested_param('azure', 'managed_identity')
 
-        self.module.fail_json(msg="az_subnet is {} az_log_analytics_workspace_id is {}".format(self.az_subnet, self.az_log_analytics_workspace_id))
-
         # Initialize return values
         self.cluster = {}
         self.changed = False
