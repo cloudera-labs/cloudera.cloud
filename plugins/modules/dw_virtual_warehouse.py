@@ -76,12 +76,47 @@ options:
       - small
       - medium
       - large
-  autoscaling_min_nodes:
-    description: The minimum number of available nodes for Virtual Warehouse autoscaling.
-    type: int
-  autoscaling_max_nodes:
-    description: The maximum number of available nodes for Virtual Warehouse autoscaling.
-    type: int
+  autoscaling:
+    description:
+      - Auto-scaling configuration for a Virtual Warehouse
+    type: dict
+    elements: dict
+    required: False
+    suboptions:      
+      min_nodes:
+        description: The minimum number of available nodes for Virtual Warehouse autoscaling.
+        type: int
+      max_nodes:
+        description: The maximum number of available nodes for Virtual Warehouse autoscaling.
+        type: int
+      auto_suspend_timeout_seconds:
+        description: Auto suspend threshold for Virtual Warehouse.
+        type: int
+      disable_auto_suspend:
+        description: Turn off auto suspend for Virtual Warehouse.
+        type: bool
+      hive_desired_free_capacity:
+        description:
+          - Set Desired free capacity for Hive Virtual Wearhouses.
+          - Either I(hive_scale_wait_time_seconds) or I(hive_desired_free_capacity) can be provided.
+        type: int
+      hive_scale_wait_time_seconds:
+        description:
+          - Set wait time before a scale event happens for Hive Virtual Wearhouses.
+          - Either I(hive_scale_wait_time_seconds) or I(hive_desired_free_capacity) can be provided.
+        type: int
+      impala_scale_down_delay_seconds:
+        description:
+          - Scale down threshold in seconds for Impala Virtual Wearhouses.
+        type: int
+      impala_scale_up_delay_seconds:
+        description:
+          - Scale up threshold in seconds for Impala Virtual Wearhouses.
+        type: int
+      pod_config_name:
+        description:
+          - Name of the pod configuration.
+        type: str
   common_configs: 
     description: Configurations that are applied to every application in the Virtual Warehouse service.
     type: dict
@@ -155,6 +190,35 @@ options:
                   json:
                     description: JSON type configuration.
                     type: str    
+  impala_ha:
+    description:
+      - High Availability settings for a Impala Virtual Warehouse
+    type: dict
+    elements: dict
+    required: False
+    suboptions:      
+      enable_catalog_high_availability:
+        description: Enables a backup instance for Impala catalog to ensure high availability.
+        type: bool
+      enable_shutdown_of_coordinator:
+        description: 
+          - Enables a shutdown of the coordinator. 
+          - If Unified Analytics is enabled, then this setting is explicitly disabled and should not be provided.
+        type: bool
+      high_availability_mode:
+        description: 
+          - Set High Availability mode. 
+        type: str
+        choices:
+          - ACTIVE_PASSIVE
+          - ACTIVE_ACTIVE
+          - DISABLED
+      num_of_active_coordinators:
+        description: The number of active coordinators.
+        type: int          
+      shutdown_of_coordinator_delay_seconds:
+        description: Delay in seconds before the shutdown of coordinator event happens.
+        type: int          
   ldap_groups:
     description: LDAP Groupnames to enabled for authentication to the Virtual Warehouse.
     type: list
@@ -163,6 +227,15 @@ options:
     description: Flag to enable Single Sign-On (SSO) for the Virtual Warehouse.
     type: bool
     default: False    
+  enable_unified_analytics:
+    description: 
+      - Flag to enable Unified Analytics for the Virtual Warehouse.
+      - This can only be specified in the case of Impala Virtual Warehouses.
+    type: bool
+  enable_platform_jwt_auth:
+    description:
+      - Flag to configure the Virtual Warehouse to support JWTs issues by the CDP JWT token provider.
+    type: bool
   tags:
     description: Key-value tags associated with the Virtual Warehouse cloud provider resources.
     type: dict
@@ -209,8 +282,9 @@ EXAMPLES = r'''
     name: example-virtual-warehouse
     type: hive
     template: xsmall
-    autoscaling_min_nodes: 3
-    autoscaling_max_nodes: 19
+    autoscaling:
+      min_nodes: 3
+      max_nodes: 19
     tags:
        some_key: "some value"
     enable_sso: true
@@ -324,8 +398,6 @@ class DwVirtualWarehouse(CdpModule):
         self.type = self._get_param('type')
         self.name = self._get_param('name')
         self.template = self._get_param('template')
-        self.autoscaling_min_nodes = self._get_param('autoscaling_min_nodes')
-        self.autoscaling_max_nodes = self._get_param('autoscaling_max_nodes')
         self.common_configs = self._get_param('common_configs')
         self.application_configs = self._get_param('application_configs')
         self.ldap_groups = self._get_param('ldap_groups')
@@ -335,6 +407,24 @@ class DwVirtualWarehouse(CdpModule):
         self.wait = self._get_param('wait')
         self.delay = self._get_param('delay')
         self.timeout = self._get_param('timeout')
+        self.enable_unified_analytics = self._get_param('enable_unified_analytics')
+        self.enable_platform_jwt_auth = self._get_param('enable_platform_jwt_auth')
+        # Autoscaling nested parameters
+        self.autoscaling_min_nodes = self._get_nested_param('autoscaling', 'min_nodes')
+        self.autoscaling_max_nodes = self._get_nested_param('autoscaling', 'max_nodes')
+        self.autoscaling_auto_suspend_timeout_seconds = self._get_nested_param('autoscaling', 'auto_suspend_timeout_seconds')
+        self.autoscaling_disable_auto_suspend = self._get_nested_param('autoscaling', 'disable_auto_suspend')
+        self.autoscaling_hive_desired_free_capacity = self._get_nested_param('autoscaling', 'hive_desired_free_capacity')
+        self.autoscaling_hive_scale_wait_time_seconds = self._get_nested_param('autoscaling', 'hive_scale_wait_time_seconds')
+        self.autoscaling_impala_scale_down_delay_seconds = self._get_nested_param('autoscaling', 'impala_scale_down_delay_seconds')
+        self.autoscaling_impala_scale_up_delay_seconds = self._get_nested_param('autoscaling', 'impala_scale_up_delay_seconds')
+        self.autoscaling_pod_config_name = self._get_nested_param('autoscaling', 'pod_config_name')
+        # impala_ha nested parameters
+        self.impala_ha_enable_catalog_high_availability = self._get_nested_param('impala_ha', 'enable_catalog_high_availability')
+        self.impala_ha_enable_shutdown_of_coordinator = self._get_nested_param('impala_ha', 'enable_shutdown_of_coordinator')
+        self.impala_ha_high_availability_mode = self._get_nested_param('impala_ha', 'high_availability_mode')
+        self.impala_ha_num_of_active_coordinators = self._get_nested_param('impala_ha', 'num_of_active_coordinators')
+        self.impala_ha_shutdown_of_coordinator_delay_seconds = self._get_nested_param('impala_ha', 'shutdown_of_coordinator_delay_seconds')
 
         # Initialize return values
         self.virtual_warehouse = {}
@@ -407,9 +497,23 @@ class DwVirtualWarehouse(CdpModule):
                                                    template=self.template,
                                                    autoscaling_min_cluster=self.autoscaling_min_nodes,
                                                    autoscaling_max_cluster=self.autoscaling_max_nodes,
+                                                   autoscaling_auto_suspend_timeout_seconds=self.autoscaling_auto_suspend_timeout_seconds,
+                                                   autoscaling_disable_auto_suspend=self.autoscaling_disable_auto_suspend,
+                                                   autoscaling_hive_desired_free_capacity=self.autoscaling_hive_desired_free_capacity,
+                                                   autoscaling_hive_scale_wait_time_seconds=self.autoscaling_hive_scale_wait_time_seconds,
+                                                   autoscaling_impala_scale_down_delay_seconds=self.autoscaling_impala_scale_down_delay_seconds,
+                                                   autoscaling_impala_scale_up_delay_seconds=self.autoscaling_impala_scale_up_delay_seconds,
+                                                   autoscaling_pod_config_name=self.autoscaling_pod_config_name,
+                                                   impala_ha_enable_catalog_high_availability=self.impala_ha_enable_catalog_high_availability,
+                                                   impala_ha_enable_shutdown_of_coordinator=self.impala_ha_enable_shutdown_of_coordinator,
+                                                   impala_ha_high_availability_mode=self.impala_ha_high_availability_mode,
+                                                   impala_ha_num_of_active_coordinators=self.impala_ha_num_of_active_coordinators,
+                                                   impala_ha_shutdown_of_coordinator_delay_seconds=self.impala_ha_shutdown_of_coordinator_delay_seconds,
                                                    common_configs=self.common_configs,
                                                    application_configs=self.application_configs,
                                                    ldap_groups=self.ldap_groups, enable_sso=self.enable_sso,
+                                                   enable_unified_analytics=self.enable_unified_analytics,
+                                                   enable_platform_jwt_auth=self.enable_platform_jwt_auth,
                                                    tags=self.tags)
                     self.changed = True
                     if self.wait:
@@ -435,8 +539,30 @@ def main():
             type=dict(type='str'),
             name=dict(type='str'),
             template=dict(type='str', choices=['xsmall', 'small', 'medium', 'large']),
-            autoscaling_min_nodes=dict(type='int'),
-            autoscaling_max_nodes=dict(type='int'),
+            autoscaling=dict(
+                type='dict',
+                options=dict(
+                    min_nodes=dict(type='int'),
+                    max_nodes=dict(type='int'),
+                    auto_suspend_timeout_seconds=dict(type='int'),
+                    disable_auto_suspend=dict(type='bool'),
+                    hive_desired_free_capacity=dict(type='int'),
+                    hive_scale_wait_time_seconds=dict(type='int'),
+                    impala_scale_down_delay_seconds=dict(type='int'),
+                    impala_scale_up_delay_seconds=dict(type='int'),
+                    pod_config_name=dict(type='str')
+                )
+            ),
+            impala_ha=dict(
+                type='dict',
+                options=dict(
+                  enable_catalog_high_availability=dict(type='bool'),
+                  enable_shutdown_of_coordinator=dict(type='bool'),
+                  high_availability_mode=dict(type='str', choices=['ACTIVE_PASSIVE', 'ACTIVE_ACTIVE', 'DISABLED']),
+                  num_of_active_coordinators=dict(type='int'),
+                  shutdown_of_coordinator_delay_seconds=dict(type='int')
+                )
+            ),
             common_configs=dict(type='dict', options=dict(
                 configBlocks=dict(type='list', elements='dict', options=dict(
                     id=dict(type='str'),
@@ -456,7 +582,9 @@ def main():
             state=dict(type='str', choices=['present', 'absent'], default='present'),
             wait=dict(type='bool', default=True),
             delay=dict(type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
+            timeout=dict(type='int', aliases=['polling_timeout'], default=3600),
+            enable_unified_analytics=dict(type='bool'),
+            enable_platform_jwt_auth=dict(type='bool')
         ),
         required_if=[
             ['state', 'absent', ['warehouse_id']],
