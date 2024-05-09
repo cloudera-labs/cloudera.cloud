@@ -81,11 +81,10 @@ class CdpModule(object):
     def _get_nested_param(self, param, suboption, default=None):
         """Fetches an nested suboption from an Ansible Input Parameter if it exists, else returns optional default or None"""          
         if self.module is not None:
-            if param in self.module.params:
+            if param in self.module.params and self.module.params[param] is not None:
                 param_suboptions = self.module.params[param]
                 return param_suboptions.get(suboption, default)
-        else:
-            return default
+        return default
 
     def _cdp_module_throw_error(self, error: "CdpError"):
         """Error handler for CDPy SDK"""
