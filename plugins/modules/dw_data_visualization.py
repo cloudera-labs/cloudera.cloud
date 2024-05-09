@@ -74,6 +74,10 @@ options:
           - Must be a list of strings, e.g., ['admin_group1', 'admin_group2'].
         type: list
         elements: str
+      resourcePool:
+        description:
+          - The Resource Pool of the Cloudera Data Visualization.
+        type: str        
   state:
     description: The state of the Data Visualization Instance
     type: str
@@ -81,6 +85,12 @@ options:
     choices:
       - present
       - absent
+  image_version:
+    description: Version of the Cloudera Data Visualization.
+    type: str
+  template_name:
+    description: The template size for the Cloudera Data Visualization.
+    type: str
   wait:
     description:
       - Flag to enable internal polling to wait for the Data Visualization Instance to achieve the declared state.
@@ -124,9 +134,6 @@ EXAMPLES = r'''
 - cloudera.cloud.dw_data_visualization:
     environment: example-env
     name: example-name
-    config:
-      userGroups:  "[ example_user_group ]"
-      adminGroups: "[ example_admin_group ]"
     state: absent
 '''
 
@@ -183,6 +190,8 @@ class DwCluster(CdpModule):
         self.name = self._get_param('name')
         self.config = self._get_param('config')
         self.state = self._get_param('state')
+        self.template_name = self._get_param('template_name')
+        self.image_version = self._get_param('image_version')
         self.wait = self._get_param('wait')
         self.delay = self._get_param('delay')
         self.timeout = self._get_param('timeout')
@@ -275,6 +284,8 @@ class DwCluster(CdpModule):
                         cluster_id=self.cluster['id'],
                         name=self.name,
                         config=self.config,
+                        template_name=self.template_name,
+                        image_version=self.image_version
                     )
                     if self.wait:
                         self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
@@ -296,6 +307,8 @@ def main():
             id=dict(type='str'),
             name=dict(type='str'),
             config=dict(type='dict'),
+            template_name=dict(type='str'),            
+            image_version=dict(type='str'),            
             state=dict(type='str', choices=['present', 'absent'], default='present'),
             wait=dict(type='bool', default=True),
             delay=dict(type='int', aliases=['polling_delay'], default=15),
