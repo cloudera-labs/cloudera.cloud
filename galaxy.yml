@@ -18,7 +18,10 @@ namespace:  cloudera
 name:       cloud
 version:    2.3.1
 readme:     README.md
-authors:    []
+authors:
+  - Jim Enright @jenright
+  - Ronald Suplina @rsuplina
+  - Webster Mudge @wmudge
 
 description: >
   A set of modules and other artifacts for interacting with the services and endpoints
@@ -30,6 +33,8 @@ tags:
 - azure
 - aws
 - gcp
+- data_service
+- data_hub
 
 dependencies: {}
 
