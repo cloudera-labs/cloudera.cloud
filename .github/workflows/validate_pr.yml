@@ -75,9 +75,16 @@ jobs:
         run: |
           mkdir -p ./pr
           echo $PR_NUMBER > ./pr/pr_number
-      
+        
       - name: Upload the PR number
         uses: actions/upload-artifact@v3
         with:
           name: pr_number
           path: pr/
+
+  import-galaxy:
+    needs: validate
+    permissions:
+      contents: read
+    name: Import collection with Galaxy importer
+    uses: ansible-community/github-action-test-galaxy-import/.github/workflows/test-galaxy-import.yml@main
