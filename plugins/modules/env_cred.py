@@ -124,7 +124,7 @@ EXAMPLES = r'''
     cloud: aws
     name: example-credential
     description: This is an example Credential
-    role: arn:aws:iam::981304421142:role/some-cross-account-role
+    role: arn:aws:iam::123456789123:role/some-cross-account-role
 
 # Delete a CDP Credential
 - cloudera.cloud.env_cred:

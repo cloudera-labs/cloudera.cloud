@@ -316,7 +316,7 @@ EXAMPLES = r'''
     cloud: aws
     region: us-east-1
     log_location: s3a://example-bucket/datalake/logs
-    log_identity: arn:aws:iam::981304421142:instance-profile/example-log-role
+    log_identity: arn:aws:iam::123456789123:instance-profile/example-log-role
     backup_location: s3a://example-bucket/datalake/backups
     public_key_id: example-sshkey
     network_cidr: 10.10.0.0/16
@@ -333,7 +333,7 @@ EXAMPLES = r'''
     cloud: aws
     region: us-east-1
     log_location: s3a://example-bucket/datalake/logs
-    log_identity: arn:aws:iam::981304421142:instance-profile/example-log-role
+    log_identity: arn:aws:iam::123456789123:instance-profile/example-log-role
     public_key_id: example-sshkey
     network_cidr: 10.10.0.0/16
     inbound_cidr: 0.0.0.0/0
