@@ -61,7 +61,10 @@ options:
   private_load_balancer:
     description: Flag to set up a load balancer for private subnets.
     type: bool
-    default: False    
+    default: False
+  public_worker_node:
+    description: Set up public facing worker nodes.
+    type: bool
   aws_lb_subnets:
     description:
       - List of zero or more AWS Subnet IDs where the cluster load balancer should be deployed.
@@ -272,6 +275,7 @@ class DwCluster(CdpModule):
         self.env = self._get_param('env')
         self.overlay = self._get_param('overlay')
         self.private_load_balancer = self._get_param('private_load_balancer')
+        self.public_worker_node = self._get_param('public_worker_node')
         self.aws_lb_subnets = self._get_param('aws_lb_subnets')
         self.aws_worker_subnets = self._get_param('aws_worker_subnets')
         self.force = self._get_param('force')
@@ -370,7 +374,7 @@ class DwCluster(CdpModule):
                     else:
                         self.name = self.cdpy.dw.create_cluster(
                             env_crn=env_crn, overlay=self.overlay, private_load_balancer=self.private_load_balancer,
-                            aws_lb_subnets=self.aws_lb_subnets, aws_worker_subnets=self.aws_worker_subnets,
+                            public_worker_node=self.public_worker_node, aws_lb_subnets=self.aws_lb_subnets, aws_worker_subnets=self.aws_worker_subnets,
                             az_subnet=self.az_subnet, az_enable_az=self.az_enable_az, az_managed_identity=self.az_managed_identity,
                             az_enable_private_aks=self.az_enable_private_aks, az_enable_private_sql=self.az_enable_private_sql,
                             az_enable_spot_instances=self.az_enable_spot_instances, az_log_analytics_workspace_id=self.az_log_analytics_workspace_id,
@@ -398,6 +402,7 @@ def main():
             env=dict(type='str', aliases=['environment', 'env_crn']),
             overlay=dict(type='bool', default=False),
             private_load_balancer=dict(type='bool', default=False),
+            public_worker_node=dict(type='bool'),
             azure=dict(
                 type='dict',
                 options=dict(
