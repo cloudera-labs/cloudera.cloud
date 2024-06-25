@@ -112,7 +112,7 @@ EXAMPLES = r'''
     password: barbazgaz
 
 # Delete a proxy
-- cloudera.cloud.env_info:
+- cloudera.cloud.env_proxy:
     state: absent
     name: proxy-example
 '''
