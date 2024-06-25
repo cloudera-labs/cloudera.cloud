@@ -517,7 +517,7 @@ def main():
             root_volume_size=dict(required=False, type='int', default=100),
             skip_validation=dict(required=False, type='bool', default=False),
             tags=dict(required=False, type='dict', default=None),
-            use_ssd=dict(required=False, type='bool', default=True),
+            use_ssd=dict(required=False, type='bool', default=None),
             whitelist_ips=dict(required=False, type='list', elements='str', default=None),
             force=dict(required=False, type='bool', default=False, aliases=['force_delete']),
             state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
