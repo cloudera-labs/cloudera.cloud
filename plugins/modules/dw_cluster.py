@@ -173,15 +173,15 @@ options:
     description: The IP ranges authorized to connect for workload access
     type: list
     required: False
-  aliases:
-    - loadbalancer_ip_ranges
-    - workload_ip_ranges
+    aliases:
+      - loadbalancer_ip_ranges
+      - workload_ip_ranges
   whitelist_k8s_cluster_access_ip_cidrs:
     description: The IP ranges authorized to connect to the Kubernetes API server
     type: list
     required: False
-  aliases:
-    - k8s_ip_ranges
+    aliases:
+      - k8s_ip_ranges
   force:
     description:
       - Flag to enable force deletion of the Data Warehouse Cluster.
