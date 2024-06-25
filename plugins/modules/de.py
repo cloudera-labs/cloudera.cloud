@@ -61,22 +61,22 @@ options:
     required: False
   maximum_instances:
     description:
-    - Maximum Instances for the CDE Service
+      - Maximum Instances for the CDE Service
     type: int
     required: False
   minimum_spot_instances:
     description:
-    - Minimum Spot Instances for the CDE Service
+      - Minimum Spot Instances for the CDE Service
     type: int
     required: False
   maximum_spot_instances:
     description:
-    - Maximum Spot Instances for the CDE Service
+      - Maximum Spot Instances for the CDE Service
     type: int
     required: False
   chart_value_overrides:
     description:
-    - Chart overrides for enabling a service
+      - Chart overrides for enabling a service
     type: list
     elements: dict
     required: False
@@ -88,48 +88,48 @@ options:
         required: False
   enable_public_endpoint:
     description:
-    - Creates a CDE endpoint (Load Balancer) in a publicly accessible subnet
+      - Creates a CDE endpoint (Load Balancer) in a publicly accessible subnet
     type: bool
     required: False
   enable_private_network:
     description:
-    - Create a fully private CDE instance
+      - Create a fully private CDE instance
     type: bool
     required: False
   loadbalancer_ips:
     description:
-    - List of CIDRs allowed to access the load balancer.
+      - List of CIDRs allowed to access the load balancer.
     type: list
     elements: str
     required: False
   enable_workload_analytics:
     description:
-    - If set false, diagnostic information about job and query execution is sent to Cloudera Workload Manager
+      - If set false, diagnostic information about job and query execution is sent to Cloudera Workload Manager
     type: bool
     required: False
   initial_instances:
     description:
-    - Initial Instances when the service is enabled
+      - Initial Instances when the service is enabled
     type: int
     required: False
   initial_spot_instances:
     description:
-    - Initial spot Instances when the service is enabled
+      - Initial spot Instances when the service is enabled
     type: int
     required: False
   root_volume_size:
     description:
-    - EBS volume size in GB
+      - EBS volume size in GB
     type: int
     required: False
   skip_validation:
     description:
-    - Skip Validation check.
+      - Skip Validation check.
     type: bool
     required: False
   tags:
     description:
-    - User defined labels that tag all provisioned cloud resources
+      - User defined labels that tag all provisioned cloud resources
     type: dict
     required: False
     suboptions:
@@ -140,12 +140,12 @@ options:
         required: False
   use_ssd:
     description:
-    - Instance local storage (SSD) would be used for the workload filesystem (Example - spark local directory). Currently supported only for aws services
+      - Instance local storage (SSD) would be used for the workload filesystem (Example - spark local directory). Currently supported only for aws services
     type: bool
     required: False
   whitelist_ips:
     description:
-    - List of CIDRs that would be allowed to access Kubernetes master API server
+      - List of CIDRs that would be allowed to access Kubernetes master API server
     type: list
     elements: str
     required: False
@@ -248,6 +248,7 @@ service:
       elements: complex
       contains:
         ChartValueOverridesResponse:
+          description: Response object containing chart value overrides.
           type: list
           returned: always
           contains:
