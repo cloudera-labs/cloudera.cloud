@@ -67,7 +67,7 @@ EXAMPLES = r"""
 - name: Gather information about a named recipe
   cloudera.cloud.recipe_info:
     name: example-recipe
-    
+
 - name: Gather detailed information about a named recipe
   cloudera.cloud.recipe_info:
     name: example-recipe
@@ -104,8 +104,8 @@ recipes:
       returned: always
       type: str
     type:
-      description: 
-        - The type of recipe. 
+      description:
+        - The type of recipe.
         - "Supported values are: C(POST_CLOUDERA_MANAGER_START), C(PRE_TERMINATION), C(PRE_SERVICE_DEPLOYMENT), C(POST_SERVICE_DEPLOYMENT)."
       returned: when supported
       type: str

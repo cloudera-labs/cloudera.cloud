@@ -82,7 +82,7 @@ EXAMPLES = r"""
     name: core_broker
     recipes:
       - recipe02
-      
+
 - name: Remove all recipes of an instance group
   cloudera.cloud.datahub_cluster_recipe:
     datahub: example-datahub

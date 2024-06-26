@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: df_customflow_version
 short_description: Import CustomFlow versions into the DataFlow Catalog
@@ -60,17 +62,17 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Import a CustomFlow version into the DataFlow Catalog
 - cloudera.cloud.df_customflow_version:
     name: my-customflow-version-name
     file: /tmp/my-custom-flow-v2.json
     comments: Second version
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 customflow_version:
   description: The CustomFlow Version Definition
@@ -101,7 +103,7 @@ customflow_version:
       description: The number of deployments of the artifact.
       returned: always
       type: int
-'''
+"""
 
 
 class DFCustomFlowVersion(CdpModule):
@@ -109,10 +111,10 @@ class DFCustomFlowVersion(CdpModule):
         super(DFCustomFlowVersion, self).__init__(module)
 
         # Set variables
-        self.flow_crn = self._get_param('flow_crn')
-        self.file = self._get_param('file')
-        self.comments = self._get_param('comments')
-        self.state = self._get_param('state')
+        self.flow_crn = self._get_param("flow_crn")
+        self.file = self._get_param("file")
+        self.comments = self._get_param("comments")
+        self.state = self._get_param("state")
 
         # Initialize return values
         self.flow_version = None
@@ -125,33 +127,34 @@ class DFCustomFlowVersion(CdpModule):
     def process(self):
         flow = self.cdpy.df.describe_customflow(self.flow_crn)
         if not flow:
-            self.module.fail_json(msg="Flow definition with crn {} does not exist".format(self.flow_crn))
+            self.module.fail_json(
+                msg="Flow definition with crn {} does not exist".format(self.flow_crn)
+            )
         else:
             # Only possible state is "present"
             self.changed = True
             if not self.module.check_mode:
-                self.flow_version = self.cdpy.df.import_customflow_version(self.flow_crn, self.file, self.comments)
+                self.flow_version = self.cdpy.df.import_customflow_version(
+                    self.flow_crn, self.file, self.comments
+                )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            flow_crn=dict(required=True, type='str'),
-            file=dict(required=True, type='str'),
-            comments=dict(required=False, type='str'),
-            state=dict(type='str', choices=['present'], default='present'),
+            flow_crn=dict(required=True, type="str"),
+            file=dict(required=True, type="str"),
+            comments=dict(required=False, type="str"),
+            state=dict(type="str", choices=["present"], default="present"),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DFCustomFlowVersion(module)
-    output = dict(
-        changed=result.changed,
-        customflow_version=result.flow_version
-    )
+    output = dict(changed=result.changed, customflow_version=result.flow_version)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

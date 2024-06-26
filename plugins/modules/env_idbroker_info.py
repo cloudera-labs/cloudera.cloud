@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_idbroker_info
 short_description: Gather information about CDP ID Broker
@@ -45,17 +47,17 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Gather information about the ID Broker mappings
 - cloudera.cloud.env_idbroker_info:
     name: example-environment
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 idbroker:
     description: Returns the mappings and sync status for the ID Broker for the Environment.
     returned: when supported
@@ -67,25 +69,25 @@ idbroker:
             type: str
             sample: AWS
         dataAccessRole:
-            description: The cloud provider role to which data access services will be mapped (e.g. an ARN in AWS, a 
+            description: The cloud provider role to which data access services will be mapped (e.g. an ARN in AWS, a
                 Resource ID in Azure).
             returned: always
             type: str
         rangerAuditRole:
             description:
-              - The cloud provider role to which services that write to Ranger audit logs will be mapped (e.g. an ARN 
+              - The cloud provider role to which services that write to Ranger audit logs will be mapped (e.g. an ARN
                     in AWS, a Resource ID in Azure).
-              - Note that some data access services also write to Ranger audit logs; such services will be mapped to 
+              - Note that some data access services also write to Ranger audit logs; such services will be mapped to
                     the 'dataAccessRole', not the 'rangerAuditRole'.
             returned: always
             type: str
         rangerCloudAccessAuthorizerRole:
-            description: The cloud provider role to which the Ranger RAZ service will be mapped (e.g. an ARN in AWS, a 
+            description: The cloud provider role to which the Ranger RAZ service will be mapped (e.g. an ARN in AWS, a
                 Resource ID in Azure).
             returned: when supported
             type: str
         mappings:
-            description: ID Broker mappings for individual actors and groups. Does not include mappings for data access 
+            description: ID Broker mappings for individual actors and groups. Does not include mappings for data access
                 services.
             returned: when supported
             type: list
@@ -100,7 +102,7 @@ idbroker:
                 returned: on success
                 type: str
         syncStatus:
-            description: The status of the most recent ID Broker mappings sync operation, if any. Not present if there 
+            description: The status of the most recent ID Broker mappings sync operation, if any. Not present if there
                 is no Datalake associated with the Environment.
             returned: when supported
             type: dict
@@ -122,7 +124,7 @@ idbroker:
                     returned: always
                     type: bool
                 statuses:
-                    description: Map of Datalake cluster CRN-to-mappings sync status for each Datalake cluster in the 
+                    description: Map of Datalake cluster CRN-to-mappings sync status for each Datalake cluster in the
                         environment.
                     returned: always
                     type: dict
@@ -133,7 +135,7 @@ idbroker:
                             type: dict
                             contains:
                                 endDate:
-                                    description: The date when the mappings sync completed or was terminated. Omitted 
+                                    description: The date when the mappings sync completed or was terminated. Omitted
                                         if status is NEVER_RUN or RUNNING.
                                     returned: when supported
                                     type: str
@@ -142,7 +144,7 @@ idbroker:
                                     returned: when supported
                                     type: str
                                 startDate:
-                                    description: The date when the mappings sync started executing. Omitted if status 
+                                    description: The date when the mappings sync started executing. Omitted if status
                                         is NEVER_RUN.
                                     returned: when supported
                                     type: str
@@ -167,7 +169,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentIdBrokerInfo(CdpModule):
@@ -175,7 +177,7 @@ class EnvironmentIdBrokerInfo(CdpModule):
         super(EnvironmentIdBrokerInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
+        self.name = self._get_param("name")
 
         # Initialize the return values
         self.idbroker = dict()
@@ -191,9 +193,9 @@ class EnvironmentIdBrokerInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['environment'])
+            name=dict(required=True, type="str", aliases=["environment"])
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = EnvironmentIdBrokerInfo(module)
@@ -204,13 +206,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

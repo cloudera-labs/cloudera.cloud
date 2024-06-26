@@ -14,7 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import os
@@ -22,37 +23,38 @@ import pprint
 import pytest
 import unittest
 
-from ansible_collections.cloudera.cloud.plugins.modules import env_info 
-from ansible_collections.cloudera.cloud.tests.unit.plugins.modules.utils import AnsibleExitJson, AnsibleFailJson, ModuleTestCase, setup_module_args
+from ansible_collections.cloudera.cloud.plugins.modules import env_info
+from ansible_collections.cloudera.cloud.tests.unit.plugins.modules.utils import (
+    AnsibleExitJson,
+    AnsibleFailJson,
+    ModuleTestCase,
+    setup_module_args,
+)
 
 ENV_NAME = "foobarbaz"
 
 
-@unittest.skipUnless(os.getenv('CDP_PROFILE'), "CDP access parameters not set")
+@unittest.skipUnless(os.getenv("CDP_PROFILE"), "CDP access parameters not set")
 class TestEnvironmentIntegration(ModuleTestCase):
-    
-    #@unittest.skip("Focus focus focus")
+
+    # @unittest.skip("Focus focus focus")
     def test_list_all_environments(self):
-        setup_module_args({
-            "verify_tls": False
-        })
-        
+        setup_module_args({"verify_tls": False})
+
         with pytest.raises(AnsibleExitJson) as e:
             env_info.main()
-            
+
         pprint.pp(e.value)
 
     def test_describe_environment(self):
-        setup_module_args({
-            "name": ENV_NAME,
-            "verify_tls": False
-        })
-        
+        setup_module_args({"name": ENV_NAME, "verify_tls": False})
+
         with pytest.raises(AnsibleExitJson) as e:
             env_info.main()
-            
-        assert len(e.value.args[0]['environments']) == 0
+
+        assert len(e.value.args[0]["environments"]) == 0
         pprint.pp(e.value)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

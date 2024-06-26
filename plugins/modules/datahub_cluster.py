@@ -78,13 +78,13 @@ options:
   subnet:
     description:
       - The subnet ID in AWS, or the Subnet Name on Azure or GCP
-      - Mutually exclusive with the subnet and subnets options 
+      - Mutually exclusive with the subnet and subnets options
     type: str
     required: False
   subnets:
     description:
       - List of subnet IDs in case of multi availability zone setup.
-      - Mutually exclusive with the subnet and subnets options 
+      - Mutually exclusive with the subnet and subnets options
     type: list
     required: False
   subnets_filter:
@@ -93,7 +93,7 @@ options:
       - The expression will be applied to the full list of subnets for the specified environment
       - Each subnet in the list is an object with the following attributes - subnetId, subnetName, availabilityZone, cidr
       - The filter expression must only filter the list, but not apply any attribute projection
-      - Mutually exclusive with the subnet and subnets options 
+      - Mutually exclusive with the subnet and subnets options
     type: list
     required: False
   image:
@@ -500,14 +500,14 @@ datahub:
               returned: when supported
             state:
               description:
-                - The health state of the instance. 
+                - The health state of the instance.
                 - C(UNHEALTHY) represents instances with unhealthy services, lost instances, or failed operations.
               returned: always
             status:
               description:
                 - The status of the instance.
                 - This includes information like whether the instance is being provisioned, stopped, decommissioning failures etc.
-              returned: when supported 
+              returned: when supported
             statusReason:
               description:
                 - The reason for the current status of this instance.

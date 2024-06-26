@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_cred_info
 short_description: Gather information about CDP Credentials
@@ -46,9 +48,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Gather information about all Credentials
@@ -57,9 +59,9 @@ EXAMPLES = r'''
 # Gather information about a named Credential
 - cloudera.cloud.env_cred_info:
     name: example-credential
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 credentials:
     description: Returns an array of objects for the named Credential or all Credentials.
     returned: always
@@ -94,7 +96,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentCredentialInfo(CdpModule):
@@ -102,7 +104,7 @@ class EnvironmentCredentialInfo(CdpModule):
         super(EnvironmentCredentialInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
+        self.name = self._get_param("name")
 
         # Initialize the return values
         self.credentials = []
@@ -123,9 +125,9 @@ class EnvironmentCredentialInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['credential'])
+            name=dict(required=False, type="str", aliases=["credential"])
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = EnvironmentCredentialInfo(module)
@@ -136,13 +138,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

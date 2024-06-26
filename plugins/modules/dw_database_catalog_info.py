@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: dw_database_catalog_info
 short_description: Gather information about CDP Data Warehouse Database Catalogs
@@ -57,22 +59,22 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Get a single Database Catalog
 - cloudera.cloud.dw_database_catalog_info:
     name: example-database-catalog-name
     cluster_id: example-cluster-id
-    
+
 # Get all Database Catalogs within a Cluster
 - cloudera.cloud.dw_database_catalog_info:
     cluster_id: example-cluster-id
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 database_catalogs:
   description: Details about the Database Catalogs.
@@ -101,7 +103,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DwDatabaseCatalogInfo(CdpModule):
@@ -109,9 +111,9 @@ class DwDatabaseCatalogInfo(CdpModule):
         super(DwDatabaseCatalogInfo, self).__init__(module)
 
         # Set variables
-        self.catalog_id = self._get_param('catalog_id')
-        self.cluster_id = self._get_param('cluster_id')
-        self.name = self._get_param('name')
+        self.catalog_id = self._get_param("catalog_id")
+        self.cluster_id = self._get_param("cluster_id")
+        self.name = self._get_param("name")
 
         # Initialize return values
         self.database_catalogs = []
@@ -122,28 +124,34 @@ class DwDatabaseCatalogInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         if self.catalog_id is not None:
-          target = self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=self.catalog_id)
-          if target is not None:
-            self.database_catalogs.append(target)
+            target = self.cdpy.dw.describe_dbc(
+                cluster_id=self.cluster_id, dbc_id=self.catalog_id
+            )
+            if target is not None:
+                self.database_catalogs.append(target)
         else:
-          dbcs = self.cdpy.dw.list_dbcs(cluster_id=self.cluster_id)
-          if self.name is not None:
-            for dbc in dbcs:
-                if dbc['name'] == self.name:
-                    self.database_catalogs.append(self.cdpy.dw.describe_dbc(cluster_id=self.cluster_id, dbc_id=dbc['id']))
-          else:
-            self.database_catalogs = dbcs
+            dbcs = self.cdpy.dw.list_dbcs(cluster_id=self.cluster_id)
+            if self.name is not None:
+                for dbc in dbcs:
+                    if dbc["name"] == self.name:
+                        self.database_catalogs.append(
+                            self.cdpy.dw.describe_dbc(
+                                cluster_id=self.cluster_id, dbc_id=dbc["id"]
+                            )
+                        )
+            else:
+                self.database_catalogs = dbcs
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            catalog_id=dict(type='str', aliases=['id']),
-            cluster_id=dict(required=True, type='str'),
-            name = dict(type='str'),
+            catalog_id=dict(type="str", aliases=["id"]),
+            cluster_id=dict(required=True, type="str"),
+            name=dict(type="str"),
         ),
-        mutually_exclusive=[['id', 'name']],
-        supports_check_mode=True
+        mutually_exclusive=[["id", "name"]],
+        supports_check_mode=True,
     )
 
     result = DwDatabaseCatalogInfo(module)
@@ -155,5 +163,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

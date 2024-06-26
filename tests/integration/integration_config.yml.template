@@ -21,7 +21,7 @@
 # (i.e. vars/main.yml)
 
 # You can use this file to create specific conditions for testing that are
-# outside of a given target's configuration. Just be mindful that any changes 
+# outside of a given target's configuration. Just be mindful that any changes
 # here will proprogate to all targets, so depending on your testing and development,
 # you might want to limit execution to specified targets.
 

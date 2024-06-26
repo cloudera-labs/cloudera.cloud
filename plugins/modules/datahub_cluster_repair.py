@@ -104,12 +104,12 @@ EXAMPLES = r"""
     instance_groups:
       - core_broker
       - master
-      
+
 - name: Replace a single instance
   cloudera.cloud.datahub_cluster_repair:
     datahub: example-datahub
     instances: i-08fa9ff7694dca0a8
-    
+
 - name: Replace multiple instances and remove their volumes
   cloudera.cloud.datahub_cluster_repair:
     datahub: example-datahub
@@ -117,7 +117,7 @@ EXAMPLES = r"""
       - i-08fa9ff7694dca0a8
       - i-0ea1b60d9a103ab36
     delete_volumes: yes
-      
+
 - name: Replace multiple instances sequentially (i.e. rollout)
   cloudera.cloud.datahub_cluster_repair:
     datahub: example-datahub
@@ -341,14 +341,14 @@ datahub:
               returned: when supported
             state:
               description:
-                - The health state of the instance. 
+                - The health state of the instance.
                 - C(UNHEALTHY) represents instances with unhealthy services, lost instances, or failed operations.
               returned: always
             status:
               description:
                 - The status of the instance.
                 - This includes information like whether the instance is being provisioned, stopped, decommissioning failures etc.
-              returned: when supported 
+              returned: when supported
             statusReason:
               description:
                 - The reason for the current status of this instance.
@@ -383,7 +383,7 @@ datahub:
     workloadType:
       description:
         - The workload type for the cluster.
-      returned: when supported    
+      returned: when supported
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported

@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: dw_virtual_warehouse_info
 short_description: Gather information about CDP Data Warehouse Virtual Warehouses
@@ -45,7 +47,7 @@ options:
       - vw_id
       - id
   cluster_id:
-    description: 
+    description:
       - The identifier of the parent Data Warehouse Cluster of the Virtual Warehouse(s).
     type: str
   catalog_id:
@@ -77,13 +79,13 @@ options:
     type: int
     default: 3600
     aliases:
-      - polling_timeout  
+      - polling_timeout
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List all Virtual Warehouses in a Cluster
@@ -104,9 +106,9 @@ EXAMPLES = r'''
 - cloudera.cloud.dw_virtual_warehouse_info:
     cluster_id: example-cluster-id
     name: example-virtual-warehouse
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 virtual_warehouses:
   description: The details about the CDP Data Warehouse Virtual Warehouse(s).
@@ -128,7 +130,7 @@ virtual_warehouses:
     dbcId:
       description: The Database Catalog ID associated with the Virtual Warehouse.
       returned: always
-      type: str    
+      type: str
     creationDate:
       description: The creation time of the Virtual Warehouse in UTC.
       returned: always
@@ -171,7 +173,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DwVirtualWarehouseInfo(CdpModule):
@@ -179,13 +181,13 @@ class DwVirtualWarehouseInfo(CdpModule):
         super(DwVirtualWarehouseInfo, self).__init__(module)
 
         # Set variables
-        self.warehouse_id = self._get_param('warehouse_id')
-        self.cluster_id = self._get_param('cluster_id')
-        self.catalog_id = self._get_param('catalog_id')
-        self.type = self._get_param('type')
-        self.name = self._get_param('name')
-        self.delay = self._get_param('delay')
-        self.timeout = self._get_param('timeout')
+        self.warehouse_id = self._get_param("warehouse_id")
+        self.cluster_id = self._get_param("cluster_id")
+        self.catalog_id = self._get_param("catalog_id")
+        self.type = self._get_param("type")
+        self.name = self._get_param("name")
+        self.delay = self._get_param("delay")
+        self.timeout = self._get_param("timeout")
 
         # Initialize return values
         self.virtual_warehouses = []
@@ -196,19 +198,25 @@ class DwVirtualWarehouseInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         if self.warehouse_id is not None:
-            target = self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=self.warehouse_id)
+            target = self.cdpy.dw.describe_vw(
+                cluster_id=self.cluster_id, vw_id=self.warehouse_id
+            )
             if target is not None:
                 self.virtual_warehouses.append(target)
         else:
             vws = self.cdpy.dw.list_vws(cluster_id=self.cluster_id)
             if self.name is not None:
                 for vw in vws:
-                    if vw['name'] == self.name:
+                    if vw["name"] == self.name:
                         self.virtual_warehouses.append(
-                          self.cdpy.dw.describe_vw(cluster_id=self.cluster_id, vw_id=vw['id'])
+                            self.cdpy.dw.describe_vw(
+                                cluster_id=self.cluster_id, vw_id=vw["id"]
+                            )
                         )
             elif self.catalog_id is not None:
-                self.virtual_warehouses =[v for v in vws if v['dbcId'] == self.catalog_id]
+                self.virtual_warehouses = [
+                    v for v in vws if v["dbcId"] == self.catalog_id
+                ]
             else:
                 self.virtual_warehouses = vws
 
@@ -216,17 +224,15 @@ class DwVirtualWarehouseInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            warehouse_id=dict(type='str', aliases=['vw_id', 'id']),
-            cluster_id=dict(required=True, type='str'),
-            catalog_id=dict(type='str', aliases=['dbc_id']),
-            name=dict(type='str'),
-            delay=dict(type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
+            warehouse_id=dict(type="str", aliases=["vw_id", "id"]),
+            cluster_id=dict(required=True, type="str"),
+            catalog_id=dict(type="str", aliases=["dbc_id"]),
+            name=dict(type="str"),
+            delay=dict(type="int", aliases=["polling_delay"], default=15),
+            timeout=dict(type="int", aliases=["polling_timeout"], default=3600),
         ),
-        mutually_exclusive=[
-            ['warehouse_id', 'name', 'catalog_id']
-        ],
-        supports_check_mode=True
+        mutually_exclusive=[["warehouse_id", "name", "catalog_id"]],
+        supports_check_mode=True,
     )
 
     result = DwVirtualWarehouseInfo(module)
@@ -238,5 +244,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
-#TODO: Update docs
-DOCUMENTATION = r'''
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
+# TODO: Update docs
+DOCUMENTATION = r"""
 ---
 module: df_deployment
 short_description: Enable or Disable CDP DataFlow Deployments
@@ -39,7 +41,7 @@ options:
     type: str
     required: False
   dep_crn:
-    description: 
+    description:
       - The CRN of the Deployed Flow to be terminated
       - Required if C(name) is not supplied for termination
     type: str
@@ -142,7 +144,7 @@ options:
     required: False
   delay:
     description:
-      - The internal polling interval (in seconds) while the module waits for the Dataflow Service to achieve the 
+      - The internal polling interval (in seconds) while the module waits for the Dataflow Service to achieve the
         declared state.
     type: int
     required: False
@@ -151,7 +153,7 @@ options:
       - polling_delay
   timeout:
     description:
-      - The internal polling timeout (in seconds) while the module waits for the Dataflow Service to achieve the 
+      - The internal polling timeout (in seconds) while the module waits for the Dataflow Service to achieve the
         declared state.
     type: int
     required: False
@@ -163,9 +165,9 @@ notes:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Deploy a Dataflow with defaults
@@ -182,9 +184,9 @@ EXAMPLES = r'''
   poll: 0
   register: __my_teardown_request
 
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 deployment:
   description: The information about the named DataFlow Deployment
@@ -290,7 +292,7 @@ deployment:
       returned: always
       type: bool
     autoscaleMinNodes:
-      description: 
+      description:
         - The  minimum  number of nodes that the deployment will allocate.
         - May only be specified when autoscalingEnabled is true.
       returned: always
@@ -304,7 +306,7 @@ deployment:
       returned: always
       type: int
     staticNodeCount:
-      description: 
+      description:
         - The static number of nodes that the  deployment  will  allocate.
         - May only be specified when autoscalingEnabled is false.
       returned: always
@@ -330,7 +332,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DFDeployment(CdpModule):
@@ -338,31 +340,38 @@ class DFDeployment(CdpModule):
         super(DFDeployment, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.dep_crn = self._get_param('dep_crn')
-        self.df_crn = self._get_param('df_crn')
-        self.df_name = self._get_param('df_name')
-        self.flow_ver_crn = self._get_param('flow_ver_crn')
-        self.flow_name = self._get_param('flow_name')
-        self.flow_ver = self._get_param('flow_ver')
-        self.size = self._get_param('size')
-        self.static_node_count = self._get_param('static_node_count')
-        self.autoscale_enabled = self._get_param('autoscale_enabled')
-        self.autoscale_nodes_min = self._get_param('autoscale_nodes_min')
-        self.autoscale_nodes_max = self._get_param('autoscale_nodes_max')
-        self.nifi_ver = self._get_param('nifi_ver')
-        self.autostart_flow = self._get_param('autostart_flow')
-        self.parameter_groups = self._get_param('parameter_groups')
-        self.kpis = self._get_param('kpis')
+        self.name = self._get_param("name")
+        self.dep_crn = self._get_param("dep_crn")
+        self.df_crn = self._get_param("df_crn")
+        self.df_name = self._get_param("df_name")
+        self.flow_ver_crn = self._get_param("flow_ver_crn")
+        self.flow_name = self._get_param("flow_name")
+        self.flow_ver = self._get_param("flow_ver")
+        self.size = self._get_param("size")
+        self.static_node_count = self._get_param("static_node_count")
+        self.autoscale_enabled = self._get_param("autoscale_enabled")
+        self.autoscale_nodes_min = self._get_param("autoscale_nodes_min")
+        self.autoscale_nodes_max = self._get_param("autoscale_nodes_max")
+        self.nifi_ver = self._get_param("nifi_ver")
+        self.autostart_flow = self._get_param("autostart_flow")
+        self.parameter_groups = self._get_param("parameter_groups")
+        self.kpis = self._get_param("kpis")
 
-        self.state = self._get_param('state')
-        self.wait = self._get_param('wait')
-        self.delay = self._get_param('delay')
-        self.timeout = self._get_param('timeout')
+        self.state = self._get_param("state")
+        self.wait = self._get_param("wait")
+        self.delay = self._get_param("delay")
+        self.timeout = self._get_param("timeout")
 
         # Additional checks that can't be coded using the AnsibleModule rules
-        if self.state == 'absent' and self.dep_crn is None and self.df_crn is None and self.df_name is None:
-            self.module.fail_json(msg='name is specified but any of the following are missing: df_crn, df_name')
+        if (
+            self.state == "absent"
+            and self.dep_crn is None
+            and self.df_crn is None
+            and self.df_name is None
+        ):
+            self.module.fail_json(
+                msg="name is specified but any of the following are missing: df_crn, df_name"
+            )
 
         # Initialize return values
         self.deployment = None
@@ -379,45 +388,53 @@ class DFDeployment(CdpModule):
         # Prepare information
         if self.dep_crn is not None:
             self.target = self.cdpy.df.describe_deployment(dep_crn=self.dep_crn)
-            self.df_crn = self.target['service']['crn']
+            self.df_crn = self.target["service"]["crn"]
         if self.df_crn is None:
             self.df_crn = self.cdpy.df.resolve_service_crn_from_name(self.df_name)
             if self.df_crn is None:
                 self.module.fail_json(
-                    msg="Either df_crn must be supplied or resolvable from df_name")
+                    msg="Either df_crn must be supplied or resolvable from df_name"
+                )
         if self.name is not None and self.df_crn is not None:
-            self.target = self.cdpy.df.describe_deployment(df_crn=self.df_crn, name=self.name)
+            self.target = self.cdpy.df.describe_deployment(
+                df_crn=self.df_crn, name=self.name
+            )
             if self.target is not None:
-                self.dep_crn = self.target['crn']
+                self.dep_crn = self.target["crn"]
         # Process execution
         if self.target is not None:
             # DF Deployment exists
-            if self.state in ['absent']:
+            if self.state in ["absent"]:
                 # Existing Deployment to be removed
                 if self.module.check_mode:
                     self.module.log(
-                        "Check mode enabled, skipping termination of Deployment %s" % self.dep_crn)
+                        "Check mode enabled, skipping termination of Deployment %s"
+                        % self.dep_crn
+                    )
                     self.deployment = self.target
                 else:
                     self._terminate_deployment()
-            elif self.state in ['present']:
+            elif self.state in ["present"]:
                 # Existing deployment to be retained
                 self.module.warn(
-                    "Dataflow Deployment already exists and configuration validation and reconciliation " +
-                    "is not supported;" +
-                    "to change a Deployment, explicitly terminate and recreate it or use the UI")
+                    "Dataflow Deployment already exists and configuration validation and reconciliation "
+                    + "is not supported;"
+                    + "to change a Deployment, explicitly terminate and recreate it or use the UI"
+                )
                 if self.wait:
                     self.deployment = self._wait_for_deployed()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state)
+                    msg="State %s is not valid for this module" % self.state
+                )
         else:
             # Deployment CRN not found in Tenant, and probably doesn't exist
-            if self.state in ['absent']:
+            if self.state in ["absent"]:
                 # Deployment not found, and not wanted, return
                 self.module.log(
-                    "Dataflow Deployment not found in CDP Tenant %s" % self.dep_crn)
-            elif self.state in ['present']:
+                    "Dataflow Deployment not found in CDP Tenant %s" % self.dep_crn
+                )
+            elif self.state in ["present"]:
                 # create Deployment
                 if not self.module.check_mode:
                     self._create_deployment()
@@ -427,12 +444,15 @@ class DFDeployment(CdpModule):
                     pass  # Check mode can return the described deployment
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state)
+                    msg="State %s is not valid for this module" % self.state
+                )
 
     def _create_deployment(self):
         if self.flow_ver_crn is None:
             # flow_name must be populated if flow_ver_crn is None
-            self.flow_ver_crn = self.cdpy.df.get_version_crn_from_flow_definition(self.flow_name, self.flow_ver)
+            self.flow_ver_crn = self.cdpy.df.get_version_crn_from_flow_definition(
+                self.flow_name, self.flow_ver
+            )
         self.deployment = self.cdpy.df.create_deployment(
             df_crn=self.df_crn,
             flow_ver_crn=self.flow_ver_crn,
@@ -453,24 +473,28 @@ class DFDeployment(CdpModule):
         return self.cdpy.sdk.wait_for_state(
             describe_func=self.cdpy.df.describe_deployment,
             params=dict(dep_crn=self.dep_crn, df_crn=self.df_crn, name=self.name),
-            field=['status', 'state'], state=self.cdpy.sdk.STARTED_STATES,
-            delay=self.delay, timeout=self.timeout
+            field=["status", "state"],
+            state=self.cdpy.sdk.STARTED_STATES,
+            delay=self.delay,
+            timeout=self.timeout,
         )
 
     def _terminate_deployment(self):
-        if self.target['status']['state'] in self.cdpy.sdk.REMOVABLE_STATES:
-            self.deployment = self.cdpy.df.terminate_deployment(
-                dep_crn=self.dep_crn
-            )
+        if self.target["status"]["state"] in self.cdpy.sdk.REMOVABLE_STATES:
+            self.deployment = self.cdpy.df.terminate_deployment(dep_crn=self.dep_crn)
             self.changed = True
         else:
-            self.module.warn("Attempting to disable DataFlow Deployment but state %s not in Removable States %s"
-                             % (self.target['status']['state'], self.cdpy.sdk.REMOVABLE_STATES))
+            self.module.warn(
+                "Attempting to disable DataFlow Deployment but state %s not in Removable States %s"
+                % (self.target["status"]["state"], self.cdpy.sdk.REMOVABLE_STATES)
+            )
         if self.wait:
             self.deployment = self.cdpy.sdk.wait_for_state(
                 describe_func=self.cdpy.df.describe_deployment,
-                params=dict(dep_crn=self.dep_crn), field=None,
-                delay=self.delay, timeout=self.timeout
+                params=dict(dep_crn=self.dep_crn),
+                field=None,
+                delay=self.delay,
+                timeout=self.timeout,
             )
         else:
             self.deployment = self.cdpy.df.describe_deployment(dep_crn=self.dep_crn)
@@ -479,39 +503,41 @@ class DFDeployment(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(type='str'),
-            df_crn=dict(type='str', default=None),
-            df_name=dict(type='str', default=None),
-            dep_crn=dict(type='str', default=None),
-            flow_ver_crn=dict(type='str', default=None),
-            flow_name=dict(type='str', default=None),
-            flow_ver=dict(type='int', default=None),
-            size=dict(type='str',
-                           choices=['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE'],
-                           default='EXTRA_SMALL', aliases=['size_name']),
-            static_node_count=dict(type='int', default=1),
-            autoscale=dict(type='bool', default=False, aliases=['autoscale_enabled']),
-            autoscale_nodes_min=dict(type='int', default=1),
-            autoscale_nodes_max=dict(type='int', default=3),
-            nifi_ver=dict(type='str', default=None),
-            autostart_flow=dict(type='bool', default=True),
-            parameter_groups=dict(type='list', default=None),
-            kpis=dict(type='list', default=None),
-            state=dict(type='str', choices=['present', 'absent'],
-                       default='present'),
-            wait=dict(type='bool', default=True),
-            delay=dict(type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
+            name=dict(type="str"),
+            df_crn=dict(type="str", default=None),
+            df_name=dict(type="str", default=None),
+            dep_crn=dict(type="str", default=None),
+            flow_ver_crn=dict(type="str", default=None),
+            flow_name=dict(type="str", default=None),
+            flow_ver=dict(type="int", default=None),
+            size=dict(
+                type="str",
+                choices=["EXTRA_SMALL", "SMALL", "MEDIUM", "LARGE"],
+                default="EXTRA_SMALL",
+                aliases=["size_name"],
+            ),
+            static_node_count=dict(type="int", default=1),
+            autoscale=dict(type="bool", default=False, aliases=["autoscale_enabled"]),
+            autoscale_nodes_min=dict(type="int", default=1),
+            autoscale_nodes_max=dict(type="int", default=3),
+            nifi_ver=dict(type="str", default=None),
+            autostart_flow=dict(type="bool", default=True),
+            parameter_groups=dict(type="list", default=None),
+            kpis=dict(type="list", default=None),
+            state=dict(type="str", choices=["present", "absent"], default="present"),
+            wait=dict(type="bool", default=True),
+            delay=dict(type="int", aliases=["polling_delay"], default=15),
+            timeout=dict(type="int", aliases=["polling_timeout"], default=3600),
         ),
         supports_check_mode=True,
         mutually_exclusive=[
-            ['dep_crn', 'df_crn', 'df_name'],
+            ["dep_crn", "df_crn", "df_name"],
         ],
         required_if=[
-            ['state', 'absent', ['dep_crn', 'name'], True],  # One of for termination
-            ['state', 'present', ['flow_ver_crn', 'flow_name'], True],  # One of
-            ['state', 'present', ['df_crn', 'df_name'], True],  # One of
-            ['state', 'present', ['name']]
+            ["state", "absent", ["dep_crn", "name"], True],  # One of for termination
+            ["state", "present", ["flow_ver_crn", "flow_name"], True],  # One of
+            ["state", "present", ["df_crn", "df_name"], True],  # One of
+            ["state", "present", ["name"]],
         ],
     )
 
@@ -524,5 +550,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

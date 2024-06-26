@@ -15,8 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 class ModuleDocFragment(object):
-    DOCUMENTATION = r'''
+    DOCUMENTATION = r"""
     options:
         verify_endpoint_tls:
             description:
@@ -43,9 +44,9 @@ class ModuleDocFragment(object):
             aliases:
                 - cdp_endpoint_region
                 - endpoint_region
-    '''
+    """
 
-    RETURN = r'''
+    RETURN = r"""
     sdk_out:
         description: Returns the captured CDP SDK log.
         returned: when supported
@@ -55,4 +56,4 @@ class ModuleDocFragment(object):
         returned: when supported
         type: list
         elements: str
-    '''
+    """

@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_info
 short_description: Gather information about CDP Environments
@@ -49,9 +51,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all Environments
@@ -61,9 +63,9 @@ EXAMPLES = r'''
 - cloudera.cloud.env_info:
     name: example-environment
     descendants: True
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 environments:
   description: The information about the named Environment or Environments
   type: list
@@ -406,7 +408,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class EnvironmentInfo(CdpModule):
@@ -414,8 +416,8 @@ class EnvironmentInfo(CdpModule):
         super(EnvironmentInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.descendants = self._get_param('descendants')
+        self.name = self._get_param("name")
+        self.descendants = self._get_param("descendants")
 
         # Initialize return values
         self.environments = []
@@ -436,14 +438,22 @@ class EnvironmentInfo(CdpModule):
             for this_env in self.environments:
                 df = None
                 # Removing until DF is GA so we are not dependent on Beta functionality
-                df = self.cdpy.df.list_services(env_crn=this_env['crn'])
-                this_env['descendants'] = {
-                    'datahub': self.cdpy.datahub.describe_all_clusters(this_env['environmentName']),
-                    'dw': self.cdpy.dw.gather_clusters(this_env['crn']),
-                    'ml': self.cdpy.ml.describe_all_workspaces(this_env['environmentName']),
-                    'de': self.cdpy.de.list_services(this_env['environmentName'], remove_deleted=True),
-                    'opdb': self.cdpy.opdb.describe_all_databases(this_env['environmentName']),
-                    'df': df if df is not None else []
+                df = self.cdpy.df.list_services(env_crn=this_env["crn"])
+                this_env["descendants"] = {
+                    "datahub": self.cdpy.datahub.describe_all_clusters(
+                        this_env["environmentName"]
+                    ),
+                    "dw": self.cdpy.dw.gather_clusters(this_env["crn"]),
+                    "ml": self.cdpy.ml.describe_all_workspaces(
+                        this_env["environmentName"]
+                    ),
+                    "de": self.cdpy.de.list_services(
+                        this_env["environmentName"], remove_deleted=True
+                    ),
+                    "opdb": self.cdpy.opdb.describe_all_databases(
+                        this_env["environmentName"]
+                    ),
+                    "df": df if df is not None else [],
                 }
                 updated_envs.append(this_env)
             self.environments = updated_envs
@@ -452,10 +462,10 @@ class EnvironmentInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['environment']),
-            descendants=dict(required=False, type='bool', default=False)
+            name=dict(required=False, type="str", aliases=["environment"]),
+            descendants=dict(required=False, type="bool", default=False),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = EnvironmentInfo(module)
@@ -467,5 +477,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

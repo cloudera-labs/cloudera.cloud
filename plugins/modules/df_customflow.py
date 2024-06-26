@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: df_customflow
 short_description: Import or Delete CustomFlows into the DataFlow Catalog
@@ -67,9 +69,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Import a CustomFlow into the DataFlow Catalog
 - cloudera.cloud.df_customflow:
     name: my-customflow-name
@@ -81,9 +83,9 @@ EXAMPLES = r'''
 - cloudera.cloud.df_customflow:
     name: my-customflow-name
     state: absent
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 customflow:
   description: The CustomFlow Definition
@@ -91,7 +93,7 @@ customflow:
   returned: when supported
   contains:
     crn:
-      description:  
+      description:
         - The DataFlow CustomFlow's CRN.
         - Use this crn to address this object
       returned: always
@@ -142,7 +144,7 @@ customflow:
           description: The number of deployments of the artifact.
           returned: always
           type: int
-'''
+"""
 
 
 class DFCustomFlow(CdpModule):
@@ -150,11 +152,11 @@ class DFCustomFlow(CdpModule):
         super(DFCustomFlow, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.file = self._get_param('file')
-        self.description = self._get_param('description')
-        self.comments = self._get_param('comments')
-        self.state = self._get_param('state')
+        self.name = self._get_param("name")
+        self.file = self._get_param("file")
+        self.description = self._get_param("description")
+        self.comments = self._get_param("comments")
+        self.state = self._get_param("state")
 
         # Initialize return values
         self.flow = None
@@ -169,19 +171,23 @@ class DFCustomFlow(CdpModule):
         if self.flow:
             # return is list with one item if name exists, since name is unique
             self.flow = self.flow[0]
-            if self.state == 'present':
+            if self.state == "present":
                 # Flow already exists and should be left alone
                 # helpfully return the detailed description
-                self.flow = self.cdpy.df.describe_customflow(def_crn=self.flow['crn'])
-            elif self.state == 'absent':
+                self.flow = self.cdpy.df.describe_customflow(def_crn=self.flow["crn"])
+            elif self.state == "absent":
                 self.changed = True
                 if not self.module.check_mode:
                     # Flow exists and should be deleted
-                    self.flow = self.cdpy.df.delete_customflow(def_crn=self.flow['crn'])
+                    self.flow = self.cdpy.df.delete_customflow(def_crn=self.flow["crn"])
                 else:
-                    self.module.log("Check mode enabled, skipping deletion of flow [{}]".format(self.name))
+                    self.module.log(
+                        "Check mode enabled, skipping deletion of flow [{}]".format(
+                            self.name
+                        )
+                    )
         else:
-            if self.state == 'present':
+            if self.state == "present":
                 # Flow should be imported
                 self.changed = True
                 if not self.module.check_mode:
@@ -189,11 +195,15 @@ class DFCustomFlow(CdpModule):
                         def_file=self.file,
                         name=self.name,
                         description=self.description,
-                        comments=self.comments
+                        comments=self.comments,
                     )
                 else:
-                    self.module.log("Check mode enabled, skipping import of flow [{}]".format(self.name))
-            if self.state == 'absent':
+                    self.module.log(
+                        "Check mode enabled, skipping import of flow [{}]".format(
+                            self.name
+                        )
+                    )
+            if self.state == "absent":
                 # Flow does not exist. Nothing to do.
                 self.module.log("Flow [{}] does not exist".format(self.name))
 
@@ -201,16 +211,16 @@ class DFCustomFlow(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str'),
-            file=dict(required=False, type='str'),
-            description=dict(required=False, type='str'),
-            comments=dict(required=False, type='str'),
-            state=dict(type='str', choices=['present', 'absent'], default='present'),
+            name=dict(required=True, type="str"),
+            file=dict(required=False, type="str"),
+            description=dict(required=False, type="str"),
+            comments=dict(required=False, type="str"),
+            state=dict(type="str", choices=["present", "absent"], default="present"),
         ),
         required_if=[
-            ('state', 'present', ('file',)),
+            ("state", "present", ("file",)),
         ],
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DFCustomFlow(module)
@@ -222,5 +232,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

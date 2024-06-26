@@ -15,13 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 class ModuleDocFragment(object):
-    DOCUMENTATION = r'''
+    DOCUMENTATION = r"""
     options:
       profile:
         description:
           - If provided, the CDP SDK will use this value as its profile.
         type: str
         required: False
-    '''
-    RETURN = r''''''
+    """
+    RETURN = r""""""

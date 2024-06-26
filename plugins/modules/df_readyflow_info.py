@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: df_readyflow_info
 short_description: Gather information about CDP DataFlow ReadyFlow Definitions
@@ -50,9 +52,9 @@ notes:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List summary information about all Custom DataFlow ReadyFlow Definitions
@@ -61,9 +63,9 @@ EXAMPLES = r'''
 # Gather summary information about a specific DataFlow Flow Definition using a name
 - cloudera.cloud.df_readyflow_info:
     name: my-flow-name
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 flows:
   description: The listing of ReadyFlow Definitions in the DataFlow Catalog in this CDP Tenant
@@ -180,7 +182,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DFReadyFlowInfo(CdpModule):
@@ -188,7 +190,7 @@ class DFReadyFlowInfo(CdpModule):
         super(DFReadyFlowInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
+        self.name = self._get_param("name")
 
         # Initialize internal values
         self.listing = []
@@ -205,16 +207,16 @@ class DFReadyFlowInfo(CdpModule):
         if self.listing:
             self.flows = []
             for this_readyflow in self.listing:
-                if this_readyflow['imported']:
+                if this_readyflow["imported"]:
                     self.flows.append(
                         self.cdpy.df.describe_added_readyflow(
-                            def_crn=this_readyflow['importedArtifactCrn']
+                            def_crn=this_readyflow["importedArtifactCrn"]
                         )
                     )
                 else:
                     self.flows.append(
                         self.cdpy.df.describe_readyflow(
-                            def_crn=this_readyflow['readyflowCrn']
+                            def_crn=this_readyflow["readyflowCrn"]
                         )
                     )
         else:
@@ -224,9 +226,9 @@ class DFReadyFlowInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str'),
+            name=dict(required=False, type="str"),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DFReadyFlowInfo(module)
@@ -238,5 +240,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

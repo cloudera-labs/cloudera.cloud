@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: datalake_runtime_info
 short_description: Gather information about CDP Datalake Runtimes
@@ -43,9 +45,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about available Datalake Runtimes
@@ -55,9 +57,9 @@ EXAMPLES = r'''
 - cloudera.cloud.datalake_runtime_info:
     default: yes
 
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 versions:
   description: Details on available CDP Datalake Runtimes
@@ -83,7 +85,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DatalakeRuntimeInfo(CdpModule):
@@ -91,7 +93,7 @@ class DatalakeRuntimeInfo(CdpModule):
         super(DatalakeRuntimeInfo, self).__init__(module)
 
         # Set variables
-        self.default = self._get_param('default')
+        self.default = self._get_param("default")
 
         # Initialize return values
         self.versions = []
@@ -102,10 +104,12 @@ class DatalakeRuntimeInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         retrieved_versions = self.cdpy.sdk.call(
-          svc='datalake', func='list_runtimes', ret_field='versions'
+            svc="datalake", func="list_runtimes", ret_field="versions"
         )
         if self.default:
-            self.versions = list(filter(lambda r: r['defaultRuntimeVersion'], retrieved_versions)) 
+            self.versions = list(
+                filter(lambda r: r["defaultRuntimeVersion"], retrieved_versions)
+            )
         else:
             self.versions = retrieved_versions
 
@@ -113,9 +117,9 @@ class DatalakeRuntimeInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            default=dict(required=False, type='bool', default=False),
+            default=dict(required=False, type="bool", default=False),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DatalakeRuntimeInfo(module)
@@ -127,5 +131,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

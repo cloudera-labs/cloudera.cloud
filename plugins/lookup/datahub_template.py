@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
- 
+
 # Copyright 2023 Cloudera, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
     lookup: datahub_template
     author: Webster Mudge (@wmudge) <wmudge@cloudera.com>
     short_description: Get a Datahub template for a CDP Public Cloud Environment
@@ -56,17 +57,17 @@ DOCUMENTATION = '''
     seealso:
         - module: cloudera.cloud.datahub_template_info
           description: Cloudera CDP Public Cloud Datahub template module
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = """
 - name: Retrieve the Datahub templates for a single CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_template', 'example-env') }}"
-    
+
 - name: Retrieve the Datahub templates that match the given substring
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_template', 'example-env', template='Flow Management Light Duty') }}"
-    
+
 - name: Retrieve the only user-managed Datahub templates
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_template', 'example-env', status='USER_MANAGED') }}"
@@ -74,18 +75,18 @@ EXAMPLES = '''
 - name: Retrieve the full details for the Datahub templates
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_template', 'example-env', detailed=True) }}"
-  
+
 - name: Retrieve the Datahub template details for multiple CDP Public Cloud Environments
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.datahub_template', ['example-env', 'another-env'], wantlist=True) }}"
-'''
+"""
 
-RETURN = '''
+RETURN = """
   _list:
     description: List of lists of Datahub templates
     type: list
     elements: complex
-'''
+"""
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
@@ -95,9 +96,12 @@ from ansible.utils.display import Display
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_service import parse_environment
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_service import (
+    parse_environment,
+)
 
 display = Display()
+
 
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
@@ -109,13 +113,25 @@ class LookupModule(LookupBase):
             for term in terms:
                 cloud_platform, raw_version, semantic_version = parse_environment(term)
                 display.vvv("Filtering templates for %s[%s]" % (term, semantic_version))
-                
+
                 for t in all_templates:
-                    if t['productVersion'] == 'CDH %s' % semantic_version:
-                        if (self.get_option('status') is not None and self.get_option('status') != t['status']) or \
-                           (self.get_option('template') is not None and self.get_option('template') not in t['clusterTemplateName']):
-                            continue                        
-                        results.append([t if self.get_option('detailed') else t['clusterTemplateName']])
+                    if t["productVersion"] == "CDH %s" % semantic_version:
+                        if (
+                            self.get_option("status") is not None
+                            and self.get_option("status") != t["status"]
+                        ) or (
+                            self.get_option("template") is not None
+                            and self.get_option("template")
+                            not in t["clusterTemplateName"]
+                        ):
+                            continue
+                        results.append(
+                            [
+                                t
+                                if self.get_option("detailed")
+                                else t["clusterTemplateName"]
+                            ]
+                        )
             return results
         except KeyError as e:
             raise AnsibleError("Error parsing result: %s" % to_native(e))

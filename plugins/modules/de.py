@@ -19,11 +19,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ..module_utils.cdp_common import CdpModule
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 module: de
 short_description: Enable and Disable CDP Data Engineering Services
 description:
@@ -191,9 +193,9 @@ options:
     default: 7200
     aliases:
       - polling_timeout
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Create a DE service using defaults for optional parameters and wait for completion
 - cloudera.cloud.de:
     name: cde-cloudera-deploy-example
@@ -208,9 +210,9 @@ EXAMPLES = r'''
     env: cdp-environment-name
     state: absent
     wait: no
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 service:
   description: DE service description
@@ -334,40 +336,41 @@ service:
       description: CDP tenant ID.
       returned: always
       type: str
-'''
+"""
+
 
 class DEService(CdpModule):
     def __init__(self, module):
         super(DEService, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('environment')
+        self.name = self._get_param("name")
+        self.env = self._get_param("environment")
 
-        self.instance_type = self._get_param('instance_type')
+        self.instance_type = self._get_param("instance_type")
 
-        self.minimum_instances = self._get_param('minimum_instances')
-        self.maximum_instances = self._get_param('maximum_instances')
-        self.minimum_spot_instances = self._get_param('minimum_spot_instances')
-        self.maximum_spot_instances = self._get_param('maximum_spot_instances')
-        self.chart_value_overrides = self._get_param('chart_value_overrides')
-        self.enable_public_endpoint = self._get_param('enable_public_endpoint')
-        self.enable_private_network = self._get_param('enable_private_network')
-        self.enable_workload_analytics = self._get_param('enable_workload_analytics')
-        self.initial_instances = self._get_param('initial_instances')
-        self.initial_spot_instances = self._get_param('initial_spot_instances')
-        self.root_volume_size = self._get_param('root_volume_size')
-        self.skip_validation = self._get_param('skip_validation')
-        self.tags = self._get_param('tags')
-        self.use_ssd = self._get_param('use_ssd')
-        self.whitelist_ips = self._get_param('whitelist_ips')
-        self.loadbalancer_ips = self._get_param('loadbalancer_ips')
+        self.minimum_instances = self._get_param("minimum_instances")
+        self.maximum_instances = self._get_param("maximum_instances")
+        self.minimum_spot_instances = self._get_param("minimum_spot_instances")
+        self.maximum_spot_instances = self._get_param("maximum_spot_instances")
+        self.chart_value_overrides = self._get_param("chart_value_overrides")
+        self.enable_public_endpoint = self._get_param("enable_public_endpoint")
+        self.enable_private_network = self._get_param("enable_private_network")
+        self.enable_workload_analytics = self._get_param("enable_workload_analytics")
+        self.initial_instances = self._get_param("initial_instances")
+        self.initial_spot_instances = self._get_param("initial_spot_instances")
+        self.root_volume_size = self._get_param("root_volume_size")
+        self.skip_validation = self._get_param("skip_validation")
+        self.tags = self._get_param("tags")
+        self.use_ssd = self._get_param("use_ssd")
+        self.whitelist_ips = self._get_param("whitelist_ips")
+        self.loadbalancer_ips = self._get_param("loadbalancer_ips")
 
-        self.state = self._get_param('state')
-        self.force = self._get_param('force')
-        self.wait = self._get_param('wait')
-        self.delay = self._get_param('delay')
-        self.timeout = self._get_param('timeout')
+        self.state = self._get_param("state")
+        self.force = self._get_param("force")
+        self.wait = self._get_param("wait")
+        self.delay = self._get_param("delay")
+        self.timeout = self._get_param("timeout")
 
         # Initialize return values
         self.service = None
@@ -378,71 +381,90 @@ class DEService(CdpModule):
         # Execute logic process
         self.process()
 
-
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.cluster_id = self.cdpy.de.get_service_id_by_name(name=self.name, env=self.env)
-        initial_desc = self.cdpy.de.describe_service(self.cluster_id) if self.cluster_id else None
+        self.cluster_id = self.cdpy.de.get_service_id_by_name(
+            name=self.name, env=self.env
+        )
+        initial_desc = (
+            self.cdpy.de.describe_service(self.cluster_id) if self.cluster_id else None
+        )
 
         # If a service under the name/env pair was found (excluding disabled services)
-        if initial_desc and initial_desc['status']:
+        if initial_desc and initial_desc["status"]:
             # Disable the Service if expected state is 'absent'
-            if self.state == 'absent':
+            if self.state == "absent":
                 if self.module.check_mode:
                     self.service = initial_desc
                 else:
                     # Service is available - disable it
-                    if initial_desc['status'] in self.cdpy.sdk.REMOVABLE_STATES:
+                    if initial_desc["status"] in self.cdpy.sdk.REMOVABLE_STATES:
                         self.service = self._disable_service()
                     # Service exists but is not in a disable-able state (could be in the process of
                     # provisioning, disabling, or may be in a failed state)
                     else:
-                        self.module.warn("DE Service is not in a removable state: %s" %
-                                         initial_desc['status'])
+                        self.module.warn(
+                            "DE Service is not in a removable state: %s"
+                            % initial_desc["status"]
+                        )
                         if self.wait:
                             self.module.warn(
-                                "Waiting for DE Service to reach Active or Disabled state")
-                            current_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES +
-                                                                self.cdpy.sdk.STOPPED_STATES)
+                                "Waiting for DE Service to reach Active or Disabled state"
+                            )
+                            current_desc = self._wait_for_state(
+                                self.cdpy.sdk.REMOVABLE_STATES
+                                + self.cdpy.sdk.STOPPED_STATES
+                            )
                             # If we just waited fo the service to be provisioned, then dis-abled it
-                            if current_desc['status'] in self.cdpy.sdk.REMOVABLE_STATES:
+                            if current_desc["status"] in self.cdpy.sdk.REMOVABLE_STATES:
                                 self.service = self._disable_service()
                             else:
                                 self.service = current_desc
-                                if current_desc['status'] not in self.cdpy.sdk.STOPPED_STATES:
-                                    self.module.warn("DE service did not disable successfully")
-            elif self.state == 'present':
+                                if (
+                                    current_desc["status"]
+                                    not in self.cdpy.sdk.STOPPED_STATES
+                                ):
+                                    self.module.warn(
+                                        "DE service did not disable successfully"
+                                    )
+            elif self.state == "present":
                 # Check the existing configuration and state
-                self.module.warn("DE Service already present and configuration validation" +
-                                 "and reconciliation is not supported")
+                self.module.warn(
+                    "DE Service already present and configuration validation"
+                    + "and reconciliation is not supported"
+                )
                 self.service = initial_desc
                 if self.wait:
-                    current_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES +
-                                                        self.cdpy.sdk.STOPPED_STATES)
+                    current_desc = self._wait_for_state(
+                        self.cdpy.sdk.REMOVABLE_STATES + self.cdpy.sdk.STOPPED_STATES
+                    )
                     # If we just waited for the service to be disabled, then enable it
-                    if current_desc['status'] in self.cdpy.sdk.STOPPED_STATES:
+                    if current_desc["status"] in self.cdpy.sdk.STOPPED_STATES:
                         self.service = self._enable_service()
                     else:
                         self.service = current_desc
-                        if current_desc['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
+                        if current_desc["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
                             self.module.warn("DE service did not enable successfully")
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state)
+                    msg="State %s is not valid for this module" % self.state
+                )
 
         # Else if the Service does not exist
         else:
-            if self.state == 'absent':
+            if self.state == "absent":
                 self.module.log(
-                    "DE service %s already absent or terminated in Environment %s" %
-                    (self.name, self.env))
+                    "DE service %s already absent or terminated in Environment %s"
+                    % (self.name, self.env)
+                )
             # Create the Service
-            elif self.state == 'present':
+            elif self.state == "present":
                 if not self.module.check_mode:
                     self.service = self._enable_service()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state)
+                    msg="State %s is not valid for this module" % self.state
+                )
 
     def _enable_service(self):
         result = self.cdpy.de.enable_service(
@@ -464,14 +486,14 @@ class DEService(CdpModule):
             skip_validation=self.skip_validation,
             tags=self.tags,
             use_ssd=self.use_ssd,
-            whitelist_ips=self.whitelist_ips
+            whitelist_ips=self.whitelist_ips,
         )
         return_desc = None
-        if result and result['clusterId']:
-            self.cluster_id = result['clusterId']
+        if result and result["clusterId"]:
+            self.cluster_id = result["clusterId"]
             if self.wait:
                 return_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES)
-                if return_desc['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
+                if return_desc["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
                     self.module.warn("DE service did not enable successfully")
             else:
                 return_desc = result
@@ -483,50 +505,72 @@ class DEService(CdpModule):
         self.cdpy.de.disable_service(self.cluster_id)
         if self.wait:
             current_desc = self._wait_for_state(self.cdpy.sdk.STOPPED_STATES)
-            if current_desc['status'] not in self.cdpy.sdk.STOPPED_STATES:
+            if current_desc["status"] not in self.cdpy.sdk.STOPPED_STATES:
                 self.module.warn("DE service did not disable successfully")
             return current_desc
         else:
             current_desc = self.cdpy.de.describe_service(self.cluster_id)
-            return (current_desc if current_desc not in self.cdpy.sdk.STOPPED_STATES else None)
+            return (
+                current_desc
+                if current_desc not in self.cdpy.sdk.STOPPED_STATES
+                else None
+            )
 
     def _wait_for_state(self, state):
         return self.cdpy.sdk.wait_for_state(
             describe_func=self.cdpy.de.describe_service,
             params=dict(cluster_id=self.cluster_id),
-            field='status', state=state, delay=self.delay,
-            timeout=self.timeout
+            field="status",
+            state=state,
+            delay=self.delay,
+            timeout=self.timeout,
         )
+
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str'),
-            environment=dict(required=True, type='str', aliases=['env']),
-            instance_type=dict(required=False, type='str'),
-            minimum_instances=dict(required=False, type='int', default=1),
-            maximum_instances=dict(required=False, type='int', default=4),
-            minimum_spot_instances=dict(required=False, type='int', default=0),
-            maximum_spot_instances=dict(required=False, type='int', default=0),
-            chart_value_overrides=dict(required=False, type='list', default=None),
-            enable_public_endpoint=dict(required=False, type='bool', default=True),
-            enable_private_network=dict(required=False, type='bool', default=False),
-            loadbalancer_ips=dict(required=False, type='list', elements='str', default=None),
-            enable_workload_analytics=dict(required=False, type='bool', default=True),
-            initial_instances=dict(required=False, type='int', default=1),
-            initial_spot_instances=dict(required=False, type='int', default=0),
-            root_volume_size=dict(required=False, type='int', default=100),
-            skip_validation=dict(required=False, type='bool', default=False),
-            tags=dict(required=False, type='dict', default=None),
-            use_ssd=dict(required=False, type='bool', default=None),
-            whitelist_ips=dict(required=False, type='list', elements='str', default=None),
-            force=dict(required=False, type='bool', default=False, aliases=['force_delete']),
-            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
-            wait=dict(required=False, type='bool', default=True),
-            delay=dict(required=False, type='int', aliases=['polling_delay'], default=60),
-            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=7200)
+            name=dict(required=True, type="str"),
+            environment=dict(required=True, type="str", aliases=["env"]),
+            instance_type=dict(required=False, type="str"),
+            minimum_instances=dict(required=False, type="int", default=1),
+            maximum_instances=dict(required=False, type="int", default=4),
+            minimum_spot_instances=dict(required=False, type="int", default=0),
+            maximum_spot_instances=dict(required=False, type="int", default=0),
+            chart_value_overrides=dict(required=False, type="list", default=None),
+            enable_public_endpoint=dict(required=False, type="bool", default=True),
+            enable_private_network=dict(required=False, type="bool", default=False),
+            loadbalancer_ips=dict(
+                required=False, type="list", elements="str", default=None
+            ),
+            enable_workload_analytics=dict(required=False, type="bool", default=True),
+            initial_instances=dict(required=False, type="int", default=1),
+            initial_spot_instances=dict(required=False, type="int", default=0),
+            root_volume_size=dict(required=False, type="int", default=100),
+            skip_validation=dict(required=False, type="bool", default=False),
+            tags=dict(required=False, type="dict", default=None),
+            use_ssd=dict(required=False, type="bool", default=None),
+            whitelist_ips=dict(
+                required=False, type="list", elements="str", default=None
+            ),
+            force=dict(
+                required=False, type="bool", default=False, aliases=["force_delete"]
+            ),
+            state=dict(
+                required=False,
+                type="str",
+                choices=["present", "absent"],
+                default="present",
+            ),
+            wait=dict(required=False, type="bool", default=True),
+            delay=dict(
+                required=False, type="int", aliases=["polling_delay"], default=60
+            ),
+            timeout=dict(
+                required=False, type="int", aliases=["polling_timeout"], default=7200
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DEService(module)
@@ -538,5 +582,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

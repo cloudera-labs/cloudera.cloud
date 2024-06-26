@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: iam_group
 short_description: Create, update, or destroy CDP IAM Groups
@@ -39,7 +41,7 @@ options:
   name:
     description:
       - The name of the group.
-      - The name must be unique, must have a maximum of 32 characters, and must contain only alphanumeric 
+      - The name must be unique, must have a maximum of 32 characters, and must contain only alphanumeric
             characters, "-", and "_".
       - The first character of the name must be alphabetic or an underscore.
       - Names are are not case-sensitive.
@@ -113,9 +115,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Create a group
@@ -154,9 +156,9 @@ EXAMPLES = r'''
       - role-c
       - role-d
     purge: yes
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 group:
   description: The information about the Group
   type: dict
@@ -201,7 +203,7 @@ group:
           returned: on success
           type: str
     syncMembershipOnUserLogin:
-      description: Flag indicating whether group membership is synced when a user logs in. The default is to sync 
+      description: Flag indicating whether group membership is synced when a user logs in. The default is to sync
         group membership.
       returned: when supported
       type: bool
@@ -214,7 +216,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class IAMGroup(CdpModule):
@@ -222,13 +224,13 @@ class IAMGroup(CdpModule):
         super(IAMGroup, self).__init__(module)
 
         # Set Variables
-        self.state = self._get_param('state')
-        self.name = self._get_param('name')
-        self.sync = self._get_param('sync')
-        self.users = self._get_param('users')
-        self.roles = self._get_param('roles')
-        self.resource_roles = self._get_param('resource_roles')
-        self.purge = self._get_param('purge')
+        self.state = self._get_param("state")
+        self.name = self._get_param("name")
+        self.sync = self._get_param("sync")
+        self.users = self._get_param("users")
+        self.roles = self._get_param("roles")
+        self.resource_roles = self._get_param("resource_roles")
+        self.purge = self._get_param("purge")
 
         # Initialize the return values
         self.info = dict()
@@ -240,7 +242,7 @@ class IAMGroup(CdpModule):
     def process(self):
         existing = self._retrieve_group()
         if existing is None:
-            if self.state == 'present':
+            if self.state == "present":
                 self.changed = True
                 self.cdpy.iam.create_group(self.name, self.sync)
                 if self.users:
@@ -251,55 +253,80 @@ class IAMGroup(CdpModule):
                         self.cdpy.iam.assign_group_role(self.name, role)
                 if self.resource_roles:
                     for assignment in self.resource_roles:
-                        self.cdpy.iam.assign_group_resource_role(self.name, assignment['resource'], assignment['role'])
+                        self.cdpy.iam.assign_group_resource_role(
+                            self.name, assignment["resource"], assignment["role"]
+                        )
                 self.info = self._retrieve_group()
         else:
-            if self.state == 'present':
-                if self.sync is not None and existing['syncMembershipOnUserLogin'] != self.sync:
+            if self.state == "present":
+                if (
+                    self.sync is not None
+                    and existing["syncMembershipOnUserLogin"] != self.sync
+                ):
                     self.changed = True
                     self.cdpy.iam.update_group(self.name, self.sync)
 
                 if self.users is not None:
                     # If an empty user list, don't normalize
-                    normalized_users = self.cdpy.iam.gather_users(self.users) if self.users else list()
-                    new_users = [user for user in normalized_users if user not in existing['users']]
+                    normalized_users = (
+                        self.cdpy.iam.gather_users(self.users) if self.users else list()
+                    )
+                    new_users = [
+                        user
+                        for user in normalized_users
+                        if user not in existing["users"]
+                    ]
                     for user in new_users:
                         self.changed = True
                         self.cdpy.iam.add_group_user(self.name, user)
                     if self.purge:
-                        stale_users = [user for user in existing['users'] if user not in normalized_users]
+                        stale_users = [
+                            user
+                            for user in existing["users"]
+                            if user not in normalized_users
+                        ]
                         for user in stale_users:
                             self.changed = True
                             self.cdpy.iam.remove_group_user(self.name, user)
 
                 if self.roles is not None:
-                    new_roles = [role for role in self.roles if role not in existing['roles']]
+                    new_roles = [
+                        role for role in self.roles if role not in existing["roles"]
+                    ]
                     for role in new_roles:
                         self.changed = True
                         self.cdpy.iam.assign_group_role(self.name, role)
                     if self.purge:
-                        stale_roles = [role for role in existing['roles'] if role not in self.roles]
+                        stale_roles = [
+                            role for role in existing["roles"] if role not in self.roles
+                        ]
                         for role in stale_roles:
                             self.changed = True
                             self.cdpy.iam.unassign_group_role(self.name, role)
 
                 if self.resource_roles is not None:
-                    new_assignments = self._new_assignments(existing['resource_roles'])
+                    new_assignments = self._new_assignments(existing["resource_roles"])
                     for assignment in new_assignments:
                         self.changed = True
-                        self.cdpy.iam.assign_group_resource_role(self.name, assignment['resource'], assignment['role'])
+                        self.cdpy.iam.assign_group_resource_role(
+                            self.name, assignment["resource"], assignment["role"]
+                        )
                     if self.purge:
-                        stale_assignments = self._stale_assignments(existing['resource_roles'])
+                        stale_assignments = self._stale_assignments(
+                            existing["resource_roles"]
+                        )
                         for assignment in stale_assignments:
                             self.changed = True
-                            self.cdpy.iam.unassign_group_resource_role(self.name, assignment['resource'], assignment['role'])
+                            self.cdpy.iam.unassign_group_resource_role(
+                                self.name, assignment["resource"], assignment["role"]
+                            )
 
                 if self.changed:
                     self.info = self._retrieve_group()
                 else:
                     self.info = existing
 
-            elif self.state == 'absent':
+            elif self.state == "absent":
                 self.changed = True
                 self.cdpy.iam.delete_group(self.name)
 
@@ -315,13 +342,15 @@ class IAMGroup(CdpModule):
         new_assignments = []
         resource_dict = dict()
         for existing in existing_assignments:
-            if existing['resourceCrn'] in resource_dict:
-                resource_dict[existing['resourceCrn']].add(existing['resourceRoleCrn'])
+            if existing["resourceCrn"] in resource_dict:
+                resource_dict[existing["resourceCrn"]].add(existing["resourceRoleCrn"])
             else:
-                resource_dict[existing['resourceCrn']] = {existing['resourceRoleCrn']}
+                resource_dict[existing["resourceCrn"]] = {existing["resourceRoleCrn"]}
         for assignment in self.resource_roles:
-            if assignment['resource'] not in resource_dict or assignment['role'] not in \
-                    resource_dict[assignment['resource']]:
+            if (
+                assignment["resource"] not in resource_dict
+                or assignment["role"] not in resource_dict[assignment["resource"]]
+            ):
                 new_assignments.append(assignment)
         return new_assignments
 
@@ -329,13 +358,16 @@ class IAMGroup(CdpModule):
         stale_assignments = []
         resource_dict = dict()
         for assignment in self.resource_roles:
-            if assignment['resource'] in resource_dict:
-                resource_dict[assignment['resource']].add(assignment['role'])
+            if assignment["resource"] in resource_dict:
+                resource_dict[assignment["resource"]].add(assignment["role"])
             else:
-                resource_dict[assignment['resource']] = {assignment['role']}
+                resource_dict[assignment["resource"]] = {assignment["role"]}
         for existing in existing_assignments:
-            if existing['resourceCrn'] not in resource_dict or existing['resourceRoleCrn'] not in \
-                    resource_dict[existing['resourceCrn']]:
+            if (
+                existing["resourceCrn"] not in resource_dict
+                or existing["resourceRoleCrn"]
+                not in resource_dict[existing["resourceCrn"]]
+            ):
                 stale_assignments.append(existing)
         return stale_assignments
 
@@ -343,18 +375,33 @@ class IAMGroup(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
-            name=dict(required=True, type='str', aliases=['group_name']),
-            sync=dict(required=False, type='bool', aliases=['sync_membership', 'sync_on_login']),
-            users=dict(required=False, type='list', elements='str'),
-            roles=dict(required=False, type='list', elements='str'),
-            resource_roles=dict(required=False, type='list', elements='dict', options=dict(
-                resource=dict(required=True, type='str', aliases=['resourceCrn']),
-                role=dict(required=True, type='str', aliases=['resourceRoleCrn'])
-            ), aliases=['assignments']),
-            purge=dict(required=False, type='bool', default=False, aliases=['replace'])
+            state=dict(
+                required=False,
+                type="str",
+                choices=["present", "absent"],
+                default="present",
+            ),
+            name=dict(required=True, type="str", aliases=["group_name"]),
+            sync=dict(
+                required=False,
+                type="bool",
+                aliases=["sync_membership", "sync_on_login"],
+            ),
+            users=dict(required=False, type="list", elements="str"),
+            roles=dict(required=False, type="list", elements="str"),
+            resource_roles=dict(
+                required=False,
+                type="list",
+                elements="dict",
+                options=dict(
+                    resource=dict(required=True, type="str", aliases=["resourceCrn"]),
+                    role=dict(required=True, type="str", aliases=["resourceRoleCrn"]),
+                ),
+                aliases=["assignments"],
+            ),
+            purge=dict(required=False, type="bool", default=False, aliases=["replace"]),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = IAMGroup(module)
@@ -365,13 +412,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

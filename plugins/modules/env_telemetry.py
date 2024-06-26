@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_telemetry
 short_description: Set CDP environment telemetry
@@ -58,9 +60,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Turn off both workload analytics and log collection
@@ -68,9 +70,9 @@ EXAMPLES = r'''
     name: the-environment
     workload_analytics: no
     logs_collection: no
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 sdk_out:
     description: Returns the captured CDP SDK log.
     returned: when supported
@@ -80,7 +82,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentTelemetry(CdpModule):
@@ -88,9 +90,9 @@ class EnvironmentTelemetry(CdpModule):
         super(EnvironmentTelemetry, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.workload_analytics = self._get_param('workload_analytics')
-        self.logs_collection = self._get_param('logs_collection')
+        self.name = self._get_param("name")
+        self.workload_analytics = self._get_param("workload_analytics")
+        self.logs_collection = self._get_param("logs_collection")
 
         # Execute logic process
         self.process()
@@ -101,17 +103,20 @@ class EnvironmentTelemetry(CdpModule):
             self.cdpy.environments.set_telemetry(
                 name=self.name,
                 workload_analytics=self.workload_analytics,
-                logs_collection=self.logs_collection)
+                logs_collection=self.logs_collection,
+            )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['environment']),
-            workload_analytics=dict(required=False, type='bool', aliases=['analytics']),
-            logs_collection=dict(required=False, type='bool', aliases=['logs', 'report_deployment_logs'])
+            name=dict(required=True, type="str", aliases=["environment"]),
+            workload_analytics=dict(required=False, type="bool", aliases=["analytics"]),
+            logs_collection=dict(
+                required=False, type="bool", aliases=["logs", "report_deployment_logs"]
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = EnvironmentTelemetry(module)
@@ -123,5 +128,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

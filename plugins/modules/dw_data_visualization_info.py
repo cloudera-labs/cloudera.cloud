@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: dw_data_visualization_info
 short_description: Gather information about CDP Data Visualization Instances
@@ -66,15 +68,15 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Gather information about Data Visualization Instances within an CDW Environment
 - cloudera.cloud.dw_data_visualization_info:
     env: example-environment
-    
+
 # Gather information about Data Visualization Instances within an CDW Environment
 - cloudera.cloud.dw_data_visualization_info:
     cluster_id: env-xyzabc
@@ -84,9 +86,9 @@ EXAMPLES = r'''
     cluster_id: env-xyzabc
     data_visualization_name: example-name
 
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 clusters:
   description: The information about the named Data Visualization Instance or Instances
@@ -103,7 +105,7 @@ clusters:
       returned: always
       type: str
     imageVersion:
-      description: The current version of Data Visualization 
+      description: The current version of Data Visualization
       returned: always
       type: str
     name:
@@ -127,7 +129,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DwDataVisualizationInfo(CdpModule):
@@ -135,10 +137,10 @@ class DwDataVisualizationInfo(CdpModule):
         super(DwDataVisualizationInfo, self).__init__(module)
 
         # Set variables
-        self.data_visualization_id = self._get_param('data_visualization_id')
-        self.data_visualization_name = self._get_param('data_visualization_name')
-        self.cluster_id = self._get_param('cluster_id')
-        self.environment = self._get_param('environment')
+        self.data_visualization_id = self._get_param("data_visualization_id")
+        self.data_visualization_name = self._get_param("data_visualization_name")
+        self.cluster_id = self._get_param("cluster_id")
+        self.environment = self._get_param("environment")
 
         self.clusters = []
 
@@ -156,30 +158,43 @@ class DwDataVisualizationInfo(CdpModule):
             if env_crn:
                 self.clusters = self.cdpy.dw.list_clusters(env_crn=env_crn)
         if not self.clusters:
-            self.module.fail_json(msg="No clusters found for the specified filter. Cluster ID: {}, Env ID: {}".format(
-                self.cluster_id, self.environment))
+            self.module.fail_json(
+                msg="No clusters found for the specified filter. Cluster ID: {}, Env ID: {}".format(
+                    self.cluster_id, self.environment
+                )
+            )
 
         for cluster in self.clusters:
-            resp = self.cdpy.dw.list_data_visualizations(cluster_id=cluster['id'])
+            resp = self.cdpy.dw.list_data_visualizations(cluster_id=cluster["id"])
             self.data_visualizations.extend(
-                [v for v in resp
-                 if (self.data_visualization_id is None or v['id'] == self.data_visualization_id)
-                 and (self.data_visualization_name is None or v['name'] == self.data_visualization_name)])
+                [
+                    v
+                    for v in resp
+                    if (
+                        self.data_visualization_id is None
+                        or v["id"] == self.data_visualization_id
+                    )
+                    and (
+                        self.data_visualization_name is None
+                        or v["name"] == self.data_visualization_name
+                    )
+                ]
+            )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            data_visualization_id=dict(type='str', aliases=['id']),
-            data_visualization_name=dict(type='str', aliases=['name']),
-            cluster_id=dict(type='str'),
-            environment=dict(type='str', aliases=['env'])
+            data_visualization_id=dict(type="str", aliases=["id"]),
+            data_visualization_name=dict(type="str", aliases=["name"]),
+            cluster_id=dict(type="str"),
+            environment=dict(type="str", aliases=["env"]),
         ),
         mutually_exclusive=[
-          ['cluster_id', 'environment'],
-          ['data_visualization_id', 'data_visualization_name']
+            ["cluster_id", "environment"],
+            ["data_visualization_id", "data_visualization_name"],
         ],
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     instance = DwDataVisualizationInfo(module)
@@ -192,5 +207,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

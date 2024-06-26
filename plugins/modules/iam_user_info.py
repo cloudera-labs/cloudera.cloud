@@ -19,11 +19,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 import re
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: iam_user_info
 short_description: Gather information about CDP Public IAM users
@@ -59,9 +61,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all Users
@@ -70,18 +72,18 @@ EXAMPLES = r'''
 # Gather detailed information about a named User
 - cloudera.cloud.iam_info:
     name: Example
-    
+
 # Gather detailed information about a named User
 - cloudera.cdp.iam_info:
-    filter: 
+    filter:
         workloadUsername: my[0-9]{2}_admin.*?'
 
 # Gather detailed information about the current user
 - cloudera.cloud.iam_info:
     current_user: yes
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 users:
   description: The information about the current or named User or Users
   type: list
@@ -141,7 +143,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class IAMUserInfo(CdpModule):
@@ -149,9 +151,9 @@ class IAMUserInfo(CdpModule):
         super(IAMUserInfo, self).__init__(module)
 
         # Set Variables
-        self.name = self._get_param('name')
-        self.current = self._get_param('current_user', False)
-        self.filter = self._get_param('filter')
+        self.name = self._get_param("name")
+        self.current = self._get_param("current_user", False)
+        self.filter = self._get_param("filter")
 
         # Initialize filter if set
         self.compiled_filter = self.compile_filters()
@@ -182,7 +184,7 @@ class IAMUserInfo(CdpModule):
             filtered_users = []
 
             # Iterate users
-            for userData in self.cdpy.iam.list_users(): #self.name
+            for userData in self.cdpy.iam.list_users():  # self.name
                 # Iterate Filters. Must match all
                 for filter_key in self.compiled_filter:
                     key_val = filter_key
@@ -206,16 +208,18 @@ class IAMUserInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='list', elements='str', aliases=['user_name']),
-            current_user=dict(required=False, type='bool'),
-            filter=dict(required=False, type='dict'),
+            name=dict(
+                required=False, type="list", elements="str", aliases=["user_name"]
+            ),
+            current_user=dict(required=False, type="bool"),
+            filter=dict(required=False, type="dict"),
         ),
         mutually_exclusive=[
-            ['name', 'current_user'],
-            ['filter', 'current_user'],
-            ['filter', 'name']
+            ["name", "current_user"],
+            ["filter", "current_user"],
+            ["filter", "name"],
         ],
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = IAMUserInfo(module)
@@ -226,13 +230,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

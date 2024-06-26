@@ -18,15 +18,17 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 module: env_auth_info
 short_description: Gather information about CDP environment authentication details
 description:
-  - Gather information about CDP environment authentication details, notably the FreeIPA root certificate and 
+  - Gather information about CDP environment authentication details, notably the FreeIPA root certificate and
         user keytabs.
   - The module supports check_mode.
 author:
@@ -75,9 +77,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Retrieve only the root certificate for a single environment
@@ -112,9 +114,9 @@ EXAMPLES = r'''
       - UserB
     keytab: yes
     root_certificate: no
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 authentication:
     description: Returns a dictionary of the environment authentication details.
     returned: always
@@ -152,7 +154,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentAuthentication(CdpModule):
@@ -160,10 +162,10 @@ class EnvironmentAuthentication(CdpModule):
         super(EnvironmentAuthentication, self).__init__(module)
 
         # Set Variables
-        self.name = self._get_param('name')
-        self.user = self._get_param('user')
-        self.root_cert = self._get_param('root_certificate')
-        self.keytab = self._get_param('keytab')
+        self.name = self._get_param("name")
+        self.user = self._get_param("user")
+        self.root_cert = self._get_param("root_certificate")
+        self.keytab = self._get_param("keytab")
 
         # Initialize the return values
         self.auth = dict()
@@ -187,12 +189,12 @@ class EnvironmentAuthentication(CdpModule):
                 for user in self.user:
                     actor = self.cdpy.iam.get_user(user)
                     if actor is None:
-                        self.module.fail_json(msg='Invalid user: %s' % user)
+                        self.module.fail_json(msg="Invalid user: %s" % user)
                     actors.append(actor)
 
             for actor in actors:
-                user_keytabs = self.get_keytabs_for_user(actor['crn'])
-                keytabs[actor['workloadUsername']] = user_keytabs
+                user_keytabs = self.get_keytabs_for_user(actor["crn"])
+                keytabs[actor["workloadUsername"]] = user_keytabs
 
             self.auth.update(keytabs=keytabs)
 
@@ -205,8 +207,8 @@ class EnvironmentAuthentication(CdpModule):
             env_list = self._discover_crns()
 
         for env in env_list:
-            result = self.cdpy.environments.get_root_cert(env['crn'])
-            certs[env['name']] = result
+            result = self.cdpy.environments.get_root_cert(env["crn"])
+            certs[env["name"]] = result
 
         return certs
 
@@ -220,8 +222,10 @@ class EnvironmentAuthentication(CdpModule):
         else:
             all_envs = self.cdpy.environments.list_environments()
             for env in all_envs:
-                result = self.cdpy.environments.get_keytab(workload_user_crn, env['crn'])
-                keytabs[env['environmentName']] = result
+                result = self.cdpy.environments.get_keytab(
+                    workload_user_crn, env["crn"]
+                )
+                keytabs[env["environmentName"]] = result
 
         return keytabs
 
@@ -230,7 +234,7 @@ class EnvironmentAuthentication(CdpModule):
         for name in self.name:
             env = self.cdpy.environments.describe_environment(name)
             if env is not None:
-                converted.append(dict(name=name, crn=env['crn']))
+                converted.append(dict(name=name, crn=env["crn"]))
             else:
                 self.module.fail_json(msg="Environment '%s' not found" % name)
         return converted
@@ -239,19 +243,28 @@ class EnvironmentAuthentication(CdpModule):
         converted = []
         discovered = self.cdpy.environments.list_environments()
         for env in discovered:
-            converted.append(dict(name=env['environmentName'], crn=env['crn']))
+            converted.append(dict(name=env["environmentName"], crn=env["crn"]))
         return converted
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='list', elements='str', aliases=['environment']),
-            user=dict(required=False, type='list', elements='str', aliases=['users']),
-            root_certificate=dict(required=False, type='bool', aliases=['root_ca', 'cert'], default=True),
-            keytab=dict(required=False, type='bool', aliases=['keytabs', 'user_keytabs'], default=True)
+            name=dict(
+                required=False, type="list", elements="str", aliases=["environment"]
+            ),
+            user=dict(required=False, type="list", elements="str", aliases=["users"]),
+            root_certificate=dict(
+                required=False, type="bool", aliases=["root_ca", "cert"], default=True
+            ),
+            keytab=dict(
+                required=False,
+                type="bool",
+                aliases=["keytabs", "user_keytabs"],
+                default=True,
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = EnvironmentAuthentication(module)
@@ -262,13 +275,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -13,7 +13,7 @@ nor in the manner indicated.  Similarly, fulfilling a license’s compliance
 requirements for a particular form of distribution is not an admission that the
 software is in fact distributed in that form.  Distributions and packaging vary
 and not all third party components are relied upon in the same manner or degree.
-In addition, some compliance documentation, such as embedded notices files in 
+In addition, some compliance documentation, such as embedded notices files in
 source code, may be found within the distribution itself rather than below.
 “Third Party Software” and “Separately Licensed Code” as defined in the
 applicable Cloudera or Hortonworks agreement, respectively, have the same
@@ -29,7 +29,7 @@ operating system, which may be delivered to you with a containerized
 installation of the operating system for your convenience. Cloudera software
 constitutes a separate and independent work from the operating system, and the
 provided container is an aggregation of the operating system and the Cloudera
-software. 
+software.
 
 NO WARRANTY; NO LIABILITY; NO INDEMNIFICATION/HOLD HARMLESS
 Notwithstanding any agreement recipient may have with Cloudera: (A) CLOUDERA
@@ -71,11 +71,11 @@ request should include: (i) the name and version number of the covered binary,
 license under which the source code must be provided, and (vi) your return
 mailing and email address (if available).
 
-Components: 
+Components:
 
 rtfd/sphinx_rtd_theme 0.5.0 : MIT License
 
-Licenses: 
+Licenses:
 
 MIT License
 (rtfd/sphinx_rtd_theme 0.5.0)
@@ -100,4 +100,3 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE
-

@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: ml_info
 short_description: Gather information about CDP ML Workspaces
@@ -60,9 +62,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all ML Workspaces
@@ -76,9 +78,9 @@ EXAMPLES = r'''
 # Gather detailed information about a named Workspace using a CRN
 - cloudera.cloud.ml_info:
     crn: example-workspace-crn
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 workspaces:
   description: The information about the named Workspace or Workspaces
@@ -176,7 +178,7 @@ workspaces:
           description: The initial number of instance nodes.
           returned: always
           type: int
-        instanceGroupName: 
+        instanceGroupName:
           description: The unique name of the instance group.
           returned: always
           type: str
@@ -202,7 +204,7 @@ workspaces:
           description: The maximum number of instances that can be deployed to this instance group.
           returned: always
           type: int
-        minInstances: 
+        minInstances:
           description: The minimum number of instances that can be deployed to this instance group. If the value is 0, the group might be empty.
           returned: always
           type: int
@@ -275,7 +277,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class MLInfo(CdpModule):
@@ -283,9 +285,9 @@ class MLInfo(CdpModule):
         super(MLInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('environment')
-        self.crn = self._get_param('crn')
+        self.name = self._get_param("name")
+        self.env = self._get_param("environment")
+        self.crn = self._get_param("crn")
 
         # Initialize return values
         self.workspaces = []
@@ -295,8 +297,12 @@ class MLInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        if (self.name and self.env) or self.crn:  # Note that both None and '' will trigger this
-            workspace_single = self.cdpy.ml.describe_workspace(name=self.name, env=self.env, crn=self.crn)
+        if (
+            self.name and self.env
+        ) or self.crn:  # Note that both None and '' will trigger this
+            workspace_single = self.cdpy.ml.describe_workspace(
+                name=self.name, env=self.env, crn=self.crn
+            )
             if workspace_single is not None:
                 self.workspaces.append(workspace_single)
         else:
@@ -306,14 +312,12 @@ class MLInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['workspace']),
-            environment=dict(required=False, type='str', aliases=['env']),
-            crn=dict(required=False, type='str', aliases=['workspace_crn'])
+            name=dict(required=False, type="str", aliases=["workspace"]),
+            environment=dict(required=False, type="str", aliases=["env"]),
+            crn=dict(required=False, type="str", aliases=["workspace_crn"]),
         ),
         supports_check_mode=True,
-        required_by={
-            'name': ('environment')
-        }
+        required_by={"name": ("environment")},
     )
 
     result = MLInfo(module)
@@ -325,5 +329,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

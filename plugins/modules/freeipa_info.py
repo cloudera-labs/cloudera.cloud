@@ -18,14 +18,16 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: freeipa_info
-short_description: Gather information about FreeIPA 
+short_description: Gather information about FreeIPA
 description:
     - Gather information about FreeIPA
 author:
@@ -42,18 +44,18 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List FreeIPA information about a named Environment
 - cloudera.cloud.freeipa_info:
     name: example-environment
-'''
+"""
 
-RETURN = r'''
-environments: 
+RETURN = r"""
+environments:
   description: The information about the named Environment or Environments
   type: dict
   returned: on success
@@ -94,7 +96,7 @@ environments:
             returned: always
             type: list
             sample: []
-'''
+"""
 
 
 class FreeIPAInfo(CdpModule):
@@ -102,7 +104,7 @@ class FreeIPAInfo(CdpModule):
         super(FreeIPAInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
+        self.name = self._get_param("name")
 
         # Initialize return values
         self.freeipa = dict()
@@ -113,15 +115,17 @@ class FreeIPAInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         if self.name:
-          self.freeipa = self.cdpy.sdk.call(svc='environments', func='get_freeipa_status', environmentName=self.name)     
+            self.freeipa = self.cdpy.sdk.call(
+                svc="environments", func="get_freeipa_status", environmentName=self.name
+            )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['environment'])
+            name=dict(required=True, type="str", aliases=["environment"])
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = FreeIPAInfo(module)
@@ -132,5 +136,6 @@ def main():
 
     module.exit_json(**output)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
