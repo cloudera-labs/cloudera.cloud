@@ -43,6 +43,15 @@ options:
     aliases:
       - id
       - name
+  custom_subdomain:
+    description:
+      - Custom environment subdomain. 
+      - Overrides the environment subdomain using a customized domain.
+    type: str
+  database_backup_retention_period:
+    description:
+      - PostgreSQL server backup retention days
+    type: int
   env:
     description:
       - The name of the target environment.
@@ -61,7 +70,10 @@ options:
   private_load_balancer:
     description: Flag to set up a load balancer for private subnets.
     type: bool
-    default: False    
+    default: False
+  public_worker_node:
+    description: Set up public facing worker nodes.
+    type: bool
   aws_lb_subnets:
     description:
       - List of zero or more AWS Subnet IDs where the cluster load balancer should be deployed.
@@ -132,6 +144,18 @@ options:
           - Only a single instance type can be listed.
         type: list
         elements: str
+  reserved_compute_nodes:
+    description:
+      - Set additional number of nodes to reserve for executors and coordinators to use during autoscaling.
+    type: int   
+  reserved_shared_services_nodes:
+    description:
+      - Set additional number of nodes to reserve for other services in the cluster.
+    type: int
+  resource_pool:
+    description:
+      - The Resource Pool of the cluster.
+    type: str
   state:
     description: The state of the Data Warehouse Cluster
     type: str
@@ -145,6 +169,19 @@ options:
       - If set to FALSE, the module will return immediately.
     type: bool
     default: True
+  whitelist_workload_access_ip_cidrs:
+    description: The IP ranges authorized to connect for workload access
+    type: list
+    required: False
+    aliases:
+      - loadbalancer_ip_ranges
+      - workload_ip_ranges
+  whitelist_k8s_cluster_access_ip_cidrs:
+    description: The IP ranges authorized to connect to the Kubernetes API server
+    type: list
+    required: False
+    aliases:
+      - k8s_ip_ranges
   force:
     description:
       - Flag to enable force deletion of the Data Warehouse Cluster.
@@ -272,6 +309,7 @@ class DwCluster(CdpModule):
         self.env = self._get_param('env')
         self.overlay = self._get_param('overlay')
         self.private_load_balancer = self._get_param('private_load_balancer')
+        self.public_worker_node = self._get_param('public_worker_node')
         self.aws_lb_subnets = self._get_param('aws_lb_subnets')
         self.aws_worker_subnets = self._get_param('aws_worker_subnets')
         self.force = self._get_param('force')
@@ -279,6 +317,14 @@ class DwCluster(CdpModule):
         self.wait = self._get_param('wait')
         self.delay = self._get_param('delay')
         self.timeout = self._get_param('timeout')
+        self.custom_subdomain = self._get_param('custom_subdomain')
+        self.database_backup_retention_period = self._get_param('database_backup_retention_period')
+        self.reserved_compute_nodes = self._get_param('reserved_compute_nodes')
+        self.reserved_shared_services_nodes = self._get_param('reserved_shared_services_nodes')
+        self.resource_pool = self._get_param('resource_pool')
+        self.lb_ip_ranges = self._get_param('whitelist_workload_access_ip_cidrs')
+        self.k8s_ip_ranges = self._get_param('whitelist_k8s_cluster_access_ip_cidrs')
+
         # Azure nested parameters
         self.az_compute_instance_types = self._get_nested_param('azure', 'compute_instance_types')
         self.az_enable_az = self._get_nested_param('azure', 'enable_az')
@@ -370,12 +416,15 @@ class DwCluster(CdpModule):
                     else:
                         self.name = self.cdpy.dw.create_cluster(
                             env_crn=env_crn, overlay=self.overlay, private_load_balancer=self.private_load_balancer,
-                            aws_lb_subnets=self.aws_lb_subnets, aws_worker_subnets=self.aws_worker_subnets,
+                            public_worker_node=self.public_worker_node, aws_lb_subnets=self.aws_lb_subnets, aws_worker_subnets=self.aws_worker_subnets,
                             az_subnet=self.az_subnet, az_enable_az=self.az_enable_az, az_managed_identity=self.az_managed_identity,
                             az_enable_private_aks=self.az_enable_private_aks, az_enable_private_sql=self.az_enable_private_sql,
                             az_enable_spot_instances=self.az_enable_spot_instances, az_log_analytics_workspace_id=self.az_log_analytics_workspace_id,
                             az_network_outbound_type=self.az_network_outbound_type, az_aks_private_dns_zone=self.az_aks_private_dns_zone,
-                            az_compute_instance_types=self.az_compute_instance_types
+                            az_compute_instance_types=self.az_compute_instance_types,
+                            custom_subdomain=self.custom_subdomain, database_backup_retention_period=self.database_backup_retention_period,
+                            reserved_compute_nodes=self.reserved_compute_nodes, reserved_shared_services_nodes=self.reserved_shared_services_nodes,
+                            resource_pool=self.resource_pool, lb_ip_ranges=self.lb_ip_ranges, k8s_ip_ranges=self.k8s_ip_ranges
                         )
                         if self.wait:
                             self.cluster = self.cdpy.sdk.wait_for_state(
@@ -395,9 +444,12 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             cluster_id=dict(type='str', aliases=['id', 'name']),
+            custom_subdomain=dict(type='str'),
+            database_backup_retention_period=dict(type='int'),
             env=dict(type='str', aliases=['environment', 'env_crn']),
             overlay=dict(type='bool', default=False),
             private_load_balancer=dict(type='bool', default=False),
+            public_worker_node=dict(type='bool'),
             azure=dict(
                 type='dict',
                 options=dict(
@@ -415,9 +467,14 @@ def main():
             ),
             aws_lb_subnets=dict(type='list', aliases=['aws_public_subnets']),
             aws_worker_subnets=dict(type='list', aliases=['aws_private_subnets']),
+            reserved_compute_nodes=dict(type='int'),
+            reserved_shared_services_nodes=dict(type='int'),
+            resource_pool=dict(type='str'),
             state=dict(type='str', choices=['present', 'absent'], default='present'),
             force=dict(type='bool', default=False),
             wait=dict(type='bool', default=True),
+            whitelist_workload_access_ip_cidrs=dict(type='list', elements='str', default=None, aliases=['loadbalancer_ip_ranges','workload_ip_ranges']),
+            whitelist_k8s_cluster_access_ip_cidrs=dict(type='list', elements='str', default=None, aliases=['k8s_ip_ranges']),
             delay=dict(type='int', aliases=['polling_delay'], default=15),
             timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
         ),
