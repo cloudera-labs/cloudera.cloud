@@ -139,7 +139,7 @@ cd docsbuild
 pip install ansible-core https://github.com/cloudera-labs/antsibull-docs/archive/cldr-docsite.tar.gz
 
 # Install the collection's build dependencies
-pip install requirements.txt
+pip install -r requirements.txt
 
 # Then run the build script
 ./build.sh
