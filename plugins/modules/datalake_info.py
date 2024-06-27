@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: datalake_info
 short_description: Gather information about CDP Datalakes
@@ -52,9 +54,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all Datalakes
@@ -67,9 +69,9 @@ EXAMPLES = r'''
 # Gather detailed information about the Datalake in an Environment
 - cloudera.cloud.datalake_info:
     environment: example-env
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 datalakes:
   description: The information about the named Datalake or Datalakes
@@ -261,7 +263,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DatalakeInfo(CdpModule):
@@ -269,8 +271,8 @@ class DatalakeInfo(CdpModule):
         super(DatalakeInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('environment')
+        self.name = self._get_param("name")
+        self.env = self._get_param("environment")
 
         # Initialize return values
         self.datalakes = []
@@ -291,10 +293,10 @@ class DatalakeInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['datalake']),
-            environment=dict(required=False, type='str', aliases=['env'])
+            name=dict(required=False, type="str", aliases=["datalake"]),
+            environment=dict(required=False, type="str", aliases=["env"]),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DatalakeInfo(module)
@@ -306,5 +308,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -79,7 +79,7 @@ class CdpModule(object):
         return default
 
     def _get_nested_param(self, param, suboption, default=None):
-        """Fetches an nested suboption from an Ansible Input Parameter if it exists, else returns optional default or None"""          
+        """Fetches an nested suboption from an Ansible Input Parameter if it exists, else returns optional default or None"""
         if self.module is not None:
             if param in self.module.params and self.module.params[param] is not None:
                 param_suboptions = self.module.params[param]

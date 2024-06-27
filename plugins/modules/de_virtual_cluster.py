@@ -19,15 +19,17 @@ from ansible.module_utils.basic import AnsibleModule
 from ..module_utils.cdp_common import CdpModule
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 module: de_virtual_cluster
 short_description: Create or delete CDP Data Engineering Virtual Clusters
 description:
-    - Create or delete CDP Data Engineering Virtual Clusters 
+    - Create or delete CDP Data Engineering Virtual Clusters
 author:
   - "Curtis Howard (@curtishoward)"
 requirements:
@@ -35,12 +37,12 @@ requirements:
 options:
   name:
     description:
-      - The name of the CDE Virtual Cluster 
+      - The name of the CDE Virtual Cluster
     type: str
     required: True
   cluster_id:
     description:
-      - Cluster id of the CDE service where virtual cluster has to be created. 
+      - Cluster id of the CDE service where virtual cluster has to be created.
     type: str
     required: True
   cpu_requests:
@@ -70,7 +72,7 @@ options:
     required: False
   chart_value_overrides:
     description:
-    - Chart overrides for creating a virtual cluster. 
+    - Chart overrides for creating a virtual cluster.
     type: list
     required: False
     suboptions:
@@ -81,7 +83,7 @@ options:
         required: False
   state:
     description:
-      - The declarative state of the CDE virtual cluster 
+      - The declarative state of the CDE virtual cluster
     type: str
     required: False
     default: present
@@ -113,9 +115,9 @@ options:
     default: 600
     aliases:
       - polling_timeout
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Create a CDE virtual cluster
 - cloudera.cloud.de_virtual_cluster:
     name: virtual-cluster-name
@@ -125,10 +127,10 @@ EXAMPLES = r'''
     wait: True
     delay: 30
     timeout: 600
-'''
+"""
 
 
-RETURN = r'''
+RETURN = r"""
 ---
 virtual_cluster:
   description: DE virtual cluster
@@ -145,7 +147,7 @@ virtual_cluster:
       type: dict
       contains:
         users:
-          description: Workload usernames of CDP users granted access to the Virtual Cluster. 
+          description: Workload usernames of CDP users granted access to the Virtual Cluster.
           returned: always
           type: list
           elements: str
@@ -246,29 +248,30 @@ virtual_cluster:
       description: Name of the CDE Virtual Cluster
       returned: always
       type: str
-'''
+"""
+
 
 class DEVirtualCluster(CdpModule):
     def __init__(self, module):
         super(DEVirtualCluster, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('env')
-        self.cluster_name = self._get_param('cluster_name')
+        self.name = self._get_param("name")
+        self.env = self._get_param("env")
+        self.cluster_name = self._get_param("cluster_name")
 
-        self.cpu_requests = self._get_param('cpu_requests')
-        self.memory_requests = self._get_param('memory_requests')
-        self.chart_value_overrides = self._get_param('chart_value_overrides')
-        self.runtime_spot_component = self._get_param('runtime_spot_component')
-        self.spark_version = self._get_param('spark_version')
-        self.acl_users = self._get_param('acl_users')
+        self.cpu_requests = self._get_param("cpu_requests")
+        self.memory_requests = self._get_param("memory_requests")
+        self.chart_value_overrides = self._get_param("chart_value_overrides")
+        self.runtime_spot_component = self._get_param("runtime_spot_component")
+        self.spark_version = self._get_param("spark_version")
+        self.acl_users = self._get_param("acl_users")
 
-        self.state = self._get_param('state')
-        self.force = self._get_param('force')
-        self.wait = self._get_param('wait')
-        self.delay = self._get_param('delay')
-        self.timeout = self._get_param('timeout')
+        self.state = self._get_param("state")
+        self.force = self._get_param("force")
+        self.wait = self._get_param("wait")
+        self.delay = self._get_param("delay")
+        self.timeout = self._get_param("timeout")
 
         # Initialize return values
         self.virtual_cluster = None
@@ -282,76 +285,102 @@ class DEVirtualCluster(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.cluster_id = self.cdpy.de.get_service_id_by_name(name=self.cluster_name, env=self.env)
-        self.vc_id = self.cdpy.de.get_vc_id_by_name(name=self.name, cluster_id=self.cluster_id)
-        initial_desc = self.cdpy.de.describe_vc(self.cluster_id, self.vc_id) if self.vc_id else None
+        self.cluster_id = self.cdpy.de.get_service_id_by_name(
+            name=self.cluster_name, env=self.env
+        )
+        self.vc_id = self.cdpy.de.get_vc_id_by_name(
+            name=self.name, cluster_id=self.cluster_id
+        )
+        initial_desc = (
+            self.cdpy.de.describe_vc(self.cluster_id, self.vc_id)
+            if self.vc_id
+            else None
+        )
 
         # If a VC under the name was found
-        if initial_desc and initial_desc['status']:
+        if initial_desc and initial_desc["status"]:
             # Delete the VC if expected state is 'absent'
-            if self.state == 'absent':
+            if self.state == "absent":
                 if self.module.check_mode:
                     self.virtual_cluster = initial_desc
                 else:
                     # VC is available - delete it
-                    if initial_desc['status'] in self.cdpy.sdk.REMOVABLE_STATES:
+                    if initial_desc["status"] in self.cdpy.sdk.REMOVABLE_STATES:
                         self.virtual_cluster = self._delete_vc()
                     # VC exists but is not in a delete-able state (could be in the process of
                     # provisioning, deleting, or may be in a failed state)
                     else:
-                        self.module.warn("DE virtual cluster (%s) is not in a removable state: %s" %
-                                         (self.name, initial_desc['status']))
+                        self.module.warn(
+                            "DE virtual cluster (%s) is not in a removable state: %s"
+                            % (self.name, initial_desc["status"])
+                        )
                         if self.wait:
                             self.module.warn(
-                                "Waiting for DE virtual cluster (%s) to reach Active or Deleted state" %
-                                self.name)
-                            current_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES +
-                                                                self.cdpy.sdk.STOPPED_STATES)
+                                "Waiting for DE virtual cluster (%s) to reach Active or Deleted state"
+                                % self.name
+                            )
+                            current_desc = self._wait_for_state(
+                                self.cdpy.sdk.REMOVABLE_STATES
+                                + self.cdpy.sdk.STOPPED_STATES
+                            )
                             # If we just waited fo the virtual cluster to be provisioned, then delete it
-                            if current_desc['status'] in self.cdpy.sdk.REMOVABLE_STATES:
+                            if current_desc["status"] in self.cdpy.sdk.REMOVABLE_STATES:
                                 self.virtual_cluster = self._delete_vc()
                             else:
                                 self.virtual_cluster = current_desc
-                                if current_desc['status'] not in self.cdpy.sdk.STOPPED_STATES:
-                                    self.module.warn("DE virtual cluster (%s) did not delete successfully" %
-                                           self.name) 
-            elif self.state == 'present':
+                                if (
+                                    current_desc["status"]
+                                    not in self.cdpy.sdk.STOPPED_STATES
+                                ):
+                                    self.module.warn(
+                                        "DE virtual cluster (%s) did not delete successfully"
+                                        % self.name
+                                    )
+            elif self.state == "present":
                 # Check the existing configuration and state
                 self.module.warn("DE virtual cluster (%s) already present" % self.name)
                 self.virtual_cluster = initial_desc
                 if self.wait:
-                    current_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES +
-                                                        self.cdpy.sdk.STOPPED_STATES)
+                    current_desc = self._wait_for_state(
+                        self.cdpy.sdk.REMOVABLE_STATES + self.cdpy.sdk.STOPPED_STATES
+                    )
                     # If we just waited for the virtual cluster to be deleted, then create it
-                    if current_desc['status'] in self.cdpy.sdk.STOPPED_STATES:
+                    if current_desc["status"] in self.cdpy.sdk.STOPPED_STATES:
                         self.virtual_cluster = self._create_vc()
                     else:
                         self.virtual_cluster = current_desc
-                        if current_desc['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
-                            self.module.warn("DE virtual cluster (%s) did not create successfully" %
-                                    self.name)
+                        if current_desc["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
+                            self.module.warn(
+                                "DE virtual cluster (%s) did not create successfully"
+                                % self.name
+                            )
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state)
+                    msg="State %s is not valid for this module" % self.state
+                )
 
         # Else if the virtual cluster does not exist
         else:
-            if self.state == 'absent':
+            if self.state == "absent":
                 self.module.log(
-                    "DE virtual cluster (%s) already absent or deleted within service ID (%s)" %
-                    (self.name, self.cluster_name))
+                    "DE virtual cluster (%s) already absent or deleted within service ID (%s)"
+                    % (self.name, self.cluster_name)
+                )
             # Create the virtual cluster
-            elif self.state == 'present':
+            elif self.state == "present":
                 if not self.module.check_mode:
                     self.virtual_cluster = self._create_vc()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state)
+                    msg="State %s is not valid for this module" % self.state
+                )
 
     def _create_vc(self):
         # set cpu/memory requests to max available if not specified
-        self.cpu_requests = self.cpu_requests if self.cpu_requests else '10000000'
-        self.memory_requests = self.memory_requests if self.memory_requests else '10000000Gi'
+        self.cpu_requests = self.cpu_requests if self.cpu_requests else "10000000"
+        self.memory_requests = (
+            self.memory_requests if self.memory_requests else "10000000Gi"
+        )
         result = self.cdpy.de.create_vc(
             name=self.name,
             cluster_id=self.cluster_id,
@@ -360,62 +389,88 @@ class DEVirtualCluster(CdpModule):
             chart_value_overrides=self.chart_value_overrides,
             runtime_spot_component=self.runtime_spot_component,
             spark_version=self.spark_version,
-            acl_users=self.acl_users
+            acl_users=self.acl_users,
         )
         return_desc = None
-        if result and result['vcId']:
-            self.vc_id = result['vcId']
+        if result and result["vcId"]:
+            self.vc_id = result["vcId"]
             if self.wait:
                 return_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES)
-                if return_desc['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
-                    self.module.warn("DE virtual cluster (%s) did not create successfully" % self.name)
+                if return_desc["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
+                    self.module.warn(
+                        "DE virtual cluster (%s) did not create successfully"
+                        % self.name
+                    )
             else:
                 return_desc = result
         else:
-            self.module.warn("DE virtual cluster (%s) did not create successfully" % self.name)
+            self.module.warn(
+                "DE virtual cluster (%s) did not create successfully" % self.name
+            )
         return return_desc
 
     def _delete_vc(self):
         self.cdpy.de.delete_vc(self.cluster_id, self.vc_id)
         if self.wait:
             current_desc = self._wait_for_state(self.cdpy.sdk.STOPPED_STATES)
-            if current_desc['status'] not in self.cdpy.sdk.STOPPED_STATES:
-                self.module.warn("DE virtual cluster (%s) did not delete successfully" % self.name)
+            if current_desc["status"] not in self.cdpy.sdk.STOPPED_STATES:
+                self.module.warn(
+                    "DE virtual cluster (%s) did not delete successfully" % self.name
+                )
             return current_desc
         else:
             current_desc = self.cdpy.de.describe_vc(self.cluster_id, self.vc_id)
-            return (current_desc if current_desc not in self.cdpy.sdk.STOPPED_STATES else None)
+            return (
+                current_desc
+                if current_desc not in self.cdpy.sdk.STOPPED_STATES
+                else None
+            )
 
     def _wait_for_state(self, state):
         return self.cdpy.sdk.wait_for_state(
             describe_func=self.cdpy.de.describe_vc,
             params=dict(cluster_id=self.cluster_id, vc_id=self.vc_id),
-            field='status', state=state, delay=self.delay,
-            timeout=self.timeout
+            field="status",
+            state=state,
+            delay=self.delay,
+            timeout=self.timeout,
         )
+
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str'),
-            env=dict(required=True, type='str', aliases=['environment']),
-            cluster_name=dict(required=True, type='str', aliases=['service_name']),
-            cpu_requests=dict(required=False, type='str', default=None),
-            memory_requests=dict(required=False, type='str', default=None),
-            chart_value_overrides=dict(required=False, type='list', default=None),
-            runtime_spot_component=dict(required=False, type='str', default=None),
-            spark_version=dict(required=False, type='str', default=None),
-            acl_users=dict(required=False, type='str', default=None),
-            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
-            wait=dict(required=False, type='bool', default=True),
-            delay=dict(required=False, type='int', aliases=['polling_delay'], default=30),
-            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=600)
+            name=dict(required=True, type="str"),
+            env=dict(required=True, type="str", aliases=["environment"]),
+            cluster_name=dict(required=True, type="str", aliases=["service_name"]),
+            cpu_requests=dict(required=False, type="str", default=None),
+            memory_requests=dict(required=False, type="str", default=None),
+            chart_value_overrides=dict(required=False, type="list", default=None),
+            runtime_spot_component=dict(required=False, type="str", default=None),
+            spark_version=dict(required=False, type="str", default=None),
+            acl_users=dict(required=False, type="str", default=None),
+            state=dict(
+                required=False,
+                type="str",
+                choices=["present", "absent"],
+                default="present",
+            ),
+            wait=dict(required=False, type="bool", default=True),
+            delay=dict(
+                required=False, type="int", aliases=["polling_delay"], default=30
+            ),
+            timeout=dict(
+                required=False, type="int", aliases=["polling_timeout"], default=600
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DEVirtualCluster(module)
-    output = dict(changed=False, virtual_cluster=(result.virtual_cluster if result.virtual_cluster else {}))
+    output = dict(
+        changed=False,
+        virtual_cluster=(result.virtual_cluster if result.virtual_cluster else {}),
+    )
 
     if result.debug:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
@@ -423,5 +478,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

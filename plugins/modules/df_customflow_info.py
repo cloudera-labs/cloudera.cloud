@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: df_customflow_info
 short_description: Gather information about CDP DataFlow CustomFlow Definitions
@@ -49,9 +51,9 @@ notes:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List summary information about all Custom DataFlow Flow Definitions
@@ -61,9 +63,9 @@ EXAMPLES = r'''
 - cloudera.cloud.df_customflow_info:
     name: my-flow-name
     include_details: False
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 flows:
   description: The listing of CustomFlow Definitions in the DataFlow Catalog in this CDP Tenant
@@ -145,7 +147,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DFCustomFlowInfo(CdpModule):
@@ -153,8 +155,8 @@ class DFCustomFlowInfo(CdpModule):
         super(DFCustomFlowInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.include_details = self._get_param('include_details')
+        self.name = self._get_param("name")
+        self.include_details = self._get_param("include_details")
 
         # Initialize internal values
         self.listing = []
@@ -170,9 +172,9 @@ class DFCustomFlowInfo(CdpModule):
         self.listing = self.cdpy.df.list_flow_definitions(name=self.name)
         if self.include_details:
             self.flows = [
-                self.cdpy.df.describe_customflow(x['crn'])
+                self.cdpy.df.describe_customflow(x["crn"])
                 for x in self.listing
-                if x['artifactType'] == 'flow'  # ReadyFlow have different fields
+                if x["artifactType"] == "flow"  # ReadyFlow have different fields
             ]
         else:
             self.flows = self.listing
@@ -181,10 +183,10 @@ class DFCustomFlowInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str'),
-            include_details=dict(required=False, type='bool', default=True)
+            name=dict(required=False, type="str"),
+            include_details=dict(required=False, type="bool", default=True),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DFCustomFlowInfo(module)
@@ -196,5 +198,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

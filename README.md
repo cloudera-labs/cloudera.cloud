@@ -24,7 +24,7 @@ If you have any questions, want to chat about the collection's capabilities and 
 
 ## API
 
-See the [API documentation](https://cloudera-labs.github.io/cloudera.cloud/) for details for each plugin and role within the collection. 
+See the [API documentation](https://cloudera-labs.github.io/cloudera.cloud/) for details for each plugin and role within the collection.
 
 ## Roadmap
 
@@ -123,7 +123,7 @@ For example, here we use the
 To create a local collection tarball, run:
 
 ```bash
-ansible-galaxy collection build 
+ansible-galaxy collection build
 ```
 
 ## Building the API Documentation

@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: dw_cluster_info
 short_description: Gather information about CDP Data Warehouse Clusters
@@ -51,9 +53,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List information about all Data Warehouse Clusters
@@ -62,13 +64,13 @@ EXAMPLES = r'''
 # Gather information about all Data Warehouse Clusters within an Environment
 - cloudera.cloud.dw_cluster_info:
     env: example-environment
-    
+
 # Gather information about an identified Cluster
 - cloudera.cloud.dw_cluster_info:
     cluster_id: env-xyzabc
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 clusters:
   description: The information about the named Cluster or Clusters
@@ -130,7 +132,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DwClusterInfo(CdpModule):
@@ -138,8 +140,8 @@ class DwClusterInfo(CdpModule):
         super(DwClusterInfo, self).__init__(module)
 
         # Set variables
-        self.cluster_id = self._get_param('cluster_id')
-        self.environment = self._get_param('environment')
+        self.cluster_id = self._get_param("cluster_id")
+        self.environment = self._get_param("environment")
 
         # Initialize return values
         self.clusters = []
@@ -164,13 +166,11 @@ class DwClusterInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            cluster_id=dict(type='str', aliases=['id']),
-            environment=dict(type='str', aliases=['env'])
+            cluster_id=dict(type="str", aliases=["id"]),
+            environment=dict(type="str", aliases=["env"]),
         ),
-        mutually_exclusive=[
-          ['cluster_id', 'environment']
-        ],
-        supports_check_mode=True
+        mutually_exclusive=[["cluster_id", "environment"]],
+        supports_check_mode=True,
     )
 
     result = DwClusterInfo(module)
@@ -182,5 +182,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

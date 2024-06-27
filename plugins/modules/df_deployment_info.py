@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: df_deployment_info
 short_description: Gather information about CDP DataFlow Deployments
@@ -51,9 +53,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all DataFlow Deployments
@@ -62,9 +64,9 @@ EXAMPLES = r'''
 # Gather detailed information about a named DataFlow Deployment using a name
 - cloudera.cloud.df_deployment_info:
     name: crn:cdp:df:region:tenant-uuid4:deployment:deployment-uuid4/deployment-uuid4
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 deployments:
   description: The information about the named DataFlow Deployment or DataFlow Deployments
@@ -207,7 +209,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DFDeploymentInfo(CdpModule):
@@ -215,8 +217,8 @@ class DFDeploymentInfo(CdpModule):
         super(DFDeploymentInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.crn = self._get_param('crn')
+        self.name = self._get_param("name")
+        self.crn = self._get_param("crn")
 
         # Initialize return values
         self.deployments = []
@@ -226,17 +228,19 @@ class DFDeploymentInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.deployments = self.cdpy.df.list_deployments(dep_crn=self.crn, name=self.name, described=True)
+        self.deployments = self.cdpy.df.list_deployments(
+            dep_crn=self.crn, name=self.name, described=True
+        )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str'),
-            crn=dict(required=False, type='str', aliases=['dep_crn'])
+            name=dict(required=False, type="str"),
+            crn=dict(required=False, type="str", aliases=["dep_crn"]),
         ),
         supports_check_mode=True,
-        mutually_exclusive=[('name', 'crn')]
+        mutually_exclusive=[("name", "crn")],
     )
 
     result = DFDeploymentInfo(module)
@@ -248,5 +252,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

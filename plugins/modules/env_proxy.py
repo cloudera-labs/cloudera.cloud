@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_proxy
 short_description: Create, update, or destroy CDP Environment Proxies
@@ -97,9 +99,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Create a proxy with a user and password
@@ -115,9 +117,9 @@ EXAMPLES = r'''
 - cloudera.cloud.env_proxy:
     state: absent
     name: proxy-example
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 proxy:
   description: Details on the proxy
@@ -168,7 +170,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class EnvironmentProxy(CdpModule):
@@ -176,16 +178,16 @@ class EnvironmentProxy(CdpModule):
         super(EnvironmentProxy, self).__init__(module)
 
         # Set variables
-        self.state = self._get_param('state')
-        self.name = self._get_param('name')
-        self.host = self._get_param('host')
-        self.port = self._get_param('port')
-        self.protocol = self._get_param('protocol')
+        self.state = self._get_param("state")
+        self.name = self._get_param("name")
+        self.host = self._get_param("host")
+        self.port = self._get_param("port")
+        self.protocol = self._get_param("protocol")
 
-        self.description = self._get_param('description')
-        self.no_proxy_hosts = self._get_param('noProxyHosts')
-        self.user = self._get_param('user')
-        self.password = self._get_param('password')
+        self.description = self._get_param("description")
+        self.no_proxy_hosts = self._get_param("noProxyHosts")
+        self.user = self._get_param("user")
+        self.password = self._get_param("password")
 
         self._payload = dict()
 
@@ -200,17 +202,19 @@ class EnvironmentProxy(CdpModule):
         existing = self.cdpy.environments.describe_proxy_config(self.name)
 
         if existing is None or len(existing) == 0:
-            if self.state == 'present':
+            if self.state == "present":
                 self._create_core_payload()
                 self.changed = True
                 self._create_auth_payload()
-                self.proxy_config = self.cdpy.environments.create_proxy_config(**self._payload)
+                self.proxy_config = self.cdpy.environments.create_proxy_config(
+                    **self._payload
+                )
         else:
-            if self.state == 'present':
+            if self.state == "present":
                 self._create_core_payload()
 
                 test = existing
-                del test['crn']
+                del test["crn"]
 
                 if self._payload != test:
                     self.changed = True
@@ -218,11 +222,15 @@ class EnvironmentProxy(CdpModule):
                 if self.user is not None or self.password is not None:
                     self.changed = True
                     self._create_auth_payload()
-                    self.module.warn('Proxy authentication details are set. Forcing update.')
+                    self.module.warn(
+                        "Proxy authentication details are set. Forcing update."
+                    )
 
                 if self.changed:
                     self.cdpy.environments.delete_proxy_config(self.name)
-                    self.proxy_config = self.cdpy.environments.create_proxy_config(**self._payload)
+                    self.proxy_config = self.cdpy.environments.create_proxy_config(
+                        **self._payload
+                    )
                 else:
                     self.proxy_config = existing
             else:
@@ -234,7 +242,7 @@ class EnvironmentProxy(CdpModule):
             proxyConfigName=self.name,
             host=self.host,
             port=self.port,
-            protocol=self.protocol
+            protocol=self.protocol,
         )
 
         if self.description is not None:
@@ -242,7 +250,7 @@ class EnvironmentProxy(CdpModule):
 
         if self.no_proxy_hosts is not None:
             # convert no_proxy_hosts list to a comma separated string
-            self._payload.update(noProxyHosts=(','.join(self.no_proxy_hosts)))
+            self._payload.update(noProxyHosts=(",".join(self.no_proxy_hosts)))
 
     def _create_auth_payload(self):
         if self.user is not None:
@@ -255,21 +263,26 @@ class EnvironmentProxy(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['proxyConfigName']),
-            description=dict(required=False, type='str', aliases=['desc']),
-            host=dict(required=False, type='str'),
-            port=dict(required=False, type='int'),
-            protocol=dict(required=False, type='str'),
-            noProxyHosts=dict(required=False, type='list', elements='str'),
-            user=dict(required=False, type='str'),
-            password=dict(required=False, type='str', no_log=True),
-            state=dict(required=False, type='str', choices=['present', 'absent'], default='present')
+            name=dict(required=True, type="str", aliases=["proxyConfigName"]),
+            description=dict(required=False, type="str", aliases=["desc"]),
+            host=dict(required=False, type="str"),
+            port=dict(required=False, type="int"),
+            protocol=dict(required=False, type="str"),
+            noProxyHosts=dict(required=False, type="list", elements="str"),
+            user=dict(required=False, type="str"),
+            password=dict(required=False, type="str", no_log=True),
+            state=dict(
+                required=False,
+                type="str",
+                choices=["present", "absent"],
+                default="present",
+            ),
         ),
         required_if=[
-            ['state', 'present', ('host', 'port', 'protocol'), False],
+            ["state", "present", ("host", "port", "protocol"), False],
         ],
         # TODO Support check mode
-        supports_check_mode=False
+        supports_check_mode=False,
     )
 
     result = EnvironmentProxy(module)
@@ -280,13 +293,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

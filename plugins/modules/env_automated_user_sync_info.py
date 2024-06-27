@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
 ---
 module: env_automated_user_sync_info
 short_description: Get the status of the automated CDP Users and Groups synchronization service
@@ -45,17 +47,17 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Get the status of a sync event (non-WORKLOAD_IAM_SYNC)
 - cloudera.cloud.env_automated_user_sync_info:
     name: example-env
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 sync:
     description: Returns an object describing of the status of the automated User and Group synchronization service.
     returned: success
@@ -105,7 +107,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentAutomatedUserSyncInfo(CdpModule):
@@ -113,7 +115,7 @@ class EnvironmentAutomatedUserSyncInfo(CdpModule):
         super(EnvironmentAutomatedUserSyncInfo, self).__init__(module)
 
         # Set variables
-        self.name = self.module.params['name']
+        self.name = self.module.params["name"]
 
         # Initialize the return values
         self.sync = {}
@@ -124,15 +126,17 @@ class EnvironmentAutomatedUserSyncInfo(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        self.sync = self.cdpy.environments.get_automated_sync_environment_status(self.name)
+        self.sync = self.cdpy.environments.get_automated_sync_environment_status(
+            self.name
+        )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['environment'])
+            name=dict(required=True, type="str", aliases=["environment"])
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = EnvironmentAutomatedUserSyncInfo(module)
@@ -143,13 +147,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

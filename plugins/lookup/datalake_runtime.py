@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
     lookup: datalake_runtime
     author: Webster Mudge (@wmudge) <wmudge@cloudera.com>
     short_description: Get the Datalake Runtime for CDP Public Cloud Environments
@@ -35,24 +36,24 @@ DOCUMENTATION = '''
     seealso:
         - module: cloudera.cloud.datalake_runtime_info
           description: Cloudera CDP Public Cloud Datalake Runtime module
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = """
 - name: Retrieve the details for a single CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.datalake_runtime', 'example-env') }}"
-    
+
 - name: Retrieve the details for multiple CDP Public Cloud Environments as a list
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datalake_runtime', ['example-env', 'another-env']) }}"
-'''
+"""
 
-RETURN = '''
+RETURN = """
   _list:
     description: List of Runtime versions
     type: list
     elements: string
-'''
+"""
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
@@ -64,6 +65,7 @@ from cdpy.common import CdpError
 
 display = Display()
 
+
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         self.set_options(var_options=variables, direct=kwargs)
@@ -71,12 +73,14 @@ class LookupModule(LookupBase):
         try:
             results = []
             for term in terms:
-                env = Cdpy().datalake.describe_all_datalakes(term)                
+                env = Cdpy().datalake.describe_all_datalakes(term)
                 if not env:
                     raise AnsibleError("No Datalake found for Environment '%s'" % term)
                 elif len(env) > 1:
-                    raise AnsibleError("Multiple Datalakes found for Environment '%s'" % term)
-                results.append(env[0]['productVersions'][0]['version'])
+                    raise AnsibleError(
+                        "Multiple Datalakes found for Environment '%s'" % term
+                    )
+                results.append(env[0]["productVersions"][0]["version"])
             return results
         except KeyError as e:
             raise AnsibleError("Error parsing result: %s" % to_native(e))

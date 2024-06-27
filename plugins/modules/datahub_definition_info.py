@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: datahub_definition_info
 short_description: Gather information about CDP Datahub Cluster Definitions
@@ -55,9 +57,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all Datahubs
@@ -66,9 +68,9 @@ EXAMPLES = r'''
 # Gather detailed information about a named Datahub
 - cloudera.cloud.datahub_definition_info:
     name: example-definition
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 definitions:
   description: The information about the named Definition or Definitions
@@ -124,7 +126,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DatahubDefinitionInfo(CdpModule):
@@ -132,8 +134,8 @@ class DatahubDefinitionInfo(CdpModule):
         super(DatahubDefinitionInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.content = self._get_param('content')
+        self.name = self._get_param("name")
+        self.content = self._get_param("content")
 
         # Initialize internal values
         self.all_definitions = []
@@ -148,15 +150,21 @@ class DatahubDefinitionInfo(CdpModule):
     def process(self):
         self.all_definitions = self.cdpy.datahub.list_cluster_definitions()
         if self.name:
-            short_desc = next((d for d in self.all_definitions if d['crn'] == self.name or 
-                               d['clusterDefinitionName']== self.name), None)
+            short_desc = next(
+                (
+                    d
+                    for d in self.all_definitions
+                    if d["crn"] == self.name or d["clusterDefinitionName"] == self.name
+                ),
+                None,
+            )
             if short_desc is not None:
                 if self.content:
                     self.definitions.append(self._describe_definition(short_desc))
                 else:
-                    self.definitions.append(short_desc)                          
+                    self.definitions.append(short_desc)
             else:
-                self.module.warn("Definition not found, '%s'" % self.name)    
+                self.module.warn("Definition not found, '%s'" % self.name)
         else:
             if self.content:
                 for short_desc in self.all_definitions:
@@ -165,21 +173,32 @@ class DatahubDefinitionInfo(CdpModule):
                 self.definitions = self.all_definitions
 
     def _describe_definition(self, short_desc):
-      full_desc = self.cdpy.datahub.describe_cluster_definition(short_desc['crn'])
-      if full_desc is not None:
-          full_desc.update(productVersion=short_desc['productVersion'], nodeCount=short_desc['nodeCount'])
-          return full_desc
-      else:
-        self.module.fail_json(msg="Failed to retrieve Cluster Definition content, '%s'" % 
-                              short_desc['clusterDefinitionName'])
+        full_desc = self.cdpy.datahub.describe_cluster_definition(short_desc["crn"])
+        if full_desc is not None:
+            full_desc.update(
+                productVersion=short_desc["productVersion"],
+                nodeCount=short_desc["nodeCount"],
+            )
+            return full_desc
+        else:
+            self.module.fail_json(
+                msg="Failed to retrieve Cluster Definition content, '%s'"
+                % short_desc["clusterDefinitionName"]
+            )
+
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['definition', 'crn']),
-            content=dict(required=False, type='bool', default=False, aliases=['definition_content'])
+            name=dict(required=False, type="str", aliases=["definition", "crn"]),
+            content=dict(
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["definition_content"],
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DatahubDefinitionInfo(module)
@@ -191,5 +210,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

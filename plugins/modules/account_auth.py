@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
 ---
 module: account_auth
 short_description: Gather and set authentication details for a CDP Account
@@ -38,7 +40,7 @@ options:
   enable_sso:
     description:
       - Flag to enable or disable interactive login using the Cloudera SSO for the account.
-      - When disabled, only users who are designated account administrators will be able to use Cloudera SSO to 
+      - When disabled, only users who are designated account administrators will be able to use Cloudera SSO to
             login interactively to the account.
       - All other users will only be able to login interactively using other SAML providers defined for the account.
     type: bool
@@ -58,9 +60,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = """
 # Note: These examples do not set authentication details.
 
 # Disable Cloudera SSO login for all non-admin users
@@ -70,9 +72,9 @@ EXAMPLES = '''
 # Set the password expiration to 7 days
 - cloudera.cloud.account_auth:
     password_lifetime: 7
-'''
+"""
 
-RETURN = '''
+RETURN = """
 ---
 account:
     description: Returns the authentication settings for the CDP Account
@@ -101,7 +103,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class AccountAuthentication(CdpModule):
@@ -109,8 +111,8 @@ class AccountAuthentication(CdpModule):
         super(AccountAuthentication, self).__init__(module)
 
         # Set variables
-        self.enable_sso = self._get_param('enable_sso')
-        self.password_lifetime = self._get_param('password_lifetime')
+        self.enable_sso = self._get_param("enable_sso")
+        self.password_lifetime = self._get_param("password_lifetime")
 
         # Initialize the return values
         self.account = dict()
@@ -125,12 +127,18 @@ class AccountAuthentication(CdpModule):
             self.module.fail_json(msg="Unable to retrieve CDP Account Information")
 
         if not self.module.check_mode:
-            if self.enable_sso is not None and self.enable_sso != self.account['clouderaSSOLoginEnabled']:
+            if (
+                self.enable_sso is not None
+                and self.enable_sso != self.account["clouderaSSOLoginEnabled"]
+            ):
                 self.cdpy.iam.set_cloudera_sso(self.enable_sso)
                 self.changed = True
 
             if self.password_lifetime is not None:
-                if self.password_lifetime != self.account['workloadPasswordPolicy']['maxPasswordLifetimeDays']:
+                if (
+                    self.password_lifetime
+                    != self.account["workloadPasswordPolicy"]["maxPasswordLifetimeDays"]
+                ):
                     self.cdpy.iam.set_password_lifetime(self.password_lifetime)
                     self.changed = True
 
@@ -141,10 +149,17 @@ class AccountAuthentication(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            enable_sso=dict(required=False, type='bool', aliases=['sso', 'enable_cloudera_sso']),
-            password_lifetime=dict(required=False, type='int', no_log=False, aliases=['workload_password_lifetime'])
+            enable_sso=dict(
+                required=False, type="bool", aliases=["sso", "enable_cloudera_sso"]
+            ),
+            password_lifetime=dict(
+                required=False,
+                type="int",
+                no_log=False,
+                aliases=["workload_password_lifetime"],
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = AccountAuthentication(module)
@@ -155,13 +170,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

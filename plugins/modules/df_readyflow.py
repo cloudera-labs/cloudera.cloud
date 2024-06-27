@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: df_readyflow
 short_description: Import or Delete ReadyFlows from your CDP Tenant
@@ -52,9 +54,9 @@ notes:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Import a ReadyFlow into your CDP Tenant
@@ -65,9 +67,9 @@ EXAMPLES = r'''
 - cloudera.cloud.df_readyflow:
     name: my-readyflow-name
     state: absent
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 readyflow:
   description: The ReadyFlow Definition
@@ -75,7 +77,7 @@ readyflow:
   returned: always
   contains:
     readyflowCrn:
-      description:  
+      description:
         - The DataFlow readyflow Definition's CRN.
         - Use this readyflowCrn to address this object
       returned: always
@@ -134,7 +136,7 @@ readyflow:
         imported:
           description: Whether the ready flow has been imported into the current account.
           returned: always
-          type: bool         
+          type: bool
         modifiedTimestamp:
           description: The timestamp the entry was last modified.
           returned: always
@@ -182,7 +184,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DFReadyFlow(CdpModule):
@@ -190,8 +192,8 @@ class DFReadyFlow(CdpModule):
         super(DFReadyFlow, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.state = self._get_param('state')
+        self.name = self._get_param("name")
+        self.state = self._get_param("state")
 
         # Initialize internal values
         self.target = None
@@ -207,53 +209,56 @@ class DFReadyFlow(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         self.listing = self.cdpy.df.list_readyflows(name=self.name)
-        if not self.listing:  # return is list with one item if name exists, as name is unique
-            self.module.fail_json(
-                msg="ReadyFlow with Name %s is not found" % self.name)
+        if (
+            not self.listing
+        ):  # return is list with one item if name exists, as name is unique
+            self.module.fail_json(msg="ReadyFlow with Name %s is not found" % self.name)
         else:
             self.target = self.listing[0]
-            if self.target['imported']:  # field is bool
-                if self.state == 'present':
+            if self.target["imported"]:  # field is bool
+                if self.state == "present":
                     # ReadyFlow is imported and should be left alone
                     # helpfully return the detailed description
                     self.readyflow = self.cdpy.df.describe_added_readyflow(
-                        def_crn=self.target['importedArtifactCrn']
+                        def_crn=self.target["importedArtifactCrn"]
                     )
-                if self.state == 'absent':
+                if self.state == "absent":
                     if not self.module.check_mode:
                         # ReadyFlow is imported and should be deleted
                         self.readyflow = self.cdpy.df.delete_added_readyflow(
-                            def_crn=self.target['importedArtifactCrn']
+                            def_crn=self.target["importedArtifactCrn"]
                         )
                         self.changed = True
                     else:
                         self.module.log(
-                            "Check mode enabled, skipping deletion of %s" % self.name)
+                            "Check mode enabled, skipping deletion of %s" % self.name
+                        )
             else:
-                if self.state == 'present':
+                if self.state == "present":
                     # ReadyFlow should be imported
                     if not self.module.check_mode:
                         self.readyflow = self.cdpy.df.import_readyflow(
-                            def_crn=self.target['readyflowCrn']
+                            def_crn=self.target["readyflowCrn"]
                         )
                         self.changed = True
                     else:
                         self.module.log(
-                            "Check mode enabled, skipping import of %s" % self.name)
-                if self.state == 'absent':
+                            "Check mode enabled, skipping import of %s" % self.name
+                        )
+                if self.state == "absent":
                     # ReadyFlow is not imported and should stay that way
                     self.module.log(
-                        "ReadyFlow already not imported to CDP Tenant %s" % self.name)
+                        "ReadyFlow already not imported to CDP Tenant %s" % self.name
+                    )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str'),
-            state=dict(type='str', choices=['present', 'absent'],
-                       default='present'),
+            name=dict(required=True, type="str"),
+            state=dict(type="str", choices=["present", "absent"], default="present"),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DFReadyFlow(module)
@@ -265,5 +270,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

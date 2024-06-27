@@ -19,11 +19,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ..module_utils.cdp_common import CdpModule
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: ml_workspace_access
 short_description: Grant and revoke user access to CDP Machine Learning Workspaces
@@ -68,9 +70,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Grant access for user (and register the output to capture the kubeconfig)
@@ -86,9 +88,9 @@ EXAMPLES = r'''
     env: cdp-env
     user: some-cloud-provider-specific-id
     state: absent
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 workspace:
   description: The information about the user's access to the ML Workspace
@@ -108,7 +110,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class MLWorkspaceAccess(CdpModule):
@@ -116,11 +118,11 @@ class MLWorkspaceAccess(CdpModule):
         super().__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('environment')
-        self.user = self._get_param('user')
-        self.state = self._get_param('state')
-        
+        self.name = self._get_param("name")
+        self.env = self._get_param("environment")
+        self.user = self._get_param("user")
+        self.state = self._get_param("state")
+
         # Initialize return values
         self.access = {}
 
@@ -128,54 +130,61 @@ class MLWorkspaceAccess(CdpModule):
         self.process()
 
     @CdpModule._Decorators.process_debug
-    def process(self):        
-        existing = self.cdpy.ml.list_workspace_access(
-            name=self.name, env=self.env)
+    def process(self):
+        existing = self.cdpy.ml.list_workspace_access(name=self.name, env=self.env)
 
         # If the access exists
         if self.user in existing:
             # Revoke
-            if self.state == 'absent':
+            if self.state == "absent":
                 if not self.module.check_mode:
                     self.changed = True
                     self.cdpy.ml.revoke_workspace_access(
-                      name=self.name, env=self.env, identifier=self.user
+                        name=self.name, env=self.env, identifier=self.user
                     )
             # Reinstate to get the kubeconfig
             else:
-              self.module.warn(
-                    "Refreshing access for user %s in ML Workspace, %s" % (self.user, self.name))
-              if not self.module.check_mode:
-                  self.changed = True
-                  self.cdpy.ml.revoke_workspace_access(
-                    name=self.name, env=self.env, identifier=self.user
-                  )
-                  self.access = self.cdpy.ml.grant_workspace_access(
-                    name=self.name, env=self.env, identifier=self.user
-                  )
+                self.module.warn(
+                    "Refreshing access for user %s in ML Workspace, %s"
+                    % (self.user, self.name)
+                )
+                if not self.module.check_mode:
+                    self.changed = True
+                    self.cdpy.ml.revoke_workspace_access(
+                        name=self.name, env=self.env, identifier=self.user
+                    )
+                    self.access = self.cdpy.ml.grant_workspace_access(
+                        name=self.name, env=self.env, identifier=self.user
+                    )
         # Else the access does not exist
         else:
-            if self.state == 'absent':
+            if self.state == "absent":
                 self.module.log(
-                    "User %s absent in ML Workspace %s" % (self.user, self.name))
+                    "User %s absent in ML Workspace %s" % (self.user, self.name)
+                )
             # Grant
             else:
                 if not self.module.check_mode:
-                  self.changed = True
-                  self.access = self.cdpy.ml.grant_workspace_access(
-                    name=self.name, env=self.env, identifier=self.user
-                  )
+                    self.changed = True
+                    self.access = self.cdpy.ml.grant_workspace_access(
+                        name=self.name, env=self.env, identifier=self.user
+                    )
+
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['workspace']),
-            environment=dict(required=True, type='str', aliases=['env']),
-            user=dict(required=True, type='str', aliases=['identifier']),
-            state=dict(required=False, type='str', choices=[
-                       'present', 'absent'], default='present')
+            name=dict(required=True, type="str", aliases=["workspace"]),
+            environment=dict(required=True, type="str", aliases=["env"]),
+            user=dict(required=True, type="str", aliases=["identifier"]),
+            state=dict(
+                required=False,
+                type="str",
+                choices=["present", "absent"],
+                default="present",
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = MLWorkspaceAccess(module)
@@ -187,5 +196,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

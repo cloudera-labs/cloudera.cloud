@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: de_virtual_cluster_info
 short_description: Gather information about CDP DE virtual clusters
@@ -36,7 +38,7 @@ options:
   name:
     description:
       - If a name is provided, that DE virtual cluster will be described (if it exists)
-      - Note that there should be only 1 or 0 (non-deleted) virtual clusters with a given CDE service 
+      - Note that there should be only 1 or 0 (non-deleted) virtual clusters with a given CDE service
     type: str
     required: False
     aliases:
@@ -51,9 +53,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all CDE virtual clusters within a CDE service
@@ -66,9 +68,9 @@ EXAMPLES = r'''
     cluster_name: example-cluster-name
     environment: example-environment
     name: example-virtual-cluster-name
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 virtual_cluster:
   description: DE virtual cluste
   type: complex
@@ -84,7 +86,7 @@ virtual_cluster:
       type: dict
       contains:
         users:
-          description: Workload usernames of CDP users granted access to the Virtual Cluster. 
+          description: Workload usernames of CDP users granted access to the Virtual Cluster.
           returned: always
           type: list
           elements: str
@@ -184,7 +186,7 @@ virtual_cluster:
       description: Name of the CDE Virtual Cluster
       returned: always
       type: str
-'''
+"""
 
 
 class DEVirtualClusterInfo(CdpModule):
@@ -192,9 +194,9 @@ class DEVirtualClusterInfo(CdpModule):
         super(DEVirtualClusterInfo, self).__init__(module)
 
         # Set variables
-        self.vc_name = self._get_param('name')
-        self.service_name = self._get_param('service_name')
-        self.env = self._get_param('environment')
+        self.vc_name = self._get_param("name")
+        self.service_name = self._get_param("service_name")
+        self.env = self._get_param("environment")
 
         # Initialize return values
         self.vcs = []
@@ -206,25 +208,30 @@ class DEVirtualClusterInfo(CdpModule):
     def process(self):
         cluster_id = self.cdpy.de.get_service_id_by_name(self.service_name, self.env)
         if cluster_id:
-            vcs = [vc
-                   for vc in self.cdpy.de.list_vcs(cluster_id) 
-                   if vc['status'] not in self.cdpy.sdk.STOPPED_STATES]
+            vcs = [
+                vc
+                for vc in self.cdpy.de.list_vcs(cluster_id)
+                if vc["status"] not in self.cdpy.sdk.STOPPED_STATES
+            ]
             if self.vc_name:
-                name_match = [self.cdpy.de.describe_vc(cluster_id=cluster_id, vc_id=vc['vcId'])
-                              for vc in vcs
-                              if vc['vcName'] == self.vc_name]
+                name_match = [
+                    self.cdpy.de.describe_vc(cluster_id=cluster_id, vc_id=vc["vcId"])
+                    for vc in vcs
+                    if vc["vcName"] == self.vc_name
+                ]
                 self.vcs.extend(name_match)
             else:
                 self.vcs.extend(vcs)
 
+
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str'),
-            environment=dict(required=True, type='str', aliases=['env']),
-            service_name=dict(required=True, type='str', aliases=['cluster_name'])
+            name=dict(required=False, type="str"),
+            environment=dict(required=True, type="str", aliases=["env"]),
+            service_name=dict(required=True, type="str", aliases=["cluster_name"]),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DEVirtualClusterInfo(module)
@@ -236,5 +243,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,6 +1,6 @@
 # Testing
 
-The [ansible-test](https://docs.ansible.com/ansible/latest/dev_guide/developing_collections_testing.html#testing-collections) tool can run a number of testing strategies, notably `sanity`, `units`, and `integration` tests. 
+The [ansible-test](https://docs.ansible.com/ansible/latest/dev_guide/developing_collections_testing.html#testing-collections) tool can run a number of testing strategies, notably `sanity`, `units`, and `integration` tests.
 
 ## Set up ansible-test
 
@@ -21,7 +21,7 @@ To prepare `ansible-test`, you will need to tackle the following steps:
   mkvirtualenv -p py310 cloud-test
   ```
 - Install Ansible and testing requirements.
-  
+
   Typically, this should be the latest stable Ansible.
   ```bash
   pip install 'ansible-core>=2.14,<2.15' mock pytest pytest-xdist pytest-mock pytest-forked

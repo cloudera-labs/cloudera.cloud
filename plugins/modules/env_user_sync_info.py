@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_user_sync_info
 short_description: Get the status of a CDP Users and Groups sync
@@ -46,17 +48,17 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Get the status of a sync event (non-WORKLOAD_IAM_SYNC)
 - cloudera.cloud.env_user_sync_info:
     name: 0e9bc67a-b308-4275-935c-b8c764dc13be
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 sync:
     description: Returns an object describing of the status of the User and Group sync event.
     returned: success
@@ -135,7 +137,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentUserSyncInfo(CdpModule):
@@ -143,7 +145,7 @@ class EnvironmentUserSyncInfo(CdpModule):
         super(EnvironmentUserSyncInfo, self).__init__(module)
 
         # Set variables
-        self.name = self.module.params['name']
+        self.name = self.module.params["name"]
 
         # Initialize the return values
         self.sync = {}
@@ -160,9 +162,11 @@ class EnvironmentUserSyncInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['operation_id', 'operation_crn'])
+            name=dict(
+                required=True, type="str", aliases=["operation_id", "operation_crn"]
+            )
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = EnvironmentUserSyncInfo(module)
@@ -173,13 +177,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

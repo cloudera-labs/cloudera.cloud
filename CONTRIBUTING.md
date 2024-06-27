@@ -4,7 +4,7 @@ Thank you for considering contributions to the `cloudera.cloud` Ansible collecti
 
 ## Submitting a pull request
 
-You can start work on issues that are not yet part of a [Milestone](https://github.com/cloudera-labs/cloudera.cloud/milestones) -- anything in our issue tracker that isn't assigned to a Milestone is considered the [backlog](https://github.com/cloudera-labs/cloudera.cloud/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone). 
+You can start work on issues that are not yet part of a [Milestone](https://github.com/cloudera-labs/cloudera.cloud/milestones) -- anything in our issue tracker that isn't assigned to a Milestone is considered the [backlog](https://github.com/cloudera-labs/cloudera.cloud/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone).
 
 Before you start working, please announce that you want to do so by commenting on the issue. _([Create an issue](https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=enhancement) if there isn't one yet, and you can also check out our [Discussions](https://github.com/cloudera-labs/cloudera.cloud/discussions) for ideas.)_ We try to ensure that all active work is assigned to a Milestone in order to keep our backlog accurate.
 
@@ -20,6 +20,16 @@ As a _best practice_, you can prefix your branches with:
 
 > [!NOTE]
 > :fire_extinguisher: A **hotfix** should branch from `main`. It will then be committed to both the `main` and `devel` branches.
+
+## Running pre-commit
+
+We use [pre-commit](https://pre-commit.com/) to lint and validate submissions.
+
+Setting up `pre-commit` is straightforward; see the [Installation](https://pre-commit.com/#installation) documentation on the `pre-commit` site for details.
+
+We highly suggest you install the local `git` hook scripts as well; run `pre-commit install` within the root of the project.
+
+Lastly, you can run the hooks prior to committing changes (and PR submission) by executing `pre-commit run -a`.
 
 ## Signing your commits
 

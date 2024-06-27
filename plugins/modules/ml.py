@@ -19,11 +19,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ..module_utils.cdp_common import CdpModule
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: ml
 short_description: Create or Destroy CDP Machine Learning Workspaces
@@ -327,9 +329,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Create a ML Workspace with TLS turned off and wait for setup completion
@@ -377,9 +379,9 @@ EXAMPLES = r'''
     env: cdp-env
     state: absent
     wait: no
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 workspace:
   description: The information about the ML Workspace
@@ -475,7 +477,7 @@ workspace:
           description: The initial number of instance nodes.
           returned: always
           type: int
-        instanceGroupName: 
+        instanceGroupName:
           description: The unique name of the instance group.
           returned: always
           type: str
@@ -501,7 +503,7 @@ workspace:
           description: The maximum number of instances that can be deployed to this instance group.
           returned: always
           type: int
-        minInstances: 
+        minInstances:
           description: The minimum number of instances that can be deployed to this instance group. If the value is 0, the group might be empty.
           returned: always
           type: int
@@ -574,7 +576,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class MLWorkspace(CdpModule):
@@ -582,28 +584,28 @@ class MLWorkspace(CdpModule):
         super(MLWorkspace, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('environment')
+        self.name = self._get_param("name")
+        self.env = self._get_param("environment")
 
-        self.tls = self._get_param('tls')
-        self.monitoring = self._get_param('monitoring')
-        self.governance = self._get_param('governance')
-        self.metrics = self._get_param('metrics')
-        self.database = self._get_param('database')
-        self.nfs = self._get_param('nfs')
-        self.nfs_version = self._get_param('nfs_version')
-        self.ip_addresses = self._get_param('ip_addresses')
-        self.public_loadbalancer = self._get_param('public_loadbalancer')
-        self.private_cluster = self._get_param('private_cluster')
-        self.k8s_request = self._get_param('k8s_request')
+        self.tls = self._get_param("tls")
+        self.monitoring = self._get_param("monitoring")
+        self.governance = self._get_param("governance")
+        self.metrics = self._get_param("metrics")
+        self.database = self._get_param("database")
+        self.nfs = self._get_param("nfs")
+        self.nfs_version = self._get_param("nfs_version")
+        self.ip_addresses = self._get_param("ip_addresses")
+        self.public_loadbalancer = self._get_param("public_loadbalancer")
+        self.private_cluster = self._get_param("private_cluster")
+        self.k8s_request = self._get_param("k8s_request")
 
-        self.force = self._get_param('force')
-        self.storage = self._get_param('storage')
+        self.force = self._get_param("force")
+        self.storage = self._get_param("storage")
 
-        self.state = self._get_param('state')
-        self.wait = self._get_param('wait')
-        self.delay = self._get_param('delay')
-        self.timeout = self._get_param('timeout')
+        self.state = self._get_param("state")
+        self.wait = self._get_param("wait")
+        self.delay = self._get_param("delay")
+        self.timeout = self._get_param("timeout")
 
         # Initialize return values
         self.workspace = {}
@@ -615,28 +617,35 @@ class MLWorkspace(CdpModule):
         self.process()
 
     @CdpModule._Decorators.process_debug
-    def process(self):        
-        self.target = self.cdpy.ml.describe_workspace(
-            name=self.name, env=self.env)
+    def process(self):
+        self.target = self.cdpy.ml.describe_workspace(name=self.name, env=self.env)
 
         # If the Workspace exists
         if self.target is not None:
             # Delete the Workspace
-            if self.state == 'absent':
+            if self.state == "absent":
                 if self.module.check_mode:
                     self.workspace = self.target
                 else:
-                    if self.target['instanceStatus'] in self.cdpy.sdk.REMOVABLE_STATES:
+                    if self.target["instanceStatus"] in self.cdpy.sdk.REMOVABLE_STATES:
                         self._delete_workspace()
-                    elif self.target['instanceStatus'] in self.cdpy.sdk.TERMINATION_STATES:
+                    elif (
+                        self.target["instanceStatus"]
+                        in self.cdpy.sdk.TERMINATION_STATES
+                    ):
                         self.module.log(
-                            "ML Workspace already performing Delete operation: %s" % self.target['instanceStatus'])
+                            "ML Workspace already performing Delete operation: %s"
+                            % self.target["instanceStatus"]
+                        )
                     else:
                         self.module.warn(
-                            "ML Workspace not in valid state to perform Delete operation: %s" % self.target['instanceStatus'])
+                            "ML Workspace not in valid state to perform Delete operation: %s"
+                            % self.target["instanceStatus"]
+                        )
                         if self.wait:
                             self.module.warn(
-                                "Waiting for ML Workspace to reach Active state before performing Delete operation")
+                                "Waiting for ML Workspace to reach Active state before performing Delete operation"
+                            )
                             self._wait_ready_state()
                             self._delete_workspace()
 
@@ -644,23 +653,28 @@ class MLWorkspace(CdpModule):
                         self._wait_delete_state()
                     else:
                         self.workspace = self.target
-            elif self.state == 'present':
+            elif self.state == "present":
                 # Check the existing configuration
-                self.module.warn("ML Workspace already present and configuration validation and reconciliation is not supported;" +
-                                 "to change a ML Workspace, explicitly destroy and recreate the Workspace")
+                self.module.warn(
+                    "ML Workspace already present and configuration validation and reconciliation is not supported;"
+                    + "to change a ML Workspace, explicitly destroy and recreate the Workspace"
+                )
                 if self.wait:
                     self.workspace = self._wait_ready_state()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state)
+                    msg="State %s is not valid for this module" % self.state
+                )
 
         # Else if the Workspace does not exist
         else:
-            if self.state == 'absent':
+            if self.state == "absent":
                 self.module.log(
-                    "ML Workspace %s already absent in Environment %s" % (self.name, self.env))
+                    "ML Workspace %s already absent in Environment %s"
+                    % (self.name, self.env)
+                )
             # Create the Workspace
-            elif self.state == 'present':
+            elif self.state == "present":
                 if not self.module.check_mode:
                     payload = dict(
                         workspaceName=self.name,
@@ -675,23 +689,22 @@ class MLWorkspace(CdpModule):
                         loadBalancerIPWhitelists=self.ip_addresses,
                         usePublicLoadBalancer=self.public_loadbalancer,
                         privateCluster=self.private_cluster,
-                        provisionK8sRequest=self.k8s_request
+                        provisionK8sRequest=self.k8s_request,
                     )
-                    if self.k8s_request and self.k8s_request['tags'] is not None:
+                    if self.k8s_request and self.k8s_request["tags"] is not None:
                         tag_items = []
-                        for k, v in self.k8s_request['tags'].items():
+                        for k, v in self.k8s_request["tags"].items():
                             tag_items.append(dict(key=k, value=v))
-                        payload['provisionK8sRequest']['tags'] = tag_items
+                        payload["provisionK8sRequest"]["tags"] = tag_items
 
-                    normalized_payload = MLWorkspace._normalize_payload(
-                        payload)
-                    self.cdpy.sdk.call(
-                        'ml', 'create_workspace', **normalized_payload)
+                    normalized_payload = MLWorkspace._normalize_payload(payload)
+                    self.cdpy.sdk.call("ml", "create_workspace", **normalized_payload)
                     if self.wait:
                         self.workspace = self._wait_ready_state()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state)
+                    msg="State %s is not valid for this module" % self.state
+                )
 
     def _delete_workspace(self):
         payload = dict(force=self.force, removeStorage=self.storage)
@@ -699,20 +712,26 @@ class MLWorkspace(CdpModule):
             payload.update(workspaceName=self.name, environmentName=self.env)
         else:
             payload.update(workspaceCrn=self.name)
-        self.cdpy.sdk.call('ml', 'delete_workspace', **payload)
+        self.cdpy.sdk.call("ml", "delete_workspace", **payload)
 
     def _wait_ready_state(self):
         return self.cdpy.sdk.wait_for_state(
             describe_func=self.cdpy.ml.describe_workspace,
-            params=dict(name=self.name, env=self.env), field='instanceStatus',
-            state='installation:finished', delay=self.delay, timeout=self.timeout
+            params=dict(name=self.name, env=self.env),
+            field="instanceStatus",
+            state="installation:finished",
+            delay=self.delay,
+            timeout=self.timeout,
         )
 
     def _wait_delete_state(self):
         return self.cdpy.sdk.wait_for_state(
             describe_func=self.cdpy.ml.describe_workspace,
             params=dict(name=self.name, env=self.env),
-            field=None, delay=self.delay, timeout=self.timeout, ignore_failures=self.force
+            field=None,
+            delay=self.delay,
+            timeout=self.timeout,
+            ignore_failures=self.force,
         )
 
     @staticmethod
@@ -722,8 +741,10 @@ class MLWorkspace(CdpModule):
             if isinstance(v, dict):
                 normalized[k] = MLWorkspace._normalize_payload(v)
             elif isinstance(v, (list, set, tuple)):
-                normalized[k] = type(v)(MLWorkspace._normalize_payload(el)
-                                        if isinstance(el, dict) else el for el in v)
+                normalized[k] = type(v)(
+                    MLWorkspace._normalize_payload(el) if isinstance(el, dict) else el
+                    for el in v
+                )
             elif v is not None:
                 normalized[k] = v
         return normalized
@@ -733,73 +754,134 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             # TODO - Handle CRN as separate parameter with tests
-            name=dict(required=True, type='str', aliases=[
-                      'workspace', 'crn', 'workspace_crn']),
-            environment=dict(required=False, type='str', aliases=['env']),
-            tls=dict(required=False, type='bool',
-                     default=True, aliases=['enable_tls']),
-            monitoring=dict(required=False, type='bool',
-                            default=False, aliases=['enable_monitoring']),
-            governance=dict(required=False, type='bool',
-                            default=False, aliases=['enable_governance']),
-            metrics=dict(required=False, type='bool',
-                            default=False, aliases=['enable_metrics']),
-            database=dict(required=False, type='dict', options=dict(
-                existingDatabaseHost=dict(required=False, type='str'),
-                existingDatabaseName=dict(required=False, type='str'),
-                existingDatabasePort=dict(required=False, type='str'),
-                existingDatabaseUser=dict(required=False, type='str'),
-                existingDatabasePassword=dict(required=False, type='str')
-            ), aliases=['existing_database', 'database_config']),
-            nfs=dict(required=False, type='str', aliases=['existing_nfs']),
-            nfs_version=dict(required=False, type='str'),
-            k8s_request=dict(required=False, type='dict', options=dict(
-                environmentName=dict(required=True, type='str'),
-                instanceGroups=dict(required=True, type='list', elements='dict', options=dict(
-                    autoscaling=dict(required=False, type='dict', options=dict(
-                        enabled=dict(required=False,
-                                     type='bool', default=True),
-                        maxInstances=dict(required=True, type='int'),
-                        minInstances=dict(required=True, type='int')
-                    )),
-                    ingressRules=dict(
-                        required=False, type='list', elements='str'),
-                    instanceCount=dict(required=False, type='int', default=0),
-                    instanceTier=dict(required=False, type='str'),
-                    instanceType=dict(required=True, type='str'),
-                    name=dict(required=False, type='str'),
-                    rootVolume=dict(required=False, type='dict', options=dict(
-                        size=dict(required=True, type='int')
-                    ))
-                )),
-                network=dict(required=False, type='dict', options=dict(
-                    plugin=dict(required=False, type='str'),
-                    topology=dict(required=False, type='dict', options=dict(
-                        subnets=dict(required=False,
-                                     type='list', elements='str')
-                    ))
-                )),
-                tags=dict(required=False, type='dict')
-            ), aliases=['provision_k8s']),
-            ip_addresses=dict(required=False, type='list', elements='str', aliases=[
-                              'loadbalancer_access_ips']),
-            public_loadbalancer=dict(required=False, type='bool', default=False, aliases=[
-                                     'enable_public_loadbalancer']),
-            private_cluster=dict(required=False, type='bool', default=False, aliases=[
-                                     'enable_private_cluster']),
-            force=dict(required=False, type='bool',
-                       default=False, aliases=['force_delete']),
-            storage=dict(required=False, type='bool',
-                         default=True, aliases=['remove_storage']),
-            state=dict(required=False, type='str', choices=[
-                       'present', 'absent'], default='present'),
-            wait=dict(required=False, type='bool', default=True),
-            delay=dict(required=False, type='int', aliases=[
-                       'polling_delay'], default=15),
-            timeout=dict(required=False, type='int', aliases=[
-                         'polling_timeout'], default=3600)
+            name=dict(
+                required=True, type="str", aliases=["workspace", "crn", "workspace_crn"]
+            ),
+            environment=dict(required=False, type="str", aliases=["env"]),
+            tls=dict(required=False, type="bool", default=True, aliases=["enable_tls"]),
+            monitoring=dict(
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["enable_monitoring"],
+            ),
+            governance=dict(
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["enable_governance"],
+            ),
+            metrics=dict(
+                required=False, type="bool", default=False, aliases=["enable_metrics"]
+            ),
+            database=dict(
+                required=False,
+                type="dict",
+                options=dict(
+                    existingDatabaseHost=dict(required=False, type="str"),
+                    existingDatabaseName=dict(required=False, type="str"),
+                    existingDatabasePort=dict(required=False, type="str"),
+                    existingDatabaseUser=dict(required=False, type="str"),
+                    existingDatabasePassword=dict(required=False, type="str"),
+                ),
+                aliases=["existing_database", "database_config"],
+            ),
+            nfs=dict(required=False, type="str", aliases=["existing_nfs"]),
+            nfs_version=dict(required=False, type="str"),
+            k8s_request=dict(
+                required=False,
+                type="dict",
+                options=dict(
+                    environmentName=dict(required=True, type="str"),
+                    instanceGroups=dict(
+                        required=True,
+                        type="list",
+                        elements="dict",
+                        options=dict(
+                            autoscaling=dict(
+                                required=False,
+                                type="dict",
+                                options=dict(
+                                    enabled=dict(
+                                        required=False, type="bool", default=True
+                                    ),
+                                    maxInstances=dict(required=True, type="int"),
+                                    minInstances=dict(required=True, type="int"),
+                                ),
+                            ),
+                            ingressRules=dict(
+                                required=False, type="list", elements="str"
+                            ),
+                            instanceCount=dict(required=False, type="int", default=0),
+                            instanceTier=dict(required=False, type="str"),
+                            instanceType=dict(required=True, type="str"),
+                            name=dict(required=False, type="str"),
+                            rootVolume=dict(
+                                required=False,
+                                type="dict",
+                                options=dict(size=dict(required=True, type="int")),
+                            ),
+                        ),
+                    ),
+                    network=dict(
+                        required=False,
+                        type="dict",
+                        options=dict(
+                            plugin=dict(required=False, type="str"),
+                            topology=dict(
+                                required=False,
+                                type="dict",
+                                options=dict(
+                                    subnets=dict(
+                                        required=False, type="list", elements="str"
+                                    )
+                                ),
+                            ),
+                        ),
+                    ),
+                    tags=dict(required=False, type="dict"),
+                ),
+                aliases=["provision_k8s"],
+            ),
+            ip_addresses=dict(
+                required=False,
+                type="list",
+                elements="str",
+                aliases=["loadbalancer_access_ips"],
+            ),
+            public_loadbalancer=dict(
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["enable_public_loadbalancer"],
+            ),
+            private_cluster=dict(
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["enable_private_cluster"],
+            ),
+            force=dict(
+                required=False, type="bool", default=False, aliases=["force_delete"]
+            ),
+            storage=dict(
+                required=False, type="bool", default=True, aliases=["remove_storage"]
+            ),
+            state=dict(
+                required=False,
+                type="str",
+                choices=["present", "absent"],
+                default="present",
+            ),
+            wait=dict(required=False, type="bool", default=True),
+            delay=dict(
+                required=False, type="int", aliases=["polling_delay"], default=15
+            ),
+            timeout=dict(
+                required=False, type="int", aliases=["polling_timeout"], default=3600
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = MLWorkspace(module)
@@ -811,5 +893,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -19,11 +19,13 @@ from ansible.module_utils.basic import AnsibleModule
 from cdpy.common import CdpError
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_cred
 short_description: Create, update, and destroy CDP credentials
@@ -85,7 +87,7 @@ options:
     required: False
   secret:
     type: str
-    description: 
+    description:
         - The Secret for the Application access on Azure
         - The path to the Key File for the Service Account being used on Google
     required: False
@@ -113,9 +115,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Create a CDP Credential for AWS
@@ -135,9 +137,9 @@ EXAMPLES = r'''
 - cloudera.cloud.env_cred:
     name: example-credential
     debug: yes
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 credential:
     description: Returns an object for the Credential.
     returned: success
@@ -172,7 +174,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentCredential(CdpModule):
@@ -180,17 +182,17 @@ class EnvironmentCredential(CdpModule):
         super(EnvironmentCredential, self).__init__(module)
 
         # Set variables
-        self.state = self._get_param('state')
-        self.cloud = self._get_param('cloud')
-        self.name = self._get_param('name')
-        self.role = self._get_param('role')
-        self.subscription = self._get_param('subscription')
-        self.tenant = self._get_param('tenant')
-        self.application = self._get_param('application')
-        self.secret = self._get_param('secret')
-        self.retries = self._get_param('retries')
-        self.delay = self._get_param('delay')
-        self.description = self._get_param('description')
+        self.state = self._get_param("state")
+        self.cloud = self._get_param("cloud")
+        self.name = self._get_param("name")
+        self.role = self._get_param("role")
+        self.subscription = self._get_param("subscription")
+        self.tenant = self._get_param("tenant")
+        self.application = self._get_param("application")
+        self.secret = self._get_param("secret")
+        self.retries = self._get_param("retries")
+        self.delay = self._get_param("delay")
+        self.description = self._get_param("description")
 
         # Initialize the return values
         self.credential = {}
@@ -204,7 +206,7 @@ class EnvironmentCredential(CdpModule):
         self.validate_credential_name()
 
         credential = self.cdpy.environments.describe_credential(self.name)
-        if self.state == 'absent':
+        if self.state == "absent":
             if credential is not None:
                 self.credential = self.cdpy.environments.delete_credential(self.name)
         else:
@@ -219,9 +221,16 @@ class EnvironmentCredential(CdpModule):
 
     def validate_credential_name(self):
         """Ensures that Credential names follow required formatting and fails the module on error."""
-        if self.cdpy.sdk.regex_search(self.cdpy.environments.sdk.CREDENTIAL_NAME_PATTERN, self.name) is not None:
-            self.module.fail_json(msg='Invalid credential name, "%s". CDP credentials must contain only lowercase '
-                                      'letters, numbers and hyphens.' % self.name)
+        if (
+            self.cdpy.sdk.regex_search(
+                self.cdpy.environments.sdk.CREDENTIAL_NAME_PATTERN, self.name
+            )
+            is not None
+        ):
+            self.module.fail_json(
+                msg='Invalid credential name, "%s". CDP credentials must contain only lowercase '
+                "letters, numbers and hyphens." % self.name
+            )
 
     def reconcile_credential(self, credential):
         """
@@ -229,9 +238,14 @@ class EnvironmentCredential(CdpModule):
         Note that only 'description' is checked, as the existing credential only exposes its computed 'crn', not
         the role ARN.
         """
-        self.module.warn('Changes to Role ARN cannot be checked. If you need to change the Role ARN, explicitly delete'
-                         ' and recreate the credential.')
-        if self.description is not None and credential['description'] != self.description:
+        self.module.warn(
+            "Changes to Role ARN cannot be checked. If you need to change the Role ARN, explicitly delete"
+            " and recreate the credential."
+        )
+        if (
+            self.description is not None
+            and credential["description"] != self.description
+        ):
             return False
         else:
             return True
@@ -239,19 +253,26 @@ class EnvironmentCredential(CdpModule):
     def handle_create_credential(self):
         """Creates a Credential, returning a dictionary of the newly-created object or ClientError."""
         if not self.module.check_mode:
-            if self.cloud == 'aws':
+            if self.cloud == "aws":
                 resp = self.cdpy.environments.create_aws_credential(
-                    self.name, self.role, self.description, self.retries, self.delay)
+                    self.name, self.role, self.description, self.retries, self.delay
+                )
                 self.changed = True
                 return resp
-            elif self.cloud == 'azure':
+            elif self.cloud == "azure":
                 resp = self.cdpy.environments.create_azure_credential(
-                    self.name, self.subscription, self.tenant, self.application, self.secret)
+                    self.name,
+                    self.subscription,
+                    self.tenant,
+                    self.application,
+                    self.secret,
+                )
                 self.changed = True
                 return resp
-            elif self.cloud == 'gcp':
+            elif self.cloud == "gcp":
                 resp = self.cdpy.environments.create_gcp_credential(
-                    name=self.name, key_file=self.secret)
+                    name=self.name, key_file=self.secret
+                )
                 self.changed = True
                 return resp
             else:
@@ -261,25 +282,37 @@ class EnvironmentCredential(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            state=dict(required=False, type='str', choices=['present', 'absent'], default='present'),
-            cloud=dict(required=False, type='str', choices=['aws', 'azure', 'gcp']),
-            name=dict(required=True, type='str', aliases=['credential']),
-            subscription=dict(required=False, type='str'),
-            tenant=dict(required=False, type='str'),
-            application=dict(required=False, type='str'),
-            secret=dict(required=False, type='str'),
-            role=dict(required=False, type='str', aliases=['arn', 'role_arn']),
-            description=dict(required=False, type='str', aliases=['desc'], default=None),
-            retries=dict(required=False, type='int', default=5),
-            delay=dict(required=False, type='int', default=3)
+            state=dict(
+                required=False,
+                type="str",
+                choices=["present", "absent"],
+                default="present",
+            ),
+            cloud=dict(required=False, type="str", choices=["aws", "azure", "gcp"]),
+            name=dict(required=True, type="str", aliases=["credential"]),
+            subscription=dict(required=False, type="str"),
+            tenant=dict(required=False, type="str"),
+            application=dict(required=False, type="str"),
+            secret=dict(required=False, type="str"),
+            role=dict(required=False, type="str", aliases=["arn", "role_arn"]),
+            description=dict(
+                required=False, type="str", aliases=["desc"], default=None
+            ),
+            retries=dict(required=False, type="int", default=5),
+            delay=dict(required=False, type="int", default=3),
         ),
         required_if=[
-            ['state', 'present', ('cloud', 'name'), False],
-            ['cloud', 'aws', ('name', 'role'), False],
-            ['cloud', 'azure', ('name', 'subscription', 'tenant', 'application', 'secret'), False],
-            ['cloud', 'gcp', ('name', 'secret'), False]
+            ["state", "present", ("cloud", "name"), False],
+            ["cloud", "aws", ("name", "role"), False],
+            [
+                "cloud",
+                "azure",
+                ("name", "subscription", "tenant", "application", "secret"),
+                False,
+            ],
+            ["cloud", "gcp", ("name", "secret"), False],
         ],
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = EnvironmentCredential(module)
@@ -290,13 +323,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

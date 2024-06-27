@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: account_auth_info
 short_description: Gather information about CDP Account authentication settings
@@ -46,16 +48,16 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Gather information about the Account authentication settings
 - cloudera.cloud.account_auth_info:
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 account:
     description: Returns the authentication settings for the CDP Account
@@ -84,7 +86,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class AccountAuthenticationInfo(CdpModule):
@@ -104,8 +106,7 @@ class AccountAuthenticationInfo(CdpModule):
 
 def main():
     module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(),
-        supports_check_mode=True
+        argument_spec=CdpModule.argument_spec(), supports_check_mode=True
     )
 
     result = AccountAuthenticationInfo(module)
@@ -116,13 +117,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
     lookup: env_freeipa_domain
     author: Ronald Suplina (@rsuplina) <rsuplina@cloudera.com>
     short_description: Get information about the FreeIPA domain and DNS server IP address(es) for the selected CDP Public Cloud Environment
@@ -41,10 +42,10 @@ DOCUMENTATION = '''
 
     notes:
         - Requires C(cdpy).
-'''
+"""
 
 
-EXAMPLES = '''
+EXAMPLES = """
 - name: Retrieve the FreeIPA domain and host IP addresses for a CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env') }}"
@@ -52,16 +53,16 @@ EXAMPLES = '''
 - name: Retrieve the FreeIPA domain and host IP addresses  for a CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env' , detailed=True  ) }}"
-    
- 
-'''
 
-RETURN = '''
+
+"""
+
+RETURN = """
   _list:
     description: List of FreeIPA domains for selected Environments
     type: list
     elements: complex
-'''
+"""
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
@@ -74,26 +75,27 @@ from cdpy.common import CdpError
 
 display = Display()
 
+
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
-        self.set_options(var_options=variables, direct=kwargs)    
+        self.set_options(var_options=variables, direct=kwargs)
 
-        try: 
+        try:
             results = []
             for term in LookupBase._flatten(terms):
                 environment = Cdpy().environments.describe_environment(term)
-                freeipa_client_domain = environment['freeipa']['domain']
-                
-                if self.get_option('detailed'):
-                    server_ips = environment['freeipa']['serverIP']
-                    results = [{'domain': freeipa_client_domain,'server_ips' : server_ips}]    
+                freeipa_client_domain = environment["freeipa"]["domain"]
+
+                if self.get_option("detailed"):
+                    server_ips = environment["freeipa"]["serverIP"]
+                    results = [
+                        {"domain": freeipa_client_domain, "server_ips": server_ips}
+                    ]
                 else:
-                    results =  [ freeipa_client_domain ]
+                    results = [freeipa_client_domain]
             return results
 
         except KeyError as e:
             raise AnsibleError("Error parsing result: %s" % to_native(e))
         except CdpError as e:
             raise AnsibleError("Error connecting to CDP: %s" % to_native(e))
-
-

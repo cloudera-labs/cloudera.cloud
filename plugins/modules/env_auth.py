@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_auth
 short_description: Set authentication details for the current CDP user
@@ -47,7 +49,7 @@ options:
   password:
     description:
       - The workload password to set for the current CDP user.
-      - Passwords must be a minimum of 8 characters and no more than 64 characters and should be a combination of 
+      - Passwords must be a minimum of 8 characters and no more than 64 characters and should be a combination of
             upper case, lower case, digits, and special characters.
       - Set to 'no_log' within Ansible.
     type: str
@@ -63,9 +65,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Set the workload user password for the current CDP user on all environments
@@ -78,9 +80,9 @@ EXAMPLES = r'''
       - one-environment
       - two-environment
     password: Cloudera@2020!
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 sdk_out:
     description: Returns the captured CDP SDK log.
     returned: when supported
@@ -90,7 +92,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentAuthentication(CdpModule):
@@ -98,8 +100,8 @@ class EnvironmentAuthentication(CdpModule):
         super(EnvironmentAuthentication, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.password = self._get_param('password')
+        self.name = self._get_param("name")
+        self.password = self._get_param("password")
 
         # Execute logic process
         self.process()
@@ -115,26 +117,25 @@ class EnvironmentAuthentication(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='list', elements='str', aliases=['environment']),
-            password=dict(required=True, type='str', no_log=True, aliases=['workload_password'])
+            name=dict(
+                required=False, type="list", elements="str", aliases=["environment"]
+            ),
+            password=dict(
+                required=True, type="str", no_log=True, aliases=["workload_password"]
+            ),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = EnvironmentAuthentication(module)
 
-    output = dict(
-        changed=result.changed
-    )
+    output = dict(changed=result.changed)
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

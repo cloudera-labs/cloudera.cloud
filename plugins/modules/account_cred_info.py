@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
 ---
 module: account_cred_info
 short_description: Gather information about Account prerequisites for CDP Credentials
@@ -46,17 +48,17 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = """
 # Note: These examples do not set authentication details.
 
 # Gather information about the AWS account credential prerequisites
 - cloudera.cloud.account_cred_info:
     cloud: aws
-'''
+"""
 
-RETURN = '''
+RETURN = """
 prerequisites:
     description: Returns a dictionary of the specific cloud provider prerequisites for Credentials
     returned: always
@@ -85,7 +87,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class AccountCredentialInfo(CdpModule):
@@ -93,7 +95,7 @@ class AccountCredentialInfo(CdpModule):
         super(AccountCredentialInfo, self).__init__(module)
 
         # Set variables
-        self.cloud = self._get_param('cloud')
+        self.cloud = self._get_param("cloud")
 
         # Initialize the return values
         self.prerequisites = dict()
@@ -106,21 +108,28 @@ class AccountCredentialInfo(CdpModule):
         if not self.module.check_mode:
             result = self.cdpy.environments.get_credential_prerequisites(self.cloud)
 
-            if self.cloud.lower() == 'aws':
-                self.prerequisites.update(external_id=result['aws']['externalId'],
-                                          policy=result['aws']['policyJson'])
+            if self.cloud.lower() == "aws":
+                self.prerequisites.update(
+                    external_id=result["aws"]["externalId"],
+                    policy=result["aws"]["policyJson"],
+                )
             else:
-                self.module.fail_json(msg='Azure not yet supported')
+                self.module.fail_json(msg="Azure not yet supported")
 
-            self.prerequisites.update(account_id=result['accountId'])
+            self.prerequisites.update(account_id=result["accountId"])
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            cloud=dict(required=True, type='str', aliases=['cloud_platform'], choices=['aws', 'azure'])
+            cloud=dict(
+                required=True,
+                type="str",
+                aliases=["cloud_platform"],
+                choices=["aws", "azure"],
+            )
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = AccountCredentialInfo(module)
@@ -131,13 +140,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

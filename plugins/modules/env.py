@@ -19,11 +19,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env
 short_description: Manage CDP Environments
@@ -149,7 +151,7 @@ options:
     type: str
     required: False
     aliases:
-      - backup_storage_location_base      
+      - backup_storage_location_base
   network_cidr:
     description:
       - (AWS) The network CIDR. This will create a VPC along with subnets in multiple Availability Zones.
@@ -222,7 +224,7 @@ options:
           - Only applies to AWS environments.
         type: bool
         required: False
-        default: False        
+        default: False
   proxy:
     description:
       - The name of the proxy config to use for the environment.
@@ -279,7 +281,7 @@ options:
       - polling_timeout
   endpoint_access_scheme:
     description:
-      - (AWS)The scheme for the workload endpoint gateway. PUBLIC creates an external endpoint that can be accessed over the Internet. 
+      - (AWS)The scheme for the workload endpoint gateway. PUBLIC creates an external endpoint that can be accessed over the Internet.
         Defaults to PRIVATE which restricts the traffic to be internal to the VPC / Vnet. Relevant in Private Networks.
     type: str
     choices:
@@ -303,9 +305,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Create an environment
@@ -362,9 +364,9 @@ EXAMPLES = r'''
   cloudera.cloud.env:
     name: example-module
     state: absent
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 environment:
   description: The information about the Environment
@@ -660,56 +662,56 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class Environment(CdpModule):
     def __init__(self, module):
         super(Environment, self).__init__(module)
 
-        self.name = self._get_param('name')
-        self.state = self._get_param('state').lower()
-        self.cloud = self._get_param('cloud')
+        self.name = self._get_param("name")
+        self.state = self._get_param("state").lower()
+        self.cloud = self._get_param("cloud")
         if self.cloud is not None:
             self.cloud = self.cloud.lower()
-        self.region = self._get_param('region')
-        self.credential = self._get_param('credential')
-        self.inbound_cidr = self._get_param('inbound_cidr')
-        self.default_sg = self._get_param('default_sg')
-        self.knox_sg = self._get_param('knox_sg')
-        self.public_ip = self._get_param('public_ip')
-        self.public_key_text = self._get_param('public_key_text')
-        self.public_key_id = self._get_param('public_key_id')
-        self.log_location = self._get_param('log_location')
-        self.backup_location = self._get_param('backup_location')
-        self.log_identity = self._get_param('log_identity')
-        self.network_cidr = self._get_param('network_cidr')
-        self.vpc_id = self._get_param('vpc_id')
-        self.resource_gp = self._get_param('resource_gp')
-        self.subnet_ids = self._get_param('subnet_ids')
-        self.s3_guard_name = self._get_param('s3_guard_name')
-        self.tags = self._get_param('tags')
-        self.workload_analytics = self._get_param('workload_analytics')
-        self.description = self._get_param('description')
-        self.tunnel = self._get_param('tunnel')
-        self.freeipa = self._get_param('freeipa')
-        self.proxy = self._get_param('proxy')
-        self.project = self._get_param('project')
+        self.region = self._get_param("region")
+        self.credential = self._get_param("credential")
+        self.inbound_cidr = self._get_param("inbound_cidr")
+        self.default_sg = self._get_param("default_sg")
+        self.knox_sg = self._get_param("knox_sg")
+        self.public_ip = self._get_param("public_ip")
+        self.public_key_text = self._get_param("public_key_text")
+        self.public_key_id = self._get_param("public_key_id")
+        self.log_location = self._get_param("log_location")
+        self.backup_location = self._get_param("backup_location")
+        self.log_identity = self._get_param("log_identity")
+        self.network_cidr = self._get_param("network_cidr")
+        self.vpc_id = self._get_param("vpc_id")
+        self.resource_gp = self._get_param("resource_gp")
+        self.subnet_ids = self._get_param("subnet_ids")
+        self.s3_guard_name = self._get_param("s3_guard_name")
+        self.tags = self._get_param("tags")
+        self.workload_analytics = self._get_param("workload_analytics")
+        self.description = self._get_param("description")
+        self.tunnel = self._get_param("tunnel")
+        self.freeipa = self._get_param("freeipa")
+        self.proxy = self._get_param("proxy")
+        self.project = self._get_param("project")
 
-        self.delay = self._get_param('delay')
-        self.timeout = self._get_param('timeout')
-        self.force = self._get_param('force', False)
-        self.cascade = self._get_param('cascade', False)
-        self.wait = self._get_param('wait', False)
+        self.delay = self._get_param("delay")
+        self.timeout = self._get_param("timeout")
+        self.force = self._get_param("force", False)
+        self.cascade = self._get_param("cascade", False)
+        self.wait = self._get_param("wait", False)
 
-        self.datahub_start = self._get_param('datahub_start')
+        self.datahub_start = self._get_param("datahub_start")
 
-        self.endpoint_access_scheme = self._get_param('endpoint_access_scheme')
-        self.endpoint_access_subnets = self._get_param('endpoint_access_subnets')
-        
-        self.zones = self._get_param('zones')
+        self.endpoint_access_scheme = self._get_param("endpoint_access_scheme")
+        self.endpoint_access_subnets = self._get_param("endpoint_access_subnets")
 
-        self.use_single_resource_group=self._get_param('use_single_resource_group')
+        self.zones = self._get_param("zones")
+
+        self.use_single_resource_group = self._get_param("use_single_resource_group")
 
         # Initialize the return values
         self.environment = dict()
@@ -723,7 +725,7 @@ class Environment(CdpModule):
 
         # TODO SetTelemetryFeaturesRequest
 
-        if self.state in ['present', 'started']:
+        if self.state in ["present", "started"]:
 
             # If the environment exists
             if existing is not None:
@@ -733,122 +735,162 @@ class Environment(CdpModule):
                 if self.cloud is not None:
                     # Check to make sure environment state is the same
                     # TODO Delete environment and rebuild if different
-                    if existing['cloudPlatform'].lower() != self.cloud:
-                        self.module.fail_json(msg="Environment exists in a different cloud platform. "
-                                                  "Platform: '%s'" % existing['cloudPlatform'])
+                    if existing["cloudPlatform"].lower() != self.cloud:
+                        self.module.fail_json(
+                            msg="Environment exists in a different cloud platform. "
+                            "Platform: '%s'" % existing["cloudPlatform"]
+                        )
 
                     # Check for changes (except for credentials and cloud platform)
                     mismatch = self._reconcile_existing_state(existing)
                     if mismatch:
-                        msg = ''
+                        msg = ""
                         for m in mismatch:
                             msg += "Parameter '%s' found to be '%s'\n" % (m[0], m[1])
-                        self.module.fail_json(msg='Environment exists and differs from expected:\n' + msg,
-                                              violations=mismatch)
+                        self.module.fail_json(
+                            msg="Environment exists and differs from expected:\n" + msg,
+                            violations=mismatch,
+                        )
 
                 # Else, only update the credential
-                elif self.credential is not None and existing['credentialName'] != self.credential:
+                elif (
+                    self.credential is not None
+                    and existing["credentialName"] != self.credential
+                ):
                     self.update_credential()
 
                 # Fail if attempting to restart a failed environment
-                if existing['status'] in self.cdpy.sdk.FAILED_STATES:
-                    self.module.fail_json(msg='Attempting to restart a failed environment')
+                if existing["status"] in self.cdpy.sdk.FAILED_STATES:
+                    self.module.fail_json(
+                        msg="Attempting to restart a failed environment"
+                    )
 
                 # Warn if attempting to start an environment amidst the creation cycle
-                elif existing['status'] in self.cdpy.sdk.CREATION_STATES:
-                    self.module.warn('Skipping attempt to start an environment during its creation cycle')
+                elif existing["status"] in self.cdpy.sdk.CREATION_STATES:
+                    self.module.warn(
+                        "Skipping attempt to start an environment during its creation cycle"
+                    )
 
                 # Otherwise attempt to start the environment
-                elif existing['status'] not in self.cdpy.sdk.STARTED_STATES:
+                elif existing["status"] not in self.cdpy.sdk.STARTED_STATES:
                     if not self.module.check_mode:
-                        self.environment = self.cdpy.environments.start_environment(self.name, self.datahub_start)
+                        self.environment = self.cdpy.environments.start_environment(
+                            self.name, self.datahub_start
+                        )
                 else:
-                    self.module.warn('Environment state %s is unexpected' % existing['status'])
+                    self.module.warn(
+                        "Environment state %s is unexpected" % existing["status"]
+                    )
 
                 if self.wait:
                     self.environment = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.environments.describe_environment,
                         params=dict(name=self.name),
-                        state='AVAILABLE',
+                        state="AVAILABLE",
                         delay=self.delay,
-                        timeout=self.timeout
+                        timeout=self.timeout,
                     )
 
             # Else create the environment
             else:
                 # Catch errors for updating the credential
                 if self.cloud is None:
-                    self.module.fail_json(msg="Environment does not exist, or 'cloud' is not defined.")
+                    self.module.fail_json(
+                        msg="Environment does not exist, or 'cloud' is not defined."
+                    )
 
                 self._validate_environment_name()
 
                 payload = self._configure_payload()
 
                 if not self.module.check_mode:
-                    if self.cloud not in ['aws', 'azure', 'gcp']:
-                        self.module.fail_json(msg='Cloud %s is not yet implemented' % self.cloud)
-                    elif self.cloud == 'aws':
-                        self.environment = self.cdpy.environments.create_aws_environment(**payload)
-                    elif self.cloud == 'gcp':
-                        self.environment = self.cdpy.environments.create_gcp_environment(**payload)
+                    if self.cloud not in ["aws", "azure", "gcp"]:
+                        self.module.fail_json(
+                            msg="Cloud %s is not yet implemented" % self.cloud
+                        )
+                    elif self.cloud == "aws":
+                        self.environment = (
+                            self.cdpy.environments.create_aws_environment(**payload)
+                        )
+                    elif self.cloud == "gcp":
+                        self.environment = (
+                            self.cdpy.environments.create_gcp_environment(**payload)
+                        )
                     else:
-                        self.environment = self.cdpy.environments.create_azure_environment(**payload)
+                        self.environment = (
+                            self.cdpy.environments.create_azure_environment(**payload)
+                        )
                     self.changed = True
                     if self.wait:
                         self.environment = self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.environments.describe_environment,
                             params=dict(name=self.name),
-                            state='AVAILABLE',
+                            state="AVAILABLE",
                             delay=self.delay,
-                            timeout=self.timeout
+                            timeout=self.timeout,
                         )
 
-        elif self.state == 'stopped':
+        elif self.state == "stopped":
             # If the environment exists
             if existing is not None:
 
                 # Warn if attempting to stop an already stopped/stopping environment
-                if existing['status'] in self.cdpy.sdk.STOPPED_STATES:
+                if existing["status"] in self.cdpy.sdk.STOPPED_STATES:
                     if not self.wait:
-                        self.module.warn('Attempting to stop an environment already stopped or in stopping cycle')
+                        self.module.warn(
+                            "Attempting to stop an environment already stopped or in stopping cycle"
+                        )
                     self.environment = existing
 
                 # Warn if attempting to stop a terminated/terminating environment
-                elif existing['status'] in self.cdpy.sdk.TERMINATION_STATES:
-                    self.module.fail_json(msg='Attempting to stop a terminating environment', **existing)
+                elif existing["status"] in self.cdpy.sdk.TERMINATION_STATES:
+                    self.module.fail_json(
+                        msg="Attempting to stop a terminating environment", **existing
+                    )
 
                 # Fail if attempting to stop a failed environment
-                elif existing['status'] in self.cdpy.sdk.FAILED_STATES:
-                    self.module.fail_json(msg='Attempting to stop a failed environment', **existing)
+                elif existing["status"] in self.cdpy.sdk.FAILED_STATES:
+                    self.module.fail_json(
+                        msg="Attempting to stop a failed environment", **existing
+                    )
 
                 # Otherwise, stop the environment
                 else:
                     if not self.module.check_mode:
-                        self.environment = self.cdpy.environments.stop_environment(self.name)
+                        self.environment = self.cdpy.environments.stop_environment(
+                            self.name
+                        )
                         if self.wait:
                             self.environment = self.cdpy.sdk.wait_for_state(
                                 describe_func=self.cdpy.environments.describe_environment,
                                 params=dict(name=self.name),
-                                state='ENV_STOPPED',
+                                state="ENV_STOPPED",
                                 delay=self.delay,
-                                timeout=self.timeout
+                                timeout=self.timeout,
                             )
 
             else:
-                self.module.fail_json(msg='Environment does not exist.')
+                self.module.fail_json(msg="Environment does not exist.")
 
-        elif self.state == 'absent':
+        elif self.state == "absent":
             # If the environment exists
             if existing is not None:
                 # Warn if attempting to delete an already terminated/terminating environment
-                if not self.wait and existing['status'] in self.cdpy.sdk.TERMINATION_STATES:
-                    self.module.warn('Attempting to delete an environment during the termination cycle')
+                if (
+                    not self.wait
+                    and existing["status"] in self.cdpy.sdk.TERMINATION_STATES
+                ):
+                    self.module.warn(
+                        "Attempting to delete an environment during the termination cycle"
+                    )
                     self.environment = existing
                 # Otherwise, delete the environment
                 # TODO: Check that no CML or DWX etc. are attached to environment
                 else:
                     if not self.module.check_mode:
-                        self.cdpy.environments.delete_environment(self.name, self.cascade, self.force)
+                        self.cdpy.environments.delete_environment(
+                            self.name, self.cascade, self.force
+                        )
                         self.changed = True
 
                         if self.wait:
@@ -857,198 +899,312 @@ class Environment(CdpModule):
                                 params=dict(name=self.name),
                                 field=None,
                                 delay=self.delay,
-                                timeout=self.timeout
+                                timeout=self.timeout,
                             )
 
         else:
-            self.module.fail_json(msg='Invalid state: %s' % self.state)
+            self.module.fail_json(msg="Invalid state: %s" % self.state)
 
     def update_credential(self):
         if not self.module.check_mode:
-            self.cdpy.sdk.call('environments', 'change_environment_credential',
-                               environmentName=self.name, credentialName=self.credential)
+            self.cdpy.sdk.call(
+                "environments",
+                "change_environment_credential",
+                environmentName=self.name,
+                credentialName=self.credential,
+            )
         self.environment = self.cdpy.environments.describe_environment(self.name)
         self.changed = True
 
     def _validate_environment_name(self):
-        if self.cdpy.sdk.regex_search(self.cdpy.sdk.ENV_NAME_PATTERN, self.name) is not None:
-            self.module.fail_json(msg="Invalid environment name, '%s'. Names must contain only lowercase "
-                                      "letters, numbers, and hyphens, must start with a lowercase letter "
-                                      "or a number, and be between 5 and 28 characters" % self.name)
+        if (
+            self.cdpy.sdk.regex_search(self.cdpy.sdk.ENV_NAME_PATTERN, self.name)
+            is not None
+        ):
+            self.module.fail_json(
+                msg="Invalid environment name, '%s'. Names must contain only lowercase "
+                "letters, numbers, and hyphens, must start with a lowercase letter "
+                "or a number, and be between 5 and 28 characters" % self.name
+            )
 
     def _configure_payload(self):
-        payload = dict(environmentName=self.name, credentialName=self.credential, region=self.region,
-                       enableTunnel=self.tunnel, workloadAnalytics=self.workload_analytics)
+        payload = dict(
+            environmentName=self.name,
+            credentialName=self.credential,
+            region=self.region,
+            enableTunnel=self.tunnel,
+            workloadAnalytics=self.workload_analytics,
+        )
 
         if self.tags is not None:
-            payload['tags'] = list()
+            payload["tags"] = list()
             for k in self.tags:
-                payload['tags'].append(dict(key=k, value=str(self.tags[k])))
+                payload["tags"].append(dict(key=k, value=str(self.tags[k])))
         if self.description is not None:
-            payload['description'] = self.description
+            payload["description"] = self.description
 
-        if self.cloud not in ['aws', 'azure', 'gcp']:
-            self.module.fail_json(msg='Cloud %s is not yet implemented' % self.cloud)
-        elif self.cloud == 'aws':
-            if self.backup_location is not None: 
-              payload['logStorage'] = dict(instanceProfile=self.log_identity, storageLocationBase=self.log_location, backupStorageLocationBase=self.backup_location)
+        if self.cloud not in ["aws", "azure", "gcp"]:
+            self.module.fail_json(msg="Cloud %s is not yet implemented" % self.cloud)
+        elif self.cloud == "aws":
+            if self.backup_location is not None:
+                payload["logStorage"] = dict(
+                    instanceProfile=self.log_identity,
+                    storageLocationBase=self.log_location,
+                    backupStorageLocationBase=self.backup_location,
+                )
             else:
-              payload['logStorage'] = dict(instanceProfile=self.log_identity, storageLocationBase=self.log_location)
+                payload["logStorage"] = dict(
+                    instanceProfile=self.log_identity,
+                    storageLocationBase=self.log_location,
+                )
 
             if self.public_key_id is not None:
-                payload['authentication'] = dict(publicKeyId=self.public_key_id)
+                payload["authentication"] = dict(publicKeyId=self.public_key_id)
             else:
-                payload['authentication'] = dict(publicKey=self.public_key_text)
+                payload["authentication"] = dict(publicKey=self.public_key_text)
 
             if self.freeipa is not None:
-                payload['freeIpa'] = dict()
-                if self.freeipa['instanceCountByGroup'] is not None:
-                    payload['freeIpa'].update(dict(instanceCountByGroup=self.freeipa['instanceCountByGroup']))
-                if self.freeipa['multiAz'] is not None:
-                    payload['freeIpa'].update(dict(multiAz=self.freeipa['multiAz']))
+                payload["freeIpa"] = dict()
+                if self.freeipa["instanceCountByGroup"] is not None:
+                    payload["freeIpa"].update(
+                        dict(instanceCountByGroup=self.freeipa["instanceCountByGroup"])
+                    )
+                if self.freeipa["multiAz"] is not None:
+                    payload["freeIpa"].update(dict(multiAz=self.freeipa["multiAz"]))
 
             if self.vpc_id is not None:
-                payload['vpcId'] = self.vpc_id
-                payload['subnetIds'] = self.subnet_ids
+                payload["vpcId"] = self.vpc_id
+                payload["subnetIds"] = self.subnet_ids
             else:
-                payload['networkCidr'] = self.network_cidr
+                payload["networkCidr"] = self.network_cidr
 
             if self.proxy is not None:
-                payload['proxyConfigName'] = self.proxy
+                payload["proxyConfigName"] = self.proxy
 
             if self.s3_guard_name is not None:
-                self.module.warn('As of CDP Runtime 7.2.10 (and given consistent s3), s3Guard is no longer needed. '
-                                  'Proceeding without s3Guard.')
+                self.module.warn(
+                    "As of CDP Runtime 7.2.10 (and given consistent s3), s3Guard is no longer needed. "
+                    "Proceeding without s3Guard."
+                )
 
             if self.inbound_cidr is not None:
-                payload['securityAccess'] = dict(cidr=self.inbound_cidr)
+                payload["securityAccess"] = dict(cidr=self.inbound_cidr)
             else:
-                payload['securityAccess'] = dict(defaultSecurityGroupId=self.default_sg,
-                                                 securityGroupIdForKnox=self.knox_sg)
+                payload["securityAccess"] = dict(
+                    defaultSecurityGroupId=self.default_sg,
+                    securityGroupIdForKnox=self.knox_sg,
+                )
 
-            if self.endpoint_access_scheme == 'PUBLIC':
-                payload['endpointAccessGatewayScheme'] = self.endpoint_access_scheme
-                payload['endpointAccessGatewaySubnetIds'] = self.endpoint_access_subnets
-        elif self.cloud == 'gcp':
-            payload['publicKey'] = self.public_key_text
-            payload['existingNetworkParams'] = dict(
+            if self.endpoint_access_scheme == "PUBLIC":
+                payload["endpointAccessGatewayScheme"] = self.endpoint_access_scheme
+                payload["endpointAccessGatewaySubnetIds"] = self.endpoint_access_subnets
+        elif self.cloud == "gcp":
+            payload["publicKey"] = self.public_key_text
+            payload["existingNetworkParams"] = dict(
                 networkName=self.vpc_id,
                 subnetNames=self.subnet_ids,
-                sharedProjectId=self.project
+                sharedProjectId=self.project,
             )
-            payload['usePublicIp'] = self.public_ip
+            payload["usePublicIp"] = self.public_ip
 
             if self.backup_location is not None:
-              payload['logStorage'] = dict(serviceAccountEmail=self.log_identity, storageLocationBase=self.log_location,backupStorageLocationBase=self.backup_location)
+                payload["logStorage"] = dict(
+                    serviceAccountEmail=self.log_identity,
+                    storageLocationBase=self.log_location,
+                    backupStorageLocationBase=self.backup_location,
+                )
             else:
-              payload['logStorage'] = dict(serviceAccountEmail=self.log_identity, storageLocationBase=self.log_location)
+                payload["logStorage"] = dict(
+                    serviceAccountEmail=self.log_identity,
+                    storageLocationBase=self.log_location,
+                )
 
             if self.freeipa is not None:
-                payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
-                
+                payload["freeIpa"] = dict(
+                    instanceCountByGroup=self.freeipa["instanceCountByGroup"]
+                )
+
             if self.zones is not None:
-                payload['availabilityZones'] = self.zones
+                payload["availabilityZones"] = self.zones
         else:
             # For Azure
-            payload['securityAccess'] = dict(defaultSecurityGroupId=self.default_sg,
-                                             securityGroupIdForKnox=self.knox_sg)
-            payload['publicKey'] = self.public_key_text
-            payload['usePublicIp'] = self.public_ip
+            payload["securityAccess"] = dict(
+                defaultSecurityGroupId=self.default_sg,
+                securityGroupIdForKnox=self.knox_sg,
+            )
+            payload["publicKey"] = self.public_key_text
+            payload["usePublicIp"] = self.public_ip
 
             if self.backup_location is not None:
-              payload['logStorage'] = dict(managedIdentity=self.log_identity, storageLocationBase=self.log_location, backupStorageLocationBase=self.backup_location)
+                payload["logStorage"] = dict(
+                    managedIdentity=self.log_identity,
+                    storageLocationBase=self.log_location,
+                    backupStorageLocationBase=self.backup_location,
+                )
             else:
-              payload['logStorage'] = dict(managedIdentity=self.log_identity, storageLocationBase=self.log_location)
+                payload["logStorage"] = dict(
+                    managedIdentity=self.log_identity,
+                    storageLocationBase=self.log_location,
+                )
 
             if self.vpc_id:
-                payload['existingNetworkParams'] = dict(
-                    networkId=self.vpc_id, resourceGroupName=self.resource_gp, subnetIds=self.subnet_ids
+                payload["existingNetworkParams"] = dict(
+                    networkId=self.vpc_id,
+                    resourceGroupName=self.resource_gp,
+                    subnetIds=self.subnet_ids,
                 )
             if self.freeipa is not None:
-                payload['freeIpa'] = dict(instanceCountByGroup=self.freeipa['instanceCountByGroup'])
+                payload["freeIpa"] = dict(
+                    instanceCountByGroup=self.freeipa["instanceCountByGroup"]
+                )
             if self.use_single_resource_group:
-                payload['resourceGroupName'] = self.resource_gp
+                payload["resourceGroupName"] = self.resource_gp
 
         return payload
 
     def _reconcile_existing_state(self, existing):
         mismatch = list()
 
-        if self.region is not None and existing['region'] != self.region:
-            mismatch.append(['region', existing['region']])
+        if self.region is not None and existing["region"] != self.region:
+            mismatch.append(["region", existing["region"]])
 
         if self.tunnel is not None:
-            self.module.warn('Environment SSH tunneling specified. Currently, the SSH tunnel setting cannot be '
-                             'reconciled. To update the tunneling setting, explicitly delete and recreate the '
-                             'environment.')
+            self.module.warn(
+                "Environment SSH tunneling specified. Currently, the SSH tunnel setting cannot be "
+                "reconciled. To update the tunneling setting, explicitly delete and recreate the "
+                "environment."
+            )
 
         if self.workload_analytics is not None:
-            self.module.warn('Environment workload analytics specified. Currently, the environment\'s workload '
-                             'analytics setting cannot be reconciled. To update the workload analytics setting for the'
-                             'environment, explicitly delete and recreate the environment.')
+            self.module.warn(
+                "Environment workload analytics specified. Currently, the environment's workload "
+                "analytics setting cannot be reconciled. To update the workload analytics setting for the"
+                "environment, explicitly delete and recreate the environment."
+            )
 
         if self.tags is not None:
-            self.module.warn('Environment tags specified. Currently, tags cannot be reconciled. To update tags, '
-                             'explicitly delete and recreate the environment.')
+            self.module.warn(
+                "Environment tags specified. Currently, tags cannot be reconciled. To update tags, "
+                "explicitly delete and recreate the environment."
+            )
 
-        if self.cloud == 'aws':
-            if self.log_identity is not None and \
-                    existing['logStorage']['awsDetails']['instanceProfile'] != self.log_identity:
-                mismatch.append(['log_identity', existing['logStorage']['awsDetails']['instanceProfile']])
+        if self.cloud == "aws":
+            if (
+                self.log_identity is not None
+                and existing["logStorage"]["awsDetails"]["instanceProfile"]
+                != self.log_identity
+            ):
+                mismatch.append(
+                    [
+                        "log_identity",
+                        existing["logStorage"]["awsDetails"]["instanceProfile"],
+                    ]
+                )
 
-            if self.log_location is not None and \
-                    existing['logStorage']['awsDetails']['storageLocationBase'] != self.log_location:
-                mismatch.append(['log_location', existing['logStorage']['awsDetails']['storageLocationBase']])
+            if (
+                self.log_location is not None
+                and existing["logStorage"]["awsDetails"]["storageLocationBase"]
+                != self.log_location
+            ):
+                mismatch.append(
+                    [
+                        "log_location",
+                        existing["logStorage"]["awsDetails"]["storageLocationBase"],
+                    ]
+                )
 
-            if self.backup_location is not None and \
-                    existing['backupStorage']['awsDetails']['storageLocationBase'] != self.backup_location:
-                mismatch.append(['backup_location', existing['backupStorage']['awsDetails']['storageLocationBase']])
+            if (
+                self.backup_location is not None
+                and existing["backupStorage"]["awsDetails"]["storageLocationBase"]
+                != self.backup_location
+            ):
+                mismatch.append(
+                    [
+                        "backup_location",
+                        existing["backupStorage"]["awsDetails"]["storageLocationBase"],
+                    ]
+                )
 
             if self.public_key_id is not None or self.public_key_text is not None:
-                auth = existing['authentication']
-                if self.public_key_id is not None and auth.get('publicKeyId') != self.public_key_id:
-                    mismatch.append(['public_key_id', auth.get('publicKeyId')])
-                elif auth.get('publicKey') != self.public_key_text:
-                    mismatch.append(['public_key_text', auth.get('publicKey')])
+                auth = existing["authentication"]
+                if (
+                    self.public_key_id is not None
+                    and auth.get("publicKeyId") != self.public_key_id
+                ):
+                    mismatch.append(["public_key_id", auth.get("publicKeyId")])
+                elif auth.get("publicKey") != self.public_key_text:
+                    mismatch.append(["public_key_text", auth.get("publicKey")])
 
-            if self.description is not None and existing['description'] != self.description:
-                mismatch.append(['description', existing['description']])
+            if (
+                self.description is not None
+                and existing["description"] != self.description
+            ):
+                mismatch.append(["description", existing["description"]])
 
-            if self.freeipa is not None and len(existing['freeipa']['serverIP']) != self.freeipa['instanceCountByGroup']:
-                mismatch.append(['freeipa', len(existing['freeipa']['serverIP'])])
+            if (
+                self.freeipa is not None
+                and len(existing["freeipa"]["serverIP"])
+                != self.freeipa["instanceCountByGroup"]
+            ):
+                mismatch.append(["freeipa", len(existing["freeipa"]["serverIP"])])
 
-            if self.vpc_id is not None and existing['network']['aws']['vpcId'] != self.vpc_id:
-                mismatch.append(['vpc_id', existing['network']['aws']['vpcId']])
+            if (
+                self.vpc_id is not None
+                and existing["network"]["aws"]["vpcId"] != self.vpc_id
+            ):
+                mismatch.append(["vpc_id", existing["network"]["aws"]["vpcId"]])
 
-            if self.subnet_ids is not None and set(existing['network']['subnetIds']) != set(self.subnet_ids):
-                mismatch.append(['subnetIds', existing['network']['subnetIds']])
+            if self.subnet_ids is not None and set(
+                existing["network"]["subnetIds"]
+            ) != set(self.subnet_ids):
+                mismatch.append(["subnetIds", existing["network"]["subnetIds"]])
 
-            if self.network_cidr is not None and existing['network']['networkCidr'] != self.network_cidr:
-                mismatch.append(['network_cidr', existing['network']['networkCidr']])
+            if (
+                self.network_cidr is not None
+                and existing["network"]["networkCidr"] != self.network_cidr
+            ):
+                mismatch.append(["network_cidr", existing["network"]["networkCidr"]])
 
-            if self.inbound_cidr is not None and existing['securityAccess']['cidr'] != self.inbound_cidr:
-                mismatch.append(['inbound_cidr', existing['securityAccess']['cidr']])
+            if (
+                self.inbound_cidr is not None
+                and existing["securityAccess"]["cidr"] != self.inbound_cidr
+            ):
+                mismatch.append(["inbound_cidr", existing["securityAccess"]["cidr"]])
 
             if self.default_sg is not None or self.knox_sg is not None:
-                access = existing['securityAccess']
-                if self.default_sg is not None and access.get('defaultSecurityGroupId') != self.default_sg:
-                    mismatch.append(['default_sg', access.get('defaultSecurityGroupId')])
-                if self.knox_sg is not None and access.get('securityGroupIdForKnox') != self.knox_sg:
-                    mismatch.append(['knox_sg', access.get('securityGroupIdForKnox')])
+                access = existing["securityAccess"]
+                if (
+                    self.default_sg is not None
+                    and access.get("defaultSecurityGroupId") != self.default_sg
+                ):
+                    mismatch.append(
+                        ["default_sg", access.get("defaultSecurityGroupId")]
+                    )
+                if (
+                    self.knox_sg is not None
+                    and access.get("securityGroupIdForKnox") != self.knox_sg
+                ):
+                    mismatch.append(["knox_sg", access.get("securityGroupIdForKnox")])
 
             if self.proxy is not None:
-                if 'proxyConfig' in existing:
-                    if existing['proxyConfig']['proxyConfigName'] != self.proxy:
-                        mismatch.append(['proxy', existing['proxyConfig']['proxyConfigName']])
+                if "proxyConfig" in existing:
+                    if existing["proxyConfig"]["proxyConfigName"] != self.proxy:
+                        mismatch.append(
+                            ["proxy", existing["proxyConfig"]["proxyConfigName"]]
+                        )
                 else:
-                    mismatch.append(['proxy', 'n/a'])
-            elif 'proxyConfig' in existing:
-                mismatch.append(['proxy', existing['proxyConfig']['proxyConfigName']])
-        elif self.cloud == 'gcp':
-            self.module.warn("Environment configuration reconciliation not implemented on GCP")
+                    mismatch.append(["proxy", "n/a"])
+            elif "proxyConfig" in existing:
+                mismatch.append(["proxy", existing["proxyConfig"]["proxyConfigName"]])
+        elif self.cloud == "gcp":
+            self.module.warn(
+                "Environment configuration reconciliation not implemented on GCP"
+            )
         else:
             # For Azure
-            self.module.warn("Environment configuration reconciliation not implemented on Azure")
+            self.module.warn(
+                "Environment configuration reconciliation not implemented on Azure"
+            )
 
         return mismatch
 
@@ -1056,70 +1212,119 @@ class Environment(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['environment']),
-            state=dict(required=False, type='str', choices=['present', 'started', 'stopped', 'absent'],
-                       default='present'),
-            cloud=dict(required=False, type='str', choices=['aws', 'azure', 'gcp']),
-            region=dict(required=False, type='str'),
-            credential=dict(required=False, type='str'),
-            inbound_cidr=dict(required=False, type='str', aliases=['security_cidr']),
-            default_sg=dict(required=False, type='str', aliases=['default', 'default_security_group']),
-            knox_sg=dict(required=False, type='str', aliases=['knox', 'knox_security_group']),
-            public_key_text=dict(required=False, type='str', aliases=['ssh_key_text']),
-            public_key_id=dict(required=False, type='str', aliases=['public_key', 'ssh_key', 'ssh_key_id']),
-            log_location=dict(required=False, type='str', aliases=['storage_location_base']),
-            backup_location=dict(required=False, type='str', aliases=['backup_storage_location_base']),
-            log_identity=dict(required=False, type='str', aliases=['instance_profile']),
-            network_cidr=dict(required=False, type='str'),
-            vpc_id=dict(required=False, type='str', aliases=['vpc', 'network']),  # TODO: Update Docs
-            subnet_ids=dict(required=False, type='list', elements='str', aliases=['subnets']),
-            public_ip=dict(required=False, type='bool'),  # TODO: add to docs
-            s3_guard_name=dict(required=False, type='str', aliases=['s3_guard', 's3_guard_table_name']),
-            resource_gp=dict(required=False, type='str', aliases=['resource_group_name']),
-            tags=dict(required=False, type='dict', aliases=['environment_tags']),
-            workload_analytics=dict(required=False, type='bool', default=True),
-            description=dict(required=False, type='str', aliases=['desc']),
-            tunnel=dict(required=False, type='bool', aliases=['enable_tunnel', 'ssh_tunnel'], default=False),
-            freeipa=dict(required=False, type='dict', options=dict(
-              instanceCountByGroup=dict(required=False, type='int'),
-              multiAz=dict(required=False, type='bool')
-            ), default=dict(instanceCountByGroup=2,multiAz=False)),
-            project=dict(required=False, type='str'),
-            proxy=dict(required=False, type='str', aliases=['[proxy_config', 'proxy_config_name']),
-            cascade=dict(required=False, type='bool', default=False, aliases=['cascading']),
-            force=dict(required=False, type='bool', default=False),
-            wait=dict(required=False, type='bool', default=True),
-            datahub_start=dict(required=False, type='bool', default=True),
-            delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600),
-            zones=dict(required=False, type='list', elements='str', aliases=['availability_zones']),
-            endpoint_access_subnets=dict(required=False, type='list', elements='str'),
-            endpoint_access_scheme=dict(required=False, type='str', choices=['PUBLIC', 'PRIVATE']),
-            use_single_resource_group=dict(required=False, type='bool', default=False),
-
+            name=dict(required=True, type="str", aliases=["environment"]),
+            state=dict(
+                required=False,
+                type="str",
+                choices=["present", "started", "stopped", "absent"],
+                default="present",
+            ),
+            cloud=dict(required=False, type="str", choices=["aws", "azure", "gcp"]),
+            region=dict(required=False, type="str"),
+            credential=dict(required=False, type="str"),
+            inbound_cidr=dict(required=False, type="str", aliases=["security_cidr"]),
+            default_sg=dict(
+                required=False,
+                type="str",
+                aliases=["default", "default_security_group"],
+            ),
+            knox_sg=dict(
+                required=False, type="str", aliases=["knox", "knox_security_group"]
+            ),
+            public_key_text=dict(required=False, type="str", aliases=["ssh_key_text"]),
+            public_key_id=dict(
+                required=False,
+                type="str",
+                aliases=["public_key", "ssh_key", "ssh_key_id"],
+            ),
+            log_location=dict(
+                required=False, type="str", aliases=["storage_location_base"]
+            ),
+            backup_location=dict(
+                required=False, type="str", aliases=["backup_storage_location_base"]
+            ),
+            log_identity=dict(required=False, type="str", aliases=["instance_profile"]),
+            network_cidr=dict(required=False, type="str"),
+            vpc_id=dict(
+                required=False, type="str", aliases=["vpc", "network"]
+            ),  # TODO: Update Docs
+            subnet_ids=dict(
+                required=False, type="list", elements="str", aliases=["subnets"]
+            ),
+            public_ip=dict(required=False, type="bool"),  # TODO: add to docs
+            s3_guard_name=dict(
+                required=False, type="str", aliases=["s3_guard", "s3_guard_table_name"]
+            ),
+            resource_gp=dict(
+                required=False, type="str", aliases=["resource_group_name"]
+            ),
+            tags=dict(required=False, type="dict", aliases=["environment_tags"]),
+            workload_analytics=dict(required=False, type="bool", default=True),
+            description=dict(required=False, type="str", aliases=["desc"]),
+            tunnel=dict(
+                required=False,
+                type="bool",
+                aliases=["enable_tunnel", "ssh_tunnel"],
+                default=False,
+            ),
+            freeipa=dict(
+                required=False,
+                type="dict",
+                options=dict(
+                    instanceCountByGroup=dict(required=False, type="int"),
+                    multiAz=dict(required=False, type="bool"),
+                ),
+                default=dict(instanceCountByGroup=2, multiAz=False),
+            ),
+            project=dict(required=False, type="str"),
+            proxy=dict(
+                required=False,
+                type="str",
+                aliases=["[proxy_config", "proxy_config_name"],
+            ),
+            cascade=dict(
+                required=False, type="bool", default=False, aliases=["cascading"]
+            ),
+            force=dict(required=False, type="bool", default=False),
+            wait=dict(required=False, type="bool", default=True),
+            datahub_start=dict(required=False, type="bool", default=True),
+            delay=dict(
+                required=False, type="int", aliases=["polling_delay"], default=15
+            ),
+            timeout=dict(
+                required=False, type="int", aliases=["polling_timeout"], default=3600
+            ),
+            zones=dict(
+                required=False,
+                type="list",
+                elements="str",
+                aliases=["availability_zones"],
+            ),
+            endpoint_access_subnets=dict(required=False, type="list", elements="str"),
+            endpoint_access_scheme=dict(
+                required=False, type="str", choices=["PUBLIC", "PRIVATE"]
+            ),
+            use_single_resource_group=dict(required=False, type="bool", default=False),
         ),
         # TODO: Update for Azure
         required_if=[
-            ['state', 'present', ('cloud', 'credential'), True],
-            ['cloud', 'aws', ('public_key_text', 'public_key_id'), True],
-            ['cloud', 'aws', ('network_cidr', 'vpc_id'), True],
-            ['cloud', 'aws', ('inbound_cidr', 'default_sg', 'knox_sg'), True]
+            ["state", "present", ("cloud", "credential"), True],
+            ["cloud", "aws", ("public_key_text", "public_key_id"), True],
+            ["cloud", "aws", ("network_cidr", "vpc_id"), True],
+            ["cloud", "aws", ("inbound_cidr", "default_sg", "knox_sg"), True],
         ],
         required_by={
-            'cloud': ('region', 'credential', 'log_location', 'log_identity'),
+            "cloud": ("region", "credential", "log_location", "log_identity"),
         },
         mutually_exclusive=[
-            ['network_cidr', 'vpc_id'],
-            ['network_cidr', 'subnet_ids'],
-            ['public_key_id', 'public_key_text'],
-            ['inbound_cidr', 'default_sg'],
-            ['inbound_cidr', 'knox_sg']
+            ["network_cidr", "vpc_id"],
+            ["network_cidr", "subnet_ids"],
+            ["public_key_id", "public_key_text"],
+            ["inbound_cidr", "default_sg"],
+            ["inbound_cidr", "knox_sg"],
         ],
-        required_together=[
-            ['vpc_id', 'subnet_ids'],
-            ['default_sg', 'knox_sg']
-        ],
-        supports_check_mode=True
+        required_together=[["vpc_id", "subnet_ids"], ["default_sg", "knox_sg"]],
+        supports_check_mode=True,
     )
 
     result = Environment(module)
@@ -1131,5 +1336,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

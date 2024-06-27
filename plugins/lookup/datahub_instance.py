@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
     lookup: datahub_instance
     author: Webster Mudge (@wmudge) <wmudge@cloudera.com>
     short_description: Get the instances for a CDP Public Cloud Datahub
@@ -52,28 +53,28 @@ DOCUMENTATION = '''
     seealso:
         - module: cloudera.cloud.datahub_cluster_info
           description: Cloudera CDP Public Cloud Datahub cluster module
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = """
 - name: Retrieve the instances for the NiFi instance group for a CDP Public Cloud Flow Management datahub
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_instance', 'nifi', datahub='example-flow-dh') }}"
-    
+
 - name: Retrieve the full details for the instance
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_instance', 'nifi', datahub='example-flow-dh', detailed=True) }}"
-  
+
 - name: Retrieve the instance details for multiple instance groups
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.datahub_instance', ['nifi', 'management'], datahub='example-flow-dh', wantlist=True) }}"
-'''
+"""
 
-RETURN = '''
+RETURN = """
   _list:
     description: List of lists of instances
     type: list
     elements: complex
-'''
+"""
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
@@ -85,27 +86,35 @@ from cdpy.common import CdpError
 
 display = Display()
 
+
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         self.set_options(var_options=variables, direct=kwargs)
 
         try:
-            datahub = Cdpy().datahub.describe_cluster(self.get_option('datahub'))
+            datahub = Cdpy().datahub.describe_cluster(self.get_option("datahub"))
             if datahub is None:
-                raise AnsibleError("No Datahub found for '%s'" % self.get_option('datahub'))
-            
-            all_instance_groups = {ig['name']:ig for ig in datahub['instanceGroups']}
+                raise AnsibleError(
+                    "No Datahub found for '%s'" % self.get_option("datahub")
+                )
+
+            all_instance_groups = {ig["name"]: ig for ig in datahub["instanceGroups"]}
             results = []
-            
+
             for term in LookupBase._flatten(terms):
-                display.vvv("Filtering instance groups for %s[%s]" % (self.get_option('datahub'), term))
+                display.vvv(
+                    "Filtering instance groups for %s[%s]"
+                    % (self.get_option("datahub"), term)
+                )
                 if term in all_instance_groups:
-                    if self.get_option('detailed'):
-                        results.append(all_instance_groups[term]['instances'])
+                    if self.get_option("detailed"):
+                        results.append(all_instance_groups[term]["instances"])
                     else:
-                        results.append([i['fqdn'] for i in all_instance_groups[term]['instances']])
+                        results.append(
+                            [i["fqdn"] for i in all_instance_groups[term]["instances"]]
+                        )
                 else:
-                    results.append(self.get_option('default'))
+                    results.append(self.get_option("default"))
             return results
         except KeyError as e:
             raise AnsibleError("Error parsing result: %s" % to_native(e))

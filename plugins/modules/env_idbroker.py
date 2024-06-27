@@ -19,11 +19,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_idbroker
 short_description: Update ID Broker for CDP Environments
@@ -125,9 +127,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Create a fresh set of data access mappings for ID Broker
@@ -170,9 +172,9 @@ EXAMPLES = r'''
 - cloudera.cloud.env_idbroker:
     name: example-environment
     sync: yes
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 idbroker:
     description: Returns the mappings and sync status for the ID Broker for the Environment.
     returned: always
@@ -275,7 +277,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentIdBroker(CdpModule):
@@ -283,13 +285,13 @@ class EnvironmentIdBroker(CdpModule):
         super(EnvironmentIdBroker, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.data_access = self._get_param('data_access')
-        self.ranger_audit = self._get_param('ranger_audit')
-        self.ranger_cloud_access = self._get_param('ranger_cloud_access')
-        self.mappings = self._get_param('mappings')
-        self.clear_mappings = self._get_param('clear_mappings')
-        self.sync = self._get_param('sync')
+        self.name = self._get_param("name")
+        self.data_access = self._get_param("data_access")
+        self.ranger_audit = self._get_param("ranger_audit")
+        self.ranger_cloud_access = self._get_param("ranger_cloud_access")
+        self.mappings = self._get_param("mappings")
+        self.clear_mappings = self._get_param("clear_mappings")
+        self.sync = self._get_param("sync")
 
         # Initialize the return values
         self.idbroker = {}
@@ -303,27 +305,34 @@ class EnvironmentIdBroker(CdpModule):
 
         if existing is None:
             delta = self.reconcile_mappings(list())
-            if 'mappings' not in delta or self.clear_mappings:
-                delta['setEmptyMappings'] = True
+            if "mappings" not in delta or self.clear_mappings:
+                delta["setEmptyMappings"] = True
             self.set_mappings(delta)
         else:
             delta = self.reconcile_mappings(existing)
 
-            if delta or (self.clear_mappings and existing['mappings']):
+            if delta or (self.clear_mappings and existing["mappings"]):
                 payload = existing.copy()
                 payload.update(delta)
 
-                if self.clear_mappings or 'mappings' not in payload or not payload['mappings']:
-                    _ = payload.pop('mappings', None)
-                    payload['setEmptyMappings'] = True
+                if (
+                    self.clear_mappings
+                    or "mappings" not in payload
+                    or not payload["mappings"]
+                ):
+                    _ = payload.pop("mappings", None)
+                    payload["setEmptyMappings"] = True
 
-                _ = [payload.pop(x, None) for x in ['mappingsVersion', 'baselineRole', 'syncStatus']]
+                _ = [
+                    payload.pop(x, None)
+                    for x in ["mappingsVersion", "baselineRole", "syncStatus"]
+                ]
 
                 self.set_mappings(payload)
 
         if self.sync:
             sync_status = self.cdpy.environments.get_id_broker_mapping_sync(self.name)
-            if sync_status is not None and sync_status['syncNeeded']:
+            if sync_status is not None and sync_status["syncNeeded"]:
                 self.sync_mappings()
 
         if self.changed:
@@ -335,24 +344,27 @@ class EnvironmentIdBroker(CdpModule):
         reconciled = dict()
 
         if self.mappings:
+
             def normalize_accessor(mapping):
-                if 'accessor' in mapping:
-                    mapping['accessorCrn'] = mapping['accessor']
-                    _ = mapping.pop('accessor', None)
+                if "accessor" in mapping:
+                    mapping["accessorCrn"] = mapping["accessor"]
+                    _ = mapping.pop("accessor", None)
                 return mapping
 
             list(map(normalize_accessor, self.mappings))
 
         def update_parameter(expected, parameter):
             if expected is not None and (
-                    (parameter in existing and expected != existing[parameter]) or parameter not in existing):
+                (parameter in existing and expected != existing[parameter])
+                or parameter not in existing
+            ):
                 reconciled[parameter] = expected
 
         parameters = [
-            [self.data_access, 'dataAccessRole'],
-            [self.ranger_audit, 'rangerAuditRole'],
-            [self.ranger_cloud_access, 'rangerCloudAccessAuthorizerRole'],
-            [self.mappings, 'mappings']
+            [self.data_access, "dataAccessRole"],
+            [self.ranger_audit, "rangerAuditRole"],
+            [self.ranger_cloud_access, "rangerCloudAccessAuthorizerRole"],
+            [self.mappings, "mappings"],
         ]
 
         for p in parameters:
@@ -363,32 +375,55 @@ class EnvironmentIdBroker(CdpModule):
     def set_mappings(self, mappings):
         self.changed = True
         if not self.module.check_mode:
-            return self.cdpy.sdk.call('environments', 'set_id_broker_mappings', environmentName=self.name, **mappings)
+            return self.cdpy.sdk.call(
+                "environments",
+                "set_id_broker_mappings",
+                environmentName=self.name,
+                **mappings
+            )
 
     def sync_mappings(self):
         self.changed = True
         if not self.module.check_mode:
-            self.cdpy.sdk.call('environments', 'sync_id_broker_mappings', environmentName=self.name)
+            self.cdpy.sdk.call(
+                "environments", "sync_id_broker_mappings", environmentName=self.name
+            )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type='str', aliases=['environment']),
-            data_access=dict(required=False, type='str', aliases=['data_access_arn', 'data']),
-            ranger_audit=dict(required=False, type='str', aliases=['ranger_audit_arn', 'audit']),
-            ranger_cloud_access=dict(required=False, type='str', aliases=['ranger_cloud_access_arn', 'cloud']),
-            mappings=dict(required=False, type='list', elements=dict, options=dict(
-                accessor=dict(required=True, type='str', aliases=['accessorCrn']),
-                role=dict(required=True, type='str', aliases=['roleCrn'])
-            )),
-            clear_mappings=dict(required=False, type='bool', default=False, aliases=['set_empty_mappings']),
-            sync=dict(required=False, type='bool', default=True, aliases=['sync_mappings'])
+            name=dict(required=True, type="str", aliases=["environment"]),
+            data_access=dict(
+                required=False, type="str", aliases=["data_access_arn", "data"]
+            ),
+            ranger_audit=dict(
+                required=False, type="str", aliases=["ranger_audit_arn", "audit"]
+            ),
+            ranger_cloud_access=dict(
+                required=False, type="str", aliases=["ranger_cloud_access_arn", "cloud"]
+            ),
+            mappings=dict(
+                required=False,
+                type="list",
+                elements=dict,
+                options=dict(
+                    accessor=dict(required=True, type="str", aliases=["accessorCrn"]),
+                    role=dict(required=True, type="str", aliases=["roleCrn"]),
+                ),
+            ),
+            clear_mappings=dict(
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["set_empty_mappings"],
+            ),
+            sync=dict(
+                required=False, type="bool", default=True, aliases=["sync_mappings"]
+            ),
         ),
-        mutually_exclusive=[
-          ['mappings', 'clear_mappings']
-        ],
-        supports_check_mode=True
+        mutually_exclusive=[["mappings", "clear_mappings"]],
+        supports_check_mode=True,
     )
 
     result = EnvironmentIdBroker(module)
@@ -396,17 +431,14 @@ def main():
     output = dict(
         changed=result.changed,
         idbroker=result.idbroker,
-        mappings=result.idbroker, # TODO: Remove this legacy key
+        mappings=result.idbroker,  # TODO: Remove this legacy key
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

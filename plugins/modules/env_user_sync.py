@@ -18,12 +18,14 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: env_user_sync
 short_description: Sync CDP Users and Groups to Environments
@@ -56,7 +58,7 @@ options:
     type: bool
   delay:
     description:
-      - The internal polling interval (in seconds) while the module waits for the datalake to achieve the declared 
+      - The internal polling interval (in seconds) while the module waits for the datalake to achieve the declared
             state.
     type: int
     required: False
@@ -74,9 +76,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Sync a CDP Environment
@@ -92,9 +94,9 @@ EXAMPLES = r'''
 # Sync the current CDP User
 - cloudera.cloud.env_user_sync:
     current_user: yes
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 sync:
     description: Returns an object describing of the status of the User and Group sync event.
     returned: success
@@ -173,7 +175,7 @@ sdk_out_lines:
     returned: when supported
     type: list
     elements: str
-'''
+"""
 
 
 class EnvironmentUserSync(CdpModule):
@@ -181,11 +183,11 @@ class EnvironmentUserSync(CdpModule):
         super(EnvironmentUserSync, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.current_user = self._get_param('current_user')
-        self.wait = self._get_param('wait')
-        self.delay = self._get_param('delay')
-        self.timeout = self._get_param('timeout')
+        self.name = self._get_param("name")
+        self.current_user = self._get_param("current_user")
+        self.wait = self._get_param("wait")
+        self.delay = self._get_param("delay")
+        self.timeout = self._get_param("timeout")
 
         # Initialize the return values
         self.sync = {}
@@ -204,10 +206,10 @@ class EnvironmentUserSync(CdpModule):
             if self.wait:
                 self.sync = self.cdpy.sdk.wait_for_state(
                     describe_func=self.cdpy.environments.get_sync_status,
-                    params=dict(operation=resp['operationId']),
-                    state='COMPLETED',
+                    params=dict(operation=resp["operationId"]),
+                    state="COMPLETED",
                     delay=self.delay,
-                    timeout=self.timeout
+                    timeout=self.timeout,
                 )
             else:
                 self.sync = resp
@@ -216,16 +218,18 @@ class EnvironmentUserSync(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='list', aliases=['environment']),
-            current_user=dict(required=False, type='bool', aliases=['user']),
-            wait=dict(required=False, type='bool', default=True),
-            delay=dict(required=False, type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(required=False, type='int', aliases=['polling_timeout'], default=3600)
+            name=dict(required=False, type="list", aliases=["environment"]),
+            current_user=dict(required=False, type="bool", aliases=["user"]),
+            wait=dict(required=False, type="bool", default=True),
+            delay=dict(
+                required=False, type="int", aliases=["polling_delay"], default=15
+            ),
+            timeout=dict(
+                required=False, type="int", aliases=["polling_timeout"], default=3600
+            ),
         ),
-        mutually_exclusive=(
-            ['name', 'current_user']
-        ),
-        supports_check_mode=True
+        mutually_exclusive=(["name", "current_user"]),
+        supports_check_mode=True,
     )
 
     result = EnvironmentUserSync(module)
@@ -236,13 +240,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

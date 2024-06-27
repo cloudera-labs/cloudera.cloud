@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: datahub_cluster_info
 short_description: Gather information about CDP Datahubs
@@ -52,9 +54,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all Datahubs
@@ -67,9 +69,9 @@ EXAMPLES = r'''
 # Gather detailed information about a Datahub in an Environment
 - cloudera.cloud.datahub_cluster_info:
     environment: example-env-name
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 datahubs:
   description: The information about the named Datahub or Datahubs
@@ -283,14 +285,14 @@ datahubs:
               returned: when supported
             state:
               description:
-                - The health state of the instance. 
+                - The health state of the instance.
                 - C(UNHEALTHY) represents instances with unhealthy services, lost instances, or failed operations.
               returned: always
             status:
               description:
                 - The status of the instance.
                 - This includes information like whether the instance is being provisioned, stopped, decommissioning failures etc.
-              returned: when supported 
+              returned: when supported
             statusReason:
               description:
                 - The reason for the current status of this instance.
@@ -325,7 +327,7 @@ datahubs:
     workloadType:
       description:
         - The workload type for the cluster.
-      returned: when supported    
+      returned: when supported
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
@@ -335,7 +337,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DatahubClusterInfo(CdpModule):
@@ -343,8 +345,8 @@ class DatahubClusterInfo(CdpModule):
         super(DatahubClusterInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('environment')
+        self.name = self._get_param("name")
+        self.env = self._get_param("environment")
 
         # Initialize return values
         self.datahubs = []
@@ -366,10 +368,10 @@ class DatahubClusterInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['datahub']),
-            environment=dict(required=False, type='str', aliases=['env'])
+            name=dict(required=False, type="str", aliases=["datahub"]),
+            environment=dict(required=False, type="str", aliases=["env"]),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DatahubClusterInfo(module)
@@ -381,5 +383,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

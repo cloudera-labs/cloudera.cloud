@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: iam_group_info
 short_description: Gather information about CDP Public IAM groups
@@ -45,9 +47,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Gather information about all Groups
@@ -63,9 +65,9 @@ EXAMPLES = r'''
       - example-01
       - example-02
       - example-03
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 groups:
   description: The information about the named Group or Groups
   type: list
@@ -111,7 +113,7 @@ groups:
           returned: on success
           type: str
     syncMembershipOnUserLogin:
-      description: Flag indicating whether group membership is synced when a user logs in. The default is to sync group 
+      description: Flag indicating whether group membership is synced when a user logs in. The default is to sync group
         membership.
       returned: when supported
       type: bool
@@ -124,7 +126,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class IAMGroupInfo(CdpModule):
@@ -132,7 +134,7 @@ class IAMGroupInfo(CdpModule):
         super(IAMGroupInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
+        self.name = self._get_param("name")
 
         # Initialize the return values
         self.info = []
@@ -148,9 +150,11 @@ class IAMGroupInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='list', elements='str', aliases=['group_name'])
+            name=dict(
+                required=False, type="list", elements="str", aliases=["group_name"]
+            )
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = IAMGroupInfo(module)
@@ -161,13 +165,10 @@ def main():
     )
 
     if result.debug:
-        output.update(
-            sdk_out=result.log_out,
-            sdk_out_lines=result.log_lines
-        )
+        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

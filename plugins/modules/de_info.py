@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: de_info
 short_description: Gather information about CDP DE Workspaces
@@ -52,9 +54,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all DE Services
@@ -72,9 +74,9 @@ EXAMPLES = r'''
 - cloudera.cloud.de_info:
     name: example-service
     environment: example-environment
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 services:
   description: List of DE service descriptions
   type: list
@@ -197,7 +199,7 @@ services:
       description: CDP tenant ID.
       returned: if full service description
       type: str
-'''
+"""
 
 
 class DEInfo(CdpModule):
@@ -205,8 +207,8 @@ class DEInfo(CdpModule):
         super(DEInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('environment')
+        self.name = self._get_param("name")
+        self.env = self._get_param("environment")
 
         # Initialize return values
         self.services = []
@@ -218,26 +220,35 @@ class DEInfo(CdpModule):
     def process(self):
         service_list = self.cdpy.de.list_services(remove_deleted=True)
         if self.name:
-            name_match = list(filter(lambda s: s['name'] == self.name, service_list))
+            name_match = list(filter(lambda s: s["name"] == self.name, service_list))
             if self.env:
-                env_match = list(filter(lambda s: s['environmentName'] == self.env, name_match))
+                env_match = list(
+                    filter(lambda s: s["environmentName"] == self.env, name_match)
+                )
                 if env_match:
-                    self.services.append(self.cdpy.de.describe_service(env_match[0]['clusterId']))
+                    self.services.append(
+                        self.cdpy.de.describe_service(env_match[0]["clusterId"])
+                    )
             elif name_match:
-                self.services.append(self.cdpy.de.describe_service(name_match[0]['clusterId']))
+                self.services.append(
+                    self.cdpy.de.describe_service(name_match[0]["clusterId"])
+                )
         elif self.env:
-            env_match = list(filter(lambda s: s['environmentName'] == self.env, service_list))
+            env_match = list(
+                filter(lambda s: s["environmentName"] == self.env, service_list)
+            )
             self.services.extend(env_match)
         else:
             self.services.extend(service_list)
 
+
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str', aliases=['workspace']),
-            environment=dict(required=False, type='str', aliases=['env'])
+            name=dict(required=False, type="str", aliases=["workspace"]),
+            environment=dict(required=False, type="str", aliases=["env"]),
         ),
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DEInfo(module)
@@ -249,5 +260,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -14,13 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import sys
 import pytest
 
+
 @pytest.fixture(autouse=True)
 def skip_python():
     if sys.version_info < (3, 6):
-        pytest.skip('Skipping on Python %s. cloudera.cloud supports Python 3.6 and higher.' % sys.version)
+        pytest.skip(
+            "Skipping on Python %s. cloudera.cloud supports Python 3.6 and higher."
+            % sys.version
+        )

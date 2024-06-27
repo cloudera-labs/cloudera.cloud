@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: df_service_info
 short_description: Gather information about CDP DataFlow Services
@@ -38,13 +40,13 @@ options:
     description:
       - If a name is provided, that DataFlow Service will be described
       - Must be the string name of the CDP Environment
-      - Mutually exclusive with df_crn and env_crn 
+      - Mutually exclusive with df_crn and env_crn
     type: str
     required: False
   df_crn:
     description:
       - If a df_crn is provided, that DataFlow Service will be described
-      - Mutually exclusive with name and env_crn 
+      - Mutually exclusive with name and env_crn
     type: str
     required: False
   env_crn:
@@ -59,9 +61,9 @@ notes:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all DataFlow Services
@@ -78,9 +80,9 @@ EXAMPLES = r'''
 # Gather detailed information about a named DataFlow Service using an Environment CRN
 - cloudera.cloud.df_info:
     df_crn: crn:cdp:environments:region:tenant-uuid4:environment:environment-uuid4
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 services:
   description: The information about the named DataFlow Service or DataFlow Services
@@ -170,7 +172,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DFServiceInfo(CdpModule):
@@ -178,9 +180,9 @@ class DFServiceInfo(CdpModule):
         super(DFServiceInfo, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.df_crn = self._get_param('df_crn')
-        self.env_crn = self._get_param('env_crn')
+        self.name = self._get_param("name")
+        self.df_crn = self._get_param("df_crn")
+        self.env_crn = self._get_param("env_crn")
 
         # Initialize return values
         self.services = []
@@ -194,10 +196,15 @@ class DFServiceInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         # Note that parameters are defaulted to None, and are skipped if None at submission
-        self.all_services = self.cdpy.df.list_services(df_crn=self.df_crn, name=self.name, env_crn=self.env_crn)
+        self.all_services = self.cdpy.df.list_services(
+            df_crn=self.df_crn, name=self.name, env_crn=self.env_crn
+        )
         if any(x is not None for x in [self.name, self.df_crn, self.env_crn]):
             # Any set parameter indicates a describe is preferred to the lower information list command
-            self.services = [self.cdpy.df.describe_service(df_crn=x['crn']) for x in self.all_services]
+            self.services = [
+                self.cdpy.df.describe_service(df_crn=x["crn"])
+                for x in self.all_services
+            ]
         else:
             self.services = self.all_services
 
@@ -205,12 +212,12 @@ class DFServiceInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type='str'),
-            df_crn=dict(required=False, type='str'),
-            env_crn=dict(required=False, type='str'),
+            name=dict(required=False, type="str"),
+            df_crn=dict(required=False, type="str"),
+            env_crn=dict(required=False, type="str"),
         ),
         supports_check_mode=True,
-        mutually_exclusive=['name', 'df_crn', 'env_crn']
+        mutually_exclusive=["name", "df_crn", "env_crn"],
     )
 
     result = DFServiceInfo(module)
@@ -222,5 +229,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

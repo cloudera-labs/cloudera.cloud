@@ -18,11 +18,13 @@
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
-                    'status': ['preview'],
-                    'supported_by': 'community'}
+ANSIBLE_METADATA = {
+    "metadata_version": "1.1",
+    "status": ["preview"],
+    "supported_by": "community",
+}
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: dw_cluster
 short_description: Create or Delete CDP Data Warehouse Clusters
@@ -45,7 +47,7 @@ options:
       - name
   custom_subdomain:
     description:
-      - Custom environment subdomain. 
+      - Custom environment subdomain.
       - Overrides the environment subdomain using a customized domain.
     type: str
   database_backup_retention_period:
@@ -62,11 +64,11 @@ options:
       - environment
       - env_crn
   overlay:
-    description: 
-      - Flag to use private IP addresses for Pods within the cluster. 
+    description:
+      - Flag to use private IP addresses for Pods within the cluster.
       - Otherwise, use IP addresses within the VPC.
     type: bool
-    default: False    
+    default: False
   private_load_balancer:
     description: Flag to set up a load balancer for private subnets.
     type: bool
@@ -99,7 +101,7 @@ options:
           - Required if I(state=present) and the I(env) is deployed to Azure.
         type: str
       enable_az:
-        description: 
+        description:
           - Flag to enable Availability Zone mode.
           - Required if I(state=present) and the I(env) is deployed to Azure.
         type: bool
@@ -115,7 +117,7 @@ options:
       enable_private_sql:
         description:
           - Flag to enable private SQL for the cluster deployment.
-        type: bool  
+        type: bool
       enable_spot_instances:
         description:
           - Flag to enable spot instances for Virtual warehouses.
@@ -124,10 +126,10 @@ options:
         description:
           - Workspace ID for Azure log analytics.
           - Used to monitor the Azure Kubernetes Service (AKS) cluster.
-        type: str  
+        type: str
       network_outbound_type:
         description:
-          - Network outbound type. 
+          - Network outbound type.
           - This setting controls the egress traffic for cluster nodes in Azure Kubernetes Service
         type: str
         choices:
@@ -147,7 +149,7 @@ options:
   reserved_compute_nodes:
     description:
       - Set additional number of nodes to reserve for executors and coordinators to use during autoscaling.
-    type: int   
+    type: int
   reserved_shared_services_nodes:
     description:
       - Set additional number of nodes to reserve for other services in the cluster.
@@ -207,9 +209,9 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
-'''
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # Request Azure Cluster creation
@@ -230,14 +232,14 @@ EXAMPLES = r'''
 - cloudera.cloud.dw_cluster:
     state: absent
     cluster_id: my-id
-    
+
 # Delete the Data Warehouse Cluster within the Environment
 - cloudera.cloud.dw_cluster:
     state: absent
     env: crn:cdp:environments...
-'''
+"""
 
-RETURN = r'''
+RETURN = r"""
 ---
 cluster:
   description: Details for the Data Warehouse cluster
@@ -297,7 +299,7 @@ sdk_out_lines:
   returned: when supported
   type: list
   elements: str
-'''
+"""
 
 
 class DwCluster(CdpModule):
@@ -305,37 +307,55 @@ class DwCluster(CdpModule):
         super(DwCluster, self).__init__(module)
 
         # Set variables
-        self.name = self._get_param('name')
-        self.env = self._get_param('env')
-        self.overlay = self._get_param('overlay')
-        self.private_load_balancer = self._get_param('private_load_balancer')
-        self.public_worker_node = self._get_param('public_worker_node')
-        self.aws_lb_subnets = self._get_param('aws_lb_subnets')
-        self.aws_worker_subnets = self._get_param('aws_worker_subnets')
-        self.force = self._get_param('force')
-        self.state = self._get_param('state')
-        self.wait = self._get_param('wait')
-        self.delay = self._get_param('delay')
-        self.timeout = self._get_param('timeout')
-        self.custom_subdomain = self._get_param('custom_subdomain')
-        self.database_backup_retention_period = self._get_param('database_backup_retention_period')
-        self.reserved_compute_nodes = self._get_param('reserved_compute_nodes')
-        self.reserved_shared_services_nodes = self._get_param('reserved_shared_services_nodes')
-        self.resource_pool = self._get_param('resource_pool')
-        self.lb_ip_ranges = self._get_param('whitelist_workload_access_ip_cidrs')
-        self.k8s_ip_ranges = self._get_param('whitelist_k8s_cluster_access_ip_cidrs')
+        self.name = self._get_param("name")
+        self.env = self._get_param("env")
+        self.overlay = self._get_param("overlay")
+        self.private_load_balancer = self._get_param("private_load_balancer")
+        self.public_worker_node = self._get_param("public_worker_node")
+        self.aws_lb_subnets = self._get_param("aws_lb_subnets")
+        self.aws_worker_subnets = self._get_param("aws_worker_subnets")
+        self.force = self._get_param("force")
+        self.state = self._get_param("state")
+        self.wait = self._get_param("wait")
+        self.delay = self._get_param("delay")
+        self.timeout = self._get_param("timeout")
+        self.custom_subdomain = self._get_param("custom_subdomain")
+        self.database_backup_retention_period = self._get_param(
+            "database_backup_retention_period"
+        )
+        self.reserved_compute_nodes = self._get_param("reserved_compute_nodes")
+        self.reserved_shared_services_nodes = self._get_param(
+            "reserved_shared_services_nodes"
+        )
+        self.resource_pool = self._get_param("resource_pool")
+        self.lb_ip_ranges = self._get_param("whitelist_workload_access_ip_cidrs")
+        self.k8s_ip_ranges = self._get_param("whitelist_k8s_cluster_access_ip_cidrs")
 
         # Azure nested parameters
-        self.az_compute_instance_types = self._get_nested_param('azure', 'compute_instance_types')
-        self.az_enable_az = self._get_nested_param('azure', 'enable_az')
-        self.az_enable_private_aks = self._get_nested_param('azure', 'enable_private_aks')
-        self.az_enable_private_sql = self._get_nested_param('azure', 'enable_private_sql')
-        self.az_enable_spot_instances = self._get_nested_param('azure', 'enable_spot_instances')
-        self.az_log_analytics_workspace_id = self._get_nested_param('azure', 'log_analytics_workspace_id')
-        self.az_network_outbound_type = self._get_nested_param('azure', 'network_outbound_type')
-        self.az_aks_private_dns_zone = self._get_nested_param('azure', 'aks_private_dns_zone')
-        self.az_subnet = self._get_nested_param('azure', 'subnet')
-        self.az_managed_identity = self._get_nested_param('azure', 'managed_identity')
+        self.az_compute_instance_types = self._get_nested_param(
+            "azure", "compute_instance_types"
+        )
+        self.az_enable_az = self._get_nested_param("azure", "enable_az")
+        self.az_enable_private_aks = self._get_nested_param(
+            "azure", "enable_private_aks"
+        )
+        self.az_enable_private_sql = self._get_nested_param(
+            "azure", "enable_private_sql"
+        )
+        self.az_enable_spot_instances = self._get_nested_param(
+            "azure", "enable_spot_instances"
+        )
+        self.az_log_analytics_workspace_id = self._get_nested_param(
+            "azure", "log_analytics_workspace_id"
+        )
+        self.az_network_outbound_type = self._get_nested_param(
+            "azure", "network_outbound_type"
+        )
+        self.az_aks_private_dns_zone = self._get_nested_param(
+            "azure", "aks_private_dns_zone"
+        )
+        self.az_subnet = self._get_nested_param("azure", "subnet")
+        self.az_managed_identity = self._get_nested_param("azure", "managed_identity")
 
         # Initialize return values
         self.cluster = {}
@@ -350,90 +370,131 @@ class DwCluster(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         env_crn = self.cdpy.environments.resolve_environment_crn(self.env)
-        
+
         # Check if Cluster exists
         if self.name is not None:
             self.target = self.cdpy.dw.describe_cluster(cluster_id=self.name)
         elif env_crn is not None:
             listing = self.cdpy.dw.list_clusters(env_crn)  # Always returns a list
             if len(listing) == 1:
-                self.name = listing[0]['id']
+                self.name = listing[0]["id"]
                 self.target = self.cdpy.dw.describe_cluster(cluster_id=self.name)
             elif len(listing) == 0:
                 self.target = None
             else:
-                self.module.fail_json(msg="Received multiple (i.e. ambiguous) Clusters in Environment %s" % self.env)
+                self.module.fail_json(
+                    msg="Received multiple (i.e. ambiguous) Clusters in Environment %s"
+                    % self.env
+                )
         else:
             self.target = None
-            
+
         if self.target is not None:
             # Begin Cluster Exists
-            if self.state == 'absent':
+            if self.state == "absent":
                 # Begin Delete
                 if self.module.check_mode:
                     self.cluster = self.target
                 else:
                     self.changed = True
-                    if self.target['status'] not in self.cdpy.sdk.REMOVABLE_STATES:
-                        self.module.warn("Cluster is not in a valid state for Delete operations: %s" % self.target['status'])
+                    if self.target["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
+                        self.module.warn(
+                            "Cluster is not in a valid state for Delete operations: %s"
+                            % self.target["status"]
+                        )
                     else:
-                        _ = self.cdpy.dw.delete_cluster(cluster_id=self.name, force=self.force)
-                    
+                        _ = self.cdpy.dw.delete_cluster(
+                            cluster_id=self.name, force=self.force
+                        )
+
                     if self.wait:
                         self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.dw.describe_cluster,
                             params=dict(cluster_id=self.name),
-                            field=None, delay=self.delay, timeout=self.timeout
+                            field=None,
+                            delay=self.delay,
+                            timeout=self.timeout,
                         )
                     else:
                         self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
-                        self.cluster = self.cdpy.dw.describe_cluster(cluster_id=self.name)
+                        self.cluster = self.cdpy.dw.describe_cluster(
+                            cluster_id=self.name
+                        )
                 # End Delete
-            elif self.state == 'present':
+            elif self.state == "present":
                 # Begin Config Check
-                self.module.warn("Cluster is already present and reconciliation is not yet implemented")
+                self.module.warn(
+                    "Cluster is already present and reconciliation is not yet implemented"
+                )
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_cluster,
                         params=dict(cluster_id=self.name),
-                        state='Running', delay=self.delay, timeout=self.timeout
+                        state="Running",
+                        delay=self.delay,
+                        timeout=self.timeout,
                     )
                 self.cluster = self.target
                 # End Config Check
             else:
-                self.module.fail_json(msg="State %s is not valid for this module" % self.state)
+                self.module.fail_json(
+                    msg="State %s is not valid for this module" % self.state
+                )
             # End Cluster Exists
         else:
             # Begin Cluster Not Found
-            if self.state == 'absent':
-                self.module.warn("Cluster %s already absent in Environment %s" % (self.name, self.env))
-            elif self.state == 'present':
+            if self.state == "absent":
+                self.module.warn(
+                    "Cluster %s already absent in Environment %s"
+                    % (self.name, self.env)
+                )
+            elif self.state == "present":
                 if not self.module.check_mode:
                     # Begin Cluster Creation
                     self.changed = True
                     if env_crn is None:
-                        self.module.fail_json(msg="Could not retrieve CRN for CDP Environment %s" % self.env)
+                        self.module.fail_json(
+                            msg="Could not retrieve CRN for CDP Environment %s"
+                            % self.env
+                        )
                     else:
                         self.name = self.cdpy.dw.create_cluster(
-                            env_crn=env_crn, overlay=self.overlay, private_load_balancer=self.private_load_balancer,
-                            public_worker_node=self.public_worker_node, aws_lb_subnets=self.aws_lb_subnets, aws_worker_subnets=self.aws_worker_subnets,
-                            az_subnet=self.az_subnet, az_enable_az=self.az_enable_az, az_managed_identity=self.az_managed_identity,
-                            az_enable_private_aks=self.az_enable_private_aks, az_enable_private_sql=self.az_enable_private_sql,
-                            az_enable_spot_instances=self.az_enable_spot_instances, az_log_analytics_workspace_id=self.az_log_analytics_workspace_id,
-                            az_network_outbound_type=self.az_network_outbound_type, az_aks_private_dns_zone=self.az_aks_private_dns_zone,
+                            env_crn=env_crn,
+                            overlay=self.overlay,
+                            private_load_balancer=self.private_load_balancer,
+                            public_worker_node=self.public_worker_node,
+                            aws_lb_subnets=self.aws_lb_subnets,
+                            aws_worker_subnets=self.aws_worker_subnets,
+                            az_subnet=self.az_subnet,
+                            az_enable_az=self.az_enable_az,
+                            az_managed_identity=self.az_managed_identity,
+                            az_enable_private_aks=self.az_enable_private_aks,
+                            az_enable_private_sql=self.az_enable_private_sql,
+                            az_enable_spot_instances=self.az_enable_spot_instances,
+                            az_log_analytics_workspace_id=self.az_log_analytics_workspace_id,
+                            az_network_outbound_type=self.az_network_outbound_type,
+                            az_aks_private_dns_zone=self.az_aks_private_dns_zone,
                             az_compute_instance_types=self.az_compute_instance_types,
-                            custom_subdomain=self.custom_subdomain, database_backup_retention_period=self.database_backup_retention_period,
-                            reserved_compute_nodes=self.reserved_compute_nodes, reserved_shared_services_nodes=self.reserved_shared_services_nodes,
-                            resource_pool=self.resource_pool, lb_ip_ranges=self.lb_ip_ranges, k8s_ip_ranges=self.k8s_ip_ranges
+                            custom_subdomain=self.custom_subdomain,
+                            database_backup_retention_period=self.database_backup_retention_period,
+                            reserved_compute_nodes=self.reserved_compute_nodes,
+                            reserved_shared_services_nodes=self.reserved_shared_services_nodes,
+                            resource_pool=self.resource_pool,
+                            lb_ip_ranges=self.lb_ip_ranges,
+                            k8s_ip_ranges=self.k8s_ip_ranges,
                         )
                         if self.wait:
                             self.cluster = self.cdpy.sdk.wait_for_state(
                                 describe_func=self.cdpy.dw.describe_cluster,
                                 params=dict(cluster_id=self.name),
-                                state='Running', delay=self.delay, timeout=self.timeout
+                                state="Running",
+                                delay=self.delay,
+                                timeout=self.timeout,
                             )
                         else:
-                            self.cluster = self.cdpy.dw.describe_cluster(cluster_id=self.name)
+                            self.cluster = self.cdpy.dw.describe_cluster(
+                                cluster_id=self.name
+                            )
                 # End Cluster Creation
             else:
                 self.module.fail_json(msg="Invalid state: %s" % self.state)
@@ -443,49 +504,61 @@ class DwCluster(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            cluster_id=dict(type='str', aliases=['id', 'name']),
-            custom_subdomain=dict(type='str'),
-            database_backup_retention_period=dict(type='int'),
-            env=dict(type='str', aliases=['environment', 'env_crn']),
-            overlay=dict(type='bool', default=False),
-            private_load_balancer=dict(type='bool', default=False),
-            public_worker_node=dict(type='bool'),
+            cluster_id=dict(type="str", aliases=["id", "name"]),
+            custom_subdomain=dict(type="str"),
+            database_backup_retention_period=dict(type="int"),
+            env=dict(type="str", aliases=["environment", "env_crn"]),
+            overlay=dict(type="bool", default=False),
+            private_load_balancer=dict(type="bool", default=False),
+            public_worker_node=dict(type="bool"),
             azure=dict(
-                type='dict',
+                type="dict",
                 options=dict(
-                  subnet=dict(type='str'),
-                  enable_az=dict(type='bool'),
-                  managed_identity=dict(type='str'),
-                  enable_private_aks=dict(type='bool'),
-                  enable_private_sql=dict(type='bool'),
-                  enable_spot_instances=dict(type='bool'),
-                  log_analytics_workspace_id=dict(type='str'),
-                  network_outbound_type=dict(type='str', choices=['LoadBalancer','UserAssignedNATGateway','UserDefinedRouting']),
-                  aks_private_dns_zone=dict(type='str'),
-                  compute_instance_types=dict(type='list')
-                )
+                    subnet=dict(type="str"),
+                    enable_az=dict(type="bool"),
+                    managed_identity=dict(type="str"),
+                    enable_private_aks=dict(type="bool"),
+                    enable_private_sql=dict(type="bool"),
+                    enable_spot_instances=dict(type="bool"),
+                    log_analytics_workspace_id=dict(type="str"),
+                    network_outbound_type=dict(
+                        type="str",
+                        choices=[
+                            "LoadBalancer",
+                            "UserAssignedNATGateway",
+                            "UserDefinedRouting",
+                        ],
+                    ),
+                    aks_private_dns_zone=dict(type="str"),
+                    compute_instance_types=dict(type="list"),
+                ),
             ),
-            aws_lb_subnets=dict(type='list', aliases=['aws_public_subnets']),
-            aws_worker_subnets=dict(type='list', aliases=['aws_private_subnets']),
-            reserved_compute_nodes=dict(type='int'),
-            reserved_shared_services_nodes=dict(type='int'),
-            resource_pool=dict(type='str'),
-            state=dict(type='str', choices=['present', 'absent'], default='present'),
-            force=dict(type='bool', default=False),
-            wait=dict(type='bool', default=True),
-            whitelist_workload_access_ip_cidrs=dict(type='list', elements='str', default=None, aliases=['loadbalancer_ip_ranges','workload_ip_ranges']),
-            whitelist_k8s_cluster_access_ip_cidrs=dict(type='list', elements='str', default=None, aliases=['k8s_ip_ranges']),
-            delay=dict(type='int', aliases=['polling_delay'], default=15),
-            timeout=dict(type='int', aliases=['polling_timeout'], default=3600)
+            aws_lb_subnets=dict(type="list", aliases=["aws_public_subnets"]),
+            aws_worker_subnets=dict(type="list", aliases=["aws_private_subnets"]),
+            reserved_compute_nodes=dict(type="int"),
+            reserved_shared_services_nodes=dict(type="int"),
+            resource_pool=dict(type="str"),
+            state=dict(type="str", choices=["present", "absent"], default="present"),
+            force=dict(type="bool", default=False),
+            wait=dict(type="bool", default=True),
+            whitelist_workload_access_ip_cidrs=dict(
+                type="list",
+                elements="str",
+                default=None,
+                aliases=["loadbalancer_ip_ranges", "workload_ip_ranges"],
+            ),
+            whitelist_k8s_cluster_access_ip_cidrs=dict(
+                type="list", elements="str", default=None, aliases=["k8s_ip_ranges"]
+            ),
+            delay=dict(type="int", aliases=["polling_delay"], default=15),
+            timeout=dict(type="int", aliases=["polling_timeout"], default=3600),
         ),
-        required_together=[
-            ['aws_lb_subnets', 'aws_worker_subnets']
-        ],
+        required_together=[["aws_lb_subnets", "aws_worker_subnets"]],
         required_if=[
-            ['state', 'absent', ['cluster_id', 'env'], True],
-            ['state', 'present', ['env']]
+            ["state", "absent", ["cluster_id", "env"], True],
+            ["state", "present", ["env"]],
         ],
-        supports_check_mode=True
+        supports_check_mode=True,
     )
 
     result = DwCluster(module)
@@ -497,5 +570,5 @@ def main():
     module.exit_json(**output)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

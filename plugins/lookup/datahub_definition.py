@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = '''
+DOCUMENTATION = """
     lookup: datahub_definition
     author: Webster Mudge (@wmudge) <wmudge@cloudera.com>
     short_description: Get a Datahub definition for a CDP Public Cloud Environment
@@ -61,17 +62,17 @@ DOCUMENTATION = '''
     seealso:
         - module: cloudera.cloud.datahub_definition_info
           description: Cloudera CDP Public Cloud Datahub definition module
-'''
+"""
 
-EXAMPLES = '''
+EXAMPLES = """
 - name: Retrieve the Datahub definition for a single CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_definition', 'example-env') }}"
-    
+
 - name: Retrieve the Datahub definition that match the given substring
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_definition', 'example-env', definition='Flow Management Light Duty') }}"
-    
+
 - name: Retrieve the only streaming Datahub definition
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_definition', 'example-env', type='STREAMING') }}"
@@ -79,18 +80,18 @@ EXAMPLES = '''
 - name: Retrieve the full details for the Datahub definition
   ansible.builtin.debug:
     msg: "{{ query('cloudera.cloud.datahub_definition', 'example-env', detailed=True) }}"
-  
+
 - name: Retrieve the Datahub definition details for multiple CDP Public Cloud Environments
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.datahub_definition', ['example-env', 'another-env'], wantlist=True) }}"
-'''
+"""
 
-RETURN = '''
+RETURN = """
   _list:
     description: List of lists of Datahub definition
     type: list
     elements: complex
-'''
+"""
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
@@ -100,9 +101,12 @@ from ansible.utils.display import Display
 from cdpy.cdpy import Cdpy
 from cdpy.common import CdpError
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_service import parse_environment
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_service import (
+    parse_environment,
+)
 
 display = Display()
+
 
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
@@ -113,14 +117,32 @@ class LookupModule(LookupBase):
             results = []
             for term in terms:
                 cloud_platform, raw_version, semantic_version = parse_environment(term)
-                display.vvv("Filtering definitions for %s[%s][%s]" % (term, cloud_platform, semantic_version))
-                
+                display.vvv(
+                    "Filtering definitions for %s[%s][%s]"
+                    % (term, cloud_platform, semantic_version)
+                )
+
                 for d in all_definitions:
-                    if d['cloudPlatform'] == cloud_platform and d['productVersion'] == 'CDH %s' % semantic_version:
-                        if (self.get_option('type') is not None and self.get_option('type') != d['type']) or \
-                           (self.get_option('definition') is not None and self.get_option('definition') not in d['clusterDefinitionName']):
+                    if (
+                        d["cloudPlatform"] == cloud_platform
+                        and d["productVersion"] == "CDH %s" % semantic_version
+                    ):
+                        if (
+                            self.get_option("type") is not None
+                            and self.get_option("type") != d["type"]
+                        ) or (
+                            self.get_option("definition") is not None
+                            and self.get_option("definition")
+                            not in d["clusterDefinitionName"]
+                        ):
                             continue
-                        results.append([d if self.get_option('detailed') else d['clusterDefinitionName']])
+                        results.append(
+                            [
+                                d
+                                if self.get_option("detailed")
+                                else d["clusterDefinitionName"]
+                            ]
+                        )
             return results
         except KeyError as e:
             raise AnsibleError("Error parsing result: %s" % to_native(e))
