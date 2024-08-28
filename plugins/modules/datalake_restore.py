@@ -58,35 +58,35 @@ restore:
     contains:
         accountId:
             description: The account id
-            type: str        
+            type: str
         restoreId:
             description: The restore id
-            type: str        
+            type: str
         backupId:
             description: The backup id
-            type: str        
+            type: str
         userCrn:
-            description: The crn of the user that initiated the backup operation 
+            description: The crn of the user that initiated the backup operation
             type: str
         internalState:
             description: The internal state of each restore stage
-            type: str        
+            type: str
         status:
             description: The overall status of the restore operation
             type: str
         startTime:
             description: The start time
-            type: str        
+            type: str
         endTime:
             description: The end time
-            type: str        
+            type: str
         backupLocation:
             description: The backup location
-            type: str 
+            type: str
         operationStates:
             description: Object representing the state of each service running a backup
             type: dict
-            contains:        
+            contains:
                 adminOperations:
                     description: The state of Cloudera Manager admin operations
                     type: dict
@@ -100,7 +100,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -116,7 +116,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -132,7 +132,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -148,7 +148,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -164,7 +164,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -184,7 +184,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -200,7 +200,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -220,7 +220,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -236,7 +236,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -252,13 +252,13 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
                                 predictedDurationInMinutes:
                                     description: Predicted duration of the operation, in minutes
-                                    type: str                                    
+                                    type: str
                         vertexIndexCollection:
                             description: Details of the vertex index collection Solr operation
                             type: dict
@@ -268,7 +268,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -284,7 +284,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -300,13 +300,13 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
                                 predictedDurationInMinutes:
                                     description: Predicted duration of the operation, in minutes
-                                    type: str                                    
+                                    type: str
                         rangerAuditsCollectionDelete:
                             description: Details of the ranger audits collection delete Solr operation
                             type: dict
@@ -316,7 +316,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -332,7 +332,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
@@ -352,7 +352,7 @@ restore:
                                     type: str
                                 failureReason:
                                     description: The failure reason if the operation was not successful
-                                    type: str                             
+                                    type: str
                                 durationInMinutes:
                                     description: The duration of the operation, in minutes
                                     type: str
