@@ -81,16 +81,16 @@ backup:
             description: The account id
             type: str
         userCrn:
-            description: The user crn
+            description: The crn of the user that initiated the backup operation 
             type: str
         backupId:
             description: The backup id
             type: str
         internalState:
-            description: The internal state
+            description: The internal state of each backup stage
             type: str
         status:
-            description: The status
+            description: The overall status of the backup operation
             type: str
         startTime:
             description: The start time
