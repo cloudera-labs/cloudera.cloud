@@ -25,17 +25,21 @@ from ansible_collections.cloudera.cloud.tests.unit.plugins.modules.utils import 
 )
 
 def test_get_single_role_details():
-    setup_module_args({
-        "name": "crn:iam:us-west-1:role:ClassicClustersCreator"
-        })
+    setup_module_args({"name": "crn:iam:us-west-1:role:ClassicClustersCreator"})
 
     with pytest.raises(AnsibleExitJson) as e:
         iam_role_info.main()
 
 def test_get_multiple_role_details():
-    setup_module_args({
-        "name": ["crn:iam:us-west-1:role:ClassicClustersCreator","crn:iam:us-west-1:role:EnvironmentCreator"]
-        })
+
+    setup_module_args(
+        {
+            "name": [
+                "crn:iam:us-west-1:role:ClassicClustersCreator",
+                "crn:iam:us-west-1:role:EnvironmentCreator",
+            ]
+        }
+    )
 
     with pytest.raises(AnsibleExitJson) as e:
         iam_role_info.main()
