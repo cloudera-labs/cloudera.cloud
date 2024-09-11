@@ -52,9 +52,10 @@ options:
             - Only applicable when I(state=restore)
         required: false
         type: str
-    backup_location_override:
+    backup_location:
         description:
-            - The location of the backup
+            - The location of the backup to use during the restore
+            - When not specified the location used will be the backup storage of the environment
             - If provided the I(backup_id) parameter is required
             - Only applicable when I(state=restore)
         required: false
@@ -462,7 +463,7 @@ class DatalakeBackup(CdpModule):
         self.wait = self._get_param("wait", False)
         # ...variables for restore only
         self.backup_id = self._get_param("backup_id")
-        self.backup_location_override = self._get_param("backup_location_override")
+        self.backup_location = self._get_param("backup_location")
         self.skip_atlas_indexes = self._get_param("skip_atlas_indexes")
         self.skip_atlas_metadata = self._get_param("skip_atlas_metadata")
         self.skip_ranger_audits = self._get_param("skip_ranger_audits")
@@ -481,7 +482,7 @@ class DatalakeBackup(CdpModule):
         # Check parameters that should only specified with state=restore
         if self.state == "backup" and (
             self.backup_id
-            or self.backup_location_override
+            or self.backup_location
             or self.skip_atlas_indexes
             or self.skip_atlas_metadata
             or self.skip_ranger_audits
@@ -489,7 +490,7 @@ class DatalakeBackup(CdpModule):
             or self.skip_validation
         ):
             self.module.fail_json(
-                msg="Unable to use 'state=backup' with args 'backup_id', 'backup_location_override', 'skip_atlas_indexes', 'skip_atlas_metadata', 'skip_ranger_audits', 'skip_ranger_hms_metadata' or 'skip_validation'"
+                msg="Unable to use 'state=backup' with args 'backup_id', 'backup_location', 'skip_atlas_indexes', 'skip_atlas_metadata', 'skip_ranger_audits', 'skip_ranger_hms_metadata' or 'skip_validation'"
             )
 
         # Confirm datalake exists
@@ -528,7 +529,7 @@ class DatalakeBackup(CdpModule):
 
             elif self.state == "restore":
                 # If specified confirm that backup (name or id) exists
-                if self.backup_location_override is None and any(
+                if self.backup_location is None and any(
                     bk is not None for bk in [self.backup_name, self.backup_id]
                 ):
                     datalake_backups = self.cdpy.datalake.list_datalake_backups(
@@ -560,7 +561,7 @@ class DatalakeBackup(CdpModule):
                     datalake_name=self.datalake_name,
                     backup_name=self.backup_name,
                     backup_id=self.backup_id,
-                    backup_location_override=self.backup_location_override,
+                    backup_location_override=self.backup_location,
                     skip_atlas_indexes=self.skip_atlas_indexes,
                     skip_atlas_metadata=self.skip_atlas_metadata,
                     skip_ranger_audits=self.skip_ranger_audits,
@@ -601,7 +602,7 @@ def main():
             ),
             wait=dict(required=False, type="bool"),
             backup_id=dict(required=False, type="str"),
-            backup_location_override=dict(required=False, type="str"),
+            backup_location=dict(required=False, type="str"),
             skip_atlas_indexes=dict(required=False, type="bool"),
             skip_atlas_metadata=dict(required=False, type="bool"),
             skip_ranger_audits=dict(required=False, type="bool"),
@@ -609,7 +610,7 @@ def main():
             skip_validation=dict(required=False, type="bool"),
         ),
         required_by={
-            "backup_location_override": ("backup_id"),
+            "backup_location": ("backup_id"),
         },
         mutually_exclusive=[
             ["backup_name", "backup_id"],
