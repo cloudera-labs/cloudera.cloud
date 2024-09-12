@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright 2023 Cloudera, Inc. All Rights Reserved.
+# Copyright 2024 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,12 +34,13 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Ronald Suplina (@rsuplina)"
 options:
   name:
     description:
-      - A list of user names or CRNs or a single user name/CRN.
-      - If no user name or CRN is provided, all users are returned.
-      - Mutually exclusive with C(current_user).
+      - A list of user names or a single user name.
+      - If no user name is provided, all users are returned.
+      - Mutually exclusive with C(current_user) and C(user_id).
     type: list
     elements: str
     required: False
@@ -48,10 +49,17 @@ options:
   current_user:
     description:
       - Flag to use the current user login.
-      - Mutually exclusive with C(name).
+      - Mutually exclusive with C(name) and C(user_id).
     type: bool
     required: False
     default: False
+  user_id:
+    description:
+      - A list of user Ids or a single user Id name/CRN.
+      - Mutually exclusive with C(current_user) and C(name).
+    type: list
+    elements: str
+    required: False
   filter:
     description:
       - Key value pair where the key is the field to compare and the value is a regex statement. If there is a match in the regex statment, the user will return.
@@ -68,10 +76,19 @@ EXAMPLES = r"""
 
 # List basic information about all Users
 - cloudera.cloud.iam_user_info:
+    view: summary
 
 # Gather detailed information about a named User
 - cloudera.cloud.iam_info:
     name: Example
+
+# Gather detailed information specific user Id
+- cloudera.cloud.iam_info:
+    user_id: "11a111a-91f0-4ca2-9262-111aa1111"
+
+# Gather detailed information about more users
+- cloudera.cloud.iam_info:
+    name: ["user1", "user2"]
 
 # Gather detailed information about a named User
 - cloudera.cdp.iam_info:
@@ -134,6 +151,18 @@ users:
       returned: when supported
       type: str
       sample: u_023
+    groups:
+      description: List of groups that user is assigned.
+      returned: when supported
+      type: list
+    roles:
+      description: List of user assigned roles.
+      returned: when supported
+      type: list
+    resource_roles:
+      description: List of user assigned resource roles.
+      returned: when supported
+      type: list
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
@@ -154,6 +183,8 @@ class IAMUserInfo(CdpModule):
         self.name = self._get_param("name")
         self.current = self._get_param("current_user", False)
         self.filter = self._get_param("filter")
+        self.user_id = self._get_param("user_id")
+        self.view = self._get_param("view")
 
         # Initialize filter if set
         self.compiled_filter = self.compile_filters()
@@ -177,47 +208,72 @@ class IAMUserInfo(CdpModule):
 
         return compiled_filters
 
+    def get_detailed_user_info(self, user):
+        user["groups"] = self.cdpy.iam.list_groups_for_user(user["userId"])
+        user["roles"] = self.cdpy.iam.list_user_assigned_roles(user["userId"])
+        user["resource_roles"] = self.cdpy.iam.list_user_assigned_resource_roles(
+            user["userId"]
+        )
+        return user
+
+    def apply_filters(self):
+        filtered_users = []
+        # Iterate users
+        for userData in self.cdpy.iam.list_users():
+            # Iterate Filters. Must match all
+            for filter_key, regx_expr in self.compiled_filter.items():
+                key_val = userData.get(filter_key)
+                if key_val and re.search(regx_expr, key_val):
+                    continue  # Filter matches, continue to next filter
+                else:
+                    break  # No match, skip to next user
+            else:
+                # All filters matched, add user to filtered_users
+                filtered_users.append(userData)
+        return filtered_users
+
     def process(self):
+
         if self.current:
             self.info = [self.cdpy.iam.get_user()]
+
+        elif self.user_id:
+            self.info = self.cdpy.iam.list_users(self.user_id)
+
+        elif self.name:
+            user_list = self.cdpy.iam.list_users()
+            for user in user_list:
+                if user["workloadUsername"] in self.name:
+                    self.info.append(user)
+
         elif self.filter is not None:
-            filtered_users = []
+            self.info = self.apply_filters()
 
-            # Iterate users
-            for userData in self.cdpy.iam.list_users():  # self.name
-                # Iterate Filters. Must match all
-                for filter_key in self.compiled_filter:
-                    key_val = filter_key
-                    regx_expr = self.compiled_filter[filter_key]
-
-                    key_val = userData[filter_key] if filter_key in userData else None
-                    if key_val is not None:
-                        regx_result = re.search(regx_expr, key_val)
-                        if regx_result is not None:
-                            filtered_users.append(userData)
-                        else:
-                            break  # go to next user
-                    else:
-                        break  # go to next user
-
-            self.info = filtered_users
-        else:
-            self.info = self.cdpy.iam.list_users(self.name)
+        if self.view == "full":
+            for user in self.info:
+                self.get_detailed_user_info(user)
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(
-                required=False, type="list", elements="str", aliases=["user_name"]
-            ),
+            name=dict(required=False, type="list", aliases=["user_name"]),
+            user_id=dict(required=False, type="list", aliases=["id"]),
             current_user=dict(required=False, type="bool"),
             filter=dict(required=False, type="dict"),
+            view=dict(
+                required=False,
+                type="str",
+                choices=["summary", "full"],
+                default="full",
+            ),
         ),
         mutually_exclusive=[
             ["name", "current_user"],
             ["filter", "current_user"],
             ["filter", "name"],
+            ["user_id", "name"],
+            ["user_id", "current_user"],
         ],
         supports_check_mode=True,
     )
