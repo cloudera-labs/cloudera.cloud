@@ -57,7 +57,8 @@ options:
     description:
       - A list of user Ids or a single user Id name/CRN.
       - Mutually exclusive with C(current_user) and C(name).
-    type: str
+    type: list
+    elements: str
     required: False
   filter:
     description:
