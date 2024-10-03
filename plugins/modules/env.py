@@ -225,6 +225,17 @@ options:
         type: bool
         required: False
         default: False
+      image_id:
+        description:
+          - The Id of the image to use for a FreeIPA upgrade
+      upgrade:
+        description:
+          - Specify if an upgrade of FreeIPA should be attempted
+        type: str
+        required: False
+        choice:
+          - minor
+          - major
   proxy:
     description:
       - The name of the proxy config to use for the environment.
@@ -364,6 +375,15 @@ EXAMPLES = r"""
   cloudera.cloud.env:
     name: example-module
     state: absent
+
+# Upgrade FreeIPA nodes for an environment
+- cloudera.cloud.env:
+    name: example-environment
+    state: "started"
+    wait: true
+    freeipa:
+      upgrade: major
+      image_id: 98a027ab-2cfa-4b0e-a800-59f1a07274af
 """
 
 RETURN = r"""
@@ -721,6 +741,12 @@ class Environment(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
+        
+        # Check parameters that should only specified with freeipa upgrade
+        if self.freeipa["upgrade"] == None and (self.freeipa['image_id']):
+          self.module.fail_json(
+              msg="FreeIPA image Id should only be specified during FreeIPA upgrade")
+
         existing = self.cdpy.environments.describe_environment(self.name)
 
         # TODO SetTelemetryFeaturesRequest
@@ -730,6 +756,15 @@ class Environment(CdpModule):
             # If the environment exists
             if existing is not None:
                 self.environment = existing
+
+                # For upgrade confirm combination of declared actions are possible
+                if (existing["status"] in self.cdpy.sdk.STOPPED_STATES and
+                    not self.wait and
+                    self.freeipa["upgrade"] != None):
+                    
+                    self.module.fail_json(
+                            msg="Unable to start and upgrade a stopped environment without waiting for completion of start."
+                        )
 
                 # Reconcile if specifying cloud parameters
                 if self.cloud is not None:
@@ -830,9 +865,23 @@ class Environment(CdpModule):
                             timeout=self.timeout,
                         )
 
+            # Once the environment is existing and started state then we can upgrade FreeIPA
+            if self.freeipa["upgrade"] != None:
+                # Attempt FreeIPA upgrade
+                upgrade_result = self.upgrade_freeipa(self.wait)
+
+                # Value of change depends on upgrade result
+                self.changed = self.changed or upgrade_result
+
         elif self.state == "stopped":
             # If the environment exists
             if existing is not None:
+
+                # Fail if attempting to upgrade with a declared state of stopped
+                if self.freeipa["upgrade"] != None:
+                    self.module.fail_json(
+                        msg="Attempting to upgrade and stop an environment is not supported"
+                    )
 
                 # Warn if attempting to stop an already stopped/stopping environment
                 if existing["status"] in self.cdpy.sdk.STOPPED_STATES:
@@ -853,6 +902,7 @@ class Environment(CdpModule):
                     self.module.fail_json(
                         msg="Attempting to stop a failed environment", **existing
                     )
+
 
                 # Otherwise, stop the environment
                 else:
@@ -915,6 +965,42 @@ class Environment(CdpModule):
             )
         self.environment = self.cdpy.environments.describe_environment(self.name)
         self.changed = True
+
+    def upgrade_freeipa(self, wait):
+        if self.freeipa["upgrade"] == "minor":
+            allow_major_os_upgrade = False
+        elif self.freeipa["upgrade"] == "major":
+            allow_major_os_upgrade = True
+        else:
+            allow_major_os_upgrade = None
+
+        # Check if an upgrade is available
+        ipa_updates = self.cdpy.environments.get_freeipa_upgrade_options(
+            self.name, allow_major_os_upgrade=allow_major_os_upgrade
+        )
+        if len(ipa_updates["images"]) > 0:
+            # Perform the upgrade
+            self.cdpy.environments.upgrade_freeipa(
+                env=self.name,
+                allow_major_os_upgrade=allow_major_os_upgrade,
+                image_id=self.freeipa["image_id"],
+            )
+            upgrade_performed = True
+
+            if wait:
+                self.cdpy.sdk.wait_for_state(
+                    describe_func=self.cdpy.environments.get_freeipa_status,
+                    params=dict(env=self.name),
+                    state=["AVAILABLE"],
+                    delay=self.delay,
+                    timeout=self.timeout,
+                    state_confirmation_retries=3
+                )
+        else:
+            self.module.warn("No FreeIPA upgrades available.")
+            upgrade_performed = False
+
+        return upgrade_performed
 
     def _validate_environment_name(self):
         if (
@@ -1273,6 +1359,10 @@ def main():
                 options=dict(
                     instanceCountByGroup=dict(required=False, type="int"),
                     multiAz=dict(required=False, type="bool"),
+                    image_id=dict(required=False, type="str"),
+                    upgrade=dict(
+                        required=False, type="str", choices=["major", "minor"]
+                    ),
                 ),
                 default=dict(instanceCountByGroup=2, multiAz=False),
             ),
