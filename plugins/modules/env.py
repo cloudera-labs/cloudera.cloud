@@ -741,11 +741,12 @@ class Environment(CdpModule):
 
     @CdpModule._Decorators.process_debug
     def process(self):
-        
+
         # Check parameters that should only specified with freeipa upgrade
-        if self.freeipa["upgrade"] == None and (self.freeipa['image_id']):
-          self.module.fail_json(
-              msg="FreeIPA image Id should only be specified during FreeIPA upgrade")
+        if self.freeipa["upgrade"] == None and (self.freeipa["image_id"]):
+            self.module.fail_json(
+                msg="FreeIPA image Id should only be specified during FreeIPA upgrade"
+            )
 
         existing = self.cdpy.environments.describe_environment(self.name)
 
@@ -758,13 +759,15 @@ class Environment(CdpModule):
                 self.environment = existing
 
                 # For upgrade confirm combination of declared actions are possible
-                if (existing["status"] in self.cdpy.sdk.STOPPED_STATES and
-                    not self.wait and
-                    self.freeipa["upgrade"] != None):
-                    
+                if (
+                    existing["status"] in self.cdpy.sdk.STOPPED_STATES
+                    and not self.wait
+                    and self.freeipa["upgrade"] != None
+                ):
+
                     self.module.fail_json(
-                            msg="Unable to start and upgrade a stopped environment without waiting for completion of start."
-                        )
+                        msg="Unable to start and upgrade a stopped environment without waiting for completion of start."
+                    )
 
                 # Reconcile if specifying cloud parameters
                 if self.cloud is not None:
@@ -903,7 +906,6 @@ class Environment(CdpModule):
                         msg="Attempting to stop a failed environment", **existing
                     )
 
-
                 # Otherwise, stop the environment
                 else:
                     if not self.module.check_mode:
@@ -994,7 +996,7 @@ class Environment(CdpModule):
                     state=["AVAILABLE"],
                     delay=self.delay,
                     timeout=self.timeout,
-                    state_confirmation_retries=3
+                    state_confirmation_retries=3,
                 )
         else:
             self.module.warn("No FreeIPA upgrades available.")
