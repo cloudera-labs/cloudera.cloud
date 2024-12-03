@@ -482,7 +482,10 @@ class Datalake(CdpModule):
         existing = self.cdpy.datalake.describe_datalake(self.name)
 
         # Check that if runtime is set only image.os can be set (image.catalogName and image.id can't)
-        if self.runtime != None and (self._get_nested_param("image", "catalogName") or self._get_nested_param("image", "id")):
+        if self.runtime != None and (
+            self._get_nested_param("image", "catalogName")
+            or self._get_nested_param("image", "id")
+        ):
             self.module.fail_json(
                 msg="Image Id and/or image catalog name cannot be specified if runtime is set."
             )
@@ -492,8 +495,6 @@ class Datalake(CdpModule):
             # If the datalake exists
             if existing is not None:
                 self.datalake = existing
-
-
 
                 # Fail if attempting to restart a failed datalake
                 if "status" in existing:
@@ -509,7 +510,7 @@ class Datalake(CdpModule):
 
                         self.module.fail_json(
                             msg="Unable to upgrade a stopped datalake."
-                        )                    
+                        )
 
                     # Check for Datalake actions during create or started
                     elif (
@@ -578,7 +579,6 @@ class Datalake(CdpModule):
                 # Value of change depends on upgrade result
                 self.changed = self.changed or upgrade_result
 
-
         elif self.state == "absent":
             # If the datalake exists
             if existing is not None:
@@ -601,58 +601,79 @@ class Datalake(CdpModule):
 
     def upgrade_datalake(self):
         # Check what is available
-        dl_updates = self.cdpy.datalake.check_datalake_upgrade(
-            datalake_name = self.name
-        )
+        dl_updates = self.cdpy.datalake.check_datalake_upgrade(datalake_name=self.name)
 
         if len(dl_updates["upgradeCandidates"]) > 0:
-          if self.upgrade in ["prepare","full"]:
-            # If OS-only upgrade available and prepare then warning
-            if dl_updates['current']['componentVersions']['os'] != dl_updates["upgradeCandidates"][0]['componentVersions']['os']:
-                self.module.warn("Prepare step not supported for OS-only upgrade")
-                upgrade_performed = False 
-            else: # If prepare possible and upgrade in prepare, full
-                # Check specified runtime or image id are available in upgradeCandidates
-                if (self.runtime != None and self.runtime in [ upgrade['componentVersions']['cdp'] for upgrade in dl_updates['upgradeCandidates'] ]) or (self._get_nested_param("image", "id") != None and self._get_nested_param("image", "id") in [ upgrade['imageId'] for upgrade in dl_updates['upgradeCandidates'] ]):  
-                  # Run prepare
-                  self.cdpy.datalake.prepare_datalake_upgrade(datalake_name=self.name, image_id=self._get_nested_param("image", "id"), runtime=self.runtime)
-                  upgrade_performed = True
-                else:
-                  self.module.fail_json(
-                    msg="No upgrade candidate available for specified runtime or image id."
-                )
+            if self.upgrade in ["prepare", "full"]:
+                # If OS-only upgrade available and prepare then warning
+                if (
+                    dl_updates["current"]["componentVersions"]["os"]
+                    != dl_updates["upgradeCandidates"][0]["componentVersions"]["os"]
+                ):
+                    self.module.warn("Prepare step not supported for OS-only upgrade")
+                    upgrade_performed = False
+                else:  # If prepare possible and upgrade in prepare, full
+                    # Check specified runtime or image id are available in upgradeCandidates
+                    if (
+                        self.runtime != None
+                        and self.runtime
+                        in [
+                            upgrade["componentVersions"]["cdp"]
+                            for upgrade in dl_updates["upgradeCandidates"]
+                        ]
+                    ) or (
+                        self._get_nested_param("image", "id") != None
+                        and self._get_nested_param("image", "id")
+                        in [
+                            upgrade["imageId"]
+                            for upgrade in dl_updates["upgradeCandidates"]
+                        ]
+                    ):
+                        # Run prepare
+                        self.cdpy.datalake.prepare_datalake_upgrade(
+                            datalake_name=self.name,
+                            image_id=self._get_nested_param("image", "id"),
+                            runtime=self.runtime,
+                        )
+                        upgrade_performed = True
+                    else:
+                        self.module.fail_json(
+                            msg="No upgrade candidate available for specified runtime or image id."
+                        )
 
-                # Wait for prepare to complete
-                if self.wait or self.upgrade == 'full':
-                  self.cdpy.sdk.wait_for_state(
+                    # Wait for prepare to complete
+                    if self.wait or self.upgrade == "full":
+                        self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.datalake.describe_datalake,
                             params=dict(name=self.name),
                             field="status",
                             state="RUNNING",
                             delay=self.delay,
                             timeout=self.timeout,
-                            state_confirmation_retries=5
-                            )
+                            state_confirmation_retries=5,
+                        )
 
-          if self.upgrade in ["os", "full"]:
-            # upgrade if os or full
-            self.cdpy.datalake.datalake_upgrade(datalake_name=self.name, rolling_upgrade=self.rolling_upgrade)
-            upgrade_performed = True
+            if self.upgrade in ["os", "full"]:
+                # upgrade if os or full
+                self.cdpy.datalake.datalake_upgrade(
+                    datalake_name=self.name, rolling_upgrade=self.rolling_upgrade
+                )
+                upgrade_performed = True
 
-            if self.wait:
-              self.cdpy.sdk.wait_for_state(
+                if self.wait:
+                    self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.datalake.describe_datalake,
                         params=dict(name=self.name),
                         field="status",
                         state="RUNNING",
                         delay=self.delay,
                         timeout=self.timeout,
-                        state_confirmation_retries=5
-                        )
+                        state_confirmation_retries=5,
+                    )
         else:
             self.module.warn("No Datalake upgrades available.")
-            upgrade_performed = False          
-        
+            upgrade_performed = False
+
         return upgrade_performed
 
     def create_datalake(self, environment):
@@ -733,10 +754,14 @@ class Datalake(CdpModule):
 
         if self.runtime:
             payload.update(runtime=self.runtime)
-        
+
         if self.image:
             # Remove any None keys from the image object
-            payload.update(image={key: value for key, value in self.image.items() if value is not None})
+            payload.update(
+                image={
+                    key: value for key, value in self.image.items() if value is not None
+                }
+            )
 
         if self.scale:
             payload.update(scale=self.scale)
@@ -868,13 +893,13 @@ def main():
                 required=False, type="str", aliases=["managed_identity"]
             ),
             image=dict(
-                required=False, 
+                required=False,
                 type="dict",
                 options=dict(
                     catalogName=dict(type="str"),
                     id=dict(type="str"),
-                    os=dict(type="str")
-                )
+                    os=dict(type="str"),
+                ),
             ),
             storage=dict(
                 required=False,
@@ -908,8 +933,16 @@ def main():
                     recipeNames=dict(required=True, type="list", elements="str"),
                 ),
             ),
-            upgrade=dict(required=False, type="str", choices=["prepare", "os", "full"], ),
-            rolling_upgrade=dict(required=False, type="bool", default=False, ),
+            upgrade=dict(
+                required=False,
+                type="str",
+                choices=["prepare", "os", "full"],
+            ),
+            rolling_upgrade=dict(
+                required=False,
+                type="bool",
+                default=False,
+            ),
         ),
         supports_check_mode=True,
     )
