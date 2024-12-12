@@ -663,7 +663,9 @@ class Datalake(CdpModule):
             if self.upgrade in ["os", "full"]:
                 # upgrade if os or full
                 self.cdpy.datalake.datalake_upgrade(
-                    datalake_name=self.name, rolling_upgrade=self.rolling_upgrade, skip_backup=(not self.upgrade_backup)
+                    datalake_name=self.name,
+                    rolling_upgrade=self.rolling_upgrade,
+                    skip_backup=(not self.upgrade_backup),
                 )
                 upgrade_performed = True
 
