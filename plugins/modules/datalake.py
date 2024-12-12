@@ -197,6 +197,12 @@ options:
     type: bool
     required: False
     default: False
+  upgrade_backup:
+    description:
+      - Flag to specify if a backup should be taken during the datalake backup
+    type: bool
+    required: False
+    default: True
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -470,6 +476,7 @@ class Datalake(CdpModule):
 
         self.upgrade = self._get_param("upgrade")
         self.rolling_upgrade = self._get_param("rolling_upgrade")
+        self.upgrade_backup = self._get_param("upgrade_backup")
 
         # Initialize the return values
         self.datalake = dict()
@@ -656,7 +663,7 @@ class Datalake(CdpModule):
             if self.upgrade in ["os", "full"]:
                 # upgrade if os or full
                 self.cdpy.datalake.datalake_upgrade(
-                    datalake_name=self.name, rolling_upgrade=self.rolling_upgrade
+                    datalake_name=self.name, rolling_upgrade=self.rolling_upgrade, skip_backup=(not self.upgrade_backup)
                 )
                 upgrade_performed = True
 
@@ -942,6 +949,11 @@ def main():
                 required=False,
                 type="bool",
                 default=False,
+            ),
+            upgrade_backup=dict(
+                required=False,
+                type="bool",
+                default=True,
             ),
         ),
         supports_check_mode=True,
