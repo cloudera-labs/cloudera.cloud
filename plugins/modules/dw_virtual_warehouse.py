@@ -71,7 +71,7 @@ options:
       - Required if C(state=present)
     type: str
   template:
-    description: 
+    description:
       - The name of deployment T-shirt size to use.
       - This will determine the number of nodes.
     type: str
@@ -81,7 +81,7 @@ options:
       - medium
       - large
     aliases:
-      - tshirt_size      
+      - tshirt_size
   autoscaling:
     description:
       - Auto-scaling configuration for a Virtual Warehouse
@@ -604,7 +604,11 @@ def main():
             catalog_id=dict(type="str", aliases=["dbc_id"]),
             type=dict(type="str"),
             name=dict(type="str"),
-            template=dict(type="str", choices=["xsmall", "small", "medium", "large"], aliases=["tshirt_size"]),
+            template=dict(
+                type="str",
+                choices=["xsmall", "small", "medium", "large"],
+                aliases=["tshirt_size"],
+            ),
             autoscaling=dict(
                 type="dict",
                 options=dict(
