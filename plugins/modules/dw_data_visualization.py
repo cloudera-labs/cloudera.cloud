@@ -91,8 +91,10 @@ options:
     description: Version of the Cloudera Data Visualization.
     type: str
   template_name:
-    description: The template size for the Cloudera Data Visualization.
+    description: The name of the available resource template to use for the Cloudera Data Visualization.
     type: str
+    aliases:
+      - resource_template
   wait:
     description:
       - Flag to enable internal polling to wait for the Data Visualization Instance to achieve the declared state.
@@ -327,7 +329,7 @@ class DwCluster(CdpModule):
                         cluster_id=self.cluster["id"],
                         name=self.name,
                         config=self.config,
-                        template_name=self.template_name,
+                        resource_template=self.template_name,
                         image_version=self.image_version,
                     )
                     if self.wait:
@@ -356,7 +358,7 @@ def main():
             id=dict(type="str"),
             name=dict(type="str"),
             config=dict(type="dict"),
-            template_name=dict(type="str"),
+            template_name=dict(type="str", aliases=["resource_template"]),
             image_version=dict(type="str"),
             state=dict(type="str", choices=["present", "absent"], default="present"),
             wait=dict(type="bool", default=True),

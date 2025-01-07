@@ -71,13 +71,17 @@ options:
       - Required if C(state=present)
     type: str
   template:
-    description: The name of deployment template for the Virtual Warehouse
+    description: 
+      - The name of deployment T-shirt size to use.
+      - This will determine the number of nodes.
     type: str
     choices:
       - xsmall
       - small
       - medium
       - large
+    aliases:
+      - tshirt_size      
   autoscaling:
     description:
       - Auto-scaling configuration for a Virtual Warehouse
@@ -546,7 +550,7 @@ class DwVirtualWarehouse(CdpModule):
                         dbc_id=self.dbc_id,
                         vw_type=self.type,
                         name=self.name,
-                        template=self.template,
+                        tshirt_size=self.template,
                         autoscaling_min_cluster=self.autoscaling_min_nodes,
                         autoscaling_max_cluster=self.autoscaling_max_nodes,
                         autoscaling_auto_suspend_timeout_seconds=self.autoscaling_auto_suspend_timeout_seconds,
@@ -600,7 +604,7 @@ def main():
             catalog_id=dict(type="str", aliases=["dbc_id"]),
             type=dict(type="str"),
             name=dict(type="str"),
-            template=dict(type="str", choices=["xsmall", "small", "medium", "large"]),
+            template=dict(type="str", choices=["xsmall", "small", "medium", "large"], aliases=["tshirt_size"]),
             autoscaling=dict(
                 type="dict",
                 options=dict(
