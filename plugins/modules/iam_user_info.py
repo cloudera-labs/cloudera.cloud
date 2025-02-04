@@ -79,24 +79,24 @@ EXAMPLES = r"""
     view: summary
 
 # Gather detailed information about a named User
-- cloudera.cloud.iam_info:
+- cloudera.cloud.iam_user_info:
     name: Example
 
 # Gather detailed information specific user Id
-- cloudera.cloud.iam_info:
+- cloudera.cloud.iam_user_info:
     user_id: "11a111a-91f0-4ca2-9262-111aa1111"
 
 # Gather detailed information about more users
-- cloudera.cloud.iam_info:
+- cloudera.cloud.iam_user_info:
     name: ["user1", "user2"]
 
 # Gather detailed information about a named User
-- cloudera.cdp.iam_info:
+- cloudera.cdp.iam_user_info:
     filter:
         workloadUsername: my[0-9]{2}_admin.*?'
 
 # Gather detailed information about the current user
-- cloudera.cloud.iam_info:
+- cloudera.cloud.iam_user_info:
     current_user: yes
 """
 
