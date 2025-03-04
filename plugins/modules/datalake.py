@@ -72,6 +72,24 @@ options:
       - (GCP) The Service Account email of the ID Broker Role, which can assume the Datalake Admin GCS role.
     type: str
     required: False
+  image:
+    description:
+      - The image specification to use for the datalake.
+      - When the 'runtime' suboption is set, only the 'os' parameter can be provided. Otherwise, you can use 'catalog name' and/or 'id' for selecting an image.
+    type: dict
+    required: False
+    suboptions:
+      catalogName:
+        description:
+          - The name of the custom image catalog to use, defaulting to 'cdp-default' if not present.
+        type: str
+      id:
+        description:
+          - The image ID from the catalog.
+          - The corresponding image will be used for the created cluster machines.
+      os:
+        description:
+          - The OS of the image used for cluster instances.
   storage:
     description:
       - (AWS) The S3 bucket (and optional path) for the Storage Location Base for the datalake, starting with C(s3a://)
@@ -84,7 +102,8 @@ options:
       - storage_location_base
   runtime:
     description:
-      - The Cloudera Runtime version for the datalake, when supported
+      - The Cloudera Runtime version for the datalake, when supported.
+      - This parameter can also be used to specify the target runtime for a datalake upgrade.
     type: str
     required: False
   scale:
@@ -163,6 +182,27 @@ options:
     type: bool
     required: False
     default: False
+  upgrade:
+    description:
+      - Specify if an upgrade of Datalake should be attempted
+    type: str
+    required: False
+    choice:
+      - prepare
+      - os
+      - full
+  rolling_upgrade:
+    description:
+      - Flag to specify if a rolling upgrade should be performed
+    type: bool
+    required: False
+    default: False
+  upgrade_backup:
+    description:
+      - Flag to specify if a backup should be taken during the datalake backup
+    type: bool
+    required: False
+    default: True
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -416,6 +456,8 @@ class Datalake(CdpModule):
 
         # ID Broker Role
         self.instance_profile = self._get_param("instance_profile")
+        # Image specification
+        self.image = self._get_param("image")
         # Storage Location Base
         self.storage = self._get_param("storage")
 
@@ -432,6 +474,10 @@ class Datalake(CdpModule):
         self.recipes = self._get_param("recipes")
         self.multi_az = self._get_param("multi_az")
 
+        self.upgrade = self._get_param("upgrade")
+        self.rolling_upgrade = self._get_param("rolling_upgrade")
+        self.upgrade_backup = self._get_param("upgrade_backup")
+
         # Initialize the return values
         self.datalake = dict()
 
@@ -442,16 +488,35 @@ class Datalake(CdpModule):
     def process(self):
         existing = self.cdpy.datalake.describe_datalake(self.name)
 
+        # Check that if runtime is set only image.os can be set (image.catalogName and image.id can't)
+        if self.runtime != None and (
+            self._get_nested_param("image", "catalogName")
+            or self._get_nested_param("image", "id")
+        ):
+            self.module.fail_json(
+                msg="Image Id and/or image catalog name cannot be specified if runtime is set."
+            )
+
         if self.state in ["present"]:
 
             # If the datalake exists
             if existing is not None:
                 self.datalake = existing
+
                 # Fail if attempting to restart a failed datalake
                 if "status" in existing:
                     if existing["status"] in self.cdpy.sdk.FAILED_STATES:
                         self.module.fail_json(
                             msg="Attempting to restart a failed datalake"
+                        )
+                    # For upgrade confirm state is not stopped
+                    if (
+                        existing["status"] in self.cdpy.sdk.STOPPED_STATES
+                        and self.upgrade != None
+                    ):
+
+                        self.module.fail_json(
+                            msg="Unable to upgrade a stopped datalake."
                         )
 
                     # Check for Datalake actions during create or started
@@ -513,6 +578,14 @@ class Datalake(CdpModule):
                         msg="Datalake creation failed, required parameter 'environment' missing"
                     )
 
+            # Once the datalake is existing and started state then we can upgrade
+            if self.upgrade != None:
+                # Attempt Datalake upgrade
+                upgrade_result = self.upgrade_datalake()
+
+                # Value of change depends on upgrade result
+                self.changed = self.changed or upgrade_result
+
         elif self.state == "absent":
             # If the datalake exists
             if existing is not None:
@@ -532,6 +605,85 @@ class Datalake(CdpModule):
                     self.delete_datalake()
         else:
             self.module.fail_json(msg="Invalid state: %s" % self.state)
+
+    def upgrade_datalake(self):
+        # Check what is available
+        dl_updates = self.cdpy.datalake.check_datalake_upgrade(datalake_name=self.name)
+
+        if len(dl_updates["upgradeCandidates"]) > 0:
+            if self.upgrade in ["prepare", "full"]:
+                # If OS-only upgrade available and prepare then warning
+                if (
+                    dl_updates["current"]["componentVersions"]["os"]
+                    != dl_updates["upgradeCandidates"][0]["componentVersions"]["os"]
+                ):
+                    self.module.warn("Prepare step not supported for OS-only upgrade")
+                    upgrade_performed = False
+                else:  # If prepare possible and upgrade in prepare, full
+                    # Check specified runtime or image id are available in upgradeCandidates
+                    if (
+                        self.runtime != None
+                        and self.runtime
+                        in [
+                            upgrade["componentVersions"]["cdp"]
+                            for upgrade in dl_updates["upgradeCandidates"]
+                        ]
+                    ) or (
+                        self._get_nested_param("image", "id") != None
+                        and self._get_nested_param("image", "id")
+                        in [
+                            upgrade["imageId"]
+                            for upgrade in dl_updates["upgradeCandidates"]
+                        ]
+                    ):
+                        # Run prepare
+                        self.cdpy.datalake.prepare_datalake_upgrade(
+                            datalake_name=self.name,
+                            image_id=self._get_nested_param("image", "id"),
+                            runtime=self.runtime,
+                        )
+                        upgrade_performed = True
+                    else:
+                        self.module.fail_json(
+                            msg="No upgrade candidate available for specified runtime or image id."
+                        )
+
+                    # Wait for prepare to complete
+                    if self.wait or self.upgrade == "full":
+                        self.cdpy.sdk.wait_for_state(
+                            describe_func=self.cdpy.datalake.describe_datalake,
+                            params=dict(name=self.name),
+                            field="status",
+                            state="RUNNING",
+                            delay=self.delay,
+                            timeout=self.timeout,
+                            state_confirmation_retries=5,
+                        )
+
+            if self.upgrade in ["os", "full"]:
+                # upgrade if os or full
+                self.cdpy.datalake.datalake_upgrade(
+                    datalake_name=self.name,
+                    rolling_upgrade=self.rolling_upgrade,
+                    skip_backup=(not self.upgrade_backup),
+                )
+                upgrade_performed = True
+
+                if self.wait:
+                    self.cdpy.sdk.wait_for_state(
+                        describe_func=self.cdpy.datalake.describe_datalake,
+                        params=dict(name=self.name),
+                        field="status",
+                        state="RUNNING",
+                        delay=self.delay,
+                        timeout=self.timeout,
+                        state_confirmation_retries=5,
+                    )
+        else:
+            self.module.warn("No Datalake upgrades available.")
+            upgrade_performed = False
+
+        return upgrade_performed
 
     def create_datalake(self, environment):
         self._validate_datalake_name()
@@ -611,6 +763,14 @@ class Datalake(CdpModule):
 
         if self.runtime:
             payload.update(runtime=self.runtime)
+
+        if self.image:
+            # Remove any None keys from the image object
+            payload.update(
+                image={
+                    key: value for key, value in self.image.items() if value is not None
+                }
+            )
 
         if self.scale:
             payload.update(scale=self.scale)
@@ -741,6 +901,15 @@ def main():
             instance_profile=dict(
                 required=False, type="str", aliases=["managed_identity"]
             ),
+            image=dict(
+                required=False,
+                type="dict",
+                options=dict(
+                    catalogName=dict(type="str"),
+                    id=dict(type="str"),
+                    os=dict(type="str"),
+                ),
+            ),
             storage=dict(
                 required=False,
                 type="str",
@@ -772,6 +941,21 @@ def main():
                     instanceGroupName=dict(required=True, type="str"),
                     recipeNames=dict(required=True, type="list", elements="str"),
                 ),
+            ),
+            upgrade=dict(
+                required=False,
+                type="str",
+                choices=["prepare", "os", "full"],
+            ),
+            rolling_upgrade=dict(
+                required=False,
+                type="bool",
+                default=False,
+            ),
+            upgrade_backup=dict(
+                required=False,
+                type="bool",
+                default=True,
             ),
         ),
         supports_check_mode=True,
