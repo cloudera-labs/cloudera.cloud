@@ -70,14 +70,18 @@ options:
       - The name of the Virtual Warehouse.
       - Required if C(state=present)
     type: str
-  template:
-    description: The name of deployment template for the Virtual Warehouse
+  tshirt_size:
+    description:
+      - The name of deployment T-shirt size, i.e. the deployment template, to use.
+      - This will determine the number of nodes.
     type: str
     choices:
       - xsmall
       - small
       - medium
       - large
+    aliases:
+      - template
   autoscaling:
     description:
       - Auto-scaling configuration for a Virtual Warehouse
@@ -283,7 +287,7 @@ EXAMPLES = r"""
     cluster_id: example-cluster-id
     name: example-virtual-warehouse
     type: hive
-    template: xsmall
+    tshirt_size: xsmall
     autoscaling:
       min_nodes: 3
       max_nodes: 19
@@ -297,7 +301,7 @@ EXAMPLES = r"""
     cluster_id: example-cluster-id
     name: example-virtual-warehouse
     type: "hive"
-    template: "xsmall"
+    tshirt_size: "xsmall"
     enable_sso: true
     ldap_groups: ['group1','group2','group3']
     common_configs:
@@ -399,7 +403,7 @@ class DwVirtualWarehouse(CdpModule):
         self.dbc_id = self._get_param("catalog_id")
         self.type = self._get_param("type")
         self.name = self._get_param("name")
-        self.template = self._get_param("template")
+        self.tshirt_size = self._get_param("tshirt_size")
         self.common_configs = self._get_param("common_configs")
         self.application_configs = self._get_param("application_configs")
         self.ldap_groups = self._get_param("ldap_groups")
@@ -546,7 +550,7 @@ class DwVirtualWarehouse(CdpModule):
                         dbc_id=self.dbc_id,
                         vw_type=self.type,
                         name=self.name,
-                        template=self.template,
+                        tshirt_size=self.tshirt_size,
                         autoscaling_min_cluster=self.autoscaling_min_nodes,
                         autoscaling_max_cluster=self.autoscaling_max_nodes,
                         autoscaling_auto_suspend_timeout_seconds=self.autoscaling_auto_suspend_timeout_seconds,
@@ -600,7 +604,11 @@ def main():
             catalog_id=dict(type="str", aliases=["dbc_id"]),
             type=dict(type="str"),
             name=dict(type="str"),
-            template=dict(type="str", choices=["xsmall", "small", "medium", "large"]),
+            tshirt_size=dict(
+                type="str",
+                choices=["xsmall", "small", "medium", "large"],
+                aliases=["template"],
+            ),
             autoscaling=dict(
                 type="dict",
                 options=dict(
