@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright 2023 Cloudera, Inc. All Rights Reserved.
@@ -15,21 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from time import time, sleep
-
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
-
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
-
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
-
 DOCUMENTATION = r"""
----
 module: datahub_cluster_repair
 short_description: Repair CDP Datahub instances or instance groups
 description:
@@ -129,7 +115,6 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
----
 datahub:
   description: The information about the Datahub
   type: dict
@@ -394,6 +379,12 @@ sdk_out_lines:
   type: list
   elements: str
 """
+
+from time import time, sleep
+
+from ansible.module_utils.basic import AnsibleModule
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
 
 class DatahubClusterRepair(CdpModule):
