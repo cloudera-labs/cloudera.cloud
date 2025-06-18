@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright 2023 Cloudera, Inc. All Rights Reserved.
@@ -15,17 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
-
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
-
 DOCUMENTATION = r"""
----
 module: datalake
 short_description: Manage CDP Datalakes
 description:
@@ -239,7 +229,6 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
----
 datalake:
   description: The information about the Datalake
   type: dict
@@ -443,6 +432,9 @@ sdk_out_lines:
   type: list
   elements: str
 """
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
 
 class Datalake(CdpModule):

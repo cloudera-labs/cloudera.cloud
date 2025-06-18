@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright 2023 Cloudera, Inc. All Rights Reserved.
@@ -15,18 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ansible.module_utils.basic import AnsibleModule
-from ..module_utils.cdp_common import CdpModule
-
-
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
-
 DOCUMENTATION = r"""
----
 module: ml_workspace_access
 short_description: Grant and revoke user access to CDP Machine Learning Workspaces
 description:
@@ -91,7 +80,6 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
----
 workspace:
   description: The information about the user's access to the ML Workspace
   type: dict
@@ -111,6 +99,9 @@ sdk_out_lines:
   type: list
   elements: str
 """
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
 
 class MLWorkspaceAccess(CdpModule):

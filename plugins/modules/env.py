@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright 2023 Cloudera, Inc. All Rights Reserved.
@@ -15,18 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
-
-
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
-
 DOCUMENTATION = r"""
----
 module: env
 short_description: Manage CDP Environments
 description:
@@ -387,7 +376,6 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
----
 environment:
   description: The information about the Environment
   type: dict
@@ -683,6 +671,9 @@ sdk_out_lines:
   type: list
   elements: str
 """
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
 
 class Environment(CdpModule):

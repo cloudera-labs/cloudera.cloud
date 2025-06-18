@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright 2023 Cloudera, Inc. All Rights Reserved.
@@ -15,17 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
-
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
 # TODO: Update docs
 DOCUMENTATION = r"""
----
 module: df_deployment
 short_description: Enable or Disable CDP DataFlow Deployments
 description:
@@ -187,7 +178,6 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
----
 deployment:
   description: The information about the named DataFlow Deployment
   type: dict
@@ -333,6 +323,9 @@ sdk_out_lines:
   type: list
   elements: str
 """
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
 
 class DFDeployment(CdpModule):

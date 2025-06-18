@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright 2024 Cloudera, Inc. All Rights Reserved.
@@ -15,17 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
-
-ANSIBLE_METADATA = {
-    "metadata_version": "1.1",
-    "status": ["preview"],
-    "supported_by": "community",
-}
-
 DOCUMENTATION = r"""
----
 module: cloudera.cloud.datalake_backup_info
 short_description: Gather information about a Datalake backup
 description:
@@ -116,6 +106,9 @@ backups:
       type: str
       returned: always
 """
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
 
 class DatalakeBackupInfo(CdpModule):
