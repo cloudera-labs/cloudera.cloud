@@ -19,8 +19,8 @@ name: Validate Pull Request
 on:
   pull_request:
     branches:
-      - 'release/**'
-      - 'devel'
+      - "release/**"
+      - "devel"
 
 jobs:
   validate:
@@ -32,8 +32,8 @@ jobs:
       - name: Setup Python and caching
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-          cache: 'pip'
+          python-version: "3.9"
+          cache: "pip"
 
       - name: Set up Ansible collections
         run: |

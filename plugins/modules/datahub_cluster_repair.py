@@ -103,13 +103,13 @@ EXAMPLES = r"""
     instances:
       - i-08fa9ff7694dca0a8
       - i-0ea1b60d9a103ab36
-    delete_volumes: yes
+    delete_volumes: true
 
 - name: Replace multiple instances sequentially (i.e. rollout)
   cloudera.cloud.datahub_cluster_repair:
     datahub: example-datahub
     instances: "{{ instance_id }}"
-    wait: yes # implied
+    wait: true # implied
   loop: "{{ query('cloudera.cloud.datahub_instance', 'core_broker', datahub='example-datahub', detailed=True) | flatten | map(attribute='id') | list }}"
   loop_control:
     loop_var: instance_id

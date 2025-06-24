@@ -83,11 +83,11 @@ EXAMPLES = r"""
 # Gather detailed information about a named User
 - cloudera.cdp.iam_user_info:
     filter:
-        workloadUsername: my[0-9]{2}_admin.*?'
+      workloadUsername: my[0-9]{2}_admin.*?'
 
 # Gather detailed information about the current user
 - cloudera.cloud.iam_user_info:
-    current_user: yes
+    current_user: true
 """
 
 RETURN = r"""

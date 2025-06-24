@@ -202,28 +202,28 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# Create a datalake in AWS
-- cloudera.cloud.datalake:
+- name: Create a datalake in AWS
+  cloudera.cloud.datalake:
     name: example-datalake
     state: present
     environment: an-aws-environment-name-or-crn
-    instance_profile: arn:aws:iam::1111104421142:instance-profile/example-role
-    storage: s3a://example-bucket/datalake/data
+    instance_profile: "arn:aws:iam::1111104421142:instance-profile/example-role"
+    storage: "s3a://example-bucket/datalake/data"
     tags:
       project: Arbitrary content
 
-# Create a datalake in AWS, but don't wait for completion (see datalake_info for datalake status)
-- cloudera.cloud.datalake:
+- name: Create a datalake in AWS, but don't wait for completion (see datalake_info for datalake status)
+  cloudera.cloud.datalake:
     name: example-datalake
     state: present
-    wait: no
+    wait: false
     environment: an-aws-environment-name-or-crn
-    instance_profile: arn:aws:iam::1111104421142:instance-profile/example-role
-    storage: s3a://example-bucket/datalake/data
+    instance_profile: "arn:aws:iam::1111104421142:instance-profile/example-role"
+    storage: "s3a://example-bucket/datalake/data"
     tags:
       project: Arbitrary content
 
-# Delete the datalake (and wait for status change)
+- name: Delete the datalake (and wait for status change)
   cloudera.cloud.datalake:
     name: example-datalake
     state: absent

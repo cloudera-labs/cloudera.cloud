@@ -76,7 +76,6 @@ EXAMPLES = r"""
 - cloudera.cloud.dw_data_visualization_info:
     cluster_id: env-xyzabc
     data_visualization_name: example-name
-
 """
 
 RETURN = r"""

@@ -58,7 +58,7 @@ EXAMPLES = """
 
 # Disable Cloudera SSO login for all non-admin users
 - cloudera.cloud.account_auth:
-    disable_sso: yes
+    disable_sso: true
 
 # Set the password expiration to 7 days
 - cloudera.cloud.account_auth:

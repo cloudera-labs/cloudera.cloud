@@ -121,7 +121,7 @@ EXAMPLES = r"""
     environment: example-env
     name: example-name
     config:
-      userGroups:  "[ example_user_group ]"
+      userGroups: "[ example_user_group ]"
       adminGroups: "[ example_admin_group ]"
     state: present
 

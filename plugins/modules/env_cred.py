@@ -126,7 +126,7 @@ EXAMPLES = r"""
 # Create a CDP Credential for AWS and log the output of the CDP SDK in the return values
 - cloudera.cloud.env_cred:
     name: example-credential
-    debug: yes
+    debug: true
 """
 
 RETURN = r"""

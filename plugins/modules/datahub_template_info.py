@@ -61,7 +61,7 @@ EXAMPLES = r"""
 # Gather detailed information about a named Datahub, including the template contents in JSON
 - cloudera.cloud.datahub_template_info:
     name: example-template
-    return_content: yes
+    return_content: true
 """
 
 RETURN = r"""

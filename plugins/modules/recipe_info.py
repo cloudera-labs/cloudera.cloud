@@ -62,7 +62,7 @@ EXAMPLES = r"""
 - name: Gather detailed information about a named recipe
   cloudera.cloud.recipe_info:
     name: example-recipe
-    return_content: yes
+    return_content: true
   register: my_recipe
 """
 

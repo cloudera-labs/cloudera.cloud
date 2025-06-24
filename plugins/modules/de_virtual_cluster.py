@@ -115,7 +115,7 @@ EXAMPLES = r"""
     cluster_name: cde-service-name
     env: cdp-environment-name
     state: present
-    wait: True
+    wait: true
     delay: 30
     timeout: 600
 """

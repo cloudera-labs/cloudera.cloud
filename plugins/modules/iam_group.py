@@ -119,7 +119,7 @@ EXAMPLES = r"""
 - cloudera.cloud.iam_group:
     state: present
     name: group-example
-    sync: no
+    sync: false
 
 # Delete a group
 - cloudera.cloud.iam_group:
@@ -146,7 +146,7 @@ EXAMPLES = r"""
     resource_roles:
       - role-c
       - role-d
-    purge: yes
+    purge: true
 """
 
 RETURN = r"""

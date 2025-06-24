@@ -53,7 +53,7 @@ EXAMPLES = r"""
 # Gather detailed information about a named Environment
 - cloudera.cloud.env_info:
     name: example-environment
-    descendants: True
+    descendants: true
 """
 
 RETURN = r"""

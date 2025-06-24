@@ -59,8 +59,8 @@ EXAMPLES = r"""
 # Turn off both workload analytics and log collection
 - cloudera.cloud.env_telemetry:
     name: the-environment
-    workload_analytics: no
-    logs_collection: no
+    workload_analytics: false
+    logs_collection: false
 """
 
 RETURN = r"""

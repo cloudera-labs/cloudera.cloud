@@ -46,8 +46,7 @@ EXAMPLES = r"""
 
 # List basic information about the default Datalake Runtime
 - cloudera.cloud.datalake_runtime_info:
-    default: yes
-
+    default: true
 """
 
 RETURN = r"""

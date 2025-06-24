@@ -331,7 +331,7 @@ EXAMPLES = r"""
 - cloudera.cloud.env:
     name: example-environment
     state: present
-    wait: no
+    wait: false
     credential: example-credential
     cloud: aws
     region: us-east-1
@@ -342,7 +342,7 @@ EXAMPLES = r"""
     inbound_cidr: 0.0.0.0/0
     freeipa:
       instanceCountByGroup: 3
-      multiAz: yes
+      multiAz: true
     tags:
       project: Arbitrary content
 
@@ -362,7 +362,7 @@ EXAMPLES = r"""
     state: started
 
 # Delete the environment (and wait for status change)
-  cloudera.cloud.env:
+- cloudera.cloud.env:
     name: example-module
     state: absent
 

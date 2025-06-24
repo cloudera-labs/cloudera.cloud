@@ -210,7 +210,7 @@ EXAMPLES = r"""
     env_crn: crn:cdp:environments...
     azure:
       subnet: my-subnet-name
-      enable_az: yes
+      enable_az: true
       managed_identity: my-aks-managed-identity
 
 # Request AWS Cluster Creation

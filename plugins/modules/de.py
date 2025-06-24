@@ -193,14 +193,14 @@ EXAMPLES = r"""
     env: cdp-environment-name
     instance_type: "m5.2xlarge"
     state: present
-    wait: yes
+    wait: true
 
 # Remove a DE service without waiting
 - cloudera.cloud.de:
     name: cde-cloudera-deploy-example+
     env: cdp-environment-name
     state: absent
-    wait: no
+    wait: false
 """
 
 RETURN = r"""

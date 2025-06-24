@@ -56,7 +56,6 @@ EXAMPLES = """
 - name: Retrieve more detailied information for the FreeIPA hosts for a single CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_hosts', environment='example-env-aws', detailed=True) }}"
-
 """
 
 RETURN = """

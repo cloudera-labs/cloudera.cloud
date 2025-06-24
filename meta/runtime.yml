@@ -14,7 +14,7 @@
 
 ---
 
-requires_ansible: ">=2.10"
+requires_ansible: ">=2.15.0"
 
 action_groups:
   # TODO Convert to use 'extend_group'

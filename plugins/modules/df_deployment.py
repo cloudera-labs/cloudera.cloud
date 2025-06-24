@@ -171,11 +171,10 @@ EXAMPLES = r"""
     name: my-flow-name
     df_name: my-env-name
     state: absent
-    wait: yes
+    wait: true
   async: 3600
   poll: 0
   register: __my_teardown_request
-
 """
 
 RETURN = r"""

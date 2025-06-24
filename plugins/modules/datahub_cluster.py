@@ -248,7 +248,7 @@ EXAMPLES = r"""
             volumeType: volume-type-for-cloud-provider
     tags:
       project: Arbitrary content
-    wait: no
+    wait: false
 
 - name: Create a datahub specifying only a definition name
   cloudera.cloud.datahub_cluster:
@@ -257,7 +257,7 @@ EXAMPLES = r"""
     definition: definition-name
     tags:
       project: Arbitrary content
-    wait: no
+    wait: false
 
 - name: Stop the datahub (and wait for status change)
   cloudera.cloud.datahub_cluster:

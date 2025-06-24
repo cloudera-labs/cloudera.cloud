@@ -83,7 +83,7 @@ EXAMPLES = r"""
 
 # Sync the current CDP User
 - cloudera.cloud.env_user_sync:
-    current_user: yes
+    current_user: true
 """
 
 RETURN = r"""

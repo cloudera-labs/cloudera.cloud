@@ -16,7 +16,6 @@
 
 # The following `.. envvar::` directives are defined in the extra docsite docs:
 envvar_directives: []
-
 # Changelog configuration (added in antsibull-docs 2.10.0)
 changelog:
   # Whether to write the changelog (taken from changelogs/changelog.yaml, see the

@@ -328,8 +328,8 @@ EXAMPLES = r"""
 - cloudera.cloud.ml:
     name: ml-example
     env: cdp-env
-    tls: no
-    wait: yes
+    tls: false
+    wait: true
 
 # Create a ML Workspace (in AWS) with a custom Kubernetes request configuration
 - cloudera.cloud.ml:
@@ -361,14 +361,14 @@ EXAMPLES = r"""
           instanceType: "p2.8xlarge"
           rootVolume:
             size: 40
-      wait: yes
+      wait: true
 
 # Remove a ML Workspace, but return immediately
 - cloudera.cloud.ml:
     name: ml-example
     env: cdp-env
     state: absent
-    wait: no
+    wait: false
 """
 
 RETURN = r"""

@@ -176,23 +176,22 @@ EXAMPLES = r"""
     name: my-service
     nodes_min: 3
     nodes_max: 10
-    public_loadbalancer: True
+    public_loadbalancer: true
     cluster_subnets_filter: "[?contains(subnetName, 'pvt')]"
     loadbalancer_subnets_filter: "[?contains(subnetName, 'pub')]"
     k8s_ip_ranges: ['192.168.0.1/24']
     state: present
-    wait: yes
+    wait: true
 
 # Remove a Dataflow Service with Async wait
 - cloudera.cloud.df_service:
     name: my-service
-    persist: False
+    persist: false
     state: absent
-    wait: yes
+    wait: true
   async: 3600
   poll: 0
   register: __my_teardown_request
-
 """
 
 RETURN = r"""

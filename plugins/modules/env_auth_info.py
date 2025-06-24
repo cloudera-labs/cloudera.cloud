@@ -77,24 +77,24 @@ EXAMPLES = r"""
 # Retrieve only the root certificate for a single environment
 - cloudera.cloud.env_auth_info:
     name: the-environment
-    root_certificate: yes
-    keytab: no
+    root_certificate: true
+    keytab: false
 
 # Retrieve the root certificate for multiple environments
 - cloudera.cloud.env_auth_info:
     name:
       - one-environment
       - two-environment
-    root_certificate: yes
-    keytab: no
+    root_certificate: true
+    keytab: false
 
 # Retrieve the keytab details for the current CDP user for selected environments
 - cloudera.cloud.env_auth_info:
     name:
       - one-environment
       - two-environment
-    keytab: yes
-    root_certificate: no
+    keytab: true
+    root_certificate: false
 
 # Retrieve the keytab details for the specified users for selected environments
 - cloudera.cloud.env_auth_info:
@@ -104,8 +104,8 @@ EXAMPLES = r"""
     user:
       - UserA
       - UserB
-    keytab: yes
-    root_certificate: no
+    keytab: true
+    root_certificate: false
 """
 
 RETURN = r"""

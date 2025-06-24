@@ -148,7 +148,7 @@ EXAMPLES = r"""
 # Clear the actor-to-role mappings for ID Broker on an existing environment
 - cloudera.cloud.env_idbroker:
     name: example-environment
-    clear_mappings: yes
+    clear_mappings: true
 
 # Don't sync the mappings for ID Broker to the environment's datalakes
 - cloudera.cloud.env_idbroker:
@@ -156,12 +156,12 @@ EXAMPLES = r"""
     mappings:
       - accessor: crn:altus:iam:us-west-1:1234:group:some-group/abcd-1234-efghi
         role: arn:aws:iam::654468598544:role/another-data-access-role
-    sync: no
+    sync: false
 
 # Now sync the mappings for the ID Broker once the environment has a datalake
 - cloudera.cloud.env_idbroker:
     name: example-environment
-    sync: yes
+    sync: true
 """
 
 RETURN = r"""

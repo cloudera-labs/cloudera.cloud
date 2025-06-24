@@ -283,7 +283,7 @@ EXAMPLES = r"""
       min_nodes: 3
       max_nodes: 19
     tags:
-       some_key: "some value"
+      some_key: "some value"
     enable_sso: true
     ldap_groups: ['group1', 'group2', 'group3']
 
@@ -294,21 +294,21 @@ EXAMPLES = r"""
     type: "hive"
     tshirt_size: "xsmall"
     enable_sso: true
-    ldap_groups: ['group1','group2','group3']
+    ldap_groups: ['group1', 'group2', 'group3']
     common_configs:
-        configBlocks:
-            - id: das-ranger-policymgr
-              format: HADOOP_XML
-              content:
-                  keyValues:
-                      'xasecure.policymgr.clientssl.truststore': '/path_to_ca_cert/cacerts'
+      configBlocks:
+        - id: das-ranger-policymgr
+          format: HADOOP_XML
+          content:
+            keyValues:
+              'xasecure.policymgr.clientssl.truststore': '/path_to_ca_cert/cacerts'
     application_configs:
-        das-webapp:
-            configBlocks:
-                - id: hive-kerberos-config
-                  format: TEXT
-                  content:
-                      text: "\n[libdefaults]\n\trenew_lifetime = 7d"
+      das-webapp:
+        configBlocks:
+          - id: hive-kerberos-config
+            format: TEXT
+            content:
+              text: "\n[libdefaults]\n\trenew_lifetime = 7d"
 
 # Delete a Virtual Warehouse
 - cloudera.cloud.dw_virtual_warehouse:
