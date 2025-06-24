@@ -1,6 +1,6 @@
 ---
 
-# Copyright 2023 Cloudera, Inc. All Rights Reserved.
+# Copyright 2025 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,3 +16,10 @@
 
 # The following `.. envvar::` directives are defined in the extra docsite docs:
 envvar_directives: []
+
+# Changelog configuration (added in antsibull-docs 2.10.0)
+changelog:
+  # Whether to write the changelog (taken from changelogs/changelog.yaml, see the
+  # antsibull-changelog documentation for more information) and link to it from the
+  # collection's index page.
+  write_changelog: true
