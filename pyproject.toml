@@ -45,6 +45,29 @@ extra-dependencies = [
 [tool.hatch.envs.lint.scripts]
 run = "pre-commit run -a"
 
+[tool.hatch.envs.docs]
+python = "3.12"
+detached = true
+extra-dependencies = [
+  # "antsibull-docs >= 2.0.0, < 3.0.0",
+  "ansible-pygments",
+  "sphinx",
+  "sphinx-ansible-theme >= 0.9.0",
+  "antsibull-docs @ git+https://github.com/cloudera-labs/antsibull-docs@cldr-docsite#egg=antsibull-docs",
+  "antsichaut",
+]
+
+[tool.hatch.envs.docs.scripts]
+lint = "antsibull-docs lint-collection-docs --plugin-docs --validate-collection-refs=all --skip-rstcheck ."
+build = "docsbuild/build.sh"
+changelog = [
+  # Read the version in galaxy.yml via hatch itself (normalizes release candidates, etc.)
+  # Use 'hatch version' to manage the version, i.e. 'hatch version major,rc'
+  "antsibull-changelog release --version $(hatch version)",
+  "antsichaut --since_version=latest",
+  "antsibull-changelog generate",
+]
+
 [tool.pytest.ini_options]
 testpaths = [
   "tests",
