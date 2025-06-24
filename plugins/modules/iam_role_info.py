@@ -22,6 +22,7 @@ description:
     - Gathers information about  CDP Public IAM role or roles
 author:
   - "Ronald Suplina (@rsuplina)"
+version_added: "3.0.0"
 options:
   name:
     description:

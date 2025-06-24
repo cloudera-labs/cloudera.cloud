@@ -22,6 +22,7 @@ description:
     - Gather information about CDP DE virtual clusters
 author:
   - "Curtis Howard (@curtishoward)"
+version_added: "1.5.0"
 requirements:
   - cdpy
 options:

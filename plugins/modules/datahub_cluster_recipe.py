@@ -24,6 +24,7 @@ description:
     - See the L(Cloudera documentation on recipes,https://docs.cloudera.com/data-hub/cloud/recipes/topics/mc-creating-custom-scripts-recipes.html) for details.
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "2.1.0"
 requirements:
   - cdpy
 options:

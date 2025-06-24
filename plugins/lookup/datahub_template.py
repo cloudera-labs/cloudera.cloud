@@ -25,6 +25,7 @@ DOCUMENTATION = """
     description:
         - Allows you to retrieve the Datahub templates matching the Datalake CDH Runtime for one or more CDP Public Cloud Environments.
         - If an Environment is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:

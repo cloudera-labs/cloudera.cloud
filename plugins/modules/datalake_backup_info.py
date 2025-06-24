@@ -23,6 +23,7 @@ description:
     - Optionally filter by backup name or backup id
 author:
     - "Jim Enright (@jimright)"
+version_added: "3.0.0"
 options:
     datalake_name:
         description:

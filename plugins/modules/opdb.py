@@ -22,6 +22,7 @@ description:
     - Create or destroy CDP OpDB Databases
 author:
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:

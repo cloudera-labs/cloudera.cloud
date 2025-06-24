@@ -23,6 +23,7 @@ description:
 author:
   - "Curtis Howard (@curtishoward)"
   - "Alan Silva (@acsjumpi)"
+version_added: "1.5.0"
 requirements:
   - cdpy
 options:

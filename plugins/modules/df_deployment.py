@@ -23,6 +23,7 @@ description:
     - Enable or Disable CDP DataFlow Deployments
 author:
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.6.0"
 requirements:
   - cdpy
 options:

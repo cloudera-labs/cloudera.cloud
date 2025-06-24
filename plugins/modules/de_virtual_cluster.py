@@ -22,6 +22,7 @@ description:
     - Create or delete CDP Data Engineering Virtual Clusters
 author:
   - "Curtis Howard (@curtishoward)"
+version_added: "1.5.0"
 requirements:
   - cdpy
 options:

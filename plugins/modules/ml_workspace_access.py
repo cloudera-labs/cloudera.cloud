@@ -22,6 +22,7 @@ description:
     - Grant and revoke user access to CDP Machine Learning Workspaces
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "1.1.0"
 requirements:
   - cdpy
 options:

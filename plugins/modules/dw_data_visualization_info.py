@@ -24,6 +24,7 @@ author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
   - "Ronald Suplina (@rsuplina)"
+version_added: "2.0.0"
 requirements:
   - cdpy
 options:

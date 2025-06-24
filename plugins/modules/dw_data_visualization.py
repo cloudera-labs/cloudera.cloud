@@ -25,6 +25,7 @@ author:
   - "Saravanan Raju (@raju-saravanan)"
   - "Webster Mudge (@wmudge)"
   - "Ronald Suplina (@rsuplina)"
+version_added: "2.0.0"
 requirements:
   - cdpy
 options:

@@ -22,6 +22,7 @@ description:
     - Import or Delete ReadyFlows from your CDP Tenant
 author:
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.6.0"
 requirements:
   - cdpy
 options:

@@ -25,6 +25,7 @@ DOCUMENTATION = """
     description:
         - Allows you to retrieve information about FreeIPA hosts for a given CDP Public Cloud Environment.
         - If the Environment is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:

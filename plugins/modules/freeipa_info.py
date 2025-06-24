@@ -23,6 +23,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Jim Enright (@jenright)"
+version_added: "1.1.0"
 requirements:
   - cdpy
 options:

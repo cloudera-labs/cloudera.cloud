@@ -23,6 +23,7 @@ description:
     - Optionally wait for the backup to complete
 author:
     - "Jim Enright (@jimright)"
+version_added: "3.0.0"
 options:
     datalake_name:
         description:

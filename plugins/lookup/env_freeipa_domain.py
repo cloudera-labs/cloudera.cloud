@@ -26,6 +26,7 @@ DOCUMENTATION = """
         - Allows you to retrieve information about FreeIPA Domain for a given CDP Public Cloud Environment.
         - You can use these details to update client DNS, e.g. set up entries in /etc/resolv.conf
         - If the Environment is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:

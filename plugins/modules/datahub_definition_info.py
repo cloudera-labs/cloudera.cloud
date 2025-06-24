@@ -24,6 +24,7 @@ author:
   - "Chris Perro (@cmperro)"
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.3.0"
 requirements:
   - cdpy
 options:

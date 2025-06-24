@@ -27,6 +27,7 @@ DOCUMENTATION = """
         - If no service name (or optionally Knox service name) is found on the specified Datalake, the lookup returns the value of I(default).
         - Otherwise, the lookup entry will be an empty list.
         - If the Datalake is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:

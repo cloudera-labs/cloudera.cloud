@@ -22,6 +22,7 @@ description:
     - Execute a repair (remove and/or replace) on one or more instances or instance groups within a CDP Datahub.
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "2.1.0"
 requirements:
   - cdpy
 options:

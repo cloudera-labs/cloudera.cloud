@@ -22,6 +22,7 @@ description:
     - Enable or Disable CDP DataFlow Services
 author:
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.2.0"
 requirements:
   - cdpy
   - jmespath

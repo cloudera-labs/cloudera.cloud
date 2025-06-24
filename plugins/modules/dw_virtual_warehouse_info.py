@@ -24,6 +24,7 @@ author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
   - "Saravanan Raju (@raju-saravanan)"
+version_added: "1.5.0"
 requirements:
   - cdpy
 options:

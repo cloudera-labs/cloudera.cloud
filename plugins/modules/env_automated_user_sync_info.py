@@ -24,6 +24,7 @@ description:
   - The module support check_mode.
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "1.7.0"
 requirements:
   - cdpy
 options:

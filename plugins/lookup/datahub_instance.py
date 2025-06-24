@@ -26,6 +26,7 @@ DOCUMENTATION = """
         - Allows you to retrieve the instances by one or more instance groups for a CDP Public Cloud Datahub.
         - If the Datahub is not found or is ambigious, the lookup will return an error.
         - If the instance group is not found, the lookup will return the C(default) value.
+    version_added: "2.0.0"
     options:
         _terms:
             description:

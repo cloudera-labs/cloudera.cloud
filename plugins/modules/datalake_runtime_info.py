@@ -22,6 +22,7 @@ description:
     - Gather information about CDP Datalake Runtimes
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:

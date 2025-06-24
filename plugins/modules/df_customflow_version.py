@@ -22,6 +22,7 @@ description:
     - Import CustomFlow versions into the DataFlow Catalog
 author:
   - "Andre Araujo (@asdaraujo)"
+version_added: "2.0.0"
 requirements:
   - cdpy
 options:
