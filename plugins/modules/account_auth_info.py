@@ -99,7 +99,8 @@ class AccountAuthenticationInfo(CdpModule):
 
 def main():
     module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(), supports_check_mode=True
+        argument_spec=CdpModule.argument_spec(),
+        supports_check_mode=True,
     )
 
     result = AccountAuthenticationInfo(module)

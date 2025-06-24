@@ -215,10 +215,16 @@ def main():
             current_user=dict(required=False, type="bool", aliases=["user"]),
             wait=dict(required=False, type="bool", default=True),
             delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=15
+                required=False,
+                type="int",
+                aliases=["polling_delay"],
+                default=15,
             ),
             timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=3600
+                required=False,
+                type="int",
+                aliases=["polling_timeout"],
+                default=3600,
             ),
         ),
         mutually_exclusive=(["name", "current_user"]),

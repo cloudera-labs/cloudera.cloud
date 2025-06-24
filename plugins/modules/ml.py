@@ -627,16 +627,16 @@ class MLWorkspace(CdpModule):
                     ):
                         self.module.log(
                             "ML Workspace already performing Delete operation: %s"
-                            % self.target["instanceStatus"]
+                            % self.target["instanceStatus"],
                         )
                     else:
                         self.module.warn(
                             "ML Workspace not in valid state to perform Delete operation: %s"
-                            % self.target["instanceStatus"]
+                            % self.target["instanceStatus"],
                         )
                         if self.wait:
                             self.module.warn(
-                                "Waiting for ML Workspace to reach Active state before performing Delete operation"
+                                "Waiting for ML Workspace to reach Active state before performing Delete operation",
                             )
                             self._wait_ready_state()
                             self._delete_workspace()
@@ -649,13 +649,13 @@ class MLWorkspace(CdpModule):
                 # Check the existing configuration
                 self.module.warn(
                     "ML Workspace already present and configuration validation and reconciliation is not supported;"
-                    + "to change a ML Workspace, explicitly destroy and recreate the Workspace"
+                    + "to change a ML Workspace, explicitly destroy and recreate the Workspace",
                 )
                 if self.wait:
                     self.workspace = self._wait_ready_state()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
 
         # Else if the Workspace does not exist
@@ -663,7 +663,7 @@ class MLWorkspace(CdpModule):
             if self.state == "absent":
                 self.module.log(
                     "ML Workspace %s already absent in Environment %s"
-                    % (self.name, self.env)
+                    % (self.name, self.env),
                 )
             # Create the Workspace
             elif self.state == "present":
@@ -695,7 +695,7 @@ class MLWorkspace(CdpModule):
                         self.workspace = self._wait_ready_state()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
 
     def _delete_workspace(self):
@@ -747,7 +747,9 @@ def main():
         argument_spec=CdpModule.argument_spec(
             # TODO - Handle CRN as separate parameter with tests
             name=dict(
-                required=True, type="str", aliases=["workspace", "crn", "workspace_crn"]
+                required=True,
+                type="str",
+                aliases=["workspace", "crn", "workspace_crn"],
             ),
             environment=dict(required=False, type="str", aliases=["env"]),
             tls=dict(required=False, type="bool", default=True, aliases=["enable_tls"]),
@@ -764,7 +766,10 @@ def main():
                 aliases=["enable_governance"],
             ),
             metrics=dict(
-                required=False, type="bool", default=False, aliases=["enable_metrics"]
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["enable_metrics"],
             ),
             database=dict(
                 required=False,
@@ -795,14 +800,18 @@ def main():
                                 type="dict",
                                 options=dict(
                                     enabled=dict(
-                                        required=False, type="bool", default=True
+                                        required=False,
+                                        type="bool",
+                                        default=True,
                                     ),
                                     maxInstances=dict(required=True, type="int"),
                                     minInstances=dict(required=True, type="int"),
                                 ),
                             ),
                             ingressRules=dict(
-                                required=False, type="list", elements="str"
+                                required=False,
+                                type="list",
+                                elements="str",
                             ),
                             instanceCount=dict(required=False, type="int", default=0),
                             instanceTier=dict(required=False, type="str"),
@@ -825,8 +834,10 @@ def main():
                                 type="dict",
                                 options=dict(
                                     subnets=dict(
-                                        required=False, type="list", elements="str"
-                                    )
+                                        required=False,
+                                        type="list",
+                                        elements="str",
+                                    ),
                                 ),
                             ),
                         ),
@@ -854,10 +865,16 @@ def main():
                 aliases=["enable_private_cluster"],
             ),
             force=dict(
-                required=False, type="bool", default=False, aliases=["force_delete"]
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["force_delete"],
             ),
             storage=dict(
-                required=False, type="bool", default=True, aliases=["remove_storage"]
+                required=False,
+                type="bool",
+                default=True,
+                aliases=["remove_storage"],
             ),
             state=dict(
                 required=False,
@@ -867,10 +884,16 @@ def main():
             ),
             wait=dict(required=False, type="bool", default=True),
             delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=15
+                required=False,
+                type="int",
+                aliases=["polling_delay"],
+                default=15,
             ),
             timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=3600
+                required=False,
+                type="int",
+                aliases=["polling_timeout"],
+                default=3600,
             ),
         ),
         supports_check_mode=True,

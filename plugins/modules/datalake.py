@@ -487,7 +487,7 @@ class Datalake(CdpModule):
             or self._get_nested_param("image", "id")
         ):
             self.module.fail_json(
-                msg="Image Id and/or image catalog name cannot be specified if runtime is set."
+                msg="Image Id and/or image catalog name cannot be specified if runtime is set.",
             )
 
         if self.state in ["present"]:
@@ -500,7 +500,7 @@ class Datalake(CdpModule):
                 if "status" in existing:
                     if existing["status"] in self.cdpy.sdk.FAILED_STATES:
                         self.module.fail_json(
-                            msg="Attempting to restart a failed datalake"
+                            msg="Attempting to restart a failed datalake",
                         )
                     # For upgrade confirm state is not stopped
                     if (
@@ -509,7 +509,7 @@ class Datalake(CdpModule):
                     ):
 
                         self.module.fail_json(
-                            msg="Unable to upgrade a stopped datalake."
+                            msg="Unable to upgrade a stopped datalake.",
                         )
 
                     # Check for Datalake actions during create or started
@@ -520,12 +520,12 @@ class Datalake(CdpModule):
                         # Reconcile and error if specifying invalid cloud parameters
                         if self.environment is not None:
                             env = self.cdpy.environments.describe_environment(
-                                self.environment
+                                self.environment,
                             )
                             if env["crn"] != existing["environmentCrn"]:
                                 self.module.fail_json(
                                     msg="Datalake exists in a different Environment: %s"
-                                    % existing["environmentCrn"]
+                                    % existing["environmentCrn"],
                                 )
                         # Check for changes
                         mismatch = self._reconcile_existing_state(existing)
@@ -544,7 +544,7 @@ class Datalake(CdpModule):
                         # Wait
                         if not self.wait:
                             self.module.warn(
-                                "Datalake already creating or started, changes may not be possible"
+                                "Datalake already creating or started, changes may not be possible",
                             )
                         else:
                             # Wait for creation to complete if previously requested and still running
@@ -564,11 +564,11 @@ class Datalake(CdpModule):
                         self.create_datalake(env)
                     else:
                         self.module.fail_json(
-                            msg="Unable to find environment, '%s'" % self.environment
+                            msg="Unable to find environment, '%s'" % self.environment,
                         )
                 else:
                     self.module.fail_json(
-                        msg="Datalake creation failed, required parameter 'environment' missing"
+                        msg="Datalake creation failed, required parameter 'environment' missing",
                     )
 
             # Once the datalake is existing and started state then we can upgrade
@@ -589,7 +589,7 @@ class Datalake(CdpModule):
                     and existing["status"] in self.cdpy.sdk.TERMINATION_STATES
                 ):
                     self.module.warn(
-                        "Attempting to delete an datalake during the termination cycle"
+                        "Attempting to delete an datalake during the termination cycle",
                     )
                     self.datalake = existing
 
@@ -638,7 +638,7 @@ class Datalake(CdpModule):
                         upgrade_performed = True
                     else:
                         self.module.fail_json(
-                            msg="No upgrade candidate available for specified runtime or image id."
+                            msg="No upgrade candidate available for specified runtime or image id.",
                         )
 
                     # Wait for prepare to complete
@@ -686,41 +686,48 @@ class Datalake(CdpModule):
         if environment["cloudPlatform"] == "AWS":
             if self.instance_profile is None or self.storage is None:
                 self.module.fail_json(
-                    msg="One of the following are missing: instance_profile, storage"
+                    msg="One of the following are missing: instance_profile, storage",
                 )
 
             payload.update(
                 cloudProviderConfiguration=dict(
                     instanceProfile=self.instance_profile,
                     storageBucketLocation=self.storage,
-                )
+                ),
             )
 
             self.datalake = self.cdpy.sdk.call(
-                "datalake", "create_aws_datalake", **payload
+                "datalake",
+                "create_aws_datalake",
+                **payload,
             )
         elif environment["cloudPlatform"] == "AZURE":
             payload.update(
                 cloudProviderConfiguration=dict(
-                    managedIdentity=self.instance_profile, storageLocation=self.storage
-                )
+                    managedIdentity=self.instance_profile,
+                    storageLocation=self.storage,
+                ),
             )
             self.datalake = self.cdpy.sdk.call(
-                "datalake", "create_azure_datalake", **payload
+                "datalake",
+                "create_azure_datalake",
+                **payload,
             )
         elif environment["cloudPlatform"] == "GCP":
             payload.update(
                 cloudProviderConfiguration=dict(
                     serviceAccountEmail=self.instance_profile,
                     storageLocation=self.storage,
-                )
+                ),
             )
             self.datalake = self.cdpy.sdk.call(
-                "datalake", "create_gcp_datalake", **payload
+                "datalake",
+                "create_gcp_datalake",
+                **payload,
             )
         else:
             self.module.fail_json(
-                msg="Datalakes not yet implemented for this Environment Type"
+                msg="Datalakes not yet implemented for this Environment Type",
             )
         self.changed = True
 
@@ -762,7 +769,7 @@ class Datalake(CdpModule):
             payload.update(
                 image={
                     key: value for key, value in self.image.items() if value is not None
-                }
+                },
             )
 
         if self.scale:
@@ -784,7 +791,7 @@ class Datalake(CdpModule):
                 payload.update(multiAz=self.multi_az)
             else:
                 self.module.fail_json(
-                    msg="Multi-AZ Datalakes are not supported on GCP and Azure"
+                    msg="Multi-AZ Datalakes are not supported on GCP and Azure",
                 )
         elif environment["cloudPlatform"] == "AWS":
             payload.update(multiAz=self.multi_az)
@@ -812,7 +819,7 @@ class Datalake(CdpModule):
                     [
                         "instance_profile",
                         existing["awsConfiguration"]["instanceProfile"],
-                    ]
+                    ],
                 )
 
         if self.storage is not None:
@@ -820,7 +827,7 @@ class Datalake(CdpModule):
                 "Updating an existing Datalake's 'storage' "
                 "directly is not supported at this time. If "
                 "you need to change the storage, explicitly "
-                "delete and recreate the Datalake."
+                "delete and recreate the Datalake.",
             )
 
         if self.runtime:
@@ -829,14 +836,14 @@ class Datalake(CdpModule):
                 "directly is not supported at this time. If you "
                 "need to change the runtime, either use the "
                 "'upgrade' state or explicitly delete and "
-                "recreate the Datalake."
+                "recreate the Datalake.",
             )
         if self.scale:
             self.module.warn(
                 "Updating an existing Datalake's 'scale' "
                 "directly is not supported at this time. If you "
                 "need to change the scale, explicitly delete "
-                "and recreate the Datalake."
+                "and recreate the Datalake.",
             )
 
         if self.tags:
@@ -844,7 +851,7 @@ class Datalake(CdpModule):
                 "Updating an existing Datalake's 'tags' "
                 "directly are not supported at this time. If you "
                 "need to change the tags, explicitly delete "
-                "and recreate the Datalake."
+                "and recreate the Datalake.",
             )
 
         if self.raz:
@@ -852,7 +859,7 @@ class Datalake(CdpModule):
                 "Updating an existing Datalake's 'enableRangerRaz' "
                 "directly is not supported at this time. If you "
                 "need to change the enableRangerRaz, explicitly delete "
-                "and recreate the Datalake."
+                "and recreate the Datalake.",
             )
 
         if self.multi_az:
@@ -860,7 +867,7 @@ class Datalake(CdpModule):
                 "Updating an existing Datalake's 'multiAz' "
                 "directly is not supported at this time. If you "
                 "need to change the multiAz, explicitly delete "
-                "and recreate the Datalake."
+                "and recreate the Datalake.",
             )
 
         return mismatched
@@ -869,7 +876,7 @@ class Datalake(CdpModule):
         if len(self.name) < 5 or len(self.name) > 100:
             self.module.fail_json(
                 msg="Invalid datalake name, '%s'. Names must be between 5-100 characters."
-                % self.name
+                % self.name,
             )
         elif (
             self.cdpy.sdk.regex_search(self.cdpy.sdk.DATALAKE_NAME_PATTERN, self.name)
@@ -877,7 +884,7 @@ class Datalake(CdpModule):
         ):
             self.module.fail_json(
                 msg="Invalid datalake name, '%s'. Names must contain only lowercase "
-                "letters, numbers and hyphens." % self.name
+                "letters, numbers and hyphens." % self.name,
             )
 
 
@@ -892,7 +899,9 @@ def main():
                 default="present",
             ),
             instance_profile=dict(
-                required=False, type="str", aliases=["managed_identity"]
+                required=False,
+                type="str",
+                aliases=["managed_identity"],
             ),
             image=dict(
                 required=False,
@@ -919,10 +928,16 @@ def main():
             force=dict(required=False, type="bool", default=False),
             wait=dict(required=False, type="bool", default=True),
             delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=15
+                required=False,
+                type="int",
+                aliases=["polling_delay"],
+                default=15,
             ),
             timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=3600
+                required=False,
+                type="int",
+                aliases=["polling_timeout"],
+                default=3600,
             ),
             raz=dict(required=False, type="bool", default=False),
             multi_az=dict(required=False, type="bool", default=False),

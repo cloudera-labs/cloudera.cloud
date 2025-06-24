@@ -143,7 +143,9 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             enable_sso=dict(
-                required=False, type="bool", aliases=["sso", "enable_cloudera_sso"]
+                required=False,
+                type="bool",
+                aliases=["sso", "enable_cloudera_sso"],
             ),
             password_lifetime=dict(
                 required=False,

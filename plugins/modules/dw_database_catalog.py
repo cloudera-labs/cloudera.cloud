@@ -163,11 +163,13 @@ class DwDatabaseCatalog(CdpModule):
             for dbc in dbcs:
                 if dbc["name"] == self.name:
                     self.target = self.cdpy.dw.describe_dbc(
-                        cluster_id=self.cluster_id, dbc_id=dbc["id"]
+                        cluster_id=self.cluster_id,
+                        dbc_id=dbc["id"],
                     )
         else:
             self.target = self.cdpy.dw.describe_dbc(
-                cluster_id=self.cluster_id, dbc_id=self.catalog_id
+                cluster_id=self.cluster_id,
+                dbc_id=self.catalog_id,
             )
 
         if self.target is not None:
@@ -180,18 +182,20 @@ class DwDatabaseCatalog(CdpModule):
                     if self.target["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
                         self.module.fail_json(
                             msg="Database Catalog is not in a valid state for Delete operations: %s"
-                            % self.target["status"]
+                            % self.target["status"],
                         )
                     else:
                         _ = self.cdpy.dw.delete_dbc(
-                            cluster_id=self.cluster_id, dbc_id=self.target["id"]
+                            cluster_id=self.cluster_id,
+                            dbc_id=self.target["id"],
                         )
                         self.changed = True
                         if self.wait:
                             self.cdpy.sdk.wait_for_state(
                                 describe_func=self.cdpy.dw.describe_dbc,
                                 params=dict(
-                                    cluster_id=self.cluster_id, dbc_id=self.target["id"]
+                                    cluster_id=self.cluster_id,
+                                    dbc_id=self.target["id"],
                                 ),
                                 field=None,
                                 delay=self.delay,
@@ -200,24 +204,26 @@ class DwDatabaseCatalog(CdpModule):
                         else:
                             self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
                             self.database_catalog = self.cdpy.dw.describe_dbc(
-                                cluster_id=self.cluster_id, dbc_id=self.target["id"]
+                                cluster_id=self.cluster_id,
+                                dbc_id=self.target["id"],
                             )
                     # End Drop
             elif self.state == "present":
                 # Begin Config Check
                 self.module.warn(
-                    "Database Catalog already present and reconciliation is not yet implemented"
+                    "Database Catalog already present and reconciliation is not yet implemented",
                 )
                 if self.target["status"] in self.cdpy.sdk.STOPPED_STATES:
                     # self.target = self.cdpy.dw.restart_dbc(cluster_id=self.cluster_id, dbc_id=self.target['id'])
                     self.module.fail_json(
-                        msg="Unable to restart a stopped DB Catalog. You must manually restart."
+                        msg="Unable to restart a stopped DB Catalog. You must manually restart.",
                     )
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_dbc,
                         params=dict(
-                            cluster_id=self.cluster_id, dbc_id=self.target["id"]
+                            cluster_id=self.cluster_id,
+                            dbc_id=self.target["id"],
                         ),
                         state=self.cdpy.sdk.STARTED_STATES,
                         delay=self.delay,
@@ -233,7 +239,7 @@ class DwDatabaseCatalog(CdpModule):
             if self.state == "absent":
                 self.module.warn(
                     "Database Catalog %s already absent in Cluster %s"
-                    % (self.name, self.cluster_id)
+                    % (self.name, self.cluster_id),
                 )
             elif self.state == "present":
                 if not self.module.check_mode:
@@ -253,11 +259,12 @@ class DwDatabaseCatalog(CdpModule):
                         )
                     else:
                         self.database_catalog = self.cdpy.dw.describe_dbc(
-                            cluster_id=self.cluster_id, dbc_id=dbc_id
+                            cluster_id=self.cluster_id,
+                            dbc_id=dbc_id,
                         )
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
             # End Database Catalog Not Found
 

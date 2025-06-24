@@ -218,7 +218,8 @@ class EnvironmentAuthentication(CdpModule):
             all_envs = self.cdpy.environments.list_environments()
             for env in all_envs:
                 result = self.cdpy.environments.get_keytab(
-                    workload_user_crn, env["crn"]
+                    workload_user_crn,
+                    env["crn"],
                 )
                 keytabs[env["environmentName"]] = result
 
@@ -246,11 +247,17 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             name=dict(
-                required=False, type="list", elements="str", aliases=["environment"]
+                required=False,
+                type="list",
+                elements="str",
+                aliases=["environment"],
             ),
             user=dict(required=False, type="list", elements="str", aliases=["users"]),
             root_certificate=dict(
-                required=False, type="bool", aliases=["root_ca", "cert"], default=True
+                required=False,
+                type="bool",
+                aliases=["root_ca", "cert"],
+                default=True,
             ),
             keytab=dict(
                 required=False,

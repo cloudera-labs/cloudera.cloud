@@ -176,8 +176,8 @@ class DFCustomFlow(CdpModule):
                 else:
                     self.module.log(
                         "Check mode enabled, skipping deletion of flow [{}]".format(
-                            self.name
-                        )
+                            self.name,
+                        ),
                     )
         else:
             if self.state == "present":
@@ -193,8 +193,8 @@ class DFCustomFlow(CdpModule):
                 else:
                     self.module.log(
                         "Check mode enabled, skipping import of flow [{}]".format(
-                            self.name
-                        )
+                            self.name,
+                        ),
                     )
             if self.state == "absent":
                 # Flow does not exist. Nothing to do.

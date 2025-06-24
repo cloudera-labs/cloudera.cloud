@@ -85,7 +85,9 @@ class LookupModule(LookupBase):
             results = []
             for term in LookupBase._flatten(terms):
                 free_ipa_info = Cdpy().sdk.call(
-                    svc="environments", func="get_freeipa_status", environmentName=term
+                    svc="environments",
+                    func="get_freeipa_status",
+                    environmentName=term,
                 )
 
                 if self.get_option("detailed"):

@@ -154,7 +154,7 @@ class DatahubClusterRecipe(CdpModule):
 
         if not self.module.check_mode:
             results = camel_dict_to_snake_dict(
-                self.cdpy.sdk.call(svc="datahub", func="replace_recipes", **payload)
+                self.cdpy.sdk.call(svc="datahub", func="replace_recipes", **payload),
             )
 
             for r in ["attached_recipes", "detached_recipes"]:

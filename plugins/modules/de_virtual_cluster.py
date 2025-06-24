@@ -279,10 +279,12 @@ class DEVirtualCluster(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         self.cluster_id = self.cdpy.de.get_service_id_by_name(
-            name=self.cluster_name, env=self.env
+            name=self.cluster_name,
+            env=self.env,
         )
         self.vc_id = self.cdpy.de.get_vc_id_by_name(
-            name=self.name, cluster_id=self.cluster_id
+            name=self.name,
+            cluster_id=self.cluster_id,
         )
         initial_desc = (
             self.cdpy.de.describe_vc(self.cluster_id, self.vc_id)
@@ -305,16 +307,16 @@ class DEVirtualCluster(CdpModule):
                     else:
                         self.module.warn(
                             "DE virtual cluster (%s) is not in a removable state: %s"
-                            % (self.name, initial_desc["status"])
+                            % (self.name, initial_desc["status"]),
                         )
                         if self.wait:
                             self.module.warn(
                                 "Waiting for DE virtual cluster (%s) to reach Active or Deleted state"
-                                % self.name
+                                % self.name,
                             )
                             current_desc = self._wait_for_state(
                                 self.cdpy.sdk.REMOVABLE_STATES
-                                + self.cdpy.sdk.STOPPED_STATES
+                                + self.cdpy.sdk.STOPPED_STATES,
                             )
                             # If we just waited fo the virtual cluster to be provisioned, then delete it
                             if current_desc["status"] in self.cdpy.sdk.REMOVABLE_STATES:
@@ -327,7 +329,7 @@ class DEVirtualCluster(CdpModule):
                                 ):
                                     self.module.warn(
                                         "DE virtual cluster (%s) did not delete successfully"
-                                        % self.name
+                                        % self.name,
                                     )
             elif self.state == "present":
                 # Check the existing configuration and state
@@ -335,7 +337,7 @@ class DEVirtualCluster(CdpModule):
                 self.virtual_cluster = initial_desc
                 if self.wait:
                     current_desc = self._wait_for_state(
-                        self.cdpy.sdk.REMOVABLE_STATES + self.cdpy.sdk.STOPPED_STATES
+                        self.cdpy.sdk.REMOVABLE_STATES + self.cdpy.sdk.STOPPED_STATES,
                     )
                     # If we just waited for the virtual cluster to be deleted, then create it
                     if current_desc["status"] in self.cdpy.sdk.STOPPED_STATES:
@@ -345,11 +347,11 @@ class DEVirtualCluster(CdpModule):
                         if current_desc["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
                             self.module.warn(
                                 "DE virtual cluster (%s) did not create successfully"
-                                % self.name
+                                % self.name,
                             )
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
 
         # Else if the virtual cluster does not exist
@@ -357,7 +359,7 @@ class DEVirtualCluster(CdpModule):
             if self.state == "absent":
                 self.module.log(
                     "DE virtual cluster (%s) already absent or deleted within service ID (%s)"
-                    % (self.name, self.cluster_name)
+                    % (self.name, self.cluster_name),
                 )
             # Create the virtual cluster
             elif self.state == "present":
@@ -365,7 +367,7 @@ class DEVirtualCluster(CdpModule):
                     self.virtual_cluster = self._create_vc()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
 
     def _create_vc(self):
@@ -392,13 +394,13 @@ class DEVirtualCluster(CdpModule):
                 if return_desc["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
                     self.module.warn(
                         "DE virtual cluster (%s) did not create successfully"
-                        % self.name
+                        % self.name,
                     )
             else:
                 return_desc = result
         else:
             self.module.warn(
-                "DE virtual cluster (%s) did not create successfully" % self.name
+                "DE virtual cluster (%s) did not create successfully" % self.name,
             )
         return return_desc
 
@@ -408,7 +410,7 @@ class DEVirtualCluster(CdpModule):
             current_desc = self._wait_for_state(self.cdpy.sdk.STOPPED_STATES)
             if current_desc["status"] not in self.cdpy.sdk.STOPPED_STATES:
                 self.module.warn(
-                    "DE virtual cluster (%s) did not delete successfully" % self.name
+                    "DE virtual cluster (%s) did not delete successfully" % self.name,
                 )
             return current_desc
         else:
@@ -450,10 +452,16 @@ def main():
             ),
             wait=dict(required=False, type="bool", default=True),
             delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=30
+                required=False,
+                type="int",
+                aliases=["polling_delay"],
+                default=30,
             ),
             timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=600
+                required=False,
+                type="int",
+                aliases=["polling_timeout"],
+                default=600,
             ),
         ),
         supports_check_mode=True,

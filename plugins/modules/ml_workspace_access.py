@@ -132,34 +132,42 @@ class MLWorkspaceAccess(CdpModule):
                 if not self.module.check_mode:
                     self.changed = True
                     self.cdpy.ml.revoke_workspace_access(
-                        name=self.name, env=self.env, identifier=self.user
+                        name=self.name,
+                        env=self.env,
+                        identifier=self.user,
                     )
             # Reinstate to get the kubeconfig
             else:
                 self.module.warn(
                     "Refreshing access for user %s in ML Workspace, %s"
-                    % (self.user, self.name)
+                    % (self.user, self.name),
                 )
                 if not self.module.check_mode:
                     self.changed = True
                     self.cdpy.ml.revoke_workspace_access(
-                        name=self.name, env=self.env, identifier=self.user
+                        name=self.name,
+                        env=self.env,
+                        identifier=self.user,
                     )
                     self.access = self.cdpy.ml.grant_workspace_access(
-                        name=self.name, env=self.env, identifier=self.user
+                        name=self.name,
+                        env=self.env,
+                        identifier=self.user,
                     )
         # Else the access does not exist
         else:
             if self.state == "absent":
                 self.module.log(
-                    "User %s absent in ML Workspace %s" % (self.user, self.name)
+                    "User %s absent in ML Workspace %s" % (self.user, self.name),
                 )
             # Grant
             else:
                 if not self.module.check_mode:
                     self.changed = True
                     self.access = self.cdpy.ml.grant_workspace_access(
-                        name=self.name, env=self.env, identifier=self.user
+                        name=self.name,
+                        env=self.env,
+                        identifier=self.user,
                     )
 
 

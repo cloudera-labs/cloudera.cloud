@@ -248,7 +248,9 @@ class IAMGroup(CdpModule):
                 if self.resource_roles:
                     for assignment in self.resource_roles:
                         self.cdpy.iam.assign_group_resource_role(
-                            self.name, assignment["resource"], assignment["role"]
+                            self.name,
+                            assignment["resource"],
+                            assignment["role"],
                         )
                 self.info = self._retrieve_group()
         else:
@@ -303,16 +305,20 @@ class IAMGroup(CdpModule):
                     for assignment in new_assignments:
                         self.changed = True
                         self.cdpy.iam.assign_group_resource_role(
-                            self.name, assignment["resource"], assignment["role"]
+                            self.name,
+                            assignment["resource"],
+                            assignment["role"],
                         )
                     if self.purge:
                         stale_assignments = self._stale_assignments(
-                            existing["resource_roles"]
+                            existing["resource_roles"],
                         )
                         for assignment in stale_assignments:
                             self.changed = True
                             self.cdpy.iam.unassign_group_resource_role(
-                                self.name, assignment["resource"], assignment["role"]
+                                self.name,
+                                assignment["resource"],
+                                assignment["role"],
                             )
 
                 if self.changed:

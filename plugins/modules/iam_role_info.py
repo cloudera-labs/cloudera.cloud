@@ -95,7 +95,7 @@ class IAMRoleInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="list", elements="str", aliases=["crn"])
+            name=dict(required=False, type="list", elements="str", aliases=["crn"]),
         ),
         supports_check_mode=True,
     )

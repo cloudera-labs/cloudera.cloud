@@ -203,14 +203,14 @@ class DFReadyFlowInfo(CdpModule):
                 if this_readyflow["imported"]:
                     self.flows.append(
                         self.cdpy.df.describe_added_readyflow(
-                            def_crn=this_readyflow["importedArtifactCrn"]
-                        )
+                            def_crn=this_readyflow["importedArtifactCrn"],
+                        ),
                     )
                 else:
                     self.flows.append(
                         self.cdpy.df.describe_readyflow(
-                            def_crn=this_readyflow["readyflowCrn"]
-                        )
+                            def_crn=this_readyflow["readyflowCrn"],
+                        ),
                     )
         else:
             self.flows = self.listing

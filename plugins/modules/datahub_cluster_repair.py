@@ -430,7 +430,9 @@ class DatahubClusterRepair(CdpModule):
                     timeout=self.timeout,
                 )
                 self._wait_for_instance_state(
-                    existing, ["HEALTHY", "UNHEALTHY"], node_count
+                    existing,
+                    ["HEALTHY", "UNHEALTHY"],
+                    node_count,
                 )
 
             instance_payload = dict(
@@ -445,7 +447,7 @@ class DatahubClusterRepair(CdpModule):
                 ]
                 if set(self.instances).difference(set(discovered_instances)):
                     self.module.fail_json(
-                        msg=f"Instance(s) not found in Datahub: {str(self.instances)}"
+                        msg=f"Instance(s) not found in Datahub: {str(self.instances)}",
                     )
 
                 instance_payload.update(instanceIds=self.instances)
@@ -458,7 +460,7 @@ class DatahubClusterRepair(CdpModule):
                 ]
                 if not discovered_instances:
                     self.module.fail_json(
-                        msg=f"No instances found for instance group(s) in Datahub: {str(self.instance_groups)}"
+                        msg=f"No instances found for instance group(s) in Datahub: {str(self.instance_groups)}",
                     )
 
                 instance_payload.update(instanceIds=discovered_instances)
@@ -503,7 +505,7 @@ class DatahubClusterRepair(CdpModule):
             outstanding_instances = parse_instances()
             if outstanding_instances or current["nodeCount"] != node_count:
                 self.module.warn(
-                    f"Waiting for state(s) [{str(state)}] for instances: {str(outstanding_instances)}; Node count: {str(current['nodeCount'])}/{str(node_count)}"
+                    f"Waiting for state(s) [{str(state)}] for instances: {str(outstanding_instances)}; Node count: {str(current['nodeCount'])}/{str(node_count)}",
                 )
                 sleep(self.delay)
                 current = self.cdpy.datahub.describe_cluster(self.datahub)

@@ -412,41 +412,53 @@ class DwVirtualWarehouse(CdpModule):
         self.autoscaling_min_nodes = self._get_nested_param("autoscaling", "min_nodes")
         self.autoscaling_max_nodes = self._get_nested_param("autoscaling", "max_nodes")
         self.autoscaling_auto_suspend_timeout_seconds = self._get_nested_param(
-            "autoscaling", "auto_suspend_timeout_seconds"
+            "autoscaling",
+            "auto_suspend_timeout_seconds",
         )
         self.autoscaling_disable_auto_suspend = self._get_nested_param(
-            "autoscaling", "disable_auto_suspend"
+            "autoscaling",
+            "disable_auto_suspend",
         )
         self.autoscaling_hive_desired_free_capacity = self._get_nested_param(
-            "autoscaling", "hive_desired_free_capacity"
+            "autoscaling",
+            "hive_desired_free_capacity",
         )
         self.autoscaling_hive_scale_wait_time_seconds = self._get_nested_param(
-            "autoscaling", "hive_scale_wait_time_seconds"
+            "autoscaling",
+            "hive_scale_wait_time_seconds",
         )
         self.autoscaling_impala_scale_down_delay_seconds = self._get_nested_param(
-            "autoscaling", "impala_scale_down_delay_seconds"
+            "autoscaling",
+            "impala_scale_down_delay_seconds",
         )
         self.autoscaling_impala_scale_up_delay_seconds = self._get_nested_param(
-            "autoscaling", "impala_scale_up_delay_seconds"
+            "autoscaling",
+            "impala_scale_up_delay_seconds",
         )
         self.autoscaling_pod_config_name = self._get_nested_param(
-            "autoscaling", "pod_config_name"
+            "autoscaling",
+            "pod_config_name",
         )
         # impala_ha nested parameters
         self.impala_ha_enable_catalog_high_availability = self._get_nested_param(
-            "impala_ha", "enable_catalog_high_availability"
+            "impala_ha",
+            "enable_catalog_high_availability",
         )
         self.impala_ha_enable_shutdown_of_coordinator = self._get_nested_param(
-            "impala_ha", "enable_shutdown_of_coordinator"
+            "impala_ha",
+            "enable_shutdown_of_coordinator",
         )
         self.impala_ha_high_availability_mode = self._get_nested_param(
-            "impala_ha", "high_availability_mode"
+            "impala_ha",
+            "high_availability_mode",
         )
         self.impala_ha_num_of_active_coordinators = self._get_nested_param(
-            "impala_ha", "num_of_active_coordinators"
+            "impala_ha",
+            "num_of_active_coordinators",
         )
         self.impala_ha_shutdown_of_coordinator_delay_seconds = self._get_nested_param(
-            "impala_ha", "shutdown_of_coordinator_delay_seconds"
+            "impala_ha",
+            "shutdown_of_coordinator_delay_seconds",
         )
 
         # Initialize return values
@@ -466,11 +478,13 @@ class DwVirtualWarehouse(CdpModule):
             for vw in vws:
                 if self.name is not None and vw["name"] == self.name:
                     self.target = self.cdpy.dw.describe_vw(
-                        cluster_id=self.cluster_id, vw_id=vw["id"]
+                        cluster_id=self.cluster_id,
+                        vw_id=vw["id"],
                     )
         else:
             self.target = self.cdpy.dw.describe_vw(
-                cluster_id=self.cluster_id, vw_id=self.warehouse_id
+                cluster_id=self.cluster_id,
+                vw_id=self.warehouse_id,
             )
 
         if self.target is not None:
@@ -483,18 +497,20 @@ class DwVirtualWarehouse(CdpModule):
                     if self.target["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
                         self.module.fail_json(
                             msg="Virtual Warehouse not in valid state for Delete operation: %s"
-                            % self.target["status"]
+                            % self.target["status"],
                         )
                     else:
                         _ = self.cdpy.dw.delete_vw(
-                            cluster_id=self.cluster_id, vw_id=self.target["id"]
+                            cluster_id=self.cluster_id,
+                            vw_id=self.target["id"],
                         )
                         self.changed = True
                         if self.wait:
                             self.cdpy.sdk.wait_for_state(
                                 describe_func=self.cdpy.dw.describe_vw,
                                 params=dict(
-                                    cluster_id=self.cluster_id, vw_id=self.target["id"]
+                                    cluster_id=self.cluster_id,
+                                    vw_id=self.target["id"],
                                 ),
                                 field=None,
                                 delay=self.delay,
@@ -503,19 +519,21 @@ class DwVirtualWarehouse(CdpModule):
                         else:
                             self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
                             self.virtual_warehouse = self.cdpy.dw.describe_vw(
-                                cluster_id=self.cluster_id, vw_id=self.target["id"]
+                                cluster_id=self.cluster_id,
+                                vw_id=self.target["id"],
                             )
                     # End Drop
             elif self.state == "present":
                 # Begin Config check
                 self.module.warn(
-                    "Virtual Warehouse already present and reconciliation is not yet implemented"
+                    "Virtual Warehouse already present and reconciliation is not yet implemented",
                 )
                 if self.wait and not self.module.check_mode:
                     self.target = self.cdpy.sdk.wait_for_state(
                         describe_func=self.cdpy.dw.describe_vw,
                         params=dict(
-                            cluster_id=self.cluster_id, vw_id=self.target["id"]
+                            cluster_id=self.cluster_id,
+                            vw_id=self.target["id"],
                         ),
                         state=self.cdpy.sdk.STARTED_STATES
                         + self.cdpy.sdk.STOPPED_STATES,
@@ -526,7 +544,7 @@ class DwVirtualWarehouse(CdpModule):
                 # End Config check
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
             # End Virtual Warehouse Exists
         else:
@@ -534,7 +552,7 @@ class DwVirtualWarehouse(CdpModule):
             if self.state == "absent":
                 self.module.warn(
                     "Virtual Warehouse is already absent in Cluster %s"
-                    % self.cluster_id
+                    % self.cluster_id,
                 )
             elif self.state == "present":
                 if not self.module.check_mode:
@@ -580,11 +598,12 @@ class DwVirtualWarehouse(CdpModule):
                         )
                     else:
                         self.virtual_warehouse = self.cdpy.dw.describe_vw(
-                            cluster_id=self.cluster_id, vw_id=vw_id
+                            cluster_id=self.cluster_id,
+                            vw_id=vw_id,
                         )
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
             # End Virtual Warehouse Not Found
 
@@ -658,7 +677,7 @@ def main():
                                 ),
                             ),
                         ),
-                    )
+                    ),
                 ),
             ),
             application_configs=dict(type="dict"),

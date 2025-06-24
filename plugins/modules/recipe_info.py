@@ -134,7 +134,9 @@ class RecipeInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         self.all_recipes = self.cdpy.sdk.call(
-            svc="datahub", func="list_recipes", ret_field="recipes"
+            svc="datahub",
+            func="list_recipes",
+            ret_field="recipes",
         )
 
         if self.name:
@@ -163,13 +165,15 @@ class RecipeInfo(CdpModule):
     def _describe_recipe(self, recipe):
         full = self.cdpy.datahub.describe_cluster_template(recipe["crn"])
         full = self.cdpy.sdk.call(
-            svc="datahub", func="describe_recipe", recipeName=recipe["crn"]
+            svc="datahub",
+            func="describe_recipe",
+            recipeName=recipe["crn"],
         )
         if full is not None:
             return full
         else:
             self.module.fail_json(
-                msg="Failed to retrieve recipe content, '%s'" % recipe["recipeName"]
+                msg="Failed to retrieve recipe content, '%s'" % recipe["recipeName"],
             )
 
 

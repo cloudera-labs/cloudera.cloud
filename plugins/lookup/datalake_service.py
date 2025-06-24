@@ -105,7 +105,7 @@ class LookupModule(LookupBase):
 
         if not self.get_option("datalake") and not self.get_option("environment"):
             raise AnsibleError(
-                "One of 'environment' or 'datalake' parameters must be present"
+                "One of 'environment' or 'datalake' parameters must be present",
             )
 
         try:
@@ -114,20 +114,21 @@ class LookupModule(LookupBase):
                 dl = Cdpy().datalake.describe_datalake(self.get_option("datalake"))
                 if dl is None:
                     raise AnsibleError(
-                        "No Datalake found for '%s'" % self.get_option("datalake")
+                        "No Datalake found for '%s'" % self.get_option("datalake"),
                     )
             else:
                 env = Cdpy().datalake.describe_all_datalakes(
-                    self.get_option("environment")
+                    self.get_option("environment"),
                 )
                 if not env:
                     raise AnsibleError(
-                        "No Environment found for '%s'" % self.get_option("environment")
+                        "No Environment found for '%s'"
+                        % self.get_option("environment"),
                     )
                 elif len(env) > 1:
                     raise AnsibleError(
                         "Multiple Datalakes found for Enviroment '%s'"
-                        % self.get_option("environment")
+                        % self.get_option("environment"),
                     )
                 dl = env[0]
             return parse_services(

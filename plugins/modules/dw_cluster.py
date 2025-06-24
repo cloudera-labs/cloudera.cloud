@@ -314,11 +314,11 @@ class DwCluster(CdpModule):
         self.timeout = self._get_param("timeout")
         self.custom_subdomain = self._get_param("custom_subdomain")
         self.database_backup_retention_period = self._get_param(
-            "database_backup_retention_period"
+            "database_backup_retention_period",
         )
         self.reserved_compute_nodes = self._get_param("reserved_compute_nodes")
         self.reserved_shared_services_nodes = self._get_param(
-            "reserved_shared_services_nodes"
+            "reserved_shared_services_nodes",
         )
         self.resource_pool = self._get_param("resource_pool")
         self.lb_ip_ranges = self._get_param("whitelist_workload_access_ip_cidrs")
@@ -326,26 +326,33 @@ class DwCluster(CdpModule):
 
         # Azure nested parameters
         self.az_compute_instance_types = self._get_nested_param(
-            "azure", "compute_instance_types"
+            "azure",
+            "compute_instance_types",
         )
         self.az_enable_az = self._get_nested_param("azure", "enable_az")
         self.az_enable_private_aks = self._get_nested_param(
-            "azure", "enable_private_aks"
+            "azure",
+            "enable_private_aks",
         )
         self.az_enable_private_sql = self._get_nested_param(
-            "azure", "enable_private_sql"
+            "azure",
+            "enable_private_sql",
         )
         self.az_enable_spot_instances = self._get_nested_param(
-            "azure", "enable_spot_instances"
+            "azure",
+            "enable_spot_instances",
         )
         self.az_log_analytics_workspace_id = self._get_nested_param(
-            "azure", "log_analytics_workspace_id"
+            "azure",
+            "log_analytics_workspace_id",
         )
         self.az_network_outbound_type = self._get_nested_param(
-            "azure", "network_outbound_type"
+            "azure",
+            "network_outbound_type",
         )
         self.az_aks_private_dns_zone = self._get_nested_param(
-            "azure", "aks_private_dns_zone"
+            "azure",
+            "aks_private_dns_zone",
         )
         self.az_subnet = self._get_nested_param("azure", "subnet")
         self.az_managed_identity = self._get_nested_param("azure", "managed_identity")
@@ -377,7 +384,7 @@ class DwCluster(CdpModule):
             else:
                 self.module.fail_json(
                     msg="Received multiple (i.e. ambiguous) Clusters in Environment %s"
-                    % self.env
+                    % self.env,
                 )
         else:
             self.target = None
@@ -393,11 +400,12 @@ class DwCluster(CdpModule):
                     if self.target["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
                         self.module.warn(
                             "Cluster is not in a valid state for Delete operations: %s"
-                            % self.target["status"]
+                            % self.target["status"],
                         )
                     else:
                         _ = self.cdpy.dw.delete_cluster(
-                            cluster_id=self.name, force=self.force
+                            cluster_id=self.name,
+                            force=self.force,
                         )
 
                     if self.wait:
@@ -411,13 +419,13 @@ class DwCluster(CdpModule):
                     else:
                         self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
                         self.cluster = self.cdpy.dw.describe_cluster(
-                            cluster_id=self.name
+                            cluster_id=self.name,
                         )
                 # End Delete
             elif self.state == "present":
                 # Begin Config Check
                 self.module.warn(
-                    "Cluster is already present and reconciliation is not yet implemented"
+                    "Cluster is already present and reconciliation is not yet implemented",
                 )
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
@@ -431,7 +439,7 @@ class DwCluster(CdpModule):
                 # End Config Check
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
             # End Cluster Exists
         else:
@@ -439,7 +447,7 @@ class DwCluster(CdpModule):
             if self.state == "absent":
                 self.module.warn(
                     "Cluster %s already absent in Environment %s"
-                    % (self.name, self.env)
+                    % (self.name, self.env),
                 )
             elif self.state == "present":
                 if not self.module.check_mode:
@@ -448,7 +456,7 @@ class DwCluster(CdpModule):
                     if env_crn is None:
                         self.module.fail_json(
                             msg="Could not retrieve CRN for CDP Environment %s"
-                            % self.env
+                            % self.env,
                         )
                     else:
                         self.name = self.cdpy.dw.create_cluster(
@@ -486,7 +494,7 @@ class DwCluster(CdpModule):
                             )
                         else:
                             self.cluster = self.cdpy.dw.describe_cluster(
-                                cluster_id=self.name
+                                cluster_id=self.name,
                             )
                 # End Cluster Creation
             else:
@@ -541,7 +549,10 @@ def main():
                 aliases=["loadbalancer_ip_ranges", "workload_ip_ranges"],
             ),
             whitelist_k8s_cluster_access_ip_cidrs=dict(
-                type="list", elements="str", default=None, aliases=["k8s_ip_ranges"]
+                type="list",
+                elements="str",
+                default=None,
+                aliases=["k8s_ip_ranges"],
             ),
             delay=dict(type="int", aliases=["polling_delay"], default=15),
             timeout=dict(type="int", aliases=["polling_timeout"], default=3600),

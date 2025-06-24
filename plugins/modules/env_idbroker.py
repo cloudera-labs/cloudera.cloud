@@ -372,14 +372,16 @@ class EnvironmentIdBroker(CdpModule):
                 "environments",
                 "set_id_broker_mappings",
                 environmentName=self.name,
-                **mappings
+                **mappings,
             )
 
     def sync_mappings(self):
         self.changed = True
         if not self.module.check_mode:
             self.cdpy.sdk.call(
-                "environments", "sync_id_broker_mappings", environmentName=self.name
+                "environments",
+                "sync_id_broker_mappings",
+                environmentName=self.name,
             )
 
 
@@ -388,13 +390,19 @@ def main():
         argument_spec=CdpModule.argument_spec(
             name=dict(required=True, type="str", aliases=["environment"]),
             data_access=dict(
-                required=False, type="str", aliases=["data_access_arn", "data"]
+                required=False,
+                type="str",
+                aliases=["data_access_arn", "data"],
             ),
             ranger_audit=dict(
-                required=False, type="str", aliases=["ranger_audit_arn", "audit"]
+                required=False,
+                type="str",
+                aliases=["ranger_audit_arn", "audit"],
             ),
             ranger_cloud_access=dict(
-                required=False, type="str", aliases=["ranger_cloud_access_arn", "cloud"]
+                required=False,
+                type="str",
+                aliases=["ranger_cloud_access_arn", "cloud"],
             ),
             mappings=dict(
                 required=False,
@@ -412,7 +420,10 @@ def main():
                 aliases=["set_empty_mappings"],
             ),
             sync=dict(
-                required=False, type="bool", default=True, aliases=["sync_mappings"]
+                required=False,
+                type="bool",
+                default=True,
+                aliases=["sync_mappings"],
             ),
         ),
         mutually_exclusive=[["mappings", "clear_mappings"]],

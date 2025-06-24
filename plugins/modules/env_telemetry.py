@@ -107,7 +107,9 @@ def main():
             name=dict(required=True, type="str", aliases=["environment"]),
             workload_analytics=dict(required=False, type="bool", aliases=["analytics"]),
             logs_collection=dict(
-                required=False, type="bool", aliases=["logs", "report_deployment_logs"]
+                required=False,
+                type="bool",
+                aliases=["logs", "report_deployment_logs"],
             ),
         ),
         supports_check_mode=True,

@@ -213,35 +213,35 @@ class DFReadyFlow(CdpModule):
                     # ReadyFlow is imported and should be left alone
                     # helpfully return the detailed description
                     self.readyflow = self.cdpy.df.describe_added_readyflow(
-                        def_crn=self.target["importedArtifactCrn"]
+                        def_crn=self.target["importedArtifactCrn"],
                     )
                 if self.state == "absent":
                     if not self.module.check_mode:
                         # ReadyFlow is imported and should be deleted
                         self.readyflow = self.cdpy.df.delete_added_readyflow(
-                            def_crn=self.target["importedArtifactCrn"]
+                            def_crn=self.target["importedArtifactCrn"],
                         )
                         self.changed = True
                     else:
                         self.module.log(
-                            "Check mode enabled, skipping deletion of %s" % self.name
+                            "Check mode enabled, skipping deletion of %s" % self.name,
                         )
             else:
                 if self.state == "present":
                     # ReadyFlow should be imported
                     if not self.module.check_mode:
                         self.readyflow = self.cdpy.df.import_readyflow(
-                            def_crn=self.target["readyflowCrn"]
+                            def_crn=self.target["readyflowCrn"],
                         )
                         self.changed = True
                     else:
                         self.module.log(
-                            "Check mode enabled, skipping import of %s" % self.name
+                            "Check mode enabled, skipping import of %s" % self.name,
                         )
                 if self.state == "absent":
                     # ReadyFlow is not imported and should stay that way
                     self.module.log(
-                        "ReadyFlow already not imported to CDP Tenant %s" % self.name
+                        "ReadyFlow already not imported to CDP Tenant %s" % self.name,
                     )
 
 

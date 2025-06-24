@@ -217,13 +217,14 @@ class EnvironmentCredential(CdpModule):
         """Ensures that Credential names follow required formatting and fails the module on error."""
         if (
             self.cdpy.sdk.regex_search(
-                self.cdpy.environments.sdk.CREDENTIAL_NAME_PATTERN, self.name
+                self.cdpy.environments.sdk.CREDENTIAL_NAME_PATTERN,
+                self.name,
             )
             is not None
         ):
             self.module.fail_json(
                 msg='Invalid credential name, "%s". CDP credentials must contain only lowercase '
-                "letters, numbers and hyphens." % self.name
+                "letters, numbers and hyphens." % self.name,
             )
 
     def reconcile_credential(self, credential):
@@ -234,7 +235,7 @@ class EnvironmentCredential(CdpModule):
         """
         self.module.warn(
             "Changes to Role ARN cannot be checked. If you need to change the Role ARN, explicitly delete"
-            " and recreate the credential."
+            " and recreate the credential.",
         )
         if (
             self.description is not None
@@ -249,7 +250,11 @@ class EnvironmentCredential(CdpModule):
         if not self.module.check_mode:
             if self.cloud == "aws":
                 resp = self.cdpy.environments.create_aws_credential(
-                    self.name, self.role, self.description, self.retries, self.delay
+                    self.name,
+                    self.role,
+                    self.description,
+                    self.retries,
+                    self.delay,
                 )
                 self.changed = True
                 return resp
@@ -265,7 +270,8 @@ class EnvironmentCredential(CdpModule):
                 return resp
             elif self.cloud == "gcp":
                 resp = self.cdpy.environments.create_gcp_credential(
-                    name=self.name, key_file=self.secret
+                    name=self.name,
+                    key_file=self.secret,
                 )
                 self.changed = True
                 return resp
@@ -290,7 +296,10 @@ def main():
             secret=dict(required=False, type="str"),
             role=dict(required=False, type="str", aliases=["arn", "role_arn"]),
             description=dict(
-                required=False, type="str", aliases=["desc"], default=None
+                required=False,
+                type="str",
+                aliases=["desc"],
+                default=None,
             ),
             retries=dict(required=False, type="int", default=5),
             delay=dict(required=False, type="int", default=3),

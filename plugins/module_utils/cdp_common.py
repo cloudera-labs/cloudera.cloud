@@ -105,10 +105,16 @@ class CdpModule(object):
             **spec,
             verify_tls=dict(required=False, type="bool", default=True, aliases=["tls"]),
             debug=dict(
-                required=False, type="bool", default=False, aliases=["debug_endpoints"]
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["debug_endpoints"],
             ),
             strict=dict(
-                required=False, type="bool", default=False, aliases=["strict_errors"]
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["strict_errors"],
             ),
             agent_header=dict(required=False, type="str", default="ClouderaFoundry"),
             cdp_region=dict(
@@ -116,5 +122,5 @@ class CdpModule(object):
                 type="str",
                 default="default",
                 aliases=["cdp_endpoint_region", "endpoint_region"],
-            )
+            ),
         )

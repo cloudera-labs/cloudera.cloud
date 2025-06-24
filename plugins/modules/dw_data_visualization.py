@@ -211,33 +211,35 @@ class DwCluster(CdpModule):
             listing = self.cdpy.dw.list_clusters(env_crn)  # Always returns a list
             if len(listing) == 1:
                 self.cluster = self.cdpy.dw.describe_cluster(
-                    cluster_id=listing[0]["id"]
+                    cluster_id=listing[0]["id"],
                 )
             elif len(listing) == 0:
                 self.cluster = None
             else:
                 self.module.fail_json(
                     msg="Received multiple (i.e. ambiguous) Clusters in Environment {}".format(
-                        self.env
-                    )
+                        self.env,
+                    ),
                 )
 
         if not self.cluster:
             self.module.warn(
                 "No cluster found with id {} or in environment {}.".format(
-                    self.cluster_id, self.env
-                )
+                    self.cluster_id,
+                    self.env,
+                ),
             )
             return
 
         # Retrieves target data visualization, if any
         if self.id:
             self.target = self.cdpy.dw.describe_data_visualization(
-                cluster_id=self.cluster_id, data_viz_id=self.id
+                cluster_id=self.cluster_id,
+                data_viz_id=self.id,
             )
         else:
             listing = self.cdpy.dw.list_data_visualizations(
-                cluster_id=self.cluster["id"]
+                cluster_id=self.cluster["id"],
             )
             listing = [
                 v
@@ -252,7 +254,7 @@ class DwCluster(CdpModule):
             else:
                 self.module.fail_json(
                     msg="Received multiple (i.e. ambiguous)"
-                    " Data Visualizations in Cluster {}".format(self.cluster["name"])
+                    " Data Visualizations in Cluster {}".format(self.cluster["name"]),
                 )
 
         if self.target is not None:
@@ -262,7 +264,8 @@ class DwCluster(CdpModule):
                 else:
                     self.changed = True
                     self.cdpy.dw.delete_data_visualization(
-                        cluster_id=self.cluster["id"], data_viz_id=self.target["id"]
+                        cluster_id=self.cluster["id"],
+                        data_viz_id=self.target["id"],
                     )
 
                     if self.wait:
@@ -312,8 +315,9 @@ class DwCluster(CdpModule):
             if self.state == "absent":
                 self.module.warn(
                     "Data Visualization {} already absent in Environment {}".format(
-                        self.name, self.env
-                    )
+                        self.name,
+                        self.env,
+                    ),
                 )
             elif self.state == "present":
                 if not self.module.check_mode:
@@ -339,7 +343,8 @@ class DwCluster(CdpModule):
                         )
                     else:
                         self.data_visualization = self.cdpy.dw.describe_cluster(
-                            cluster_id=self.name, data_viz_id=data_visualization_id
+                            cluster_id=self.name,
+                            data_viz_id=data_visualization_id,
                         )
 
 
@@ -374,7 +379,8 @@ def main():
     instance = DwCluster(module)
     instance.process()
     output = dict(
-        changed=instance.changed, data_visualization=instance.data_visualization
+        changed=instance.changed,
+        data_visualization=instance.data_visualization,
     )
 
     if instance.debug:

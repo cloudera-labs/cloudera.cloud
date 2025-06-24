@@ -157,8 +157,10 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             name=dict(
-                required=True, type="str", aliases=["operation_id", "operation_crn"]
-            )
+                required=True,
+                type="str",
+                aliases=["operation_id", "operation_crn"],
+            ),
         ),
         supports_check_mode=True,
     )

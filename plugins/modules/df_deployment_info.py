@@ -222,7 +222,9 @@ class DFDeploymentInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         self.deployments = self.cdpy.df.list_deployments(
-            dep_crn=self.crn, name=self.name, described=True
+            dep_crn=self.crn,
+            name=self.name,
+            described=True,
         )
 
 

@@ -217,19 +217,19 @@ class DEInfo(CdpModule):
             name_match = list(filter(lambda s: s["name"] == self.name, service_list))
             if self.env:
                 env_match = list(
-                    filter(lambda s: s["environmentName"] == self.env, name_match)
+                    filter(lambda s: s["environmentName"] == self.env, name_match),
                 )
                 if env_match:
                     self.services.append(
-                        self.cdpy.de.describe_service(env_match[0]["clusterId"])
+                        self.cdpy.de.describe_service(env_match[0]["clusterId"]),
                     )
             elif name_match:
                 self.services.append(
-                    self.cdpy.de.describe_service(name_match[0]["clusterId"])
+                    self.cdpy.de.describe_service(name_match[0]["clusterId"]),
                 )
         elif self.env:
             env_match = list(
-                filter(lambda s: s["environmentName"] == self.env, service_list)
+                filter(lambda s: s["environmentName"] == self.env, service_list),
             )
             self.services.extend(env_match)
         else:

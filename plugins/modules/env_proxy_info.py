@@ -132,7 +132,7 @@ class EnvironmentProxyInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="str", aliases=["proxyConfigName"])
+            name=dict(required=False, type="str", aliases=["proxyConfigName"]),
         ),
         supports_check_mode=True,
     )

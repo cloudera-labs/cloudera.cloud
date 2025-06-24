@@ -87,7 +87,7 @@ class LookupModule(LookupBase):
                 if self.get_option("detailed"):
                     server_ips = environment["freeipa"]["serverIP"]
                     results = [
-                        {"domain": freeipa_client_domain, "server_ips": server_ips}
+                        {"domain": freeipa_client_domain, "server_ips": server_ips},
                     ]
                 else:
                     results = [freeipa_client_domain]

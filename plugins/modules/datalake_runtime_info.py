@@ -96,11 +96,13 @@ class DatalakeRuntimeInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         retrieved_versions = self.cdpy.sdk.call(
-            svc="datalake", func="list_runtimes", ret_field="versions"
+            svc="datalake",
+            func="list_runtimes",
+            ret_field="versions",
         )
         if self.default:
             self.versions = list(
-                filter(lambda r: r["defaultRuntimeVersion"], retrieved_versions)
+                filter(lambda r: r["defaultRuntimeVersion"], retrieved_versions),
             )
         else:
             self.versions = retrieved_versions

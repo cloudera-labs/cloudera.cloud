@@ -176,7 +176,7 @@ class DatahubDefinitionInfo(CdpModule):
         else:
             self.module.fail_json(
                 msg="Failed to retrieve Cluster Definition content, '%s'"
-                % short_desc["clusterDefinitionName"]
+                % short_desc["clusterDefinitionName"],
             )
 
 

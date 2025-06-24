@@ -152,8 +152,9 @@ class DwDataVisualizationInfo(CdpModule):
         if not self.clusters:
             self.module.fail_json(
                 msg="No clusters found for the specified filter. Cluster ID: {}, Env ID: {}".format(
-                    self.cluster_id, self.environment
-                )
+                    self.cluster_id,
+                    self.environment,
+                ),
             )
 
         for cluster in self.clusters:
@@ -170,7 +171,7 @@ class DwDataVisualizationInfo(CdpModule):
                         self.data_visualization_name is None
                         or v["name"] == self.data_visualization_name
                     )
-                ]
+                ],
             )
 
 

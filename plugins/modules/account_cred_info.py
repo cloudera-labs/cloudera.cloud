@@ -121,7 +121,7 @@ def main():
                 type="str",
                 aliases=["cloud_platform"],
                 choices=["aws", "azure"],
-            )
+            ),
         ),
         supports_check_mode=True,
     )

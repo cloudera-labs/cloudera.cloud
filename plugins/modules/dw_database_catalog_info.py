@@ -118,7 +118,8 @@ class DwDatabaseCatalogInfo(CdpModule):
     def process(self):
         if self.catalog_id is not None:
             target = self.cdpy.dw.describe_dbc(
-                cluster_id=self.cluster_id, dbc_id=self.catalog_id
+                cluster_id=self.cluster_id,
+                dbc_id=self.catalog_id,
             )
             if target is not None:
                 self.database_catalogs.append(target)
@@ -129,8 +130,9 @@ class DwDatabaseCatalogInfo(CdpModule):
                     if dbc["name"] == self.name:
                         self.database_catalogs.append(
                             self.cdpy.dw.describe_dbc(
-                                cluster_id=self.cluster_id, dbc_id=dbc["id"]
-                            )
+                                cluster_id=self.cluster_id,
+                                dbc_id=dbc["id"],
+                            ),
                         )
             else:
                 self.database_catalogs = dbcs

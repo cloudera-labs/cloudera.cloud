@@ -28,14 +28,19 @@ SEMVER = re.compile("(\d+\.[.\d]*\d+)")
 
 
 def parse_services(
-    terms: list, name: str, entity: dict, service: str, knox: bool, default: any
+    terms: list,
+    name: str,
+    entity: dict,
+    service: str,
+    knox: bool,
+    default: any,
 ):
     lookup = "knoxService" if knox else "serviceName"
     results = []
     try:
         for term in LookupBase._flatten(terms):
             display.vvv(
-                "%s_service lookup connecting to '%s[%s]'" % (service, name, term)
+                "%s_service lookup connecting to '%s[%s]'" % (service, name, term),
             )
             services = [
                 s
@@ -65,7 +70,7 @@ def parse_environment(environment: str):
     if not match:
         raise AnsibleError(
             "Unable to parse runtime version for Environment '%s': %s"
-            % (environment, raw_version)
+            % (environment, raw_version),
         )
 
     return env[0]["cloudPlatform"], raw_version, match.group(0)

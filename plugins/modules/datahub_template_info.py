@@ -182,7 +182,7 @@ class DatahubTemplateInfo(CdpModule):
         else:
             self.module.fail_json(
                 msg="Failed to retrieve Cluster Template content, '%s'"
-                % short_desc["clusterTemplateName"]
+                % short_desc["clusterTemplateName"],
             )
 
 

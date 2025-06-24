@@ -145,8 +145,11 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             name=dict(
-                required=False, type="list", elements="str", aliases=["group_name"]
-            )
+                required=False,
+                type="list",
+                elements="str",
+                aliases=["group_name"],
+            ),
         ),
         supports_check_mode=True,
     )

@@ -48,7 +48,7 @@ class TestEnvironment(ModuleTestCase):
                 "log_identity": "fake_log_identity",
                 "wait": False,
                 "freeipa": {"instanceCountByGroup": 3},
-            }
+            },
         )
 
         expected = dict(
@@ -74,7 +74,7 @@ class TestEnvironment(ModuleTestCase):
         with patch("cdpy.cdpy.CdpyEnvironments") as mocked_cdp:
             mocked_cdp.return_value.describe_environment.return_value = None
             mocked_cdp.return_value.create_aws_environment.return_value = {
-                "name": "Successful test"
+                "name": "Successful test",
             }
 
             with pytest.raises(AnsibleExitJson) as e:
@@ -83,10 +83,10 @@ class TestEnvironment(ModuleTestCase):
             print("Returned: ", str(e.value))
 
             mocked_cdp.return_value.describe_environment.assert_called_once_with(
-                "unit-test"
+                "unit-test",
             )
             mocked_cdp.return_value.create_aws_environment.assert_called_once_with(
-                **expected
+                **expected,
             )
 
     def test_freeipa_default(self):
@@ -104,7 +104,7 @@ class TestEnvironment(ModuleTestCase):
                 "log_location": "fake_log_location",
                 "log_identity": "fake_log_identity",
                 "wait": False,
-            }
+            },
         )
 
         expected = dict(
@@ -130,7 +130,7 @@ class TestEnvironment(ModuleTestCase):
         with patch("cdpy.cdpy.CdpyEnvironments") as mocked_cdp:
             mocked_cdp.return_value.describe_environment.return_value = None
             mocked_cdp.return_value.create_aws_environment.return_value = {
-                "name": "Successful test"
+                "name": "Successful test",
             }
 
             with pytest.raises(AnsibleExitJson) as e:
@@ -139,10 +139,10 @@ class TestEnvironment(ModuleTestCase):
             print("Returned: ", str(e.value))
 
             mocked_cdp.return_value.describe_environment.assert_called_once_with(
-                "unit-test"
+                "unit-test",
             )
             mocked_cdp.return_value.create_aws_environment.assert_called_once_with(
-                **expected
+                **expected,
             )
 
 

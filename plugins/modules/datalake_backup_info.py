@@ -138,7 +138,7 @@ class DatalakeBackupInfo(CdpModule):
             self.module.warn("Datalake {0} not found".format(self.datalake_name))
         else:
             datalake_backups = self.cdpy.datalake.list_datalake_backups(
-                datalake_name=self.datalake_name
+                datalake_name=self.datalake_name,
             )
 
             # Filter for backup name or backup id if specified
@@ -151,8 +151,9 @@ class DatalakeBackupInfo(CdpModule):
                 if len(named_backups) == 0:
                     self.module.warn(
                         "Backup name {0} not found for Datalake {1}".format(
-                            self.backup_name, self.datalake_name
-                        )
+                            self.backup_name,
+                            self.datalake_name,
+                        ),
                     )
 
                 self.output = named_backups
@@ -167,8 +168,9 @@ class DatalakeBackupInfo(CdpModule):
                 if len(single_backup) == 0:
                     self.module.warn(
                         "Backup id {0} not found for Datalake {1}".format(
-                            self.backup_id, self.datalake_name
-                        )
+                            self.backup_id,
+                            self.datalake_name,
+                        ),
                     )
 
                 self.output = single_backup

@@ -78,7 +78,7 @@ class LookupModule(LookupBase):
                     raise AnsibleError("No Datalake found for Environment '%s'" % term)
                 elif len(env) > 1:
                     raise AnsibleError(
-                        "Multiple Datalakes found for Environment '%s'" % term
+                        "Multiple Datalakes found for Environment '%s'" % term,
                     )
                 results.append(env[0]["productVersions"][0]["version"])
             return results

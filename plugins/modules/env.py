@@ -737,7 +737,7 @@ class Environment(CdpModule):
         # Check parameters that should only specified with freeipa upgrade
         if self.freeipa["upgrade"] == None and (self.freeipa["image_id"]):
             self.module.fail_json(
-                msg="FreeIPA image Id should only be specified during FreeIPA upgrade"
+                msg="FreeIPA image Id should only be specified during FreeIPA upgrade",
             )
 
         existing = self.cdpy.environments.describe_environment(self.name)
@@ -758,7 +758,7 @@ class Environment(CdpModule):
                 ):
 
                     self.module.fail_json(
-                        msg="Unable to start and upgrade a stopped environment without waiting for completion of start."
+                        msg="Unable to start and upgrade a stopped environment without waiting for completion of start.",
                     )
 
                 # Reconcile if specifying cloud parameters
@@ -768,7 +768,7 @@ class Environment(CdpModule):
                     if existing["cloudPlatform"].lower() != self.cloud:
                         self.module.fail_json(
                             msg="Environment exists in a different cloud platform. "
-                            "Platform: '%s'" % existing["cloudPlatform"]
+                            "Platform: '%s'" % existing["cloudPlatform"],
                         )
 
                     # Check for changes (except for credentials and cloud platform)
@@ -792,24 +792,25 @@ class Environment(CdpModule):
                 # Fail if attempting to restart a failed environment
                 if existing["status"] in self.cdpy.sdk.FAILED_STATES:
                     self.module.fail_json(
-                        msg="Attempting to restart a failed environment"
+                        msg="Attempting to restart a failed environment",
                     )
 
                 # Warn if attempting to start an environment amidst the creation cycle
                 elif existing["status"] in self.cdpy.sdk.CREATION_STATES:
                     self.module.warn(
-                        "Skipping attempt to start an environment during its creation cycle"
+                        "Skipping attempt to start an environment during its creation cycle",
                     )
 
                 # Otherwise attempt to start the environment
                 elif existing["status"] not in self.cdpy.sdk.STARTED_STATES:
                     if not self.module.check_mode:
                         self.environment = self.cdpy.environments.start_environment(
-                            self.name, self.datahub_start
+                            self.name,
+                            self.datahub_start,
                         )
                 else:
                     self.module.warn(
-                        "Environment state %s is unexpected" % existing["status"]
+                        "Environment state %s is unexpected" % existing["status"],
                     )
 
                 if self.wait:
@@ -826,7 +827,7 @@ class Environment(CdpModule):
                 # Catch errors for updating the credential
                 if self.cloud is None:
                     self.module.fail_json(
-                        msg="Environment does not exist, or 'cloud' is not defined."
+                        msg="Environment does not exist, or 'cloud' is not defined.",
                     )
 
                 self._validate_environment_name()
@@ -836,7 +837,7 @@ class Environment(CdpModule):
                 if not self.module.check_mode:
                     if self.cloud not in ["aws", "azure", "gcp"]:
                         self.module.fail_json(
-                            msg="Cloud %s is not yet implemented" % self.cloud
+                            msg="Cloud %s is not yet implemented" % self.cloud,
                         )
                     elif self.cloud == "aws":
                         self.environment = (
@@ -875,34 +876,36 @@ class Environment(CdpModule):
                 # Fail if attempting to upgrade with a declared state of stopped
                 if self.freeipa["upgrade"] != None:
                     self.module.fail_json(
-                        msg="Attempting to upgrade and stop an environment is not supported"
+                        msg="Attempting to upgrade and stop an environment is not supported",
                     )
 
                 # Warn if attempting to stop an already stopped/stopping environment
                 if existing["status"] in self.cdpy.sdk.STOPPED_STATES:
                     if not self.wait:
                         self.module.warn(
-                            "Attempting to stop an environment already stopped or in stopping cycle"
+                            "Attempting to stop an environment already stopped or in stopping cycle",
                         )
                     self.environment = existing
 
                 # Warn if attempting to stop a terminated/terminating environment
                 elif existing["status"] in self.cdpy.sdk.TERMINATION_STATES:
                     self.module.fail_json(
-                        msg="Attempting to stop a terminating environment", **existing
+                        msg="Attempting to stop a terminating environment",
+                        **existing,
                     )
 
                 # Fail if attempting to stop a failed environment
                 elif existing["status"] in self.cdpy.sdk.FAILED_STATES:
                     self.module.fail_json(
-                        msg="Attempting to stop a failed environment", **existing
+                        msg="Attempting to stop a failed environment",
+                        **existing,
                     )
 
                 # Otherwise, stop the environment
                 else:
                     if not self.module.check_mode:
                         self.environment = self.cdpy.environments.stop_environment(
-                            self.name
+                            self.name,
                         )
                         if self.wait:
                             self.environment = self.cdpy.sdk.wait_for_state(
@@ -925,7 +928,7 @@ class Environment(CdpModule):
                     and existing["status"] in self.cdpy.sdk.TERMINATION_STATES
                 ):
                     self.module.warn(
-                        "Attempting to delete an environment during the termination cycle"
+                        "Attempting to delete an environment during the termination cycle",
                     )
                     self.environment = existing
                 # Otherwise, delete the environment
@@ -933,7 +936,9 @@ class Environment(CdpModule):
                 else:
                     if not self.module.check_mode:
                         self.cdpy.environments.delete_environment(
-                            self.name, self.cascade, self.force
+                            self.name,
+                            self.cascade,
+                            self.force,
                         )
                         self.changed = True
 
@@ -970,7 +975,8 @@ class Environment(CdpModule):
 
         # Check if an upgrade is available
         ipa_updates = self.cdpy.environments.get_freeipa_upgrade_options(
-            self.name, allow_major_os_upgrade=allow_major_os_upgrade
+            self.name,
+            allow_major_os_upgrade=allow_major_os_upgrade,
         )
         if len(ipa_updates["images"]) > 0:
             # Perform the upgrade
@@ -1004,7 +1010,7 @@ class Environment(CdpModule):
             self.module.fail_json(
                 msg="Invalid environment name, '%s'. Names must contain only lowercase "
                 "letters, numbers, and hyphens, must start with a lowercase letter "
-                "or a number, and be between 5 and 28 characters" % self.name
+                "or a number, and be between 5 and 28 characters" % self.name,
             )
 
     def _configure_payload(self):
@@ -1047,7 +1053,7 @@ class Environment(CdpModule):
                 payload["freeIpa"] = dict()
                 if self.freeipa["instanceCountByGroup"] is not None:
                     payload["freeIpa"].update(
-                        dict(instanceCountByGroup=self.freeipa["instanceCountByGroup"])
+                        dict(instanceCountByGroup=self.freeipa["instanceCountByGroup"]),
                     )
                 if self.freeipa["multiAz"] is not None:
                     payload["freeIpa"].update(dict(multiAz=self.freeipa["multiAz"]))
@@ -1064,7 +1070,7 @@ class Environment(CdpModule):
             if self.s3_guard_name is not None:
                 self.module.warn(
                     "As of CDP Runtime 7.2.10 (and given consistent s3), s3Guard is no longer needed. "
-                    "Proceeding without s3Guard."
+                    "Proceeding without s3Guard.",
                 )
 
             if self.inbound_cidr is not None:
@@ -1101,7 +1107,7 @@ class Environment(CdpModule):
 
             if self.freeipa is not None:
                 payload["freeIpa"] = dict(
-                    instanceCountByGroup=self.freeipa["instanceCountByGroup"]
+                    instanceCountByGroup=self.freeipa["instanceCountByGroup"],
                 )
 
             if self.zones is not None:
@@ -1135,7 +1141,7 @@ class Environment(CdpModule):
                 )
             if self.freeipa is not None:
                 payload["freeIpa"] = dict(
-                    instanceCountByGroup=self.freeipa["instanceCountByGroup"]
+                    instanceCountByGroup=self.freeipa["instanceCountByGroup"],
                 )
             if self.use_single_resource_group:
                 payload["resourceGroupName"] = self.resource_gp
@@ -1152,20 +1158,20 @@ class Environment(CdpModule):
             self.module.warn(
                 "Environment SSH tunneling specified. Currently, the SSH tunnel setting cannot be "
                 "reconciled. To update the tunneling setting, explicitly delete and recreate the "
-                "environment."
+                "environment.",
             )
 
         if self.workload_analytics is not None:
             self.module.warn(
                 "Environment workload analytics specified. Currently, the environment's workload "
                 "analytics setting cannot be reconciled. To update the workload analytics setting for the"
-                "environment, explicitly delete and recreate the environment."
+                "environment, explicitly delete and recreate the environment.",
             )
 
         if self.tags is not None:
             self.module.warn(
                 "Environment tags specified. Currently, tags cannot be reconciled. To update tags, "
-                "explicitly delete and recreate the environment."
+                "explicitly delete and recreate the environment.",
             )
 
         if self.cloud == "aws":
@@ -1178,7 +1184,7 @@ class Environment(CdpModule):
                     [
                         "log_identity",
                         existing["logStorage"]["awsDetails"]["instanceProfile"],
-                    ]
+                    ],
                 )
 
             if (
@@ -1190,7 +1196,7 @@ class Environment(CdpModule):
                     [
                         "log_location",
                         existing["logStorage"]["awsDetails"]["storageLocationBase"],
-                    ]
+                    ],
                 )
 
             if (
@@ -1202,7 +1208,7 @@ class Environment(CdpModule):
                     [
                         "backup_location",
                         existing["backupStorage"]["awsDetails"]["storageLocationBase"],
-                    ]
+                    ],
                 )
 
             if self.public_key_id is not None or self.public_key_text is not None:
@@ -1235,7 +1241,7 @@ class Environment(CdpModule):
                 mismatch.append(["vpc_id", existing["network"]["aws"]["vpcId"]])
 
             if self.subnet_ids is not None and set(
-                existing["network"]["subnetIds"]
+                existing["network"]["subnetIds"],
             ) != set(self.subnet_ids):
                 mismatch.append(["subnetIds", existing["network"]["subnetIds"]])
 
@@ -1258,7 +1264,7 @@ class Environment(CdpModule):
                     and access.get("defaultSecurityGroupId") != self.default_sg
                 ):
                     mismatch.append(
-                        ["default_sg", access.get("defaultSecurityGroupId")]
+                        ["default_sg", access.get("defaultSecurityGroupId")],
                     )
                 if (
                     self.knox_sg is not None
@@ -1270,7 +1276,7 @@ class Environment(CdpModule):
                 if "proxyConfig" in existing:
                     if existing["proxyConfig"]["proxyConfigName"] != self.proxy:
                         mismatch.append(
-                            ["proxy", existing["proxyConfig"]["proxyConfigName"]]
+                            ["proxy", existing["proxyConfig"]["proxyConfigName"]],
                         )
                 else:
                     mismatch.append(["proxy", "n/a"])
@@ -1278,12 +1284,12 @@ class Environment(CdpModule):
                 mismatch.append(["proxy", existing["proxyConfig"]["proxyConfigName"]])
         elif self.cloud == "gcp":
             self.module.warn(
-                "Environment configuration reconciliation not implemented on GCP"
+                "Environment configuration reconciliation not implemented on GCP",
             )
         else:
             # For Azure
             self.module.warn(
-                "Environment configuration reconciliation not implemented on Azure"
+                "Environment configuration reconciliation not implemented on Azure",
             )
 
         return mismatch
@@ -1309,7 +1315,9 @@ def main():
                 aliases=["default", "default_security_group"],
             ),
             knox_sg=dict(
-                required=False, type="str", aliases=["knox", "knox_security_group"]
+                required=False,
+                type="str",
+                aliases=["knox", "knox_security_group"],
             ),
             public_key_text=dict(required=False, type="str", aliases=["ssh_key_text"]),
             public_key_id=dict(
@@ -1318,25 +1326,38 @@ def main():
                 aliases=["public_key", "ssh_key", "ssh_key_id"],
             ),
             log_location=dict(
-                required=False, type="str", aliases=["storage_location_base"]
+                required=False,
+                type="str",
+                aliases=["storage_location_base"],
             ),
             backup_location=dict(
-                required=False, type="str", aliases=["backup_storage_location_base"]
+                required=False,
+                type="str",
+                aliases=["backup_storage_location_base"],
             ),
             log_identity=dict(required=False, type="str", aliases=["instance_profile"]),
             network_cidr=dict(required=False, type="str"),
             vpc_id=dict(
-                required=False, type="str", aliases=["vpc", "network"]
+                required=False,
+                type="str",
+                aliases=["vpc", "network"],
             ),  # TODO: Update Docs
             subnet_ids=dict(
-                required=False, type="list", elements="str", aliases=["subnets"]
+                required=False,
+                type="list",
+                elements="str",
+                aliases=["subnets"],
             ),
             public_ip=dict(required=False, type="bool"),  # TODO: add to docs
             s3_guard_name=dict(
-                required=False, type="str", aliases=["s3_guard", "s3_guard_table_name"]
+                required=False,
+                type="str",
+                aliases=["s3_guard", "s3_guard_table_name"],
             ),
             resource_gp=dict(
-                required=False, type="str", aliases=["resource_group_name"]
+                required=False,
+                type="str",
+                aliases=["resource_group_name"],
             ),
             tags=dict(required=False, type="dict", aliases=["environment_tags"]),
             workload_analytics=dict(required=False, type="bool", default=True),
@@ -1355,7 +1376,9 @@ def main():
                     multiAz=dict(required=False, type="bool"),
                     image_id=dict(required=False, type="str"),
                     upgrade=dict(
-                        required=False, type="str", choices=["major", "minor"]
+                        required=False,
+                        type="str",
+                        choices=["major", "minor"],
                     ),
                 ),
                 default=dict(instanceCountByGroup=2, multiAz=False),
@@ -1367,16 +1390,25 @@ def main():
                 aliases=["[proxy_config", "proxy_config_name"],
             ),
             cascade=dict(
-                required=False, type="bool", default=False, aliases=["cascading"]
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["cascading"],
             ),
             force=dict(required=False, type="bool", default=False),
             wait=dict(required=False, type="bool", default=True),
             datahub_start=dict(required=False, type="bool", default=True),
             delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=15
+                required=False,
+                type="int",
+                aliases=["polling_delay"],
+                default=15,
             ),
             timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=3600
+                required=False,
+                type="int",
+                aliases=["polling_timeout"],
+                default=3600,
             ),
             zones=dict(
                 required=False,
@@ -1386,7 +1418,9 @@ def main():
             ),
             endpoint_access_subnets=dict(required=False, type="list", elements="str"),
             endpoint_access_scheme=dict(
-                required=False, type="str", choices=["PUBLIC", "PRIVATE"]
+                required=False,
+                type="str",
+                choices=["PUBLIC", "PRIVATE"],
             ),
             use_single_resource_group=dict(required=False, type="bool", default=False),
         ),

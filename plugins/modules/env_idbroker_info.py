@@ -187,7 +187,7 @@ class EnvironmentIdBrokerInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type="str", aliases=["environment"])
+            name=dict(required=True, type="str", aliases=["environment"]),
         ),
         supports_check_mode=True,
     )

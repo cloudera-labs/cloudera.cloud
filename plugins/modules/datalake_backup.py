@@ -484,7 +484,7 @@ class DatalakeBackup(CdpModule):
             or self.skip_validation
         ):
             self.module.fail_json(
-                msg="Unable to use 'state=backup' with args 'backup_id', 'backup_location', 'skip_atlas_indexes', 'skip_atlas_metadata', 'skip_ranger_audits', 'skip_ranger_hms_metadata' or 'skip_validation'"
+                msg="Unable to use 'state=backup' with args 'backup_id', 'backup_location', 'skip_atlas_indexes', 'skip_atlas_metadata', 'skip_ranger_audits', 'skip_ranger_hms_metadata' or 'skip_validation'",
             )
 
         # Confirm datalake exists
@@ -492,13 +492,14 @@ class DatalakeBackup(CdpModule):
 
         if datalake_info is None:
             self.module.fail_json(
-                msg="Datalake {0} does not exist".format(self.datalake_name)
+                msg="Datalake {0} does not exist".format(self.datalake_name),
             )
         else:
             if self.state == "backup":
 
                 backup = self.cdpy.datalake.create_datalake_backup(
-                    datalake_name=self.datalake_name, backup_name=self.backup_name
+                    datalake_name=self.datalake_name,
+                    backup_name=self.backup_name,
                 )
 
                 if self.wait:
@@ -512,7 +513,7 @@ class DatalakeBackup(CdpModule):
                     )
 
                 datalake_backups = self.cdpy.datalake.list_datalake_backups(
-                    datalake_name=self.datalake_name
+                    datalake_name=self.datalake_name,
                 )
                 self.output = [
                     item
@@ -527,7 +528,7 @@ class DatalakeBackup(CdpModule):
                     bk is not None for bk in [self.backup_name, self.backup_id]
                 ):
                     datalake_backups = self.cdpy.datalake.list_datalake_backups(
-                        datalake_name=self.datalake_name
+                        datalake_name=self.datalake_name,
                     )
                     if (
                         len(
@@ -536,7 +537,7 @@ class DatalakeBackup(CdpModule):
                                 for item in datalake_backups["backups"]
                                 if item["backupName"] == self.backup_name
                                 or item["backupId"] == self.backup_id
-                            ]
+                            ],
                         )
                         == 0
                     ):
@@ -548,7 +549,7 @@ class DatalakeBackup(CdpModule):
                                     if bk is not None
                                 ),
                                 self.datalake_name,
-                            )
+                            ),
                         )
 
                 restore = self.cdpy.datalake.restore_datalake_backup(

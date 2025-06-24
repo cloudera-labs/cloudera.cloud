@@ -207,7 +207,7 @@ class IAMUserInfo(CdpModule):
         user["groups"] = self.cdpy.iam.list_groups_for_user(user["userId"])
         user["roles"] = self.cdpy.iam.list_user_assigned_roles(user["userId"])
         user["resource_roles"] = self.cdpy.iam.list_user_assigned_resource_roles(
-            user["userId"]
+            user["userId"],
         )
         return user
 

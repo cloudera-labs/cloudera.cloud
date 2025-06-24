@@ -100,7 +100,7 @@ class LookupModule(LookupBase):
             datahub = Cdpy().datahub.describe_cluster(self.get_option("datahub"))
             if datahub is None:
                 raise AnsibleError(
-                    "No Datahub found for '%s'" % self.get_option("datahub")
+                    "No Datahub found for '%s'" % self.get_option("datahub"),
                 )
             return parse_services(
                 terms,
@@ -113,5 +113,5 @@ class LookupModule(LookupBase):
         except CdpError as e:
             raise AnsibleError(
                 "Error connecting to service '%s': %s"
-                % (self.get_option("datahub"), to_native(e))
+                % (self.get_option("datahub"), to_native(e)),
             )

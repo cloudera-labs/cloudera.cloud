@@ -127,10 +127,12 @@ class LookupModule(LookupBase):
                             continue
                         results.append(
                             [
-                                t
-                                if self.get_option("detailed")
-                                else t["clusterTemplateName"]
-                            ]
+                                (
+                                    t
+                                    if self.get_option("detailed")
+                                    else t["clusterTemplateName"]
+                                ),
+                            ],
                         )
             return results
         except KeyError as e:

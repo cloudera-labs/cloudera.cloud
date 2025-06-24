@@ -294,7 +294,9 @@ class MLInfo(CdpModule):
             self.name and self.env
         ) or self.crn:  # Note that both None and '' will trigger this
             workspace_single = self.cdpy.ml.describe_workspace(
-                name=self.name, env=self.env, crn=self.crn
+                name=self.name,
+                env=self.env,
+                crn=self.crn,
             )
             if workspace_single is not None:
                 self.workspaces.append(workspace_single)
