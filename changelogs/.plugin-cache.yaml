@@ -1,0 +1,367 @@
+objects:
+  role: {}
+plugins:
+  become: {}
+  cache: {}
+  callback: {}
+  cliconf: {}
+  connection: {}
+  filter: {}
+  httpapi: {}
+  inventory: {}
+  lookup:
+    datahub_definition:
+      description: Get a Datahub definition for a CDP Public Cloud Environment
+      name: datahub_definition
+      version_added: 2.0.0
+    datahub_instance:
+      description: Get the instances for a CDP Public Cloud Datahub
+      name: datahub_instance
+      version_added: 2.0.0
+    datahub_service:
+      description: Get the URL for a CDP Public Cloud Datahub service
+      name: datahub_service
+      version_added: 2.0.0
+    datahub_template:
+      description: Get a Datahub template for a CDP Public Cloud Environment
+      name: datahub_template
+      version_added: 2.0.0
+    datalake_instance:
+      description: Get the instances for a CDP Public Cloud Datalake
+      name: datalake_instance
+      version_added: 2.0.0
+    datalake_runtime:
+      description: Get the Datalake Runtime for CDP Public Cloud Environments
+      name: datalake_runtime
+      version_added: 2.0.0
+    datalake_service:
+      description: Get the URL for a CDP Public Cloud Datalake service
+      name: datalake_service
+      version_added: 2.0.0
+    env_freeipa_domain:
+      description: Get information about the FreeIPA domain and DNS server IP address(es)
+        for the selected CDP Public Cloud Environment
+      name: env_freeipa_domain
+      version_added: 2.0.0
+    env_freeipa_hosts:
+      description: Get information about FreeIPA hosts for selected Environment
+      name: env_freeipa_hosts
+      version_added: 2.0.0
+  module:
+    account_auth:
+      description: Gather and set authentication details for a CDP Account
+      name: account_auth
+      namespace: ''
+      version_added: 1.0.0
+    account_auth_info:
+      description: Gather information about CDP Account authentication settings
+      name: account_auth_info
+      namespace: ''
+      version_added: 1.0.0
+    account_cred_info:
+      description: Gather information about Account prerequisites for CDP Credentials
+      name: account_cred_info
+      namespace: ''
+      version_added: 1.0.0
+    datahub_cluster:
+      description: Manage CDP Datahubs
+      name: datahub_cluster
+      namespace: ''
+      version_added: 1.0.0
+    datahub_cluster_info:
+      description: Gather information about CDP Datahubs
+      name: datahub_cluster_info
+      namespace: ''
+      version_added: 1.0.0
+    datahub_cluster_recipe:
+      description: Manage CDP Datahub recipes on an instance group
+      name: datahub_cluster_recipe
+      namespace: ''
+      version_added: 2.1.0
+    datahub_cluster_repair:
+      description: Repair CDP Datahub instances or instance groups
+      name: datahub_cluster_repair
+      namespace: ''
+      version_added: 2.1.0
+    datahub_definition_info:
+      description: Gather information about CDP Datahub Cluster Definitions
+      name: datahub_definition_info
+      namespace: ''
+      version_added: 1.3.0
+    datahub_template_info:
+      description: Gather information about CDP Datahub Cluster Templates
+      name: datahub_template_info
+      namespace: ''
+      version_added: 1.0.0
+    datalake:
+      description: Manage CDP Datalakes
+      name: datalake
+      namespace: ''
+      version_added: 1.0.0
+    datalake_backup:
+      description: Create a backup of a datalake
+      name: datalake_backup
+      namespace: ''
+      version_added: 3.0.0
+    datalake_backup_info:
+      description: Gather information about a Datalake backup
+      name: datalake_backup_info
+      namespace: ''
+      version_added: 3.0.0
+    datalake_info:
+      description: Gather information about CDP Datalakes
+      name: datalake_info
+      namespace: ''
+      version_added: 1.0.0
+    datalake_runtime_info:
+      description: Gather information about CDP Datalake Runtimes
+      name: datalake_runtime_info
+      namespace: ''
+      version_added: 1.0.0
+    de:
+      description: Enable and Disable CDP Data Engineering Services
+      name: de
+      namespace: ''
+      version_added: 1.5.0
+    de_info:
+      description: Gather information about CDP DE Workspaces
+      name: de_info
+      namespace: ''
+      version_added: 1.5.0
+    de_virtual_cluster:
+      description: Create or delete CDP Data Engineering Virtual Clusters
+      name: de_virtual_cluster
+      namespace: ''
+      version_added: 1.5.0
+    de_virtual_cluster_info:
+      description: Gather information about CDP DE virtual clusters
+      name: de_virtual_cluster_info
+      namespace: ''
+      version_added: 1.5.0
+    df_customflow:
+      description: Import or Delete CustomFlows into the DataFlow Catalog
+      name: df_customflow
+      namespace: ''
+      version_added: 2.0.0
+    df_customflow_info:
+      description: Gather information about CDP DataFlow CustomFlow Definitions
+      name: df_customflow_info
+      namespace: ''
+      version_added: 1.6.0
+    df_customflow_version:
+      description: Import CustomFlow versions into the DataFlow Catalog
+      name: df_customflow_version
+      namespace: ''
+      version_added: 2.0.0
+    df_deployment:
+      description: Enable or Disable CDP DataFlow Deployments
+      name: df_deployment
+      namespace: ''
+      version_added: 1.6.0
+    df_deployment_info:
+      description: Gather information about CDP DataFlow Deployments
+      name: df_deployment_info
+      namespace: ''
+      version_added: 1.6.0
+    df_readyflow:
+      description: Import or Delete ReadyFlows from your CDP Tenant
+      name: df_readyflow
+      namespace: ''
+      version_added: 1.6.0
+    df_readyflow_info:
+      description: Gather information about CDP DataFlow ReadyFlow Definitions
+      name: df_readyflow_info
+      namespace: ''
+      version_added: 1.6.0
+    df_service:
+      description: Enable or Disable CDP DataFlow Services
+      name: df_service
+      namespace: ''
+      version_added: 1.2.0
+    df_service_info:
+      description: Gather information about CDP DataFlow Services
+      name: df_service_info
+      namespace: ''
+      version_added: 1.2.0
+    dw_cluster:
+      description: Create or Delete CDP Data Warehouse Clusters
+      name: dw_cluster
+      namespace: ''
+      version_added: 1.0.0
+    dw_cluster_info:
+      description: Gather information about CDP Data Warehouse Clusters
+      name: dw_cluster_info
+      namespace: ''
+      version_added: 1.0.0
+    dw_data_visualization:
+      description: Create or Delete CDP Data Visualization Instance
+      name: dw_data_visualization
+      namespace: ''
+      version_added: 2.0.0
+    dw_data_visualization_info:
+      description: Gather information about CDP Data Visualization Instances
+      name: dw_data_visualization_info
+      namespace: ''
+      version_added: 2.0.0
+    dw_database_catalog:
+      description: Create, manage, and destroy CDP Data Warehouse Database Catalogs
+      name: dw_database_catalog
+      namespace: ''
+      version_added: 1.5.0
+    dw_database_catalog_info:
+      description: Gather information about CDP Data Warehouse Database Catalogs
+      name: dw_database_catalog_info
+      namespace: ''
+      version_added: 1.5.0
+    dw_virtual_warehouse:
+      description: Create, manage, and destroy CDP Data Warehouse Virtual Warehouses
+      name: dw_virtual_warehouse
+      namespace: ''
+      version_added: 1.5.0
+    dw_virtual_warehouse_info:
+      description: Gather information about CDP Data Warehouse Virtual Warehouses
+      name: dw_virtual_warehouse_info
+      namespace: ''
+      version_added: 1.5.0
+    env:
+      description: Manage CDP Environments
+      name: env
+      namespace: ''
+      version_added: 1.0.0
+    env_auth:
+      description: Set authentication details for the current CDP user
+      name: env_auth
+      namespace: ''
+      version_added: 1.0.0
+    env_auth_info:
+      description: Gather information about CDP environment authentication details
+      name: env_auth_info
+      namespace: ''
+      version_added: 1.0.0
+    env_automated_user_sync_info:
+      description: Get the status of the automated CDP Users and Groups synchronization
+        service
+      name: env_automated_user_sync_info
+      namespace: ''
+      version_added: 1.7.0
+    env_cred:
+      description: Create, update, and destroy CDP credentials
+      name: env_cred
+      namespace: ''
+      version_added: 1.0.0
+    env_cred_info:
+      description: Gather information about CDP Credentials
+      name: env_cred_info
+      namespace: ''
+      version_added: 1.0.0
+    env_idbroker:
+      description: Update ID Broker for CDP Environments
+      name: env_idbroker
+      namespace: ''
+      version_added: 1.0.0
+    env_idbroker_info:
+      description: Gather information about CDP ID Broker
+      name: env_idbroker_info
+      namespace: ''
+      version_added: 1.0.0
+    env_info:
+      description: Gather information about CDP Environments
+      name: env_info
+      namespace: ''
+      version_added: 1.0.0
+    env_proxy:
+      description: Create, update, or destroy CDP Environment Proxies
+      name: env_proxy
+      namespace: ''
+      version_added: 1.0.0
+    env_proxy_info:
+      description: Gather information about CDP Environment Proxies
+      name: env_proxy_info
+      namespace: ''
+      version_added: 1.0.0
+    env_telemetry:
+      description: Set CDP environment telemetry
+      name: env_telemetry
+      namespace: ''
+      version_added: 1.0.0
+    env_user_sync:
+      description: Sync CDP Users and Groups to Environments
+      name: env_user_sync
+      namespace: ''
+      version_added: 1.0.0
+    env_user_sync_info:
+      description: Get the status of a CDP Users and Groups sync
+      name: env_user_sync_info
+      namespace: ''
+      version_added: 1.0.0
+    freeipa_info:
+      description: Gather information about FreeIPA
+      name: freeipa_info
+      namespace: ''
+      version_added: 1.1.0
+    iam_group:
+      description: Create, update, or destroy CDP IAM Groups
+      name: iam_group
+      namespace: ''
+      version_added: 1.0.0
+    iam_group_info:
+      description: Gather information about CDP Public IAM groups
+      name: iam_group_info
+      namespace: ''
+      version_added: 1.0.0
+    iam_resource_role_info:
+      description: Gather information about CDP Public IAM resource roles
+      name: iam_resource_role_info
+      namespace: ''
+      version_added: 1.0.0
+    iam_role_info:
+      description: Gather information about CDP Public IAM roles
+      name: iam_role_info
+      namespace: ''
+      version_added: 3.0.0
+    iam_user_info:
+      description: Gather information about CDP Public IAM users
+      name: iam_user_info
+      namespace: ''
+      version_added: 1.0.0
+    ml:
+      description: Create or Destroy CDP Machine Learning Workspaces
+      name: ml
+      namespace: ''
+      version_added: 1.0.0
+    ml_info:
+      description: Gather information about CDP ML Workspaces
+      name: ml_info
+      namespace: ''
+      version_added: 1.0.0
+    ml_workspace_access:
+      description: Grant and revoke user access to CDP Machine Learning Workspaces
+      name: ml_workspace_access
+      namespace: ''
+      version_added: 1.1.0
+    opdb:
+      description: Create or destroy CDP OpDB Databases
+      name: opdb
+      namespace: ''
+      version_added: 1.0.0
+    opdb_info:
+      description: Gather information about CDP OpDB Databases
+      name: opdb_info
+      namespace: ''
+      version_added: 1.0.0
+    recipe:
+      description: Manage a CDP recipe
+      name: recipe
+      namespace: ''
+      version_added: 2.1.0
+    recipe_info:
+      description: Gather information about CDP recipes
+      name: recipe_info
+      namespace: ''
+      version_added: 2.1.0
+  netconf: {}
+  shell: {}
+  strategy: {}
+  test: {}
+  vars: {}
+version: 2.5.1
