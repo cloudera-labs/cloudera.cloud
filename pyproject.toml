@@ -15,6 +15,8 @@ dependencies = []
 [tool.hatch.version]
 path = "galaxy.yml"
 pattern = "version:\\s+(?P<version>[\\d\\.]+)"
+scheme = "semver"
+validate-bump = true
 
 [tool.hatch.envs.default]
 python = "3.12"
@@ -53,5 +55,8 @@ filterwarnings = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = [
+  "hatchling",
+  "hatch-semver",
+]
 build-backend = "hatchling.build"
