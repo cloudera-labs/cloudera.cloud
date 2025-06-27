@@ -24,6 +24,7 @@ description:
     - See the L(Cloudera documentation on recipes,https://docs.cloudera.com/data-hub/cloud/recipes/topics/mc-creating-custom-scripts-recipes.html) for details.
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "2.1.0"
 requirements:
   - cdpy
 options:
@@ -191,7 +192,7 @@ class Recipe(CdpModule):
                         svc="datahub",
                         func="create_recipe",
                         ret_field="recipe",
-                        **payload
+                        **payload,
                     )
                 else:
                     self.recipe = existing
@@ -202,7 +203,7 @@ class Recipe(CdpModule):
                 if tmp != payload and not self.module.check_mode:
                     self.changed = True
                     self.module.warn(
-                        "Existing recipe is different from input. Recreating recipe."
+                        "Existing recipe is different from input. Recreating recipe.",
                     )
                     self.cdpy.sdk.call(
                         svc="datahub",
@@ -213,7 +214,7 @@ class Recipe(CdpModule):
                         svc="datahub",
                         func="create_recipe",
                         ret_field="recipe",
-                        **payload
+                        **payload,
                     )
                 else:
                     self.recipe = existing
@@ -231,7 +232,9 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             state=dict(
-                required=False, choices=["present", "absent"], default="present"
+                required=False,
+                choices=["present", "absent"],
+                default="present",
             ),
             name=dict(required=True, aliases=["recipe", "recipe_name"]),
             description=dict(required=False, aliases=["desc"]),

@@ -22,6 +22,7 @@ description:
     - Gather information about CDP DataFlow CustomFlow Definitions
 author:
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.6.0"
 requirements:
   - cdpy
 options:
@@ -52,7 +53,7 @@ EXAMPLES = r"""
 # Gather summary information about a specific DataFlow Flow Definition using a name
 - cloudera.cloud.df_customflow_info:
     name: my-flow-name
-    include_details: False
+    include_details: false
 """
 
 RETURN = r"""

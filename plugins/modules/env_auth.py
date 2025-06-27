@@ -24,6 +24,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -111,10 +112,16 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             name=dict(
-                required=False, type="list", elements="str", aliases=["environment"]
+                required=False,
+                type="list",
+                elements="str",
+                aliases=["environment"],
             ),
             password=dict(
-                required=True, type="str", no_log=True, aliases=["workload_password"]
+                required=True,
+                type="str",
+                no_log=True,
+                aliases=["workload_password"],
             ),
         ),
         supports_check_mode=True,

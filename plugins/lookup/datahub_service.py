@@ -27,6 +27,7 @@ DOCUMENTATION = """
         - If no service name (or optionally Knox service name) is found on the specified Datahub, the lookup returns the value of I(default).
         - Otherwise, the lookup entry will be an empty list.
         - If the Datahub is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:
@@ -99,7 +100,7 @@ class LookupModule(LookupBase):
             datahub = Cdpy().datahub.describe_cluster(self.get_option("datahub"))
             if datahub is None:
                 raise AnsibleError(
-                    "No Datahub found for '%s'" % self.get_option("datahub")
+                    "No Datahub found for '%s'" % self.get_option("datahub"),
                 )
             return parse_services(
                 terms,
@@ -112,5 +113,5 @@ class LookupModule(LookupBase):
         except CdpError as e:
             raise AnsibleError(
                 "Error connecting to service '%s': %s"
-                % (self.get_option("datahub"), to_native(e))
+                % (self.get_option("datahub"), to_native(e)),
             )

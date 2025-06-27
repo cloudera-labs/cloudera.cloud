@@ -24,6 +24,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -118,7 +119,7 @@ class EnvironmentCredentialInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="str", aliases=["credential"])
+            name=dict(required=False, type="str", aliases=["credential"]),
         ),
         supports_check_mode=True,
     )

@@ -24,6 +24,7 @@ author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
   - "Saravanan Raju (@raju-saravanan)"
+version_added: "1.5.0"
 requirements:
   - cdpy
 options:
@@ -191,7 +192,8 @@ class DwVirtualWarehouseInfo(CdpModule):
     def process(self):
         if self.warehouse_id is not None:
             target = self.cdpy.dw.describe_vw(
-                cluster_id=self.cluster_id, vw_id=self.warehouse_id
+                cluster_id=self.cluster_id,
+                vw_id=self.warehouse_id,
             )
             if target is not None:
                 self.virtual_warehouses.append(target)
@@ -202,8 +204,9 @@ class DwVirtualWarehouseInfo(CdpModule):
                     if vw["name"] == self.name:
                         self.virtual_warehouses.append(
                             self.cdpy.dw.describe_vw(
-                                cluster_id=self.cluster_id, vw_id=vw["id"]
-                            )
+                                cluster_id=self.cluster_id,
+                                vw_id=vw["id"],
+                            ),
                         )
             elif self.catalog_id is not None:
                 self.virtual_warehouses = [

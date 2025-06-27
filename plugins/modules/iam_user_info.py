@@ -24,6 +24,7 @@ author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
   - "Ronald Suplina (@rsuplina)"
+version_added: "1.0.0"
 options:
   name:
     description:
@@ -82,11 +83,11 @@ EXAMPLES = r"""
 # Gather detailed information about a named User
 - cloudera.cdp.iam_user_info:
     filter:
-        workloadUsername: my[0-9]{2}_admin.*?'
+      workloadUsername: my[0-9]{2}_admin.*?'
 
 # Gather detailed information about the current user
 - cloudera.cloud.iam_user_info:
-    current_user: yes
+    current_user: true
 """
 
 RETURN = r"""
@@ -206,7 +207,7 @@ class IAMUserInfo(CdpModule):
         user["groups"] = self.cdpy.iam.list_groups_for_user(user["userId"])
         user["roles"] = self.cdpy.iam.list_user_assigned_roles(user["userId"])
         user["resource_roles"] = self.cdpy.iam.list_user_assigned_resource_roles(
-            user["userId"]
+            user["userId"],
         )
         return user
 

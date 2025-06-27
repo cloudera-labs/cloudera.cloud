@@ -23,6 +23,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -60,7 +61,7 @@ EXAMPLES = r"""
 # Gather detailed information about a named Datahub, including the template contents in JSON
 - cloudera.cloud.datahub_template_info:
     name: example-template
-    return_content: yes
+    return_content: true
 """
 
 RETURN = r"""
@@ -181,7 +182,7 @@ class DatahubTemplateInfo(CdpModule):
         else:
             self.module.fail_json(
                 msg="Failed to retrieve Cluster Template content, '%s'"
-                % short_desc["clusterTemplateName"]
+                % short_desc["clusterTemplateName"],
             )
 
 

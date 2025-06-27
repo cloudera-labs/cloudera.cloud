@@ -27,5 +27,5 @@ def skip_python():
     if sys.version_info < (3, 6):
         pytest.skip(
             "Skipping on Python %s. cloudera.cloud supports Python 3.6 and higher."
-            % sys.version
+            % sys.version,
         )

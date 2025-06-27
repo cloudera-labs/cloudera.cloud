@@ -24,6 +24,7 @@ author:
   - "Webster Mudge (@wmudge)"
   - "Daniel Chaffelson (@chaffelson)"
   - "Chris Perro (@cmperro)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -247,7 +248,7 @@ EXAMPLES = r"""
             volumeType: volume-type-for-cloud-provider
     tags:
       project: Arbitrary content
-    wait: no
+    wait: false
 
 - name: Create a datahub specifying only a definition name
   cloudera.cloud.datahub_cluster:
@@ -256,7 +257,7 @@ EXAMPLES = r"""
     definition: definition-name
     tags:
       project: Arbitrary content
-    wait: no
+    wait: false
 
 - name: Stop the datahub (and wait for status change)
   cloudera.cloud.datahub_cluster:
@@ -596,12 +597,12 @@ class DatahubCluster(CdpModule):
                     # Reconcile and error if specifying invalid cloud parameters
                     if self.environment is not None:
                         self.host_env = self.cdpy.environments.describe_environment(
-                            self.environment
+                            self.environment,
                         )
                         if self.host_env["crn"] != existing["environmentCrn"]:
                             self.module.fail_json(
                                 msg="Datahub exists in a different Environment: %s"
-                                % existing["environmentCrn"]
+                                % existing["environmentCrn"],
                             )
                         # Check for changes
                         mismatch = self._reconcile_existing_state(existing)
@@ -634,7 +635,7 @@ class DatahubCluster(CdpModule):
             # Else not exists already, therefore create the datahub
             else:
                 self.host_env = self.cdpy.environments.describe_environment(
-                    self.environment
+                    self.environment,
                 )
                 if self.host_env is not None:
                     if self.cdpy.datalake.is_datalake_running(self.environment) is True:
@@ -642,11 +643,11 @@ class DatahubCluster(CdpModule):
                     else:
                         self.module.fail_json(
                             msg="Unable to find datalake or not Running, '%s'"
-                            % self.environment
+                            % self.environment,
                         )
                 else:
                     self.module.fail_json(
-                        msg="Unable to find environment, '%s'" % self.environment
+                        msg="Unable to find environment, '%s'" % self.environment,
                     )
         elif self.state == "stopped":
             # If the datahub exists
@@ -654,13 +655,13 @@ class DatahubCluster(CdpModule):
                 # Warn if attempting to stop an already stopped/stopping datahub
                 if existing["status"] in self.cdpy.sdk.STOPPED_STATES:
                     self.module.warn(
-                        "Attempting to stop a datahub already stopped or in stopping cycle"
+                        "Attempting to stop a datahub already stopped or in stopping cycle",
                     )
                     self.datahub = existing
                 # Warn if attempting to stop an already terminated/terminating datahub
                 elif existing["status"] in self.cdpy.sdk.TERMINATION_STATES:
                     self.module.warn(
-                        "Attempting to stop an datahub during the termination cycle"
+                        "Attempting to stop an datahub during the termination cycle",
                     )
                     self.datahub = existing
                 # Otherwise, stop the datahub
@@ -687,7 +688,7 @@ class DatahubCluster(CdpModule):
                 if not self.module.check_mode:
                     if existing["status"] in self.cdpy.sdk.TERMINATION_STATES:
                         self.module.warn(
-                            "Attempting to delete an datahub during the termination cycle"
+                            "Attempting to delete an datahub during the termination cycle",
                         )
                         self.datahub = existing
                     # Otherwise, delete the datahub
@@ -713,20 +714,26 @@ class DatahubCluster(CdpModule):
 
         if self.host_env["cloudPlatform"] == "AWS":
             self.datahub = self.cdpy.sdk.call(
-                "datahub", "create_aws_cluster", **payload
+                "datahub",
+                "create_aws_cluster",
+                **payload,
             )
         elif self.host_env["cloudPlatform"] == "AZURE":
             self.datahub = self.cdpy.sdk.call(
-                "datahub", "create_azure_cluster", **payload
+                "datahub",
+                "create_azure_cluster",
+                **payload,
             )
         elif self.host_env["cloudPlatform"] == "GCP":
             self.datahub = self.cdpy.sdk.call(
-                "datahub", "create_gcp_cluster", **payload
+                "datahub",
+                "create_gcp_cluster",
+                **payload,
             )
         else:
             self.module.fail_json(
                 msg="cloudPlatform %s datahub deployment not implemented"
-                % self.host_env["cloudPlatform"]
+                % self.host_env["cloudPlatform"],
             )
 
         self.changed = True
@@ -765,7 +772,7 @@ class DatahubCluster(CdpModule):
             if not subnet_metadata:
                 self.module.fail_json(
                     msg="Could not retrieve subnet metadata for CDP Environment %s"
-                    % self.env_crn
+                    % self.env_crn,
                 )
 
             subnets = self._filter_subnets(self.subnets_filter, subnet_metadata)
@@ -812,14 +819,14 @@ class DatahubCluster(CdpModule):
         except Exception:
             self.module.fail_json(
                 msg="The specified subnet filter is an invalid JMESPath expression: "
-                % query
+                % query,
             )
         try:
             return [s["subnetId"] for s in filtered_subnets]
         except Exception:
             self.module.fail_json(
                 msg='The subnet filter "%s" should return an array of subnet objects '
-                "but instead returned this: %s" % (query, json.dumps(filtered_subnets))
+                "but instead returned this: %s" % (query, json.dumps(filtered_subnets)),
             )
 
     def _reconcile_existing_state(self, existing):
@@ -827,17 +834,17 @@ class DatahubCluster(CdpModule):
 
         if existing["cloudPlatform"] == "AWS":
             self.module.warn(
-                "Datahub configuration reconciliation not implemented on AWS"
+                "Datahub configuration reconciliation not implemented on AWS",
             )
 
         if existing["cloudPlatform"].upper() == "AZURE":
             self.module.warn(
-                "Datahub configuration reconciliation not implemented on Azure"
+                "Datahub configuration reconciliation not implemented on Azure",
             )
 
         if existing["cloudPlatform"].upper() == "GCP":
             self.module.warn(
-                "Datahub configuration reconciliation not implemented on GCP"
+                "Datahub configuration reconciliation not implemented on GCP",
             )
 
         if self.tags:
@@ -845,7 +852,7 @@ class DatahubCluster(CdpModule):
                 "Updating an existing Datahub's 'tags' "
                 "directly are not supported at this time. If you "
                 "need to change the tags, explicitly delete "
-                "and recreate the Datahub."
+                "and recreate the Datahub.",
             )
         return mismatched
 
@@ -853,7 +860,7 @@ class DatahubCluster(CdpModule):
         if len(self.name) < 5 or len(self.name) > 100:
             self.module.fail_json(
                 msg="Invalid datahub name, '%s'. Names must be between 5-100 characters."
-                % self.name
+                % self.name,
             )
         elif (
             self.cdpy.sdk.regex_search(self.cdpy.sdk.DATAHUB_NAME_PATTERN, self.name)
@@ -861,7 +868,7 @@ class DatahubCluster(CdpModule):
         ):
             self.module.fail_json(
                 msg="Invalid datahub name, '%s'. Names must contain only lowercase "
-                "letters, numbers and hyphens." % self.name
+                "letters, numbers and hyphens." % self.name,
             )
 
 
@@ -890,10 +897,16 @@ def main():
             force=dict(required=False, type="bool", default=False),
             wait=dict(required=False, type="bool", default=True),
             delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=15
+                required=False,
+                type="int",
+                aliases=["polling_delay"],
+                default=15,
             ),
             timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=3600
+                required=False,
+                type="int",
+                aliases=["polling_timeout"],
+                default=3600,
             ),
         ),
         supports_check_mode=True,

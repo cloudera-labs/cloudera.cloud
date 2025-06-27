@@ -23,6 +23,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -147,7 +148,8 @@ class OpdbDatabaseInfo(CdpModule):
     def process(self):
         if self.name and self.env:  # Note that both None and '' will trigger this
             database_single = self.cdpy.opdb.describe_database(
-                name=self.name, env=self.env
+                name=self.name,
+                env=self.env,
             )
             if database_single is not None:
                 self.databases.append(database_single)

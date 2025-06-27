@@ -24,6 +24,7 @@ description:
     - See the L(Cloudera documentation on recipes,https://docs.cloudera.com/data-hub/cloud/recipes/topics/mc-creating-custom-scripts-recipes.html) for details.
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "2.1.0"
 requirements:
   - cdpy
 options:
@@ -153,7 +154,7 @@ class DatahubClusterRecipe(CdpModule):
 
         if not self.module.check_mode:
             results = camel_dict_to_snake_dict(
-                self.cdpy.sdk.call(svc="datahub", func="replace_recipes", **payload)
+                self.cdpy.sdk.call(svc="datahub", func="replace_recipes", **payload),
             )
 
             for r in ["attached_recipes", "detached_recipes"]:

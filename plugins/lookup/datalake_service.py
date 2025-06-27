@@ -27,6 +27,7 @@ DOCUMENTATION = """
         - If no service name (or optionally Knox service name) is found on the specified Datalake, the lookup returns the value of I(default).
         - Otherwise, the lookup entry will be an empty list.
         - If the Datalake is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:
@@ -104,7 +105,7 @@ class LookupModule(LookupBase):
 
         if not self.get_option("datalake") and not self.get_option("environment"):
             raise AnsibleError(
-                "One of 'environment' or 'datalake' parameters must be present"
+                "One of 'environment' or 'datalake' parameters must be present",
             )
 
         try:
@@ -113,20 +114,21 @@ class LookupModule(LookupBase):
                 dl = Cdpy().datalake.describe_datalake(self.get_option("datalake"))
                 if dl is None:
                     raise AnsibleError(
-                        "No Datalake found for '%s'" % self.get_option("datalake")
+                        "No Datalake found for '%s'" % self.get_option("datalake"),
                     )
             else:
                 env = Cdpy().datalake.describe_all_datalakes(
-                    self.get_option("environment")
+                    self.get_option("environment"),
                 )
                 if not env:
                     raise AnsibleError(
-                        "No Environment found for '%s'" % self.get_option("environment")
+                        "No Environment found for '%s'"
+                        % self.get_option("environment"),
                     )
                 elif len(env) > 1:
                     raise AnsibleError(
                         "Multiple Datalakes found for Enviroment '%s'"
-                        % self.get_option("environment")
+                        % self.get_option("environment"),
                     )
                 dl = env[0]
             return parse_services(

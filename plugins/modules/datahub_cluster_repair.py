@@ -22,6 +22,7 @@ description:
     - Execute a repair (remove and/or replace) on one or more instances or instance groups within a CDP Datahub.
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "2.1.0"
 requirements:
   - cdpy
 options:
@@ -102,13 +103,13 @@ EXAMPLES = r"""
     instances:
       - i-08fa9ff7694dca0a8
       - i-0ea1b60d9a103ab36
-    delete_volumes: yes
+    delete_volumes: true
 
 - name: Replace multiple instances sequentially (i.e. rollout)
   cloudera.cloud.datahub_cluster_repair:
     datahub: example-datahub
     instances: "{{ instance_id }}"
-    wait: yes # implied
+    wait: true # implied
   loop: "{{ query('cloudera.cloud.datahub_instance', 'core_broker', datahub='example-datahub', detailed=True) | flatten | map(attribute='id') | list }}"
   loop_control:
     loop_var: instance_id
@@ -429,7 +430,9 @@ class DatahubClusterRepair(CdpModule):
                     timeout=self.timeout,
                 )
                 self._wait_for_instance_state(
-                    existing, ["HEALTHY", "UNHEALTHY"], node_count
+                    existing,
+                    ["HEALTHY", "UNHEALTHY"],
+                    node_count,
                 )
 
             instance_payload = dict(
@@ -444,7 +447,7 @@ class DatahubClusterRepair(CdpModule):
                 ]
                 if set(self.instances).difference(set(discovered_instances)):
                     self.module.fail_json(
-                        msg=f"Instance(s) not found in Datahub: {str(self.instances)}"
+                        msg=f"Instance(s) not found in Datahub: {str(self.instances)}",
                     )
 
                 instance_payload.update(instanceIds=self.instances)
@@ -457,7 +460,7 @@ class DatahubClusterRepair(CdpModule):
                 ]
                 if not discovered_instances:
                     self.module.fail_json(
-                        msg=f"No instances found for instance group(s) in Datahub: {str(self.instance_groups)}"
+                        msg=f"No instances found for instance group(s) in Datahub: {str(self.instance_groups)}",
                     )
 
                 instance_payload.update(instanceIds=discovered_instances)
@@ -502,7 +505,7 @@ class DatahubClusterRepair(CdpModule):
             outstanding_instances = parse_instances()
             if outstanding_instances or current["nodeCount"] != node_count:
                 self.module.warn(
-                    f"Waiting for state(s) [{str(state)}] for instances: {str(outstanding_instances)}; Node count: {str(current['nodeCount'])}/{str(node_count)}"
+                    f"Waiting for state(s) [{str(state)}] for instances: {str(outstanding_instances)}; Node count: {str(current['nodeCount'])}/{str(node_count)}",
                 )
                 sleep(self.delay)
                 current = self.cdpy.datahub.describe_cluster(self.datahub)

@@ -24,6 +24,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -186,7 +187,7 @@ class EnvironmentIdBrokerInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type="str", aliases=["environment"])
+            name=dict(required=True, type="str", aliases=["environment"]),
         ),
         supports_check_mode=True,
     )

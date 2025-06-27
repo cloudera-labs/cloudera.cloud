@@ -26,6 +26,7 @@ DOCUMENTATION = """
         - Allows you to retrieve the instances by one or more instance groups for a CDP Public Cloud Datahub.
         - If the Datahub is not found or is ambigious, the lookup will return an error.
         - If the instance group is not found, the lookup will return the C(default) value.
+    version_added: "2.0.0"
     options:
         _terms:
             description:
@@ -94,7 +95,7 @@ class LookupModule(LookupBase):
             datahub = Cdpy().datahub.describe_cluster(self.get_option("datahub"))
             if datahub is None:
                 raise AnsibleError(
-                    "No Datahub found for '%s'" % self.get_option("datahub")
+                    "No Datahub found for '%s'" % self.get_option("datahub"),
                 )
 
             all_instance_groups = {ig["name"]: ig for ig in datahub["instanceGroups"]}
@@ -103,14 +104,14 @@ class LookupModule(LookupBase):
             for term in LookupBase._flatten(terms):
                 display.vvv(
                     "Filtering instance groups for %s[%s]"
-                    % (self.get_option("datahub"), term)
+                    % (self.get_option("datahub"), term),
                 )
                 if term in all_instance_groups:
                     if self.get_option("detailed"):
                         results.append(all_instance_groups[term]["instances"])
                     else:
                         results.append(
-                            [i["fqdn"] for i in all_instance_groups[term]["instances"]]
+                            [i["fqdn"] for i in all_instance_groups[term]["instances"]],
                         )
                 else:
                     results.append(self.get_option("default"))

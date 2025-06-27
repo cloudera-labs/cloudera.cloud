@@ -25,6 +25,7 @@ DOCUMENTATION = """
     description:
         - Allows you to retrieve the Datahub definition matching the Datalake CDH cloud platform and Runtime for one or more CDP Public Cloud Environments.
         - If an Environment is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:
@@ -118,7 +119,7 @@ class LookupModule(LookupBase):
                 cloud_platform, raw_version, semantic_version = parse_environment(term)
                 display.vvv(
                     "Filtering definitions for %s[%s][%s]"
-                    % (term, cloud_platform, semantic_version)
+                    % (term, cloud_platform, semantic_version),
                 )
 
                 for d in all_definitions:
@@ -137,10 +138,12 @@ class LookupModule(LookupBase):
                             continue
                         results.append(
                             [
-                                d
-                                if self.get_option("detailed")
-                                else d["clusterDefinitionName"]
-                            ]
+                                (
+                                    d
+                                    if self.get_option("detailed")
+                                    else d["clusterDefinitionName"]
+                                ),
+                            ],
                         )
             return results
         except KeyError as e:

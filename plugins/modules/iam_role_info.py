@@ -22,6 +22,7 @@ description:
     - Gathers information about  CDP Public IAM role or roles
 author:
   - "Ronald Suplina (@rsuplina)"
+version_added: "3.0.0"
 options:
   name:
     description:
@@ -94,7 +95,7 @@ class IAMRoleInfo(CdpModule):
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="list", elements="str", aliases=["crn"])
+            name=dict(required=False, type="list", elements="str", aliases=["crn"]),
         ),
         supports_check_mode=True,
     )

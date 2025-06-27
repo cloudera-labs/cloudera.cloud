@@ -22,6 +22,7 @@ description:
     - Gather information about CDP Datalake Runtimes
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -45,8 +46,7 @@ EXAMPLES = r"""
 
 # List basic information about the default Datalake Runtime
 - cloudera.cloud.datalake_runtime_info:
-    default: yes
-
+    default: true
 """
 
 RETURN = r"""
@@ -96,11 +96,13 @@ class DatalakeRuntimeInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         retrieved_versions = self.cdpy.sdk.call(
-            svc="datalake", func="list_runtimes", ret_field="versions"
+            svc="datalake",
+            func="list_runtimes",
+            ret_field="versions",
         )
         if self.default:
             self.versions = list(
-                filter(lambda r: r["defaultRuntimeVersion"], retrieved_versions)
+                filter(lambda r: r["defaultRuntimeVersion"], retrieved_versions),
             )
         else:
             self.versions = retrieved_versions

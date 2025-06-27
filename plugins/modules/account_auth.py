@@ -24,6 +24,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -57,7 +58,7 @@ EXAMPLES = """
 
 # Disable Cloudera SSO login for all non-admin users
 - cloudera.cloud.account_auth:
-    disable_sso: yes
+    disable_sso: true
 
 # Set the password expiration to 7 days
 - cloudera.cloud.account_auth:
@@ -142,7 +143,9 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             enable_sso=dict(
-                required=False, type="bool", aliases=["sso", "enable_cloudera_sso"]
+                required=False,
+                type="bool",
+                aliases=["sso", "enable_cloudera_sso"],
             ),
             password_lifetime=dict(
                 required=False,

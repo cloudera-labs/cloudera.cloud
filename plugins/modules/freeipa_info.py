@@ -23,6 +23,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Jim Enright (@jenright)"
+version_added: "1.1.0"
 requirements:
   - cdpy
 options:
@@ -109,14 +110,16 @@ class FreeIPAInfo(CdpModule):
     def process(self):
         if self.name:
             self.freeipa = self.cdpy.sdk.call(
-                svc="environments", func="get_freeipa_status", environmentName=self.name
+                svc="environments",
+                func="get_freeipa_status",
+                environmentName=self.name,
             )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type="str", aliases=["environment"])
+            name=dict(required=True, type="str", aliases=["environment"]),
         ),
         supports_check_mode=True,
     )

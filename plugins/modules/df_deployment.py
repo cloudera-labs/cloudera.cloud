@@ -23,6 +23,7 @@ description:
     - Enable or Disable CDP DataFlow Deployments
 author:
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.6.0"
 requirements:
   - cdpy
 options:
@@ -170,11 +171,10 @@ EXAMPLES = r"""
     name: my-flow-name
     df_name: my-env-name
     state: absent
-    wait: yes
+    wait: true
   async: 3600
   poll: 0
   register: __my_teardown_request
-
 """
 
 RETURN = r"""
@@ -363,7 +363,7 @@ class DFDeployment(CdpModule):
             and self.df_name is None
         ):
             self.module.fail_json(
-                msg="name is specified but any of the following are missing: df_crn, df_name"
+                msg="name is specified but any of the following are missing: df_crn, df_name",
             )
 
         # Initialize return values
@@ -386,11 +386,12 @@ class DFDeployment(CdpModule):
             self.df_crn = self.cdpy.df.resolve_service_crn_from_name(self.df_name)
             if self.df_crn is None:
                 self.module.fail_json(
-                    msg="Either df_crn must be supplied or resolvable from df_name"
+                    msg="Either df_crn must be supplied or resolvable from df_name",
                 )
         if self.name is not None and self.df_crn is not None:
             self.target = self.cdpy.df.describe_deployment(
-                df_crn=self.df_crn, name=self.name
+                df_crn=self.df_crn,
+                name=self.name,
             )
             if self.target is not None:
                 self.dep_crn = self.target["crn"]
@@ -402,7 +403,7 @@ class DFDeployment(CdpModule):
                 if self.module.check_mode:
                     self.module.log(
                         "Check mode enabled, skipping termination of Deployment %s"
-                        % self.dep_crn
+                        % self.dep_crn,
                     )
                     self.deployment = self.target
                 else:
@@ -412,20 +413,20 @@ class DFDeployment(CdpModule):
                 self.module.warn(
                     "Dataflow Deployment already exists and configuration validation and reconciliation "
                     + "is not supported;"
-                    + "to change a Deployment, explicitly terminate and recreate it or use the UI"
+                    + "to change a Deployment, explicitly terminate and recreate it or use the UI",
                 )
                 if self.wait:
                     self.deployment = self._wait_for_deployed()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
         else:
             # Deployment CRN not found in Tenant, and probably doesn't exist
             if self.state in ["absent"]:
                 # Deployment not found, and not wanted, return
                 self.module.log(
-                    "Dataflow Deployment not found in CDP Tenant %s" % self.dep_crn
+                    "Dataflow Deployment not found in CDP Tenant %s" % self.dep_crn,
                 )
             elif self.state in ["present"]:
                 # create Deployment
@@ -437,14 +438,15 @@ class DFDeployment(CdpModule):
                     pass  # Check mode can return the described deployment
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
 
     def _create_deployment(self):
         if self.flow_ver_crn is None:
             # flow_name must be populated if flow_ver_crn is None
             self.flow_ver_crn = self.cdpy.df.get_version_crn_from_flow_definition(
-                self.flow_name, self.flow_ver
+                self.flow_name,
+                self.flow_ver,
             )
         self.deployment = self.cdpy.df.create_deployment(
             df_crn=self.df_crn,
@@ -479,7 +481,7 @@ class DFDeployment(CdpModule):
         else:
             self.module.warn(
                 "Attempting to disable DataFlow Deployment but state %s not in Removable States %s"
-                % (self.target["status"]["state"], self.cdpy.sdk.REMOVABLE_STATES)
+                % (self.target["status"]["state"], self.cdpy.sdk.REMOVABLE_STATES),
             )
         if self.wait:
             self.deployment = self.cdpy.sdk.wait_for_state(

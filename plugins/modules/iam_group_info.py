@@ -23,6 +23,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 options:
   name:
     description:
@@ -144,8 +145,11 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             name=dict(
-                required=False, type="list", elements="str", aliases=["group_name"]
-            )
+                required=False,
+                type="list",
+                elements="str",
+                aliases=["group_name"],
+            ),
         ),
         supports_check_mode=True,
     )

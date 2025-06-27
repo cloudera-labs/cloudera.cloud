@@ -118,7 +118,56 @@ For example, here we use the
 > [!IMPORTANT]
 > The CDP modules expect standard CDP authentication configurations, e.g. `CDP_PROFILE`, as described by the *Configuring* section of [CDP CLI/SDK](https://github.com/cloudera/cdpcli#configuring).
 
-## Building the Collection
+## Building and Developing the Collection
+
+To develop the collection -- additions, updates, bugfixes, etc. -- or to build resources from the collections -- API documentation, etc. -- you must first install [Hatch](https://hatch.pypa.io/latest/) according to your specific development environment.
+
+```bash
+# As a Python application
+pip install hatch
+
+# With Brew (OSX)
+brew install hatch
+
+# On Fedora
+sudo dnf install hatch
+```
+
+### Developing Collection Resources
+
+To set up a development environment, you can first use the following to install the Python dependencies:
+
+```bash
+hatch shell
+```
+
+This will create a `hatch`-managed virtual environment. (You can also associate this Python environment with your IDE, like VSCode!)
+
+> [!TIP]
+> You also need to ensure the collection's project directory is in your `ANSIBLE_COLLECTIONS_PATH` variable.
+
+While you develop and work on collection resources, you can easily execute checks and linters with the following command:
+
+```bash
+hatch run lint
+```
+
+This script will run a number of `pre-commit` hooks, including `ansible-lint`, as well as lint any API documentation, guides, and other resources.
+
+If you wish to contribute your changes, please check out the instructions in the [CONTRIBUTING](./CONTRIBUTING.md) guide.
+
+### Building the API Documentation
+
+To create a local copy of the API documentation, first make sure the project, i.e. the collection, is in your `ANSIBLE_COLLECTIONS_PATH`. Then run the following:
+
+```bash
+hatch run docs:build
+```
+
+Your local documentation will be found at `docsbuild/build/html`.
+
+
+### Building the Collection Bundle
 
 To create a local collection tarball, run:
 
@@ -126,30 +175,9 @@ To create a local collection tarball, run:
 ansible-galaxy collection build
 ```
 
-## Building the API Documentation
-
-To create a local copy of the API documentation, first make sure the collection is in your `ANSIBLE_COLLECTIONS_PATHS`. Then run the following:
-
-```bash
-# change into the /docsbuild directory
-cd docsbuild
-
-# install the build requirements (antsibull-docs); you may want to set up a
-# dedicated virtual environment
-pip install ansible-core https://github.com/cloudera-labs/antsibull-docs/archive/cldr-docsite.tar.gz
-
-# Install the collection's build dependencies
-pip install -r requirements.txt
-
-# Then run the build script
-./build.sh
-```
-
-Your local documentation will be found at `docsbuild/build/html`.
-
 ## License and Copyright
 
-Copyright 2023, Cloudera, Inc.
+Copyright 2025, Cloudera, Inc.
 
 ```
 Licensed under the Apache License, Version 2.0 (the "License");

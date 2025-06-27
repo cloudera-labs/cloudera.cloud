@@ -25,6 +25,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -76,24 +77,24 @@ EXAMPLES = r"""
 # Retrieve only the root certificate for a single environment
 - cloudera.cloud.env_auth_info:
     name: the-environment
-    root_certificate: yes
-    keytab: no
+    root_certificate: true
+    keytab: false
 
 # Retrieve the root certificate for multiple environments
 - cloudera.cloud.env_auth_info:
     name:
       - one-environment
       - two-environment
-    root_certificate: yes
-    keytab: no
+    root_certificate: true
+    keytab: false
 
 # Retrieve the keytab details for the current CDP user for selected environments
 - cloudera.cloud.env_auth_info:
     name:
       - one-environment
       - two-environment
-    keytab: yes
-    root_certificate: no
+    keytab: true
+    root_certificate: false
 
 # Retrieve the keytab details for the specified users for selected environments
 - cloudera.cloud.env_auth_info:
@@ -103,8 +104,8 @@ EXAMPLES = r"""
     user:
       - UserA
       - UserB
-    keytab: yes
-    root_certificate: no
+    keytab: true
+    root_certificate: false
 """
 
 RETURN = r"""
@@ -217,7 +218,8 @@ class EnvironmentAuthentication(CdpModule):
             all_envs = self.cdpy.environments.list_environments()
             for env in all_envs:
                 result = self.cdpy.environments.get_keytab(
-                    workload_user_crn, env["crn"]
+                    workload_user_crn,
+                    env["crn"],
                 )
                 keytabs[env["environmentName"]] = result
 
@@ -245,11 +247,17 @@ def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
             name=dict(
-                required=False, type="list", elements="str", aliases=["environment"]
+                required=False,
+                type="list",
+                elements="str",
+                aliases=["environment"],
             ),
             user=dict(required=False, type="list", elements="str", aliases=["users"]),
             root_certificate=dict(
-                required=False, type="bool", aliases=["root_ca", "cert"], default=True
+                required=False,
+                type="bool",
+                aliases=["root_ca", "cert"],
+                default=True,
             ),
             keytab=dict(
                 required=False,

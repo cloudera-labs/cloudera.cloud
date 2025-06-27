@@ -22,6 +22,7 @@ description:
     - Create or destroy CDP OpDB Databases
 author:
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -196,15 +197,16 @@ class OpdbDatabase(CdpModule):
                     if self.target["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
                         self.module.warn(
                             "OpDB Database not in valid state for Drop operation: %s"
-                            % self.target["status"]
+                            % self.target["status"],
                         )
                     else:
                         drop_status = self.cdpy.opdb.drop_database(
-                            name=self.name, env=self.env
+                            name=self.name,
+                            env=self.env,
                         )
-                        self.target[
-                            "status"
-                        ] = drop_status  # Drop command only returns status, not full object
+                        self.target["status"] = (
+                            drop_status  # Drop command only returns status, not full object
+                        )
                     if self.wait:
                         self.cdpy.sdk.wait_for_state(
                             describe_func=self.cdpy.opdb.describe_database,
@@ -219,7 +221,7 @@ class OpdbDatabase(CdpModule):
             elif self.state == "present":
                 # Being Config check
                 self.module.warn(
-                    "OpDB Database already present and config validation is not implemented"
+                    "OpDB Database already present and config validation is not implemented",
                 )
                 if self.wait:
                     self.target = self.cdpy.sdk.wait_for_state(
@@ -233,7 +235,7 @@ class OpdbDatabase(CdpModule):
                 # End Config check
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
             # End handling Database exists
         else:
@@ -241,7 +243,7 @@ class OpdbDatabase(CdpModule):
             if self.state == "absent":
                 self.module.warn(
                     "OpDB Database %s already absent in Environment %s"
-                    % (self.name, self.env)
+                    % (self.name, self.env),
                 )
             elif self.state == "present":
                 if self.module.check_mode:
@@ -249,7 +251,8 @@ class OpdbDatabase(CdpModule):
                 else:
                     # Being handle Database Creation
                     create_status = self.cdpy.opdb.create_database(
-                        name=self.name, env=self.env
+                        name=self.name,
+                        env=self.env,
                     )
                     if self.wait:
                         self.target = self.cdpy.sdk.wait_for_state(
@@ -264,7 +267,7 @@ class OpdbDatabase(CdpModule):
                         self.databases.append(create_status)
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
 
 
@@ -281,10 +284,16 @@ def main():
             ),
             wait=dict(required=False, type="bool", default=True),
             delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=15
+                required=False,
+                type="int",
+                aliases=["polling_delay"],
+                default=15,
             ),
             timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=3600
+                required=False,
+                type="int",
+                aliases=["polling_timeout"],
+                default=3600,
             ),
         ),
         supports_check_mode=True,

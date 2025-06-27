@@ -26,6 +26,7 @@ DOCUMENTATION = """
         - Allows you to retrieve information about FreeIPA Domain for a given CDP Public Cloud Environment.
         - You can use these details to update client DNS, e.g. set up entries in /etc/resolv.conf
         - If the Environment is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:
@@ -52,8 +53,6 @@ EXAMPLES = """
 - name: Retrieve the FreeIPA domain and host IP addresses  for a CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_domain', 'example-env' , detailed=True  ) }}"
-
-
 """
 
 RETURN = """
@@ -88,7 +87,7 @@ class LookupModule(LookupBase):
                 if self.get_option("detailed"):
                     server_ips = environment["freeipa"]["serverIP"]
                     results = [
-                        {"domain": freeipa_client_domain, "server_ips": server_ips}
+                        {"domain": freeipa_client_domain, "server_ips": server_ips},
                     ]
                 else:
                     results = [freeipa_client_domain]

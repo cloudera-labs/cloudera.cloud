@@ -24,6 +24,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -147,7 +148,7 @@ EXAMPLES = r"""
 # Clear the actor-to-role mappings for ID Broker on an existing environment
 - cloudera.cloud.env_idbroker:
     name: example-environment
-    clear_mappings: yes
+    clear_mappings: true
 
 # Don't sync the mappings for ID Broker to the environment's datalakes
 - cloudera.cloud.env_idbroker:
@@ -155,12 +156,12 @@ EXAMPLES = r"""
     mappings:
       - accessor: crn:altus:iam:us-west-1:1234:group:some-group/abcd-1234-efghi
         role: arn:aws:iam::654468598544:role/another-data-access-role
-    sync: no
+    sync: false
 
 # Now sync the mappings for the ID Broker once the environment has a datalake
 - cloudera.cloud.env_idbroker:
     name: example-environment
-    sync: yes
+    sync: true
 """
 
 RETURN = r"""
@@ -371,14 +372,16 @@ class EnvironmentIdBroker(CdpModule):
                 "environments",
                 "set_id_broker_mappings",
                 environmentName=self.name,
-                **mappings
+                **mappings,
             )
 
     def sync_mappings(self):
         self.changed = True
         if not self.module.check_mode:
             self.cdpy.sdk.call(
-                "environments", "sync_id_broker_mappings", environmentName=self.name
+                "environments",
+                "sync_id_broker_mappings",
+                environmentName=self.name,
             )
 
 
@@ -387,13 +390,19 @@ def main():
         argument_spec=CdpModule.argument_spec(
             name=dict(required=True, type="str", aliases=["environment"]),
             data_access=dict(
-                required=False, type="str", aliases=["data_access_arn", "data"]
+                required=False,
+                type="str",
+                aliases=["data_access_arn", "data"],
             ),
             ranger_audit=dict(
-                required=False, type="str", aliases=["ranger_audit_arn", "audit"]
+                required=False,
+                type="str",
+                aliases=["ranger_audit_arn", "audit"],
             ),
             ranger_cloud_access=dict(
-                required=False, type="str", aliases=["ranger_cloud_access_arn", "cloud"]
+                required=False,
+                type="str",
+                aliases=["ranger_cloud_access_arn", "cloud"],
             ),
             mappings=dict(
                 required=False,
@@ -411,7 +420,10 @@ def main():
                 aliases=["set_empty_mappings"],
             ),
             sync=dict(
-                required=False, type="bool", default=True, aliases=["sync_mappings"]
+                required=False,
+                type="bool",
+                default=True,
+                aliases=["sync_mappings"],
             ),
         ),
         mutually_exclusive=[["mappings", "clear_mappings"]],

@@ -24,6 +24,7 @@ author:
   - "Chris Perro (@cmperro)"
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.3.0"
 requirements:
   - cdpy
 options:
@@ -175,7 +176,7 @@ class DatahubDefinitionInfo(CdpModule):
         else:
             self.module.fail_json(
                 msg="Failed to retrieve Cluster Definition content, '%s'"
-                % short_desc["clusterDefinitionName"]
+                % short_desc["clusterDefinitionName"],
             )
 
 

@@ -22,6 +22,7 @@ description:
     - Import CustomFlow versions into the DataFlow Catalog
 author:
   - "Andre Araujo (@asdaraujo)"
+version_added: "2.0.0"
 requirements:
   - cdpy
 options:
@@ -120,14 +121,16 @@ class DFCustomFlowVersion(CdpModule):
         flow = self.cdpy.df.describe_customflow(self.flow_crn)
         if not flow:
             self.module.fail_json(
-                msg="Flow definition with crn {} does not exist".format(self.flow_crn)
+                msg="Flow definition with crn {} does not exist".format(self.flow_crn),
             )
         else:
             # Only possible state is "present"
             self.changed = True
             if not self.module.check_mode:
                 self.flow_version = self.cdpy.df.import_customflow_version(
-                    self.flow_crn, self.file, self.comments
+                    self.flow_crn,
+                    self.file,
+                    self.comments,
                 )
 
 

@@ -25,6 +25,7 @@ DOCUMENTATION = """
     description:
         - Allows you to retrieve information about FreeIPA hosts for a given CDP Public Cloud Environment.
         - If the Environment is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:
@@ -55,7 +56,6 @@ EXAMPLES = """
 - name: Retrieve more detailied information for the FreeIPA hosts for a single CDP Public Cloud Environment
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.env_freeipa_hosts', environment='example-env-aws', detailed=True) }}"
-
 """
 
 RETURN = """
@@ -85,7 +85,9 @@ class LookupModule(LookupBase):
             results = []
             for term in LookupBase._flatten(terms):
                 free_ipa_info = Cdpy().sdk.call(
-                    svc="environments", func="get_freeipa_status", environmentName=term
+                    svc="environments",
+                    func="get_freeipa_status",
+                    environmentName=term,
                 )
 
                 if self.get_option("detailed"):

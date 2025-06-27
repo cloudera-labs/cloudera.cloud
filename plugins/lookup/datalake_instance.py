@@ -26,6 +26,7 @@ DOCUMENTATION = """
         - Allows you to retrieve the instances by one or more instance groups for a CDP Public Cloud Environment.
         - If the Environment or its Datalake is not found or is ambigious, the lookup will return an error.
         - If the instance group is not found, the lookup will return the C(default) value.
+    version_added: "2.0.0"
     options:
         _terms:
             description:
@@ -96,12 +97,12 @@ class LookupModule(LookupBase):
             env = Cdpy().datalake.describe_all_datalakes(self.get_option("environment"))
             if not env:
                 raise AnsibleError(
-                    "No Environment found for '%s'" % self.get_option("environment")
+                    "No Environment found for '%s'" % self.get_option("environment"),
                 )
             elif len(env) > 1:
                 raise AnsibleError(
                     "Multiple Datalakes found for Enviroment '%s'"
-                    % self.get_option("environment")
+                    % self.get_option("environment"),
                 )
 
             all_instance_groups = {ig["name"]: ig for ig in env[0]["instanceGroups"]}
@@ -110,14 +111,14 @@ class LookupModule(LookupBase):
             for term in LookupBase._flatten(terms):
                 display.vvv(
                     "Filtering instance groups for %s[%s]"
-                    % (self.get_option("environment"), term)
+                    % (self.get_option("environment"), term),
                 )
                 if term in all_instance_groups:
                     if self.get_option("detailed"):
                         results.append(all_instance_groups[term]["instances"])
                     else:
                         results.append(
-                            [i["id"] for i in all_instance_groups[term]["instances"]]
+                            [i["id"] for i in all_instance_groups[term]["instances"]],
                         )
                 else:
                     results.append(self.get_option("default"))

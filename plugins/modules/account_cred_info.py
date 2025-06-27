@@ -24,6 +24,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -120,7 +121,7 @@ def main():
                 type="str",
                 aliases=["cloud_platform"],
                 choices=["aws", "azure"],
-            )
+            ),
         ),
         supports_check_mode=True,
     )

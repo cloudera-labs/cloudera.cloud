@@ -23,6 +23,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -58,8 +59,8 @@ EXAMPLES = r"""
 # Turn off both workload analytics and log collection
 - cloudera.cloud.env_telemetry:
     name: the-environment
-    workload_analytics: no
-    logs_collection: no
+    workload_analytics: false
+    logs_collection: false
 """
 
 RETURN = r"""
@@ -106,7 +107,9 @@ def main():
             name=dict(required=True, type="str", aliases=["environment"]),
             workload_analytics=dict(required=False, type="bool", aliases=["analytics"]),
             logs_collection=dict(
-                required=False, type="bool", aliases=["logs", "report_deployment_logs"]
+                required=False,
+                type="bool",
+                aliases=["logs", "report_deployment_logs"],
             ),
         ),
         supports_check_mode=True,

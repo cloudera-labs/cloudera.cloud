@@ -22,6 +22,7 @@ description:
     - Enable or Disable CDP DataFlow Services
 author:
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.2.0"
 requirements:
   - cdpy
   - jmespath
@@ -175,23 +176,22 @@ EXAMPLES = r"""
     name: my-service
     nodes_min: 3
     nodes_max: 10
-    public_loadbalancer: True
+    public_loadbalancer: true
     cluster_subnets_filter: "[?contains(subnetName, 'pvt')]"
     loadbalancer_subnets_filter: "[?contains(subnetName, 'pub')]"
     k8s_ip_ranges: ['192.168.0.1/24']
     state: present
-    wait: yes
+    wait: true
 
 # Remove a Dataflow Service with Async wait
 - cloudera.cloud.df_service:
     name: my-service
-    persist: False
+    persist: false
     state: absent
-    wait: yes
+    wait: true
   async: 3600
   poll: 0
   register: __my_teardown_request
-
 """
 
 RETURN = r"""
@@ -332,7 +332,8 @@ class DFService(CdpModule):
             self.env_crn = self.cdpy.environments.resolve_environment_crn(self.env_crn)
         if self.env_crn is not None or self.df_crn is not None:
             self.target = self.cdpy.df.describe_service(
-                env_crn=self.env_crn, df_crn=self.df_crn
+                env_crn=self.env_crn,
+                df_crn=self.df_crn,
             )
 
         if self.target is not None:
@@ -346,60 +347,62 @@ class DFService(CdpModule):
                 self.module.warn(
                     "Dataflow Service already enabled and configuration validation and reconciliation is not "
                     "supported; to change a Dataflow Service, explicitly disable and recreate the Service or "
-                    "use the UI"
+                    "use the UI",
                 )
                 if self.wait:
                     self.service = self._wait_for_enabled()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
         else:
             # Environment does not have DF database entry, and probably doesn't exist
             if self.state in ["absent"]:
                 self.module.log(
                     "Dataflow Service already disabled in CDP Environment %s"
-                    % self.env_crn
+                    % self.env_crn,
                 )
             elif self.state in ["present"]:
                 if self.env_crn is None:
                     self.module.fail_json(
                         msg="Could not retrieve CRN for CDP Environment %s"
-                        % original_env_crn
+                        % original_env_crn,
                     )
                 else:
                     # create DF Service
                     if self.cluster_subnets_filter or self.lb_subnets_filter:
                         try:
                             env_info = self.cdpy.environments.describe_environment(
-                                self.env_crn
+                                self.env_crn,
                             )
                             subnet_metadata = list(
-                                env_info["network"]["subnetMetadata"].values()
+                                env_info["network"]["subnetMetadata"].values(),
                             )
                         except Exception:
                             subnet_metadata = []
                         if not subnet_metadata:
                             self.module.fail_json(
                                 msg="Could not retrieve subnet metadata for CDP Environment %s"
-                                % self.env_crn
+                                % self.env_crn,
                             )
 
                         if self.cluster_subnets_filter:
                             self.cluster_subnets = self._filter_subnets(
-                                self.cluster_subnets_filter, subnet_metadata
+                                self.cluster_subnets_filter,
+                                subnet_metadata,
                             )
                             self.module.warn(
                                 "Found the following cluster subnets: %s"
-                                % ", ".join(self.cluster_subnets)
+                                % ", ".join(self.cluster_subnets),
                             )
                         if self.lb_subnets_filter:
                             self.lb_subnets = self._filter_subnets(
-                                self.lb_subnets_filter, subnet_metadata
+                                self.lb_subnets_filter,
+                                subnet_metadata,
                             )
                             self.module.warn(
                                 "Found the following load balancer subnets: %s"
-                                % ", ".join(self.lb_subnets)
+                                % ", ".join(self.lb_subnets),
                             )
 
                     if not self.module.check_mode:
@@ -420,7 +423,7 @@ class DFService(CdpModule):
                             self.service = self._wait_for_enabled()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
 
     def _wait_for_enabled(self):
@@ -449,32 +452,34 @@ class DFService(CdpModule):
         except Exception:
             self.module.fail_json(
                 msg="The specified subnet filter is an invalid JMESPath expression: "
-                % query
+                % query,
             )
         try:
             return [s["subnetId"] for s in filtered_subnets]
         except Exception:
             self.module.fail_json(
                 msg='The subnet filter "%s" should return an array of subnet objects '
-                "but instead returned this: %s" % (query, json.dumps(filtered_subnets))
+                "but instead returned this: %s" % (query, json.dumps(filtered_subnets)),
             )
 
     def _disable_df(self):
         # Attempt clean Disable, which also ensures we have tried at least once before we do a forced removal
         if self.target["status"]["state"] in self.cdpy.sdk.REMOVABLE_STATES:
             self.service = self.cdpy.df.disable_service(
-                df_crn=self.df_crn, persist=self.persist, terminate=self.terminate
+                df_crn=self.df_crn,
+                persist=self.persist,
+                terminate=self.terminate,
             )
             self.changed = True
         elif self.target["status"]["state"] in self.cdpy.sdk.TERMINATION_STATES:
             self.module.warn(
-                "DataFlow Service is already Disabling, skipping termination request"
+                "DataFlow Service is already Disabling, skipping termination request",
             )
             pass
         else:
             self.module.warn(
                 "Attempting to disable DataFlow Service but state %s not in Removable States %s"
-                % (self.target["status"]["state"], self.cdpy.sdk.REMOVABLE_STATES)
+                % (self.target["status"]["state"], self.cdpy.sdk.REMOVABLE_STATES),
             )
         if self.wait:
             # Wait for Clean Disable, if possible
@@ -499,7 +504,7 @@ class DFService(CdpModule):
                     self.changed = True
                 else:
                     self.module.fail_json(
-                        msg="DF Service Disable failed and Force delete not requested"
+                        msg="DF Service Disable failed and Force delete not requested",
                     )
             if self.wait:
                 self.service = self.cdpy.sdk.wait_for_state(
@@ -521,10 +526,14 @@ def main():
             nodes_min=dict(type="int", default=3, aliases=["min_k8s_node_count"]),
             nodes_max=dict(type="int", default=3, aliases=["max_k8s_node_count"]),
             public_loadbalancer=dict(
-                type="bool", default=False, aliases=["use_public_load_balancer"]
+                type="bool",
+                default=False,
+                aliases=["use_public_load_balancer"],
             ),
             private_cluster=dict(
-                type="bool", default=False, aliases=["enable_private_cluster"]
+                type="bool",
+                default=False,
+                aliases=["enable_private_cluster"],
             ),
             loadbalancer_ip_ranges=dict(type="list", elements="str", default=None),
             k8s_ip_ranges=dict(type="list", elements="str", default=None),

@@ -24,6 +24,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -98,7 +99,8 @@ class AccountAuthenticationInfo(CdpModule):
 
 def main():
     module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(), supports_check_mode=True
+        argument_spec=CdpModule.argument_spec(),
+        supports_check_mode=True,
     )
 
     result = AccountAuthenticationInfo(module)

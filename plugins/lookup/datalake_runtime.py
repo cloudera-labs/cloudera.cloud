@@ -25,6 +25,7 @@ DOCUMENTATION = """
     description:
         - Allows you to retrieve the Datalake CDH Runtime for one or more CDP Public Cloud Environments.
         - If an Environment is not found or is ambigious, the lookup will return an error.
+    version_added: "2.0.0"
     options:
         _terms:
             description:
@@ -77,7 +78,7 @@ class LookupModule(LookupBase):
                     raise AnsibleError("No Datalake found for Environment '%s'" % term)
                 elif len(env) > 1:
                     raise AnsibleError(
-                        "Multiple Datalakes found for Environment '%s'" % term
+                        "Multiple Datalakes found for Environment '%s'" % term,
                     )
                 results.append(env[0]["productVersions"][0]["version"])
             return results

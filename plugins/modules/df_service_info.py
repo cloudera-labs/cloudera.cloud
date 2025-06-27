@@ -23,6 +23,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.2.0"
 requirements:
   - cdpy
 options:
@@ -189,7 +190,9 @@ class DFServiceInfo(CdpModule):
     def process(self):
         # Note that parameters are defaulted to None, and are skipped if None at submission
         self.all_services = self.cdpy.df.list_services(
-            df_crn=self.df_crn, name=self.name, env_crn=self.env_crn
+            df_crn=self.df_crn,
+            name=self.name,
+            env_crn=self.env_crn,
         )
         if any(x is not None for x in [self.name, self.df_crn, self.env_crn]):
             # Any set parameter indicates a describe is preferred to the lower information list command

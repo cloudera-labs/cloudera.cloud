@@ -22,6 +22,7 @@ description:
   - Import or Delete CustomFlows into the DataFlow Catalog
 author:
   - "Andre Araujo (@asdaraujo)"
+version_added: "2.0.0"
 requirements:
   - cdpy
 options:
@@ -175,8 +176,8 @@ class DFCustomFlow(CdpModule):
                 else:
                     self.module.log(
                         "Check mode enabled, skipping deletion of flow [{}]".format(
-                            self.name
-                        )
+                            self.name,
+                        ),
                     )
         else:
             if self.state == "present":
@@ -192,8 +193,8 @@ class DFCustomFlow(CdpModule):
                 else:
                     self.module.log(
                         "Check mode enabled, skipping import of flow [{}]".format(
-                            self.name
-                        )
+                            self.name,
+                        ),
                     )
             if self.state == "absent":
                 # Flow does not exist. Nothing to do.

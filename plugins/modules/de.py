@@ -23,6 +23,7 @@ description:
 author:
   - "Curtis Howard (@curtishoward)"
   - "Alan Silva (@acsjumpi)"
+version_added: "1.5.0"
 requirements:
   - cdpy
 options:
@@ -192,14 +193,14 @@ EXAMPLES = r"""
     env: cdp-environment-name
     instance_type: "m5.2xlarge"
     state: present
-    wait: yes
+    wait: true
 
 # Remove a DE service without waiting
 - cloudera.cloud.de:
     name: cde-cloudera-deploy-example+
     env: cdp-environment-name
     state: absent
-    wait: no
+    wait: false
 """
 
 RETURN = r"""
@@ -376,7 +377,8 @@ class DEService(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         self.cluster_id = self.cdpy.de.get_service_id_by_name(
-            name=self.name, env=self.env
+            name=self.name,
+            env=self.env,
         )
         initial_desc = (
             self.cdpy.de.describe_service(self.cluster_id) if self.cluster_id else None
@@ -397,15 +399,15 @@ class DEService(CdpModule):
                     else:
                         self.module.warn(
                             "DE Service is not in a removable state: %s"
-                            % initial_desc["status"]
+                            % initial_desc["status"],
                         )
                         if self.wait:
                             self.module.warn(
-                                "Waiting for DE Service to reach Active or Disabled state"
+                                "Waiting for DE Service to reach Active or Disabled state",
                             )
                             current_desc = self._wait_for_state(
                                 self.cdpy.sdk.REMOVABLE_STATES
-                                + self.cdpy.sdk.STOPPED_STATES
+                                + self.cdpy.sdk.STOPPED_STATES,
                             )
                             # If we just waited fo the service to be provisioned, then dis-abled it
                             if current_desc["status"] in self.cdpy.sdk.REMOVABLE_STATES:
@@ -417,18 +419,18 @@ class DEService(CdpModule):
                                     not in self.cdpy.sdk.STOPPED_STATES
                                 ):
                                     self.module.warn(
-                                        "DE service did not disable successfully"
+                                        "DE service did not disable successfully",
                                     )
             elif self.state == "present":
                 # Check the existing configuration and state
                 self.module.warn(
                     "DE Service already present and configuration validation"
-                    + "and reconciliation is not supported"
+                    + "and reconciliation is not supported",
                 )
                 self.service = initial_desc
                 if self.wait:
                     current_desc = self._wait_for_state(
-                        self.cdpy.sdk.REMOVABLE_STATES + self.cdpy.sdk.STOPPED_STATES
+                        self.cdpy.sdk.REMOVABLE_STATES + self.cdpy.sdk.STOPPED_STATES,
                     )
                     # If we just waited for the service to be disabled, then enable it
                     if current_desc["status"] in self.cdpy.sdk.STOPPED_STATES:
@@ -439,7 +441,7 @@ class DEService(CdpModule):
                             self.module.warn("DE service did not enable successfully")
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
 
         # Else if the Service does not exist
@@ -447,7 +449,7 @@ class DEService(CdpModule):
             if self.state == "absent":
                 self.module.log(
                     "DE service %s already absent or terminated in Environment %s"
-                    % (self.name, self.env)
+                    % (self.name, self.env),
                 )
             # Create the Service
             elif self.state == "present":
@@ -455,7 +457,7 @@ class DEService(CdpModule):
                     self.service = self._enable_service()
             else:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state
+                    msg="State %s is not valid for this module" % self.state,
                 )
 
     def _enable_service(self):
@@ -533,7 +535,10 @@ def main():
             enable_public_endpoint=dict(required=False, type="bool", default=True),
             enable_private_network=dict(required=False, type="bool", default=False),
             loadbalancer_ips=dict(
-                required=False, type="list", elements="str", default=None
+                required=False,
+                type="list",
+                elements="str",
+                default=None,
             ),
             enable_workload_analytics=dict(required=False, type="bool", default=True),
             initial_instances=dict(required=False, type="int", default=1),
@@ -543,10 +548,16 @@ def main():
             tags=dict(required=False, type="dict", default=None),
             use_ssd=dict(required=False, type="bool", default=None),
             whitelist_ips=dict(
-                required=False, type="list", elements="str", default=None
+                required=False,
+                type="list",
+                elements="str",
+                default=None,
             ),
             force=dict(
-                required=False, type="bool", default=False, aliases=["force_delete"]
+                required=False,
+                type="bool",
+                default=False,
+                aliases=["force_delete"],
             ),
             state=dict(
                 required=False,
@@ -556,10 +567,16 @@ def main():
             ),
             wait=dict(required=False, type="bool", default=True),
             delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=60
+                required=False,
+                type="int",
+                aliases=["polling_delay"],
+                default=60,
             ),
             timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=7200
+                required=False,
+                type="int",
+                aliases=["polling_timeout"],
+                default=7200,
             ),
         ),
         supports_check_mode=True,

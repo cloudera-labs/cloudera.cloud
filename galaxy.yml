@@ -14,10 +14,10 @@
 
 ---
 
-namespace:  cloudera
-name:       cloud
-version:    2.5.1
-readme:     README.md
+namespace: cloudera
+name: cloud
+version: 2.5.1
+readme: README.md
 authors:
   - Jim Enright @jenright
   - Ronald Suplina @rsuplina
@@ -28,26 +28,29 @@ description: >
   provided by the Cloudera on cloud and on premises platforms.
 license_file: LICENSE
 tags:
-- cloudera
-- cdp
-- data_service
-- data_hub
+  - cloudera
+  - cdp
+  - data_service
+  - data_hub
+  - cloud
+  - infrastructure
+  - security
+  - storage
+  - application
+  - database
 
 dependencies: {}
-
-repository:     https://github.com/cloudera-labs/cloudera.cloud
-homepage:       https://github.com/cloudera-labs/cloudera.cloud
-issues:         https://github.com/cloudera-labs/cloudera.cloud/issues
-documentation:  https://cloudera-labs.github.io/cloudera.cloud
+repository: https://github.com/cloudera-labs/cloudera.cloud
+homepage: https://github.com/cloudera-labs/cloudera.cloud
+issues: https://github.com/cloudera-labs/cloudera.cloud/issues
+documentation: https://cloudera-labs.github.io/cloudera.cloud
 
 build_ignore:
-- '.*'
-- '*.log'
-- '*.tar.gz'
-- docs
-- docsbuild
-- tests
-- pytest.ini
-- builder
-
-...
+  - ".*"
+  - "*.log"
+  - "*.tar.gz"
+  - docs
+  - docsbuild
+  - tests
+  - pytest.ini
+  - builder

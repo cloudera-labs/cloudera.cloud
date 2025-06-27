@@ -24,6 +24,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -82,7 +83,7 @@ EXAMPLES = r"""
 
 # Sync the current CDP User
 - cloudera.cloud.env_user_sync:
-    current_user: yes
+    current_user: true
 """
 
 RETURN = r"""
@@ -214,10 +215,16 @@ def main():
             current_user=dict(required=False, type="bool", aliases=["user"]),
             wait=dict(required=False, type="bool", default=True),
             delay=dict(
-                required=False, type="int", aliases=["polling_delay"], default=15
+                required=False,
+                type="int",
+                aliases=["polling_delay"],
+                default=15,
             ),
             timeout=dict(
-                required=False, type="int", aliases=["polling_timeout"], default=3600
+                required=False,
+                type="int",
+                aliases=["polling_timeout"],
+                default=3600,
             ),
         ),
         mutually_exclusive=(["name", "current_user"]),

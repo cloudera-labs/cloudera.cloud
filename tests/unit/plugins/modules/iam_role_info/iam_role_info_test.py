@@ -39,8 +39,8 @@ def test_get_multiple_role_details():
             "name": [
                 "crn:iam:us-west-1:role:ClassicClustersCreator",
                 "crn:iam:us-west-1:role:EnvironmentCreator",
-            ]
-        }
+            ],
+        },
     )
 
     with pytest.raises(AnsibleExitJson) as e:

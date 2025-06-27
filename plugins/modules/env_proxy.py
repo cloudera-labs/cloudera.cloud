@@ -23,6 +23,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+version_added: "1.0.0"
 requirements:
   - cdpy
 options:
@@ -199,7 +200,7 @@ class EnvironmentProxy(CdpModule):
                 self.changed = True
                 self._create_auth_payload()
                 self.proxy_config = self.cdpy.environments.create_proxy_config(
-                    **self._payload
+                    **self._payload,
                 )
         else:
             if self.state == "present":
@@ -215,13 +216,13 @@ class EnvironmentProxy(CdpModule):
                     self.changed = True
                     self._create_auth_payload()
                     self.module.warn(
-                        "Proxy authentication details are set. Forcing update."
+                        "Proxy authentication details are set. Forcing update.",
                     )
 
                 if self.changed:
                     self.cdpy.environments.delete_proxy_config(self.name)
                     self.proxy_config = self.cdpy.environments.create_proxy_config(
-                        **self._payload
+                        **self._payload,
                     )
                 else:
                     self.proxy_config = existing

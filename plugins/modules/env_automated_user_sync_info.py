@@ -24,6 +24,7 @@ description:
   - The module support check_mode.
 author:
   - "Webster Mudge (@wmudge)"
+version_added: "1.7.0"
 requirements:
   - cdpy
 options:
@@ -120,14 +121,14 @@ class EnvironmentAutomatedUserSyncInfo(CdpModule):
     @CdpModule._Decorators.process_debug
     def process(self):
         self.sync = self.cdpy.environments.get_automated_sync_environment_status(
-            self.name
+            self.name,
         )
 
 
 def main():
     module = AnsibleModule(
         argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type="str", aliases=["environment"])
+            name=dict(required=True, type="str", aliases=["environment"]),
         ),
         supports_check_mode=True,
     )
