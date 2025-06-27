@@ -223,7 +223,7 @@ options:
           - Specify if an upgrade of FreeIPA should be attempted
         type: str
         required: False
-        choice:
+        choices:
           - minor
           - major
   proxy:

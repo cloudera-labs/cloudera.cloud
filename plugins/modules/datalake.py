@@ -178,7 +178,7 @@ options:
       - Specify if an upgrade of Datalake should be attempted
     type: str
     required: False
-    choice:
+    choices:
       - prepare
       - os
       - full
