@@ -86,6 +86,6 @@ templates_path = [
 # -- Adding Umami details to header ----------------------------------------
 
 html_context = {
-    "umami_script_src": "https://umami.52.209.169.249.demo.cloudera-labs.com/script.js",
-    "umami_website_id": "9fde217e-c791-44f0-aa94-e78bb59394b3",
+    "umami_script_src": "https://metrics.cloudera-labs.com/script.js",
+    "umami_website_id": "ec9cdd83-3798-4fd0-8c07-acb4efd971de",
 }
