@@ -198,7 +198,7 @@ EXAMPLES = r"""
   inbound_hostname: "receivetxn.inbound.example.com"
   listen_components:
     - protocol: "TCP"
-      port: "10001"  
+      port: "10001"
 
 # Remove a Dataflow Service with Async wait
 - cloudera.cloud.df_deployment:
