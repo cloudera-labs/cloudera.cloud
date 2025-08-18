@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2023 Cloudera, Inc. All Rights Reserved.
+# Copyright 2025 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: Update docs
 DOCUMENTATION = r"""
 module: df_deployment
 short_description: Enable or Disable CDP DataFlow Deployments
@@ -134,6 +133,16 @@ options:
       - Definitions of KPIs to apply to the Deployed Flow
     type: list
     required: False
+  inbound_hostname:
+    description:
+      - Fully qualified domain name (FQDN) for the inbound host where the DataFlow Service accepts incoming connections
+    type: str
+    required: False
+  listen_components:
+    description:
+      - List of ports and protocols through which the DataFlow Service accepts incoming connections
+    type: list
+    required: False
   delay:
     description:
       - The internal polling interval (in seconds) while the module waits for the Dataflow Service to achieve the
@@ -165,6 +174,31 @@ EXAMPLES = r"""
 # Deploy a Dataflow with defaults
 - cloudera.cloud.df_deployment:
     name: my-flow
+
+# Deploy a Dataflow with specific Flow and Version and accepting inbound connection
+- cloudera.cloud.df_deployment:
+  name: my-flow
+  flow_name: exmple-kafka-flow-definition
+  nifi_ver: "2.3.0.4.3.2.0-89"
+  parameter_groups:
+    - name: "parameters"
+      parameters:
+        - name: "brokers"
+          value: "edge-data-kafka-brokers:9091"
+          assetReferences: []
+        - name: "topic"
+          value: "my-kafka-topic"
+          assetReferences: []
+        - name: "workload.password"
+          value: "example-password"
+          assetReferences: []
+        - name: "workload.user"
+          value: "example-user"
+          assetReferences: []
+  inbound_hostname: "receivetxn.inbound.example.com"
+  listen_components:
+    - protocol: "TCP"
+      port: "10001"  
 
 # Remove a Dataflow Service with Async wait
 - cloudera.cloud.df_deployment:
@@ -349,6 +383,8 @@ class DFDeployment(CdpModule):
         self.autostart_flow = self._get_param("autostart_flow")
         self.parameter_groups = self._get_param("parameter_groups")
         self.kpis = self._get_param("kpis")
+        self.inbound_hostname = self._get_param("inbound_hostname")
+        self.listen_components = self._get_param("listen_components")
 
         self.state = self._get_param("state")
         self.wait = self._get_param("wait")
@@ -461,6 +497,8 @@ class DFDeployment(CdpModule):
             autostart_flow=self.autostart_flow,
             parameter_groups=self.parameter_groups,
             kpis=self.kpis,
+            inbound_hostname=self.inbound_hostname,
+            listen_components=self.listen_components,
         )
         self.changed = True
 
@@ -519,6 +557,8 @@ def main():
             autostart_flow=dict(type="bool", default=True),
             parameter_groups=dict(type="list", default=None),
             kpis=dict(type="list", default=None),
+            inbound_hostname=dict(type="str", default=None),
+            listen_components=dict(type="list", default=None),
             state=dict(type="str", choices=["present", "absent"], default="present"),
             wait=dict(type="bool", default=True),
             delay=dict(type="int", aliases=["polling_delay"], default=15),
