@@ -1,5 +1,5 @@
 cloudera.cloud Ansible Collection
-Copyright 2023 Cloudera Inc.  All Rights Reserved.
+Copyright 2025 Cloudera Inc.  All Rights Reserved.
 
 
 OVERVIEW
