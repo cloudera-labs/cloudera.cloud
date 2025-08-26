@@ -1,8 +1,41 @@
 ============================
-Cloudera.Cloud Release Notes
+cloudera.cloud Release Notes
 ============================
 
 .. contents:: Topics
+
+v3.0.0
+======
+
+Minor Changes
+-------------
+
+- Add IAM role info module (https://github.com/cloudera-labs/cloudera.cloud/pull/161)
+- Add Umami tracking to header (https://github.com/cloudera-labs/cloudera.cloud/pull/173)
+- Add Updates to IAM_user_info Module (https://github.com/cloudera-labs/cloudera.cloud/pull/163)
+- Add ansible-lint config and remove from pre-commit hooks (https://github.com/cloudera-labs/cloudera.cloud/pull/175)
+- Add inbound_hostname and listen_components to df deployment (https://github.com/cloudera-labs/cloudera.cloud/pull/176)
+- Add modules for datalake backup and restore (https://github.com/cloudera-labs/cloudera.cloud/pull/150)
+- Add repository to Hatch docs:changelog script (https://github.com/cloudera-labs/cloudera.cloud/pull/178)
+- Add support for Datalake upgrade (https://github.com/cloudera-labs/cloudera.cloud/pull/166)
+- Add support for FreeIPA upgrade to env module (https://github.com/cloudera-labs/cloudera.cloud/pull/164)
+- Update Python shebang and documentation organization (https://github.com/cloudera-labs/cloudera.cloud/pull/169)
+- Update VW and Data Viz api parameters (https://github.com/cloudera-labs/cloudera.cloud/pull/167)
+- Update copyright date (https://github.com/cloudera-labs/cloudera.cloud/pull/179)
+- Update documentation workflow, add CHANGELOG, and update pre-commit checks (https://github.com/cloudera-labs/cloudera.cloud/pull/171)
+
+Bugfixes
+--------
+
+- Fix module name in iam_user_info examples (https://github.com/cloudera-labs/cloudera.cloud/pull/168)
+- Use lint-ansible-docs@v2 workflow (https://github.com/cloudera-labs/cloudera.cloud/pull/170)
+
+New Modules
+-----------
+
+- cloudera.cloud.datalake_backup - Create a backup of a datalake.
+- cloudera.cloud.datalake_backup_info - Gather information about a Datalake backup.
+- cloudera.cloud.iam_role_info - Gather information about CDP Public IAM roles.
 
 v2.5.1
 ======

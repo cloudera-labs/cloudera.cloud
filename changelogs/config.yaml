@@ -32,7 +32,7 @@ sections:
     - Bugfixes
   - - known_issues
     - Known Issues
-title: Cloudera.Cloud
+title: cloudera.cloud
 trivial_section_name: trivial
 use_fqcn: true
 vcs: auto
