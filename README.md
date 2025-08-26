@@ -1,8 +1,8 @@
-# cloudera.cloud - Cloudera Data Platform (CDP) for Public Cloud
+# cloudera.cloud - Cloudera on cloud and Data Services
 
 [![API documentation](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml/badge.svg?branch=main&event=push)](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml)
 
-`cloudera.cloud` is an Ansible collection that lets you manage your **[Cloudera Data Platform (CDP)](https://www.cloudera.com/products/cloudera-data-platform.html) Public Cloud** resources. With this collection, you can:
+`cloudera.cloud` is an Ansible collection that lets you manage your **[Cloudera Platform](https://www.cloudera.com/products/cloudera-data-platform.html) on cloud (Public Cloud)** resources. With this collection, you can:
 
 * Create and manage [Datalakes](https://www.cloudera.com/products/open-data-lakehouse.html) and Environments.
 * Manage Users and Groups.
@@ -18,13 +18,11 @@ If you have any questions, want to chat about the collection's capabilities and 
 
 ## Quickstart
 
+See the [API documentation](https://cloudera-labs.github.io/cloudera.cloud/) for details for each plugin and role within the collection.
+
 1. [Install the collection](#installation)
 2. [Install the requirements](#requirements)
 3. [Use the collection](#using-the-collection)
-
-## API
-
-See the [API documentation](https://cloudera-labs.github.io/cloudera.cloud/) for details for each plugin and role within the collection.
 
 ## Roadmap
 
@@ -42,12 +40,16 @@ For more information on how to get involved with the `cloudera.cloud` Ansible co
 
 ## Installation
 
-To install the `cloudera.cloud` collection, you have several options. Please note that we have not yet published this collection to the public Ansible Galaxy server, so you cannot install it via direct namespace, rather you must specify by Git project and (optionally) branch.
+To install the `cloudera.cloud` collection, you have several options.
 
-### Option #1: Install from GitHub
+The preferred method is to install via Ansible Galaxy; in your `requirements.yml` file, add the following:
 
-Create or edit your `requirements.yml` file in your project with the
-following:
+```yaml
+collections:
+  - name: cloudera.cloud
+```
+
+If you want to install from GitHub, add to your `requirements.yml` file the following:
 
 ```yaml
 collections:
@@ -65,29 +67,14 @@ ansible-galaxy collection install -r requirements.yml
 You can also install the collection directly:
 
 ```bash
-ansible-galaxy collection install git+https://github.com/cloudera-labs/cloudera.cloud.git@main
+# From Ansible Galaxy
+ansible-galaxy collection install cloudera.cloud
 ```
-
-### Option #2: Install the tarball
-
-Periodically, the collection is packaged into a distribution which you can
-install directly:
 
 ```bash
-ansible-galaxy collection install <collection-tarball>
+# From GitHub
+ansible-galaxy collection install git+https://github.com/cloudera-labs/cloudera.cloud.git@main
 ```
-
-See [Building the Collection](#building-the-collection) for details on creating a local tarball.
-
-## Requirements
-
-`cloudera.cloud` expects `ansible-core>=2.10`.
-
-The collection also requires the following Python libraries install to operate its modules:
-
-  * [`cdpy`](https://github.com/cloudera-labs/cdpy)
-
-The collection's Python dependencies alone, _not_ the required Python libraries of its collection dependencies, are in `requirements.txt`.
 
 `ansible-builder` can discover and install all Python dependencies - current collection and dependencies - if you wish to use that application to construct your environment. Otherwise, you will need to read each collection and role dependency and follow its installation instructions.
 
@@ -116,49 +103,11 @@ For example, here we use the
         var: output
 ```
 > [!IMPORTANT]
-> The CDP modules expect standard CDP authentication configurations, e.g. `CDP_PROFILE`, as described by the *Configuring* section of [CDP CLI/SDK](https://github.com/cloudera/cdpcli#configuring).
+> The collection expects standard Cloudera Platform authentication configurations, e.g. `CDP_PROFILE`, as described by the *Configuring* section of [CDP CLI/SDK](https://github.com/cloudera/cdpcli#configuring).
 
-## Building and Developing the Collection
+## Building the API Documentation
 
-To develop the collection -- additions, updates, bugfixes, etc. -- or to build resources from the collections -- API documentation, etc. -- you must first install [Hatch](https://hatch.pypa.io/latest/) according to your specific development environment.
-
-```bash
-# As a Python application
-pip install hatch
-
-# With Brew (OSX)
-brew install hatch
-
-# On Fedora
-sudo dnf install hatch
-```
-
-### Developing Collection Resources
-
-To set up a development environment, you can first use the following to install the Python dependencies:
-
-```bash
-hatch shell
-```
-
-This will create a `hatch`-managed virtual environment. (You can also associate this Python environment with your IDE, like VSCode!)
-
-> [!TIP]
-> You also need to ensure the collection's project directory is in your `ANSIBLE_COLLECTIONS_PATH` variable.
-
-While you develop and work on collection resources, you can easily execute checks and linters with the following command:
-
-```bash
-hatch run lint
-```
-
-This script will run a number of `pre-commit` hooks, including `ansible-lint`, as well as lint any API documentation, guides, and other resources.
-
-If you wish to contribute your changes, please check out the instructions in the [CONTRIBUTING](./CONTRIBUTING.md) guide.
-
-### Building the API Documentation
-
-To create a local copy of the API documentation, first make sure the project, i.e. the collection, is in your `ANSIBLE_COLLECTIONS_PATH`. Then run the following:
+To create a local copy of the API documentation, first make sure the collection is in your `ANSIBLE_COLLECTIONS_PATH`.
 
 ```bash
 hatch run docs:build
@@ -166,14 +115,33 @@ hatch run docs:build
 
 Your local documentation will be found at `docsbuild/build/html`.
 
-
-### Building the Collection Bundle
-
-To create a local collection tarball, run:
+You can also lint the documentation with the following command:
 
 ```bash
-ansible-galaxy collection build
+hatch run docs:lint
 ```
+
+## Preparing a New Version
+
+To prepare a version release, first set the following variables for `antsichaut`:
+
+```bash
+export GITHUB_TOKEN=some_gh_token_value # Read-only scope
+```
+
+Update the collection version using [`hatch version`](https://hatch.pypa.io/latest/version/). For example, to increment to the next _minor_ release:
+
+```bash
+hatch version minor
+```
+
+Then update the changelog to query the pull requests since the last release.
+
+```bash
+hatch run docs:changelog
+```
+
+You can then examine (and update if needed) the resulting `changelog.yaml` and `CHANGELOG.rst` files before committing to the release branch.
 
 ## License and Copyright
 
