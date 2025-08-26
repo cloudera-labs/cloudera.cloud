@@ -1,301 +1,157 @@
 ---
 ancestor:
 releases:
-  1.0.0:
+  3.0.0:
+    changes:
+      bugfixes:
+        - Use lint-ansible-docs@v2 workflow (https://github.com/cloudera-labs/cloudera.cloud/pull/170)
+        - Fix module name in iam_user_info examples (https://github.com/cloudera-labs/cloudera.cloud/pull/168)
+      minor_changes:
+        - Update copyright date (https://github.com/cloudera-labs/cloudera.cloud/pull/179)
+        - Add repository to Hatch docs:changelog script (https://github.com/cloudera-labs/cloudera.cloud/pull/178)
+        - Add inbound_hostname and listen_components to df deployment (https://github.com/cloudera-labs/cloudera.cloud/pull/176)
+        - Add ansible-lint config and remove from pre-commit hooks (https://github.com/cloudera-labs/cloudera.cloud/pull/175)
+        - Add Umami tracking to header (https://github.com/cloudera-labs/cloudera.cloud/pull/173)
+        - Update documentation workflow, add CHANGELOG, and update pre-commit checks
+          (https://github.com/cloudera-labs/cloudera.cloud/pull/171)
+        - Update Python shebang and documentation organization (https://github.com/cloudera-labs/cloudera.cloud/pull/169)
+        - Update VW and Data Viz api parameters (https://github.com/cloudera-labs/cloudera.cloud/pull/167)
+        - Add support for Datalake upgrade (https://github.com/cloudera-labs/cloudera.cloud/pull/166)
+        - Add support for FreeIPA upgrade to env module (https://github.com/cloudera-labs/cloudera.cloud/pull/164)
+        - Add Updates to IAM_user_info Module (https://github.com/cloudera-labs/cloudera.cloud/pull/163)
+        - Add IAM role info module (https://github.com/cloudera-labs/cloudera.cloud/pull/161)
+        - Add modules for datalake backup and restore (https://github.com/cloudera-labs/cloudera.cloud/pull/150)
     modules:
-      - description: Gather and set authentication details for a CDP Account.
-        name: account_auth
-        namespace: ""
-      - description: Gather information about CDP Account authentication settings.
-        name: account_auth_info
-        namespace: ""
-      - description: Gather information about Account prerequisites for CDP Credentials.
-        name: account_cred_info
-        namespace: ""
-      - description: Manage CDP Datahubs.
-        name: datahub_cluster
-        namespace: ""
-      - description: Gather information about CDP Datahubs.
-        name: datahub_cluster_info
-        namespace: ""
-      - description: Gather information about CDP Datahub Cluster Templates.
-        name: datahub_template_info
-        namespace: ""
-      - description: Manage CDP Datalakes.
-        name: datalake
-        namespace: ""
-      - description: Gather information about CDP Datalakes.
-        name: datalake_info
-        namespace: ""
-      - description: Gather information about CDP Datalake Runtimes.
-        name: datalake_runtime_info
-        namespace: ""
-      - description: Create or Delete CDP Data Warehouse Clusters.
-        name: dw_cluster
-        namespace: ""
-      - description: Gather information about CDP Data Warehouse Clusters.
-        name: dw_cluster_info
-        namespace: ""
-      - description: Manage CDP Environments.
-        name: env
-        namespace: ""
-      - description: Set authentication details for the current CDP user.
-        name: env_auth
-        namespace: ""
-      - description: Gather information about CDP environment authentication details.
-        name: env_auth_info
-        namespace: ""
-      - description: Create, update, and destroy CDP credentials.
-        name: env_cred
-        namespace: ""
-      - description: Gather information about CDP Credentials.
-        name: env_cred_info
-        namespace: ""
-      - description: Update ID Broker for CDP Environments.
-        name: env_idbroker
-        namespace: ""
-      - description: Gather information about CDP ID Broker.
-        name: env_idbroker_info
-        namespace: ""
-      - description: Gather information about CDP Environments.
-        name: env_info
-        namespace: ""
-      - description: Create, update, or destroy CDP Environment Proxies.
-        name: env_proxy
-        namespace: ""
-      - description: Gather information about CDP Environment Proxies.
-        name: env_proxy_info
-        namespace: ""
-      - description: Set CDP environment telemetry.
-        name: env_telemetry
-        namespace: ""
-      - description: Sync CDP Users and Groups to Environments.
-        name: env_user_sync
-        namespace: ""
-      - description: Get the status of a CDP Users and Groups sync.
-        name: env_user_sync_info
-        namespace: ""
-      - description: Create, update, or destroy CDP IAM Groups.
-        name: iam_group
-        namespace: ""
-      - description: Gather information about CDP Public IAM groups.
-        name: iam_group_info
-        namespace: ""
-      - description: Gather information about CDP Public IAM resource roles.
-        name: iam_resource_role_info
-        namespace: ""
-      - description: Gather information about CDP Public IAM users.
-        name: iam_user_info
-        namespace: ""
-      - description: Create or Destroy CDP Machine Learning Workspaces.
-        name: ml
-        namespace: ""
-      - description: Gather information about CDP ML Workspaces.
-        name: ml_info
-        namespace: ""
-      - description: Create or destroy CDP OpDB Databases.
-        name: opdb
-        namespace: ""
-      - description: Gather information about CDP OpDB Databases.
-        name: opdb_info
-        namespace: ""
-    release_date: "2021-05-03"
-  1.1.0:
+      - description: Create a backup of a datalake.
+        name: datalake_backup
+        namespace: ''
+      - description: Gather information about a Datalake backup.
+        name: datalake_backup_info
+        namespace: ''
+      - description: Gather information about CDP Public IAM roles.
+        name: iam_role_info
+        namespace: ''
+    release_date: '2025-08-26'
+  2.5.1:
+    changes:
+      minor_changes:
+        - Increment actions to remove deprecation notices and use main branch for
+          docs construction workflow
+    release_date: '2024-06-27'
+  2.5.0:
+    changes:
+      bugfixes:
+        - Update default value of use_ssd argument in CDE module (https://github.com/cloudera-labs/cloudera.cloud/pull/156)
+        - Update module example typo (https://github.com/cloudera-labs/cloudera.cloud/pull/154)
+      minor_changes:
+        - Add pre-commit hooks and workflow (https://github.com/cloudera-labs/cloudera.cloud/pull/157)
+        - Add extra top-level parameters for CDW create cluster module (https://github.com/cloudera-labs/cloudera.cloud/pull/155)
+      trivial:
+        - Documentation examples updates (https://github.com/cloudera-labs/cloudera.cloud/pull/152)
+    release_date: '2024-06-27'
+  2.4.0:
+    changes:
+      minor_changes:
+        - Update to version 2.4.0 (https://github.com/cloudera-labs/cloudera.cloud/pull/148)
+        - Add Ansible Galaxy imports (https://github.com/cloudera-labs/cloudera.cloud/pull/147)
+        - Add template and image parameters to dw data viz module (https://github.com/cloudera-labs/cloudera.cloud/pull/146)
+        - Add autoscaling and impala_ha parameters to cdw vw module (https://github.com/cloudera-labs/cloudera.cloud/pull/145)
+        - Add module defaults groups (https://github.com/cloudera-labs/cloudera.cloud/pull/144)
+        - Add analytics to API documents (https://github.com/cloudera-labs/cloudera.cloud/pull/143)
+        - Add extra Azure parameters to cloudera.cloud.dw_cluster (https://github.com/cloudera-labs/cloudera.cloud/pull/140)
+    release_date: '2024-05-21'
+  2.3.1:
+    changes:
+      bugfixes:
+        - Add enterprise to datalake scale parameter (https://github.com/cloudera-labs/cloudera.cloud/pull/141)
+    release_date: '2024-04-08'
+  2.3.0:
+    changes:
+      minor_changes:
+        - Add cdp_region parameters fo CDP Endpoint region (https://github.com/cloudera-labs/cloudera.cloud/pull/136)
+    release_date: '2023-12-21'
+  2.2.0:
+    changes:
+      bugfixes:
+        - Update AWS subnet parameter names for CDW cluster creation (https://github.com/cloudera-labs/cloudera.cloud/pull/132)
+      minor_changes:
+        - Add private_cluster parameters (https://github.com/cloudera-labs/cloudera.cloud/pull/133)
+    release_date: '2023-11-20'
+  2.1.1:
+    changes:
+      bugfixes:
+        - Fix malformed return value in API docs (https://github.com/cloudera-labs/cloudera.cloud/pull/130)
+    release_date: '2023-11-02'
+  2.1.0:
+    changes:
+      bugfixes:
+        - Update env_idbroker return value to 'idbroker' from 'mappings' (https://github.com/cloudera-labs/cloudera.cloud/pull/92)
+      minor_changes:
+        - Update collection version to 2.1.0 (https://github.com/cloudera-labs/cloudera.cloud/pull/128)
+        - Add CDP recipe and Data Hub repair modules (https://github.com/cloudera-labs/cloudera.cloud/pull/127)
     modules:
-      - description: Gather information about FreeIPA.
-        name: freeipa_info
-        namespace: ""
-      - description: Grant and revoke user access to CDP Machine Learning Workspaces.
-        name: ml_workspace_access
-        namespace: ""
-    release_date: "2021-05-26"
-  1.2.0:
+      - description: Manage CDP Datahub recipes on an instance group.
+        name: datahub_cluster_recipe
+        namespace: ''
+      - description: Repair CDP Datahub instances or instance groups.
+        name: datahub_cluster_repair
+        namespace: ''
+      - description: Manage a CDP recipe.
+        name: recipe
+        namespace: ''
+      - description: Gather information about CDP recipes.
+        name: recipe_info
+        namespace: ''
+    release_date: '2023-11-02'
+  2.0.1:
     changes:
       bugfixes:
-        - Fix missing DF docs references (https://github.com/cloudera-labs/cloudera.cloud/pull/14)
+        - Update pip requirements to update to latest 2.12.* (https://github.com/cloudera-labs/cloudera.cloud/pull/124)
+        - Update import for cdp_service in datalake_service lookup plugin (https://github.com/cloudera-labs/cloudera.cloud/pull/122)
+        - Ignore errors when deleting Data Hub (https://github.com/cloudera-labs/cloudera.cloud/pull/115)
       minor_changes:
-        - Add support for DFX Tech Preview (https://github.com/cloudera-labs/cloudera.cloud/pull/11)
-    modules:
-      - description: Enable or Disable CDP DataFlow Services.
-        name: df_service
-        namespace: ""
-      - description: Gather information about CDP DataFlow Services.
-        name: df_service_info
-        namespace: ""
-    release_date: "2021-06-10"
-  1.3.0:
-    changes:
-      minor_changes:
-        - Add 'content' flag for including template content. (https://github.com/cloudera-labs/cloudera.cloud/pull/13)
-        - "Add new definition info module for datahubs and update datahub_cluste… (https://github.com/cloudera-labs/cloudera.cloud/pull/12)"
-    modules:
-      - description: Gather information about CDP Datahub Cluster Definitions.
-        name: datahub_definition_info
-        namespace: ""
-    release_date: "2021-06-15"
-  1.4.0:
-    changes:
-      bugfixes:
-        - Df module incorrectly refers to deprecated value self.env (https://github.com/cloudera-labs/cloudera.cloud/pull/16)
-      minor_changes:
-        - Add support for endpointaccessgateway for AWS (https://github.com/cloudera-labs/cloudera.cloud/pull/15)
-        - Changes for DF-beta inclusion (https://github.com/cloudera-labs/cloudera.cloud/pull/17)
-        - Improve Azure deployment stability (https://github.com/cloudera-labs/cloudera.cloud/pull/24)
-        - Improve DF Integration (https://github.com/cloudera-labs/cloudera.cloud/pull/20)
-        - Improve teardown functionality and support purge mode (https://github.com/cloudera-labs/cloudera.cloud/pull/18)
-        - Update env module to support FreeIPA Instance Count (https://github.com/cloudera-labs/cloudera.cloud/pull/30)
-      removed_features:
-        - Ciao dynamo (https://github.com/cloudera-labs/cloudera.cloud/pull/23)
-        - Remove DF dependency until GA (https://github.com/cloudera-labs/cloudera.cloud/pull/25)
-    release_date: "2021-09-10"
-  1.5.0:
-    changes:
-      bugfixes:
-        - Fix agent_header parameter (https://github.com/cloudera-labs/cloudera.cloud/pull/42)
-        - Fix module name in API docs (https://github.com/cloudera-labs/cloudera.cloud/pull/44)
-      minor_changes:
-        - Add 'id' as an alias to 'catalog_id' (https://github.com/cloudera-labs/cloudera.cloud/pull/33)
-        - Add and update CDW modules (https://github.com/cloudera-labs/cloudera.cloud/pull/29)
-        - Add configurable user agent for CDPCLI interface (https://github.com/cloudera-labs/cloudera.cloud/pull/38)
-        - Add support for CDE (https://github.com/cloudera-labs/cloudera.cloud/pull/39)
-        - Add support for CDE (part 2 - virtual clusters) (https://github.com/cloudera-labs/cloudera.cloud/pull/40)
-        - Azure AuthZ/Single Resource Group Work - CLOUD (https://github.com/cloudera-labs/cloudera.cloud/pull/43)
-        - Move DFX Beta implementation to GA process (https://github.com/cloudera-labs/cloudera.cloud/pull/31)
-    modules:
-      - description: Enable and Disable CDP Data Engineering Services.
-        name: de
-        namespace: ""
-      - description: Gather information about CDP DE Workspaces.
-        name: de_info
-        namespace: ""
-      - description: Create or delete CDP Data Engineering Virtual Clusters.
-        name: de_virtual_cluster
-        namespace: ""
-      - description: Gather information about CDP DE virtual clusters.
-        name: de_virtual_cluster_info
-        namespace: ""
-      - description: Create, manage, and destroy CDP Data Warehouse Database Catalogs.
-        name: dw_database_catalog
-        namespace: ""
-      - description: Gather information about CDP Data Warehouse Database Catalogs.
-        name: dw_database_catalog_info
-        namespace: ""
-      - description: Create, manage, and destroy CDP Data Warehouse Virtual Warehouses.
-        name: dw_virtual_warehouse
-        namespace: ""
-      - description: Gather information about CDP Data Warehouse Virtual Warehouses.
-        name: dw_virtual_warehouse_info
-        namespace: ""
-    release_date: "2021-11-29"
-  1.5.1:
-    changes:
-      bugfixes:
-        - Hotfix env_cred_info (https://github.com/cloudera-labs/cloudera.cloud/pull/47)
-    release_date: "2022-01-25"
-  1.6.0:
-    changes:
-      minor_changes:
-        - Enable cascade and force parameters for environment deletion (https://github.com/cloudera-labs/cloudera.cloud/pull/52)
-        - Support for DataFlow Deployments (https://github.com/cloudera-labs/cloudera.cloud/pull/45)
-    modules:
-      - description: Gather information about CDP DataFlow CustomFlow Definitions.
-        name: df_customflow_info
-        namespace: ""
-      - description: Enable or Disable CDP DataFlow Deployments.
-        name: df_deployment
-        namespace: ""
-      - description: Gather information about CDP DataFlow Deployments.
-        name: df_deployment_info
-        namespace: ""
-      - description: Import or Delete ReadyFlows from your CDP Tenant.
-        name: df_readyflow
-        namespace: ""
-      - description: Gather information about CDP DataFlow ReadyFlow Definitions.
-        name: df_readyflow_info
-        namespace: ""
-    release_date: "2022-04-07"
-  1.7.0:
-    changes:
-      bugfixes:
-        - Fix freeipa parameter for env module (https://github.com/cloudera-labs/cloudera.cloud/pull/61)
-        - Update DBC restart process (https://github.com/cloudera-labs/cloudera.cloud/pull/66)
-      minor_changes:
-        - Add initial testing components (https://github.com/cloudera-labs/cloudera.cloud/pull/65)
-        - Add support for stopped and started states to datahub cluster (https://github.com/cloudera-labs/cloudera.cloud/pull/57)
-        - Multi-AZ Datahub support (https://github.com/cloudera-labs/cloudera.cloud/pull/68)
-        - RAZ Support - PR 49 Redo (https://github.com/cloudera-labs/cloudera.cloud/pull/55)
-        - Update to handle automated user synchronization (https://github.com/cloudera-labs/cloudera.cloud/pull/53)
-    modules:
-      - description: Get the status of the automated CDP Users and Groups synchronization service.
-        name: env_automated_user_sync_info
-        namespace: ""
-    release_date: "2022-08-02"
-  1.7.1:
-    changes:
-      bugfixes:
-        - Remove 'enableRangerRaz' from DL payload for GCP (https://github.com/cloudera-labs/cloudera.cloud/pull/69)
-    release_date: "2022-08-04"
-  1.7.2:
-    changes:
-      bugfixes:
-        - Fix for CDW Virtual Warehouse race condition (https://github.com/cloudera-labs/cloudera.cloud/pull/75)
-        - Increment collection to 1.7.2 (https://github.com/cloudera-labs/cloudera.cloud/pull/86)
-      minor_changes:
-        - Add workflows for PR validation tasks and labeling (https://github.com/cloudera-labs/cloudera.cloud/pull/84)
-        - Start an environment without starting the datahubs within it (https://github.com/cloudera-labs/cloudera.cloud/pull/76)
-        - Update collection version to 2.0.0-alpha1 (https://github.com/cloudera-labs/cloudera.cloud/pull/70)
-        - Update to support ansible-builder (https://github.com/cloudera-labs/cloudera.cloud/pull/85)
-    release_date: "2023-02-01"
-  1.7.3:
-    changes:
-      minor_changes:
-        - Update to support ansible-builder (https://github.com/cloudera-labs/cloudera.cloud/pull/87)
-    release_date: "2023-02-01"
-  1.7.4:
-    changes:
-      bugfixes:
-        - Update bindep installation and execution (https://github.com/cloudera-labs/cloudera.cloud/pull/88)
-    release_date: "2023-02-03"
+        - Report warning when discovering subnets from filter (https://github.com/cloudera-labs/cloudera.cloud/pull/114)
+    release_date: '2023-10-05'
   2.0.0:
     changes:
       bugfixes:
         - Add Documentation for Data Visualization (https://github.com/cloudera-labs/cloudera.cloud/pull/106)
-        - Fix documentation on datahub name length (https://github.com/cloudera-labs/cloudera.cloud/pull/79)
         - Update creation parameters to reflect cloud provider specifics (https://github.com/cloudera-labs/cloudera.cloud/pull/102)
         - Update multiAz parameter docs (https://github.com/cloudera-labs/cloudera.cloud/pull/93)
+        - Fix documentation on datahub name length (https://github.com/cloudera-labs/cloudera.cloud/pull/79)
       minor_changes:
-        - Add Datalake service lookup (https://github.com/cloudera-labs/cloudera.cloud/pull/97)
-        - Add FreeIPA lookup plugins (https://github.com/cloudera-labs/cloudera.cloud/pull/100)
-        - Add GCP region zones parameter (https://github.com/cloudera-labs/cloudera.cloud/pull/101)
-        - Add backup storage options to env module (https://github.com/cloudera-labs/cloudera.cloud/pull/95)
-        - Add datahub_service lookup plugin (https://github.com/cloudera-labs/cloudera.cloud/pull/96)
-        - Add integration targets for CDP Environment and general teardown (https://github.com/cloudera-labs/cloudera.cloud/pull/91)
-        - Add integration test for cross-account credentials (https://github.com/cloudera-labs/cloudera.cloud/pull/90)
-        - Add loadbalancer_ips parameter to 'de' module (https://github.com/cloudera-labs/cloudera.cloud/pull/108)
-        - Add lookup plugins for DL and DH (https://github.com/cloudera-labs/cloudera.cloud/pull/98)
-        - Add multi-az support for AWS environment and datalake (https://github.com/cloudera-labs/cloudera.cloud/pull/89)
-        - Add noProxyHosts parameter to cloudera.cloud.env_proxy (https://github.com/cloudera-labs/cloudera.cloud/pull/105)
-        - Add recipes parameter to cloudera.cloud.datalake (https://github.com/cloudera-labs/cloudera.cloud/pull/107)
-        - Added modules for custom flows and a fix fixes for deployments. (https://github.com/cloudera-labs/cloudera.cloud/pull/62)
-        - Configure documentation toolchain with antsibull-docs (https://github.com/cloudera-labs/cloudera.cloud/pull/109)
-        - Remove PVC Base feature branch (https://github.com/cloudera-labs/cloudera.cloud/pull/110)
-        - Subnet filters for the DF service (https://github.com/cloudera-labs/cloudera.cloud/pull/64)
-        - Update payload to use clusterDefinition and clusterTemplate parameters (https://github.com/cloudera-labs/cloudera.cloud/pull/94)
         - Update release/v2.0.0 (#117) (https://github.com/cloudera-labs/cloudera.cloud/pull/119)
         - Update release/v2.0.0 (https://github.com/cloudera-labs/cloudera.cloud/pull/117)
+        - Remove PVC Base feature branch (https://github.com/cloudera-labs/cloudera.cloud/pull/110)
+        - Configure documentation toolchain with antsibull-docs (https://github.com/cloudera-labs/cloudera.cloud/pull/109)
+        - Add loadbalancer_ips parameter to 'de' module (https://github.com/cloudera-labs/cloudera.cloud/pull/108)
+        - Add recipes parameter to cloudera.cloud.datalake (https://github.com/cloudera-labs/cloudera.cloud/pull/107)
+        - Add noProxyHosts parameter to cloudera.cloud.env_proxy (https://github.com/cloudera-labs/cloudera.cloud/pull/105)
+        - Add GCP region zones parameter (https://github.com/cloudera-labs/cloudera.cloud/pull/101)
+        - Add FreeIPA lookup plugins (https://github.com/cloudera-labs/cloudera.cloud/pull/100)
+        - Add lookup plugins for DL and DH (https://github.com/cloudera-labs/cloudera.cloud/pull/98)
+        - Add Datalake service lookup (https://github.com/cloudera-labs/cloudera.cloud/pull/97)
+        - Add datahub_service lookup plugin (https://github.com/cloudera-labs/cloudera.cloud/pull/96)
+        - Add backup storage options to env module (https://github.com/cloudera-labs/cloudera.cloud/pull/95)
+        - Update payload to use clusterDefinition and clusterTemplate parameters (https://github.com/cloudera-labs/cloudera.cloud/pull/94)
+        - Add integration targets for CDP Environment and general teardown (https://github.com/cloudera-labs/cloudera.cloud/pull/91)
+        - Add integration test for cross-account credentials (https://github.com/cloudera-labs/cloudera.cloud/pull/90)
+        - Add multi-az support for AWS environment and datalake (https://github.com/cloudera-labs/cloudera.cloud/pull/89)
+        - Subnet filters for the DF service (https://github.com/cloudera-labs/cloudera.cloud/pull/64)
+        - Added modules for custom flows and a fix fixes for deployments. (https://github.com/cloudera-labs/cloudera.cloud/pull/62)
     modules:
       - description: Import or Delete CustomFlows into the DataFlow Catalog.
         name: df_customflow
-        namespace: ""
+        namespace: ''
       - description: Import CustomFlow versions into the DataFlow Catalog.
         name: df_customflow_version
-        namespace: ""
+        namespace: ''
       - description: Create or Delete CDP Data Visualization Instance.
         name: dw_data_visualization
-        namespace: ""
+        namespace: ''
       - description: Gather information about CDP Data Visualization Instances.
         name: dw_data_visualization_info
-        namespace: ""
+        namespace: ''
     plugins:
       lookup:
         - description: Get a Datahub definition for a CDP Public Cloud Environment.
@@ -319,89 +175,267 @@ releases:
         - description: Get the URL for a CDP Public Cloud Datalake service.
           name: datalake_service
           namespace:
-        - description: Get information about the FreeIPA domain and DNS server IP address(es) for the selected CDP Public Cloud Environment.
+        - description: Get information about the FreeIPA domain and DNS server IP
+            address(es) for the selected CDP Public Cloud Environment.
           name: env_freeipa_domain
           namespace:
         - description: Get information about FreeIPA hosts for selected Environment.
           name: env_freeipa_hosts
           namespace:
-    release_date: "2023-09-28"
-  2.0.1:
+    release_date: '2023-09-28'
+  1.7.4:
     changes:
       bugfixes:
-        - Ignore errors when deleting Data Hub (https://github.com/cloudera-labs/cloudera.cloud/pull/115)
-        - Update import for cdp_service in datalake_service lookup plugin (https://github.com/cloudera-labs/cloudera.cloud/pull/122)
-        - Update pip requirements to update to latest 2.12.* (https://github.com/cloudera-labs/cloudera.cloud/pull/124)
+        - Update bindep installation and execution (https://github.com/cloudera-labs/cloudera.cloud/pull/88)
+    release_date: '2023-02-03'
+  1.7.3:
+    changes:
       minor_changes:
-        - Report warning when discovering subnets from filter (https://github.com/cloudera-labs/cloudera.cloud/pull/114)
-    release_date: "2023-10-05"
-  2.1.0:
+        - Update to support ansible-builder (https://github.com/cloudera-labs/cloudera.cloud/pull/87)
+    release_date: '2023-02-01'
+  1.7.2:
     changes:
       bugfixes:
-        - Update env_idbroker return value to 'idbroker' from 'mappings' (https://github.com/cloudera-labs/cloudera.cloud/pull/92)
+        - Increment collection to 1.7.2 (https://github.com/cloudera-labs/cloudera.cloud/pull/86)
+        - Fix for CDW Virtual Warehouse race condition (https://github.com/cloudera-labs/cloudera.cloud/pull/75)
       minor_changes:
-        - Add CDP recipe and Data Hub repair modules (https://github.com/cloudera-labs/cloudera.cloud/pull/127)
-        - Update collection version to 2.1.0 (https://github.com/cloudera-labs/cloudera.cloud/pull/128)
+        - Update to support ansible-builder (https://github.com/cloudera-labs/cloudera.cloud/pull/85)
+        - Add workflows for PR validation tasks and labeling (https://github.com/cloudera-labs/cloudera.cloud/pull/84)
+        - Start an environment without starting the datahubs within it (https://github.com/cloudera-labs/cloudera.cloud/pull/76)
+        - Update collection version to 2.0.0-alpha1 (https://github.com/cloudera-labs/cloudera.cloud/pull/70)
+    release_date: '2023-02-01'
+  1.7.1:
+    changes:
+      bugfixes:
+        - Remove 'enableRangerRaz' from DL payload for GCP (https://github.com/cloudera-labs/cloudera.cloud/pull/69)
+    release_date: '2022-08-04'
+  1.7.0:
+    changes:
+      bugfixes:
+        - Update DBC restart process (https://github.com/cloudera-labs/cloudera.cloud/pull/66)
+        - Fix freeipa parameter for env module (https://github.com/cloudera-labs/cloudera.cloud/pull/61)
+      minor_changes:
+        - Multi-AZ Datahub support (https://github.com/cloudera-labs/cloudera.cloud/pull/68)
+        - Add initial testing components (https://github.com/cloudera-labs/cloudera.cloud/pull/65)
+        - Add support for stopped and started states to datahub cluster (https://github.com/cloudera-labs/cloudera.cloud/pull/57)
+        - RAZ Support - PR 49 Redo (https://github.com/cloudera-labs/cloudera.cloud/pull/55)
+        - Update to handle automated user synchronization (https://github.com/cloudera-labs/cloudera.cloud/pull/53)
     modules:
-      - description: Manage CDP Datahub recipes on an instance group.
-        name: datahub_cluster_recipe
-        namespace: ""
-      - description: Repair CDP Datahub instances or instance groups.
-        name: datahub_cluster_repair
-        namespace: ""
-      - description: Manage a CDP recipe.
-        name: recipe
-        namespace: ""
-      - description: Gather information about CDP recipes.
-        name: recipe_info
-        namespace: ""
-    release_date: "2023-11-02"
-  2.1.1:
+      - description: Get the status of the automated CDP Users and Groups synchronization
+          service.
+        name: env_automated_user_sync_info
+        namespace: ''
+    release_date: '2022-08-02'
+  1.6.0:
+    changes:
+      minor_changes:
+        - Enable cascade and force parameters for environment deletion (https://github.com/cloudera-labs/cloudera.cloud/pull/52)
+        - Support for DataFlow Deployments (https://github.com/cloudera-labs/cloudera.cloud/pull/45)
+    modules:
+      - description: Gather information about CDP DataFlow CustomFlow Definitions.
+        name: df_customflow_info
+        namespace: ''
+      - description: Enable or Disable CDP DataFlow Deployments.
+        name: df_deployment
+        namespace: ''
+      - description: Gather information about CDP DataFlow Deployments.
+        name: df_deployment_info
+        namespace: ''
+      - description: Import or Delete ReadyFlows from your CDP Tenant.
+        name: df_readyflow
+        namespace: ''
+      - description: Gather information about CDP DataFlow ReadyFlow Definitions.
+        name: df_readyflow_info
+        namespace: ''
+    release_date: '2022-04-07'
+  1.5.1:
     changes:
       bugfixes:
-        - Fix malformed return value in API docs (https://github.com/cloudera-labs/cloudera.cloud/pull/130)
-    release_date: "2023-11-02"
-  2.2.0:
+        - Hotfix env_cred_info (https://github.com/cloudera-labs/cloudera.cloud/pull/47)
+    release_date: '2022-01-25'
+  1.5.0:
     changes:
       bugfixes:
-        - Update AWS subnet parameter names for CDW cluster creation (https://github.com/cloudera-labs/cloudera.cloud/pull/132)
+        - Fix module name in API docs (https://github.com/cloudera-labs/cloudera.cloud/pull/44)
+        - Fix agent_header parameter (https://github.com/cloudera-labs/cloudera.cloud/pull/42)
       minor_changes:
-        - Add private_cluster parameters (https://github.com/cloudera-labs/cloudera.cloud/pull/133)
-    release_date: "2023-11-20"
-  2.3.0:
-    changes:
-      minor_changes:
-        - Add cdp_region parameters fo CDP Endpoint region (https://github.com/cloudera-labs/cloudera.cloud/pull/136)
-    release_date: "2023-12-21"
-  2.3.1:
+        - Azure AuthZ/Single Resource Group Work - CLOUD (https://github.com/cloudera-labs/cloudera.cloud/pull/43)
+        - Add support for CDE (part 2 - virtual clusters) (https://github.com/cloudera-labs/cloudera.cloud/pull/40)
+        - Add support for CDE (https://github.com/cloudera-labs/cloudera.cloud/pull/39)
+        - Add configurable user agent for CDPCLI interface (https://github.com/cloudera-labs/cloudera.cloud/pull/38)
+        - Add 'id' as an alias to 'catalog_id' (https://github.com/cloudera-labs/cloudera.cloud/pull/33)
+        - Move DFX Beta implementation to GA process (https://github.com/cloudera-labs/cloudera.cloud/pull/31)
+        - Add and update CDW modules (https://github.com/cloudera-labs/cloudera.cloud/pull/29)
+    modules:
+      - description: Enable and Disable CDP Data Engineering Services.
+        name: de
+        namespace: ''
+      - description: Gather information about CDP DE Workspaces.
+        name: de_info
+        namespace: ''
+      - description: Create or delete CDP Data Engineering Virtual Clusters.
+        name: de_virtual_cluster
+        namespace: ''
+      - description: Gather information about CDP DE virtual clusters.
+        name: de_virtual_cluster_info
+        namespace: ''
+      - description: Create, manage, and destroy CDP Data Warehouse Database Catalogs.
+        name: dw_database_catalog
+        namespace: ''
+      - description: Gather information about CDP Data Warehouse Database Catalogs.
+        name: dw_database_catalog_info
+        namespace: ''
+      - description: Create, manage, and destroy CDP Data Warehouse Virtual Warehouses.
+        name: dw_virtual_warehouse
+        namespace: ''
+      - description: Gather information about CDP Data Warehouse Virtual Warehouses.
+        name: dw_virtual_warehouse_info
+        namespace: ''
+    release_date: '2021-11-29'
+  1.4.0:
     changes:
       bugfixes:
-        - Add enterprise to datalake scale parameter (https://github.com/cloudera-labs/cloudera.cloud/pull/141)
-    release_date: "2024-04-08"
-  2.4.0:
+        - Df module incorrectly refers to deprecated value self.env (https://github.com/cloudera-labs/cloudera.cloud/pull/16)
+      minor_changes:
+        - Update env module to support FreeIPA Instance Count (https://github.com/cloudera-labs/cloudera.cloud/pull/30)
+        - Improve Azure deployment stability (https://github.com/cloudera-labs/cloudera.cloud/pull/24)
+        - Improve DF Integration (https://github.com/cloudera-labs/cloudera.cloud/pull/20)
+        - Improve teardown functionality and support purge mode (https://github.com/cloudera-labs/cloudera.cloud/pull/18)
+        - Changes for DF-beta inclusion (https://github.com/cloudera-labs/cloudera.cloud/pull/17)
+        - Add support for endpointaccessgateway for AWS (https://github.com/cloudera-labs/cloudera.cloud/pull/15)
+      removed_features:
+        - Remove DF dependency until GA (https://github.com/cloudera-labs/cloudera.cloud/pull/25)
+        - Ciao dynamo (https://github.com/cloudera-labs/cloudera.cloud/pull/23)
+    release_date: '2021-09-10'
+  1.3.0:
     changes:
       minor_changes:
-        - Add Ansible Galaxy imports (https://github.com/cloudera-labs/cloudera.cloud/pull/147)
-        - Add analytics to API documents (https://github.com/cloudera-labs/cloudera.cloud/pull/143)
-        - Add autoscaling and impala_ha parameters to cdw vw module (https://github.com/cloudera-labs/cloudera.cloud/pull/145)
-        - Add extra Azure parameters to cloudera.cloud.dw_cluster (https://github.com/cloudera-labs/cloudera.cloud/pull/140)
-        - Add module defaults groups (https://github.com/cloudera-labs/cloudera.cloud/pull/144)
-        - Add template and image parameters to dw data viz module (https://github.com/cloudera-labs/cloudera.cloud/pull/146)
-        - Update to version 2.4.0 (https://github.com/cloudera-labs/cloudera.cloud/pull/148)
-    release_date: "2024-05-21"
-  2.5.0:
+        - Add 'content' flag for including template content. (https://github.com/cloudera-labs/cloudera.cloud/pull/13)
+        - Add new definition info module for datahubs and update datahub_cluste… (https://github.com/cloudera-labs/cloudera.cloud/pull/12)
+    modules:
+      - description: Gather information about CDP Datahub Cluster Definitions.
+        name: datahub_definition_info
+        namespace: ''
+    release_date: '2021-06-15'
+  1.2.0:
     changes:
       bugfixes:
-        - Update default value of use_ssd argument in CDE module (https://github.com/cloudera-labs/cloudera.cloud/pull/156)
-        - Update module example typo (https://github.com/cloudera-labs/cloudera.cloud/pull/154)
+        - Fix missing DF docs references (https://github.com/cloudera-labs/cloudera.cloud/pull/14)
       minor_changes:
-        - Add extra top-level parameters for CDW create cluster module (https://github.com/cloudera-labs/cloudera.cloud/pull/155)
-        - Add pre-commit hooks and workflow (https://github.com/cloudera-labs/cloudera.cloud/pull/157)
-      trivial:
-        - Documentation examples updates (https://github.com/cloudera-labs/cloudera.cloud/pull/152)
-    release_date: "2024-06-27"
-  2.5.1:
-    changes:
-      minor_changes:
-        - Increment actions to remove deprecation notices and use main branch for docs construction workflow
-    release_date: "2024-06-27"
+        - Add support for DFX Tech Preview (https://github.com/cloudera-labs/cloudera.cloud/pull/11)
+    modules:
+      - description: Enable or Disable CDP DataFlow Services.
+        name: df_service
+        namespace: ''
+      - description: Gather information about CDP DataFlow Services.
+        name: df_service_info
+        namespace: ''
+    release_date: '2021-06-10'
+  1.1.0:
+    modules:
+      - description: Gather information about FreeIPA.
+        name: freeipa_info
+        namespace: ''
+      - description: Grant and revoke user access to CDP Machine Learning Workspaces.
+        name: ml_workspace_access
+        namespace: ''
+    release_date: '2021-05-26'
+  1.0.0:
+    modules:
+      - description: Gather and set authentication details for a CDP Account.
+        name: account_auth
+        namespace: ''
+      - description: Gather information about CDP Account authentication settings.
+        name: account_auth_info
+        namespace: ''
+      - description: Gather information about Account prerequisites for CDP Credentials.
+        name: account_cred_info
+        namespace: ''
+      - description: Manage CDP Datahubs.
+        name: datahub_cluster
+        namespace: ''
+      - description: Gather information about CDP Datahubs.
+        name: datahub_cluster_info
+        namespace: ''
+      - description: Gather information about CDP Datahub Cluster Templates.
+        name: datahub_template_info
+        namespace: ''
+      - description: Manage CDP Datalakes.
+        name: datalake
+        namespace: ''
+      - description: Gather information about CDP Datalakes.
+        name: datalake_info
+        namespace: ''
+      - description: Gather information about CDP Datalake Runtimes.
+        name: datalake_runtime_info
+        namespace: ''
+      - description: Create or Delete CDP Data Warehouse Clusters.
+        name: dw_cluster
+        namespace: ''
+      - description: Gather information about CDP Data Warehouse Clusters.
+        name: dw_cluster_info
+        namespace: ''
+      - description: Manage CDP Environments.
+        name: env
+        namespace: ''
+      - description: Set authentication details for the current CDP user.
+        name: env_auth
+        namespace: ''
+      - description: Gather information about CDP environment authentication details.
+        name: env_auth_info
+        namespace: ''
+      - description: Create, update, and destroy CDP credentials.
+        name: env_cred
+        namespace: ''
+      - description: Gather information about CDP Credentials.
+        name: env_cred_info
+        namespace: ''
+      - description: Update ID Broker for CDP Environments.
+        name: env_idbroker
+        namespace: ''
+      - description: Gather information about CDP ID Broker.
+        name: env_idbroker_info
+        namespace: ''
+      - description: Gather information about CDP Environments.
+        name: env_info
+        namespace: ''
+      - description: Create, update, or destroy CDP Environment Proxies.
+        name: env_proxy
+        namespace: ''
+      - description: Gather information about CDP Environment Proxies.
+        name: env_proxy_info
+        namespace: ''
+      - description: Set CDP environment telemetry.
+        name: env_telemetry
+        namespace: ''
+      - description: Sync CDP Users and Groups to Environments.
+        name: env_user_sync
+        namespace: ''
+      - description: Get the status of a CDP Users and Groups sync.
+        name: env_user_sync_info
+        namespace: ''
+      - description: Create, update, or destroy CDP IAM Groups.
+        name: iam_group
+        namespace: ''
+      - description: Gather information about CDP Public IAM groups.
+        name: iam_group_info
+        namespace: ''
+      - description: Gather information about CDP Public IAM resource roles.
+        name: iam_resource_role_info
+        namespace: ''
+      - description: Gather information about CDP Public IAM users.
+        name: iam_user_info
+        namespace: ''
+      - description: Create or Destroy CDP Machine Learning Workspaces.
+        name: ml
+        namespace: ''
+      - description: Gather information about CDP ML Workspaces.
+        name: ml_info
+        namespace: ''
+      - description: Create or destroy CDP OpDB Databases.
+        name: opdb
+        namespace: ''
+      - description: Gather information about CDP OpDB Databases.
+        name: opdb_info
+        namespace: ''
+    release_date: '2021-05-03'
