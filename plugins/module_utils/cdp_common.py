@@ -103,7 +103,9 @@ class CdpModule(object):
         """Default Ansible Module spec values for convenience"""
         return dict(
             **spec,
-            verify_tls=dict(required=False, type="bool", default=True, aliases=["verify_api_tls"]),
+            verify_tls=dict(
+                required=False, type="bool", default=True, aliases=["verify_api_tls"]
+            ),
             debug=dict(
                 required=False,
                 type="bool",
