@@ -104,7 +104,10 @@ class CdpModule(object):
         return dict(
             **spec,
             verify_tls=dict(
-                required=False, type="bool", default=True, aliases=["verify_api_tls"]
+                required=False,
+                type="bool",
+                default=True,
+                aliases=["verify_api_tls"],
             ),
             debug=dict(
                 required=False,
