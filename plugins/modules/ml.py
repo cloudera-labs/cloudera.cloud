@@ -116,6 +116,12 @@ options:
     aliases:
       - existing_database
       - database_config
+  namespace:
+    description:
+      - The namespace to use for the workspace.
+      - Applicable to I(Private Cloud) deployments only.
+    type: str
+    required: False
   nfs:
     description:
       - An existing NFS mount (hostname and desired path).
@@ -584,6 +590,7 @@ class MLWorkspace(CdpModule):
         self.governance = self._get_param("governance")
         self.metrics = self._get_param("metrics")
         self.database = self._get_param("database")
+        self.namespace = self._get_param("namespace")
         self.nfs = self._get_param("nfs")
         self.nfs_version = self._get_param("nfs_version")
         self.ip_addresses = self._get_param("ip_addresses")
@@ -676,6 +683,7 @@ class MLWorkspace(CdpModule):
                         enableGovernance=self.governance,
                         enableModelMetrics=self.metrics,
                         existingDatabaseConfig=self.database,
+                        namespace=self.namespace,
                         existingNFS=self.nfs,
                         nfsVersion=self.nfs_version,
                         loadBalancerIPWhitelists=self.ip_addresses,
@@ -783,6 +791,7 @@ def main():
                 ),
                 aliases=["existing_database", "database_config"],
             ),
+            namespace=dict(required=False, type="str"),
             nfs=dict(required=False, type="str", aliases=["existing_nfs"]),
             nfs_version=dict(required=False, type="str"),
             k8s_request=dict(
