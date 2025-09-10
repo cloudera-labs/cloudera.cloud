@@ -47,7 +47,7 @@ class CdpModule(object):
     def __init__(self, module):
         # Set common parameters
         self.module = module
-        self.tls = self._get_param("verify_tls", False)
+        self.verify_tls = self._get_param("verify_tls", False)
         self.debug = self._get_param("debug", False)
         self.strict = self._get_param("strict", False)
         self.agent_header = self._get_param("agent_header", "ClouderaFoundry")
@@ -61,7 +61,7 @@ class CdpModule(object):
         # Client Wrapper
         self.cdpy = Cdpy(
             debug=self.debug,
-            tls_verify=self.tls,
+            tls_verify=self.verify_tls,
             strict_errors=self.strict,
             error_handler=self._cdp_module_throw_error,
             warning_handler=self._cdp_module_throw_warning,
@@ -103,7 +103,12 @@ class CdpModule(object):
         """Default Ansible Module spec values for convenience"""
         return dict(
             **spec,
-            verify_tls=dict(required=False, type="bool", default=True, aliases=["tls"]),
+            verify_tls=dict(
+                required=False,
+                type="bool",
+                default=True,
+                aliases=["verify_api_tls"],
+            ),
             debug=dict(
                 required=False,
                 type="bool",
