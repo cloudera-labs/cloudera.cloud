@@ -115,6 +115,30 @@ options:
       - EBS volume size in GB
     type: int
     required: False
+  resource_pool:
+    description:
+      - Resource Pool for the CDE service.
+      - Applicable to I(Private Cloud) deployments only.
+    type: str
+    required: False
+  cpu_requests:
+    description:
+      - Service wide CPU resource request quota.
+      - Applicable to I(Private Cloud) deployments only.
+    type: str
+    required: False
+  memory_requests:
+    description:
+      - Service wide memory resource request quota.
+      - Applicable to I(Private Cloud) deployments only.
+    type: str
+    required: False
+  gpu_requests:
+    description:
+      - Service wide GPU resource request quota.
+      - Applicable to I(Private Cloud) deployments only.
+    type: str
+    required: False
   skip_validation:
     description:
       - Skip Validation check.
@@ -353,6 +377,10 @@ class DEService(CdpModule):
         self.initial_instances = self._get_param("initial_instances")
         self.initial_spot_instances = self._get_param("initial_spot_instances")
         self.root_volume_size = self._get_param("root_volume_size")
+        self.resource_pool = self._get_param("resource_pool")
+        self.cpu_requests = self._get_param("cpu_requests")
+        self.memory_requests = self._get_param("memory_requests")
+        self.gpu_requests = self._get_param("gpu_requests")
         self.skip_validation = self._get_param("skip_validation")
         self.tags = self._get_param("tags")
         self.use_ssd = self._get_param("use_ssd")
@@ -477,6 +505,10 @@ class DEService(CdpModule):
             initial_instances=self.initial_instances,
             initial_spot_instances=self.initial_spot_instances,
             root_volume_size=self.root_volume_size,
+            resource_pool=self.resource_pool,
+            cpu_requests=self.cpu_requests,
+            memory_requests=self.memory_requests,
+            gpu_requests=self.gpu_requests,
             skip_validation=self.skip_validation,
             tags=self.tags,
             use_ssd=self.use_ssd,
@@ -544,6 +576,10 @@ def main():
             initial_instances=dict(required=False, type="int", default=1),
             initial_spot_instances=dict(required=False, type="int", default=0),
             root_volume_size=dict(required=False, type="int", default=100),
+            resource_pool=dict(required=False, type="str", default=None),
+            cpu_requests=dict(required=False, type="str", default=None),
+            memory_requests=dict(required=False, type="str", default=None),
+            gpu_requests=dict(required=False, type="str", default=None),
             skip_validation=dict(required=False, type="bool", default=False),
             tags=dict(required=False, type="dict", default=None),
             use_ssd=dict(required=False, type="bool", default=None),
