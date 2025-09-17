@@ -385,9 +385,15 @@ class DwCluster(CdpModule):
         self.az_managed_identity = self._get_nested_param("azure", "managed_identity")
 
         # On Premise nested parameters
-        self.pvc_storage_class = self._get_nested_param("private_cloud", "storage_class")
-        self.pvc_db_client_cert = self._get_nested_param("private_cloud", "db_client_certificate")
-        self.pvc_db_client_key = self._get_nested_param("private_cloud", "db_client_key")
+        self.pvc_storage_class = self._get_nested_param(
+            "private_cloud", "storage_class"
+        )
+        self.pvc_db_client_cert = self._get_nested_param(
+            "private_cloud", "db_client_certificate"
+        )
+        self.pvc_db_client_key = self._get_nested_param(
+            "private_cloud", "db_client_key"
+        )
 
         # Initialize return values
         self.cluster = {}
@@ -539,76 +545,76 @@ class DwCluster(CdpModule):
 
 def main():
     module = AnsibleModule(
-      argument_spec=CdpModule.argument_spec(
-        cluster_id=dict(type="str", aliases=["id", "name"]),
-        custom_subdomain=dict(type="str"),
-        database_backup_retention_period=dict(type="int"),
-        env=dict(type="str", aliases=["environment", "env_crn"]),
-        overlay=dict(type="bool", default=False),
-        private_load_balancer=dict(type="bool", default=False),
-        public_worker_node=dict(type="bool"),
-        azure=dict(
-          type="dict",
-          options=dict(
-            subnet=dict(type="str"),
-            enable_az=dict(type="bool"),
-            managed_identity=dict(type="str"),
-            enable_private_aks=dict(type="bool"),
-            enable_private_sql=dict(type="bool"),
-            enable_spot_instances=dict(type="bool"),
-            log_analytics_workspace_id=dict(type="str"),
-            network_outbound_type=dict(
-              type="str",
-              choices=[
-                "LoadBalancer",
-                "UserAssignedNATGateway",
-                "UserDefinedRouting",
-              ],
+        argument_spec=CdpModule.argument_spec(
+            cluster_id=dict(type="str", aliases=["id", "name"]),
+            custom_subdomain=dict(type="str"),
+            database_backup_retention_period=dict(type="int"),
+            env=dict(type="str", aliases=["environment", "env_crn"]),
+            overlay=dict(type="bool", default=False),
+            private_load_balancer=dict(type="bool", default=False),
+            public_worker_node=dict(type="bool"),
+            azure=dict(
+                type="dict",
+                options=dict(
+                    subnet=dict(type="str"),
+                    enable_az=dict(type="bool"),
+                    managed_identity=dict(type="str"),
+                    enable_private_aks=dict(type="bool"),
+                    enable_private_sql=dict(type="bool"),
+                    enable_spot_instances=dict(type="bool"),
+                    log_analytics_workspace_id=dict(type="str"),
+                    network_outbound_type=dict(
+                        type="str",
+                        choices=[
+                            "LoadBalancer",
+                            "UserAssignedNATGateway",
+                            "UserDefinedRouting",
+                        ],
+                    ),
+                    aks_private_dns_zone=dict(type="str"),
+                    compute_instance_types=dict(type="list"),
+                ),
             ),
-            aks_private_dns_zone=dict(type="str"),
-            compute_instance_types=dict(type="list"),
-          ),
+            aws_lb_subnets=dict(type="list", aliases=["aws_public_subnets"]),
+            aws_worker_subnets=dict(type="list", aliases=["aws_private_subnets"]),
+            private_cloud=dict(
+                type="dict",
+                options=dict(
+                    storage_class=dict(type="str"),
+                    db_client_certificate=dict(type="str"),
+                    db_client_key=dict(type="str"),
+                ),
+                required_together=[
+                    ["db_client_certificate", "db_client_key"],
+                ],
+            ),
+            reserved_compute_nodes=dict(type="int"),
+            reserved_shared_services_nodes=dict(type="int"),
+            resource_pool=dict(type="str"),
+            state=dict(type="str", choices=["present", "absent"], default="present"),
+            force=dict(type="bool", default=False),
+            wait=dict(type="bool", default=True),
+            whitelist_workload_access_ip_cidrs=dict(
+                type="list",
+                elements="str",
+                default=None,
+                aliases=["loadbalancer_ip_ranges", "workload_ip_ranges"],
+            ),
+            whitelist_k8s_cluster_access_ip_cidrs=dict(
+                type="list",
+                elements="str",
+                default=None,
+                aliases=["k8s_ip_ranges"],
+            ),
+            delay=dict(type="int", aliases=["polling_delay"], default=15),
+            timeout=dict(type="int", aliases=["polling_timeout"], default=3600),
         ),
-        aws_lb_subnets=dict(type="list", aliases=["aws_public_subnets"]),
-        aws_worker_subnets=dict(type="list", aliases=["aws_private_subnets"]),
-        private_cloud=dict(
-          type="dict",
-          options=dict(
-            storage_class=dict(type="str"),
-            db_client_certificate=dict(type="str"),
-            db_client_key=dict(type="str"),
-          ),
-          required_together=[
-            ["db_client_certificate", "db_client_key"]
-          ],
-        ),            
-        reserved_compute_nodes=dict(type="int"),
-        reserved_shared_services_nodes=dict(type="int"),
-        resource_pool=dict(type="str"),
-        state=dict(type="str", choices=["present", "absent"], default="present"),
-        force=dict(type="bool", default=False),
-        wait=dict(type="bool", default=True),
-        whitelist_workload_access_ip_cidrs=dict(
-          type="list",
-          elements="str",
-          default=None,
-          aliases=["loadbalancer_ip_ranges", "workload_ip_ranges"],
-        ),
-        whitelist_k8s_cluster_access_ip_cidrs=dict(
-          type="list",
-          elements="str",
-          default=None,
-          aliases=["k8s_ip_ranges"],
-        ),
-        delay=dict(type="int", aliases=["polling_delay"], default=15),
-        timeout=dict(type="int", aliases=["polling_timeout"], default=3600),
-      ),
-      required_together=[["aws_lb_subnets", "aws_worker_subnets"]],
-      required_if=[
-        ["state", "absent", ["cluster_id", "env"], True],
-        ["state", "present", ["env"]],
-      ],
-      supports_check_mode=True,
+        required_together=[["aws_lb_subnets", "aws_worker_subnets"]],
+        required_if=[
+            ["state", "absent", ["cluster_id", "env"], True],
+            ["state", "present", ["env"]],
+        ],
+        supports_check_mode=True,
     )
 
     result = DwCluster(module)
