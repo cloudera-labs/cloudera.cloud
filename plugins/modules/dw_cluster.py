@@ -386,13 +386,16 @@ class DwCluster(CdpModule):
 
         # On Premise nested parameters
         self.pvc_storage_class = self._get_nested_param(
-            "private_cloud", "storage_class"
+            "private_cloud",
+            "storage_class",
         )
         self.pvc_db_client_cert = self._get_nested_param(
-            "private_cloud", "db_client_certificate"
+            "private_cloud",
+            "db_client_certificate",
         )
         self.pvc_db_client_key = self._get_nested_param(
-            "private_cloud", "db_client_key"
+            "private_cloud",
+            "db_client_key",
         )
 
         # Initialize return values
