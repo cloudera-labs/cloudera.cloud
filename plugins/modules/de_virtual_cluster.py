@@ -61,6 +61,16 @@ options:
       - Comma-separated Workload usernames of CDP users to be granted access to the Virtual Cluster.
     type: str
     required: False
+  vc_tier:
+    description:
+      - Tier of the virtual cluster, for CDE 1.19.0 and beyond.
+      - C(CORE) enables operational batch jobs.
+      - C(ALLP) enables both operational batch jobs and interactive sessions.
+    type: str
+    required: False
+    choices:
+      - ALLP
+      - CORE
   chart_value_overrides:
     description:
     - Chart overrides for creating a virtual cluster.
@@ -114,6 +124,7 @@ EXAMPLES = r"""
     name: virtual-cluster-name
     cluster_name: cde-service-name
     env: cdp-environment-name
+    vc_tier: ALLP
     state: present
     wait: true
     delay: 30
@@ -259,6 +270,7 @@ class DEVirtualCluster(CdpModule):
         self.runtime_spot_component = self._get_param("runtime_spot_component")
         self.spark_version = self._get_param("spark_version")
         self.acl_users = self._get_param("acl_users")
+        self.vc_tier = self._get_param("vc_tier")
 
         self.state = self._get_param("state")
         self.force = self._get_param("force")
@@ -385,6 +397,7 @@ class DEVirtualCluster(CdpModule):
             runtime_spot_component=self.runtime_spot_component,
             spark_version=self.spark_version,
             acl_users=self.acl_users,
+            vc_tier=self.vc_tier,
         )
         return_desc = None
         if result and result["vcId"]:
@@ -444,6 +457,7 @@ def main():
             runtime_spot_component=dict(required=False, type="str", default=None),
             spark_version=dict(required=False, type="str", default=None),
             acl_users=dict(required=False, type="str", default=None),
+            vc_tier=dict(required=False, type='str', choices=['ALLP', 'CORE'], default=None),
             state=dict(
                 required=False,
                 type="str",
