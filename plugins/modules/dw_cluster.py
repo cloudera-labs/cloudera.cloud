@@ -83,7 +83,6 @@ options:
     description:
       - Options for activating an Azure CDW Cluster
     type: dict
-    elements: dict
     required: False
     suboptions:
       subnet:
@@ -141,7 +140,6 @@ options:
     description:
       - Options for activating an On Premise CDW Cluster
     type: dict
-    elements: dict
     required: False
     suboptions:
       storage_class:
@@ -152,12 +150,12 @@ options:
         description:
           - TLS client certificate contents.
           - Used for the mutual TLS connections between the Database Catalog and the metastore database.
-        type: string
+        type: str
       db_client_key:
         description:
           - TLS client private key contents.
           - Used for the mutual TLS connections between the Database Catalog and the metastore database.
-        type: string
+        type: str
   reserved_compute_nodes:
     description:
       - Set additional number of nodes to reserve for executors and coordinators to use during autoscaling.
