@@ -40,17 +40,17 @@ def pytest_collection_modifyitems(items):
     # Initialize skip markers
     skip_api = None
     skip_token = None
-    
+
     # Check if the environment variables are *not* set
     if "CDP_ACCESS_KEY" not in os.environ or "CDP_PRIVATE_KEY" not in os.environ:
         # Create a skip marker for API credentials
         skip_api = pytest.mark.skip(
-            reason="CDP API credentials not set in env vars. Skipping integration tests."
+            reason="CDP API credentials not set in env vars. Skipping integration tests.",
         )
-    
+
     if "CDP_TOKEN" not in os.environ:
         skip_token = pytest.mark.skip(
-            reason="CDP token not set in env vars. Skipping integration tests."
+            reason="CDP token not set in env vars. Skipping integration tests.",
         )
 
     # Apply the marker to all tests with the 'integration' mark

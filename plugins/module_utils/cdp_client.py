@@ -207,17 +207,31 @@ class CdpClient:
 
     # Abstract HTTP methods that must be implemented by subclasses
     @abc.abstractmethod
-    def _get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _get(
+        self,
+        path: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Execute HTTP GET request."""
         pass
 
     @abc.abstractmethod
-    def _post(self, path: str, data: Optional[Dict[str, Any]] = None, json_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _post(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Execute HTTP POST request."""
         pass
 
     @abc.abstractmethod
-    def _put(self, path: str, data: Optional[Dict[str, Any]] = None, json_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _put(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Execute HTTP PUT request."""
         pass
 
@@ -232,18 +246,33 @@ class CdpConsumptionClient(CdpClient):
 
     # TODO Handle page size and pagination tokens (see cdpy library)
 
-    def list_compute_usage_records(self, from_timestamp: str, to_timestamp: str) -> Dict[str, Any]:
+    def list_compute_usage_records(
+        self,
+        from_timestamp: str,
+        to_timestamp: str,
+    ) -> Dict[str, Any]:
         """List compute usage records within a time range."""
-        return self._post("/api/v1/consumption/listComputeUsageRecords", json_data={
-            "fromTimestamp": from_timestamp,
-            "toTimestamp": to_timestamp
-        })
-    
+        return self._post(
+            "/api/v1/consumption/listComputeUsageRecords",
+            json_data={
+                "fromTimestamp": from_timestamp,
+                "toTimestamp": to_timestamp,
+            },
+        )
+
 
 class AnsibleCdpClient(CdpConsumptionClient):
     """Ansible-based CDP client using native Ansible HTTP methods."""
-    
-    def __init__(self, module, base_url: str, access_key: str, private_key: str, timeout_seconds: int = 30, proxy_context_path: Optional[str] = None):
+
+    def __init__(
+        self,
+        module,
+        base_url: str,
+        access_key: str,
+        private_key: str,
+        timeout_seconds: int = 30,
+        proxy_context_path: Optional[str] = None,
+    ):
         """
         Initialize CDP client with Ansible module.
 
@@ -262,16 +291,15 @@ class AnsibleCdpClient(CdpConsumptionClient):
 
         # Build headers
         self.headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            "Content-Type": "application/json",
+            "Accept": "application/json",
         }
-        
+
         # Add CDP proxy headers if configured
         if self.proxy_context_path:
-            self.headers['X-ProxyContextPath'] = self.proxy_context_path
+            self.headers["X-ProxyContextPath"] = self.proxy_context_path
 
         # Load credentials from module parameters or environment
-
 
     def _url(self, path: str) -> str:
         """Construct full URL from path."""
@@ -288,7 +316,7 @@ class AnsibleCdpClient(CdpConsumptionClient):
     ) -> Any:
         """
         Make HTTP request with retry logic using Ansible's fetch_url.
-        
+
         Args:
             method: HTTP method (GET, POST, PUT, DELETE)
             path: API endpoint path
@@ -296,10 +324,10 @@ class AnsibleCdpClient(CdpConsumptionClient):
             data: Form data
             json_data: JSON data
             max_retries: Maximum number of retry attempts
-            
+
         Returns:
             Response data as dictionary or None for 204 responses
-            
+
         Raises:
             AtlasError: On HTTP errors or connection failures
         """
@@ -361,7 +389,7 @@ class AnsibleCdpClient(CdpConsumptionClient):
                     # 204 No Content - return None
                     if status_code == 204:
                         return None
-                    
+
                     if resp:
                         response_text = resp.read().decode("utf-8")
                         if response_text:
@@ -387,9 +415,12 @@ class AnsibleCdpClient(CdpConsumptionClient):
                 if status_code >= 500 or status_code in [408, 429]:
                     if attempt < max_retries - 1:
                         # Exponential backoff: 0.5s, 1s, 2s, 4s, 5s (max)
-                        wait_time = min(0.5 * (2 ** attempt), 5)
+                        wait_time = min(0.5 * (2**attempt), 5)
                         time.sleep(wait_time)
-                        last_error = CdpError(f"{error_message} for {url}", status=status_code)
+                        last_error = CdpError(
+                            f"{error_message} for {url}",
+                            status=status_code,
+                        )
                         continue
 
                 raise CdpError(f"{error_message} for {url}", status=status_code)
@@ -399,15 +430,15 @@ class AnsibleCdpClient(CdpConsumptionClient):
             except Exception as e:
                 # Retry on connection errors
                 if attempt < max_retries - 1:
-                    wait_time = min(0.5 * (2 ** attempt), 5)
+                    wait_time = min(0.5 * (2**attempt), 5)
                     time.sleep(wait_time)
                     last_error = CdpError(
-                        f"Connection error for {url}: {str(e)}"
+                        f"Connection error for {url}: {str(e)}",
                     )
                     continue
                 else:
                     raise CdpError(
-                        f"Request failed after {max_retries} attempts for {url}: {str(e)}"
+                        f"Request failed after {max_retries} attempts for {url}: {str(e)}",
                     )
 
         # If we exhausted all retries
@@ -415,15 +446,29 @@ class AnsibleCdpClient(CdpConsumptionClient):
             raise last_error
         raise CdpError(f"Request failed for {url}")
 
-    def _get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _get(
+        self,
+        path: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Execute HTTP GET request."""
         return self._make_request("GET", path, params=params)
 
-    def _post(self, path: str, data: Optional[Dict[str, Any]] = None, json_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _post(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Execute HTTP POST request."""
         return self._make_request("POST", path, data=data, json_data=json_data)
 
-    def _put(self, path: str, data: Optional[Dict[str, Any]] = None, json_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _put(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Execute HTTP PUT request."""
         return self._make_request("PUT", path, data=data, json_data=json_data)
 
