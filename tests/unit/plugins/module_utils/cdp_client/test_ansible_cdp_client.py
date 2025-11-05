@@ -452,7 +452,3 @@ def test_make_request_json_decode_error(mock_ansible_module, mocker):
 
     assert "response" in response
     assert response["response"] == "invalid json {"
-
-
-
-

@@ -27,7 +27,9 @@ from typing import Any, Dict, Optional
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.parameters import env_fallback
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import load_cdp_config
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
+    load_cdp_config,
+)
 
 
 LOG_FORMAT = "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
@@ -55,7 +57,7 @@ class MessageParameter(ParametersMixin):
     def get_argument_spec() -> Dict[str, Dict[str, Any]]:
         """Returns the argument spec for the message parameter."""
         return {
-            "message": dict(required=False, type="str", default=None)
+            "message": dict(required=False, type="str", default=None),
         }
 
     def init_parameters(self) -> None:
@@ -108,10 +110,29 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
         self.module = AnsibleModule(
             argument_spec=dict(
                 **merged_argument_spec,
-                access_key=dict(required=False, type="str", fallback=(env_fallback, ["CDP_ACCESS_KEY"])),
-                private_key=dict(required=False, type="str", no_log=True, fallback=(env_fallback, ["CDP_PRIVATE_KEY"])),
-                credentials_path=dict(required=False, type="str", fallback=(env_fallback, ["CDP_CREDENTIALS_PATH"]), default="~/.cdp/credentials"),
-                profile=dict(required=False, type="str", fallback=(env_fallback, ["CDP_PROFILE"]), default="default"),
+                access_key=dict(
+                    required=False,
+                    type="str",
+                    fallback=(env_fallback, ["CDP_ACCESS_KEY"]),
+                ),
+                private_key=dict(
+                    required=False,
+                    type="str",
+                    no_log=True,
+                    fallback=(env_fallback, ["CDP_PRIVATE_KEY"]),
+                ),
+                credentials_path=dict(
+                    required=False,
+                    type="str",
+                    fallback=(env_fallback, ["CDP_CREDENTIALS_PATH"]),
+                    default="~/.cdp/credentials",
+                ),
+                profile=dict(
+                    required=False,
+                    type="str",
+                    fallback=(env_fallback, ["CDP_PROFILE"]),
+                    default="default",
+                ),
                 endpoint=dict(required=True, type="str", aliases=["url"]),
                 debug=dict(required=False, type="bool", default=False),
                 agent_header=dict(
@@ -123,7 +144,8 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
             required_together=required_together + [["access_key", "private_key"]],
             bypass_checks=bypass_checks,
             no_log=no_log,
-            mutually_exclusive=mutually_exclusive + [["access_key", "credentials_path"]],
+            mutually_exclusive=mutually_exclusive
+            + [["access_key", "credentials_path"]],
             required_one_of=required_one_of + [["access_key", "credentials_path"]],
             add_file_common_args=add_file_common_args,
             supports_check_mode=supports_check_mode,
@@ -139,7 +161,7 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
         # Load CDP credentials - check if provided via parameters first
         access_key = self.get_param("access_key")
         private_key = self.get_param("private_key")
-        
+
         # If either credential is missing, load from credentials file
         if access_key is None or private_key is None:
             file_access_key, file_private_key = load_cdp_config(
@@ -151,13 +173,17 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
                 access_key = file_access_key
             if private_key is None:
                 private_key = file_private_key
-        
+
         self.access_key: str = access_key
         self.private_key: str = private_key
 
         # Initialize mixins parameters
         for base in self.__class__.__mro__:
-            if isinstance(base, type) and issubclass(base, ParametersMixin) and base != ParametersMixin:
+            if (
+                isinstance(base, type)
+                and issubclass(base, ParametersMixin)
+                and base != ParametersMixin
+            ):
                 base.init_parameters(self)  # type: ignore[misc]
 
         # Configure the urllib3 logger

@@ -30,184 +30,212 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 
 def test_create_encoded_authn_params_string_basic():
     """Test basic authentication parameters encoding."""
-    
+
     access_key = "test-access-key-123"
     auth_method = "ed25519v1"
-    
-    # Test the function  
+
+    # Test the function
     result = create_encoded_authn_params_string(access_key, auth_method)
-    
+
     # Verify function calls
-    expected = urlsafe_b64encode(json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode("utf-8")).strip()
+    expected = urlsafe_b64encode(
+        json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode(
+            "utf-8",
+        ),
+    ).strip()
 
     assert result == expected
 
 
 def test_create_encoded_authn_params_string_ordered_dict():
     """Test that function uses OrderedDict to maintain key order."""
-    
+
     access_key = "my-access-key"
     auth_method = "ed25519v1"
-    
+
     result = create_encoded_authn_params_string(access_key, auth_method)
-    
+
     # Decode and parse the JSON to verify structure
     decoded_bytes = b64decode(result)
     json_str = decoded_bytes.decode("utf-8")
     parsed = json.loads(json_str)
-    
+
     assert parsed["access_key_id"] == access_key
     assert parsed["auth_method"] == auth_method
-    
+
     # Verify the expected base64 encoded result
-    expected = urlsafe_b64encode(json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode("utf-8")).strip()
+    expected = urlsafe_b64encode(
+        json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode(
+            "utf-8",
+        ),
+    ).strip()
     assert result == expected
 
 
 def test_create_encoded_authn_params_string_special_characters():
     """Test authentication parameters with special characters."""
-    
+
     access_key = "test-key-with-special-chars!@#$%"
     auth_method = "ed25519v1"
-    
+
     result = create_encoded_authn_params_string(access_key, auth_method)
-    
+
     # Decode and verify the special characters are handled correctly
     decoded_bytes = b64decode(result)
     json_str = decoded_bytes.decode("utf-8")
     parsed = json.loads(json_str)
-    
+
     assert parsed["access_key_id"] == access_key
     assert parsed["auth_method"] == auth_method
-    
+
     # Verify the expected base64 encoded result
-    expected = urlsafe_b64encode(json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode("utf-8")).strip()
+    expected = urlsafe_b64encode(
+        json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode(
+            "utf-8",
+        ),
+    ).strip()
     assert result == expected
 
 
 def test_create_encoded_authn_params_string_unicode_access_key():
     """Test authentication parameters with unicode characters in access key."""
-    
+
     access_key = "test-key-üñíçødé"
     auth_method = "ed25519v1"
-    
+
     result = create_encoded_authn_params_string(access_key, auth_method)
-    
+
     # Decode and verify UTF-8 encoding is used correctly
     decoded_bytes = b64decode(result)
     json_str = decoded_bytes.decode("utf-8")
     parsed = json.loads(json_str)
-    
+
     assert parsed["access_key_id"] == access_key
     assert parsed["auth_method"] == auth_method
-    
+
     # Verify the expected base64 encoded result
-    expected = urlsafe_b64encode(json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode("utf-8")).strip()
+    expected = urlsafe_b64encode(
+        json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode(
+            "utf-8",
+        ),
+    ).strip()
     assert result == expected
 
 
 def test_create_encoded_authn_params_string_empty_values():
     """Test authentication parameters with empty values."""
-    
+
     access_key = ""
     auth_method = ""
-    
+
     result = create_encoded_authn_params_string(access_key, auth_method)
-    
+
     # Decode and verify empty values are handled correctly
     decoded_bytes = b64decode(result)
     json_str = decoded_bytes.decode("utf-8")
     parsed = json.loads(json_str)
-    
+
     assert parsed["access_key_id"] == ""
     assert parsed["auth_method"] == ""
-    
+
     # Verify the expected base64 encoded result
-    expected = urlsafe_b64encode(json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode("utf-8")).strip()
+    expected = urlsafe_b64encode(
+        json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode(
+            "utf-8",
+        ),
+    ).strip()
     assert result == expected
 
 
 def test_create_encoded_authn_params_string_whitespace_stripping():
     """Test that the function strips whitespace from base64 output."""
-    
+
     access_key = "test-key"
     auth_method = "ed25519v1"
-    
+
     result = create_encoded_authn_params_string(access_key, auth_method)
-    
+
     # Verify that the result has no leading/trailing whitespace
     assert result == result.strip()
-    
+
     # Decode and verify the content
     decoded_bytes = b64decode(result)
     json_str = decoded_bytes.decode("utf-8")
     parsed = json.loads(json_str)
-    
+
     assert parsed["access_key_id"] == access_key
     assert parsed["auth_method"] == auth_method
-    
+
     # Verify the expected base64 encoded result
-    expected = urlsafe_b64encode(json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode("utf-8")).strip()
+    expected = urlsafe_b64encode(
+        json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode(
+            "utf-8",
+        ),
+    ).strip()
     assert result == expected
 
 
 def test_create_encoded_authn_params_string_different_auth_methods():
     """Test authentication parameters with different auth methods."""
-    
+
     access_key = "test-key"
-    
+
     # Test with different auth method values
     for auth_method in ["ed25519v1", "rsa-sha256", "hmac-sha256"]:
         result = create_encoded_authn_params_string(access_key, auth_method)
-        
+
         # Decode and verify the auth method is correctly encoded
         decoded_bytes = b64decode(result)
         json_str = decoded_bytes.decode("utf-8")
         parsed = json.loads(json_str)
-        
+
         assert parsed["access_key_id"] == access_key
         assert parsed["auth_method"] == auth_method
-        
+
         # Verify the expected base64 encoded result
-        expected = urlsafe_b64encode(json.dumps({"access_key_id": access_key, "auth_method": auth_method}).encode("utf-8")).strip()
+        expected = urlsafe_b64encode(
+            json.dumps(
+                {"access_key_id": access_key, "auth_method": auth_method},
+            ).encode("utf-8"),
+        ).strip()
         assert result == expected
 
 
 def test_create_encoded_authn_params_string_json_serialization_error(mocker):
     """Test authentication parameters when JSON serialization fails."""
-    
+
     access_key = "test-key"
     auth_method = "ed25519v1"
-    
+
     # Mock json.dumps to raise an exception - mocker automatically cleans up
     mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps",
-        side_effect=TypeError("Object not JSON serializable")
+        side_effect=TypeError("Object not JSON serializable"),
     )
-    
+
     with pytest.raises(TypeError) as exc_info:
         create_encoded_authn_params_string(access_key, auth_method)
-    
+
     assert "Object not JSON serializable" in str(exc_info.value)
 
 
 def test_create_encoded_authn_params_string_base64_error(mocker):
     """Test authentication parameters when base64 encoding fails."""
-    
+
     access_key = "test-key"
     auth_method = "ed25519v1"
-    
+
     # Mock json.dumps and urlsafe_b64encode - mocker automatically cleans up
     mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps",
-        return_value='{"access_key_id": "test-key", "auth_method": "ed25519v1"}'
+        return_value='{"access_key_id": "test-key", "auth_method": "ed25519v1"}',
     )
     mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.urlsafe_b64encode",
-        side_effect=ValueError("Invalid input for base64 encoding")
+        side_effect=ValueError("Invalid input for base64 encoding"),
     )
-    
+
     with pytest.raises(ValueError) as exc_info:
         create_encoded_authn_params_string(access_key, auth_method)
-    
+
     assert "Invalid input for base64 encoding" in str(exc_info.value)
