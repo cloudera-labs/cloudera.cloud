@@ -34,6 +34,11 @@ from urllib.parse import urlencode, urlparse
 from ansible.module_utils.urls import fetch_url
 
 
+class CdpCredentialError(Exception):
+    """CDP Credential Error Exception"""
+    pass
+
+
 def load_cdp_config(
     access_key,
     private_key,
@@ -167,7 +172,7 @@ def make_signature_header(
     call.
     """
     if len(private_key) != 44:
-        raise Exception("Only ed25519v1 keys are supported!")
+        raise CdpCredentialError("Only ed25519v1 keys are supported!")
 
     auth_method = "ed25519v1"
 
