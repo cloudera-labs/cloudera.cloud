@@ -294,8 +294,8 @@ class CdpClient:
                         all_items[key] = value
                 
                 # Continue pagination while nextToken exists
-                while "nextToken" in response:
-                    token = response.pop("nextToken")
+                while "nextToken" in all_items:
+                    token = all_items.pop("nextToken")
                     
                     # Add pagination parameters
                     paginated_kwargs = kwargs.copy()
@@ -318,12 +318,10 @@ class CdpClient:
                         if key in next_page and isinstance(next_page[key], list):
                             all_items[key].extend(next_page[key])
                     
-                    # Update other fields from latest response
+                    # Update other fields from latest response (including potential nextToken)
                     for key, value in next_page.items():
                         if key not in list_keys and not key.startswith('page'):
                             all_items[key] = value
-                    
-                    response = next_page
                 
                 return all_items
             
