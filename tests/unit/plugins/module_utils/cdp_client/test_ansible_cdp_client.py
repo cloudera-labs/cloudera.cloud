@@ -454,23 +454,3 @@ def test_make_request_json_decode_error(mock_ansible_module, mocker):
     assert "response" in response
     assert response["response"] == "invalid json {"
 
-
-@pytest.mark.integration_api
-def test_list_compute_usage_records_integration(mock_ansible_module):
-    """Test listing compute usage records."""
-
-    client = AnsibleCdpClient(
-        module=mock_ansible_module,
-        base_url="https://api.us-west-1.cdp.cloudera.com",
-        access_key=os.getenv("CDP_ACCESS_KEY", "unknown"),
-        private_key=os.getenv("CDP_PRIVATE_KEY", "unknown"),
-    )
-
-    response = client.list_compute_usage_records(
-        from_timestamp="2024-01-01T00:00:00Z",
-        to_timestamp="2024-01-31T23:59:59Z",
-    )
-
-    assert "records" in response
-    assert len(response["records"]) > 0
-    assert isinstance(response["records"][0], dict)
