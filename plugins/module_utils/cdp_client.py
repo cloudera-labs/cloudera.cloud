@@ -20,6 +20,7 @@ A common Ansible-based REST client for the Cloudera on Cloud Platform (CDP)
 
 import abc
 import configparser
+import functools
 import json
 import os
 import time
@@ -210,6 +211,15 @@ class CdpError(Exception):
 class CdpClient:
     """Abstract base class for CDP API clients."""
 
+    def __init__(self, default_page_size: int = 100):
+        """
+        Initialize CDP client.
+
+        Args:
+            default_page_size: Default page size for paginated requests
+        """
+        self.default_page_size = default_page_size
+
     # Abstract HTTP methods that must be implemented by subclasses
     @abc.abstractmethod
     def _get(
@@ -245,24 +255,147 @@ class CdpClient:
         """Execute HTTP DELETE request."""
         pass
 
+    @staticmethod
+    def paginated(default_page_size=100):
+        """
+        Decorator to handle automatic pagination for CDP API methods.
+        
+        Usage:
+            @CdpClient.paginated()
+            def some_api_method(self, param1, param2, startingToken=None, pageSize=None):
+                # Method implementation
+                pass
+        
+        Args:
+            default_page_size: Default page size to use if not provided
+            
+        Returns:
+            Decorator function
+        """
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(self, *args, **kwargs):
+                # Get the initial response
+                response = func(self, *args, **kwargs)
+                
+                if not isinstance(response, dict) or "nextToken" not in response:
+                    return response
+                
+                # Collect all items from paginated responses
+                all_items = {}
+                list_keys = []
+                
+                # Identify which keys contain lists that need to be combined
+                for key, value in response.items():
+                    if isinstance(value, list):
+                        list_keys.append(key)
+                        all_items[key] = value.copy()
+                    else:
+                        all_items[key] = value
+                
+                # Continue pagination while nextToken exists
+                while "nextToken" in response:
+                    token = response.pop("nextToken")
+                    
+                    # Add pagination parameters
+                    paginated_kwargs = kwargs.copy()
+                    paginated_kwargs["startingToken"] = token
+                    
+                    # Add default page size if not specified
+                    if "pageSize" not in paginated_kwargs:
+                        # Use instance page size if available, otherwise use decorator default
+                        page_size = getattr(self, 'default_page_size', default_page_size)
+                        paginated_kwargs["pageSize"] = page_size
+                    
+                    # Get next page
+                    next_page = func(self, *args, **paginated_kwargs)
+                    
+                    if not isinstance(next_page, dict):
+                        break
+                    
+                    # Combine list data from this page
+                    for key in list_keys:
+                        if key in next_page and isinstance(next_page[key], list):
+                            all_items[key].extend(next_page[key])
+                    
+                    # Update other fields from latest response
+                    for key, value in next_page.items():
+                        if key not in list_keys and not key.startswith('page'):
+                            all_items[key] = value
+                    
+                    response = next_page
+                
+                return all_items
+            
+            return wrapper
+        return decorator
+
 
 class CdpConsumptionClient(CdpClient):
     """Abstract base class for CDP Consumption API clients."""
 
-    # TODO Handle page size and pagination tokens (see cdpy library)
-
+    @CdpClient.paginated()
     def list_compute_usage_records(
         self,
         from_timestamp: str,
         to_timestamp: str,
+        startingToken: Optional[str] = None,
+        pageSize: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """List compute usage records within a time range."""
+        """
+        List compute usage records within a time range.
+        
+        Args:
+            from_timestamp: Start timestamp for usage records
+            to_timestamp: End timestamp for usage records
+            startingToken: Token for pagination (automatically handled by decorator)
+            pageSize: Page size for pagination (automatically handled by decorator)
+            
+        Returns:
+            Usage records response with automatic pagination handling
+        """
+        json_data: Dict[str, Any] = {
+            "fromTimestamp": from_timestamp,
+            "toTimestamp": to_timestamp,
+        }
+        
+        # Add pagination parameters if provided
+        if startingToken is not None:
+            json_data["startingToken"] = startingToken
+        if pageSize is not None:
+            json_data["pageSize"] = pageSize
+            
         return self._post(
             "/api/v1/consumption/listComputeUsageRecords",
-            json_data={
-                "fromTimestamp": from_timestamp,
-                "toTimestamp": to_timestamp,
-            },
+            json_data=json_data,
+        )
+
+    def list_compute_usage_records_single_page(
+        self,
+        from_timestamp: str,
+        to_timestamp: str,
+        startingToken: Optional[str] = None,
+        pageSize: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        List compute usage records within a time range (single page only).
+        
+        This is the non-paginated version for cases where you only want one page.
+        """
+        json_data: Dict[str, Any] = {
+            "fromTimestamp": from_timestamp,
+            "toTimestamp": to_timestamp,
+        }
+        
+        # Add pagination parameters if provided
+        if startingToken is not None:
+            json_data["startingToken"] = startingToken
+        if pageSize is not None:
+            json_data["pageSize"] = pageSize
+            
+        return self._post(
+            "/api/v1/consumption/listComputeUsageRecords",
+            json_data=json_data,
         )
 
 
@@ -277,6 +410,7 @@ class AnsibleCdpClient(CdpConsumptionClient):
         private_key: str,
         timeout_seconds: int = 30,
         proxy_context_path: Optional[str] = None,
+        default_page_size: int = 100,
     ):
         """
         Initialize CDP client with Ansible module.
@@ -286,7 +420,10 @@ class AnsibleCdpClient(CdpConsumptionClient):
             base_url: Base URL for CDP API
             timeout_seconds: Request timeout in seconds
             proxy_context_path: Optional CDP proxy context path
+            default_page_size: Default page size for paginated requests
         """
+        super().__init__(default_page_size=default_page_size)
+        
         self.module = module
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout_seconds
@@ -303,8 +440,6 @@ class AnsibleCdpClient(CdpConsumptionClient):
         # Add CDP proxy headers if configured
         if self.proxy_context_path:
             self.headers["X-ProxyContextPath"] = self.proxy_context_path
-
-        # Load credentials from module parameters or environment
 
     def _url(self, path: str) -> str:
         """Construct full URL from path."""
