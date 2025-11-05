@@ -211,3 +211,76 @@ cdp_private_key = prod-private-key
     
     assert result_access == "prod-access-key"
     assert result_private == "prod-private-key"
+
+
+def test_load_cdp_config_expands_user_path(mocker):
+    """Test that user home path (~) is properly expanded."""
+    
+    config_content = """[default]
+cdp_access_key_id = test-access-key
+cdp_private_key = test-private-key
+"""
+    
+    # Mock the path expansion and file operations
+    mock_expanduser = mocker.patch('os.path.expanduser', return_value='/home/user/.cdp/credentials')
+    mock_abspath = mocker.patch('os.path.abspath', return_value='/home/user/.cdp/credentials')
+    mocker.patch('os.path.exists', return_value=True)
+    mock_open_object = mocker.mock_open(read_data=config_content)
+    mocker.patch('builtins.open', mock_open_object)
+
+    result_access, result_private = load_cdp_config(
+        access_key=None,
+        private_key=None,
+        credentials_path="~/.cdp/credentials",
+        profile="default",
+    )
+    
+    # Verify path expansion was called
+    mock_expanduser.assert_called_once_with("~/.cdp/credentials")
+    mock_abspath.assert_called_once_with('/home/user/.cdp/credentials')
+    
+    # Verify credentials were loaded
+    assert result_access == "test-access-key"
+    assert result_private == "test-private-key"
+
+
+def test_load_cdp_config_path_expansion_error_message(mocker):
+    """Test that error messages show expanded path when file doesn't exist."""
+    
+    # Mock path expansion but file doesn't exist
+    mock_expanduser = mocker.patch('os.path.expanduser', return_value='/home/user/.cdp/credentials')
+    mock_abspath = mocker.patch('os.path.abspath', return_value='/home/user/.cdp/credentials') 
+    mocker.patch('os.path.exists', return_value=False)
+
+    with pytest.raises(Exception) as exc_info:
+        load_cdp_config(
+            access_key=None,
+            private_key=None,
+            credentials_path="~/.cdp/credentials",
+            profile="default",
+        )
+    
+    # Verify path expansion was called
+    mock_expanduser.assert_called_once_with("~/.cdp/credentials")
+    mock_abspath.assert_called_once_with('/home/user/.cdp/credentials')
+    
+    # Verify error message shows expanded path
+    assert "Credentials file '/home/user/.cdp/credentials' does not exist" in str(exc_info.value)
+
+
+def test_load_cdp_config_handles_none_credentials_path(mocker):
+    """Test that None credentials_path is handled gracefully."""
+    
+    # Don't mock expanduser/abspath since they shouldn't be called with None
+    mocker.patch('os.path.exists', return_value=False)
+
+    with pytest.raises(Exception) as exc_info:
+        load_cdp_config(
+            access_key=None,
+            private_key=None,
+            credentials_path=None,
+            profile="default",
+        )
+    
+    # Verify error message shows None path
+    assert "Credentials file 'None' does not exist" in str(exc_info.value)

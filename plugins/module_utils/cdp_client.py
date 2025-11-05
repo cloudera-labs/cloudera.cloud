@@ -51,30 +51,34 @@ def load_cdp_config(
     (access_key,private_key) are not (None,None)
     """
     if access_key is None or private_key is None:
-        exists = os.path.exists(credentials_path)
+        # Resolve credentials_path to an absolute path (handles ~/path)
+        if credentials_path is not None:
+            credentials_path = os.path.abspath(os.path.expanduser(credentials_path))
+        
+        exists = os.path.exists(credentials_path) if credentials_path else False
         if not exists:
             msg = "Credentials file '{0}' does not exist"
-            raise Exception(msg.format(credentials_path))
+            raise CdpCredentialError(msg.format(credentials_path))
 
         config = configparser.ConfigParser()
         config.read(credentials_path)
 
         if not config.has_section(profile):
-            raise Exception("CDP profile '{0}' not found".format(profile))
+            raise CdpCredentialError("CDP profile '{0}' not found".format(profile))
 
         if access_key is None:
             if config.has_option(profile, "cdp_access_key_id"):
                 access_key = config.get(profile, "cdp_access_key_id")
             else:
                 msg = "CDP profile '{0}' is missing 'cdp_access_key_id'"
-                raise Exception(msg.format(profile))
+                raise CdpCredentialError(msg.format(profile))
 
         if private_key is None:
             if config.has_option(profile, "cdp_private_key"):
                 private_key = config.get(profile, "cdp_private_key")
             else:
                 msg = "CDP profile '{0}' is missing 'cdp_private_key'"
-                raise Exception(msg.format(profile))
+                raise CdpCredentialError(msg.format(profile))
 
     return access_key, private_key
 
