@@ -168,9 +168,11 @@ def test_create_signature_header_none_signature():
     encoded_authn_params = b"eyJhY2Nlc3Nfa2V5X2lkIjoidGVzdC1hY2Nlc3Mta2V5IiwiYXV0aF9tZXRob2QiOiJlZDI1NTE5djEifQ=="
     signature = None
     
-    # This should raise an exception since None can't be concatenated with string
-    with pytest.raises(TypeError):
-        create_signature_header(encoded_authn_params, signature)
+    # The % formatting will convert None to "None"
+    result = create_signature_header(encoded_authn_params, signature)
+    
+    expected = "eyJhY2Nlc3Nfa2V5X2lkIjoidGVzdC1hY2Nlc3Mta2V5IiwiYXV0aF9tZXRob2QiOiJlZDI1NTE5djEifQ==.None"
+    assert result == expected
 
 
 def test_create_signature_header_none_encoded_params():

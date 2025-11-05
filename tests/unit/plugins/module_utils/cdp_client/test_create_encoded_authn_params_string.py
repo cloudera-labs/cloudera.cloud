@@ -179,11 +179,11 @@ def test_create_encoded_authn_params_string_json_serialization_error(mocker):
     access_key = "test-key"
     auth_method = "ed25519v1"
     
-    # Mock json.dumps to raise an exception - patch it in the cdp_client module
-    mock_json_dumps = mocker.patch(
-        "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps"
+    # Mock json.dumps to raise an exception - mocker automatically cleans up
+    mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps",
+        side_effect=TypeError("Object not JSON serializable")
     )
-    mock_json_dumps.side_effect = TypeError("Object not JSON serializable")
     
     with pytest.raises(TypeError) as exc_info:
         create_encoded_authn_params_string(access_key, auth_method)
@@ -197,16 +197,15 @@ def test_create_encoded_authn_params_string_base64_error(mocker):
     access_key = "test-key"
     auth_method = "ed25519v1"
     
-    mock_json_dumps = mocker.patch(
-        "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps"
+    # Mock json.dumps and urlsafe_b64encode - mocker automatically cleans up
+    mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps",
+        return_value='{"access_key_id": "test-key", "auth_method": "ed25519v1"}'
     )
-    mock_json_dumps.return_value = '{"access_key_id": "test-key", "auth_method": "ed25519v1"}'
-    
-    # Mock urlsafe_b64encode to raise an exception
-    mock_urlsafe_b64encode = mocker.patch(
-        "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.urlsafe_b64encode"
+    mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.urlsafe_b64encode",
+        side_effect=ValueError("Invalid input for base64 encoding")
     )
-    mock_urlsafe_b64encode.side_effect = ValueError("Invalid input for base64 encoding")
     
     with pytest.raises(ValueError) as exc_info:
         create_encoded_authn_params_string(access_key, auth_method)
