@@ -27,6 +27,9 @@ from typing import Any, Dict, Optional
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.parameters import env_fallback
 
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import load_cdp_config
+
+
 LOG_FORMAT = "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
 
 
@@ -105,6 +108,10 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
         self.module = AnsibleModule(
             argument_spec=dict(
                 **merged_argument_spec,
+                access_key=dict(required=False, type="str", fallback=(env_fallback, ["CDP_ACCESS_KEY"])),
+                private_key=dict(required=False, type="str", no_log=True, fallback=(env_fallback, ["CDP_PRIVATE_KEY"])),
+                credentials_path=dict(required=False, type="str", fallback=(env_fallback, ["CDP_CREDENTIALS_PATH"]), default="~/.cdp/credentials"),
+                profile=dict(required=False, type="str", fallback=(env_fallback, ["CDP_PROFILE"]), default="default"),
                 endpoint=dict(required=True, type="str", aliases=["url"]),
                 debug=dict(required=False, type="bool", default=False),
                 agent_header=dict(
@@ -113,11 +120,11 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
                     default="cloudera.cloud",
                 ),
             ),
-            required_together=required_together,
+            required_together=required_together + [["access_key", "private_key"]],
             bypass_checks=bypass_checks,
             no_log=no_log,
-            mutually_exclusive=mutually_exclusive,
-            required_one_of=required_one_of,
+            mutually_exclusive=mutually_exclusive + [["access_key", "credentials_path"]],
+            required_one_of=required_one_of + [["access_key", "credentials_path"]],
             add_file_common_args=add_file_common_args,
             supports_check_mode=supports_check_mode,
             required_if=required_if,
@@ -126,8 +133,27 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
 
         # Initialize common parameters
         self.endpoint: str = self.get_param("endpoint")
-        self.debug_log = self.get_param("debug")
-        self.agent_header = self.get_param("agent_header")
+        self.debug_log: bool = self.get_param("debug")
+        self.agent_header: str = self.get_param("agent_header")
+
+        # Load CDP credentials - check if provided via parameters first
+        access_key = self.get_param("access_key")
+        private_key = self.get_param("private_key")
+        
+        # If either credential is missing, load from credentials file
+        if access_key is None or private_key is None:
+            file_access_key, file_private_key = load_cdp_config(
+                credentials_path=self.get_param("credentials_path"),
+                profile=self.get_param("profile"),
+            )
+            # Use file credentials for any missing parameters
+            if access_key is None:
+                access_key = file_access_key
+            if private_key is None:
+                private_key = file_private_key
+        
+        self.access_key: str = access_key
+        self.private_key: str = private_key
 
         # Initialize mixins parameters
         for base in self.__class__.__mro__:
