@@ -43,7 +43,7 @@ class CdpConsumptionClient(CdpClient):
         self,
         from_timestamp: str,
         to_timestamp: str,
-        startingToken: Optional[str] = None,
+        pageToken: Optional[str] = None,
         pageSize: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
@@ -52,7 +52,7 @@ class CdpConsumptionClient(CdpClient):
         Args:
             from_timestamp: Start timestamp for usage records
             to_timestamp: End timestamp for usage records
-            startingToken: Token for pagination (automatically handled by decorator)
+            pageToken: Token for pagination (automatically handled by decorator)
             pageSize: Page size for pagination (automatically handled by decorator)
 
         Returns:
@@ -64,36 +64,8 @@ class CdpConsumptionClient(CdpClient):
         }
 
         # Add pagination parameters if provided
-        if startingToken is not None:
-            json_data["startingToken"] = startingToken
-        if pageSize is not None:
-            json_data["pageSize"] = pageSize
-
-        return self.post(
-            "/api/v1/consumption/listComputeUsageRecords",
-            json_data=json_data,
-        )
-
-    def list_compute_usage_records_single_page(
-        self,
-        from_timestamp: str,
-        to_timestamp: str,
-        startingToken: Optional[str] = None,
-        pageSize: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        """
-        List compute usage records within a time range (single page only).
-
-        This is the non-paginated version for cases where you only want one page.
-        """
-        json_data: Dict[str, Any] = {
-            "fromTimestamp": from_timestamp,
-            "toTimestamp": to_timestamp,
-        }
-
-        # Add pagination parameters if provided
-        if startingToken is not None:
-            json_data["startingToken"] = startingToken
+        if pageToken is not None:
+            json_data["pageToken"] = pageToken
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
