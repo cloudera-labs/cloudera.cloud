@@ -84,7 +84,7 @@ class TestCdpConsumptionClient:
                 {"id": "record1", "usage": 100},
                 {"id": "record2", "usage": 200},
             ],
-            "nextToken": "token123"
+            "nextPageToken": "token123"
         }
 
         mock_response2 = {
@@ -129,7 +129,7 @@ class TestCdpConsumptionClient:
                     "fromTimestamp": FROM_TIMESTAMP,
                     "toTimestamp": TO_TIMESTAMP,
                     "pageSize": 100,
-                    "startingToken": "token123",
+                    "pageToken": "token123",
                 },
             ),
         ])
