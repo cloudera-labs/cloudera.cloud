@@ -26,7 +26,7 @@ import pytest
 from ansible.module_utils import basic
 from ansible.module_utils.common.text.converters import to_bytes
 
-from ansible_collections.cloudera.runtime.tests.unit import (
+from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleFailJson,
     AnsibleExitJson,
 )
@@ -34,9 +34,20 @@ from ansible_collections.cloudera.runtime.tests.unit import (
 
 def pytest_collection_modifyitems(items):
     """
+    Skips all tests if not running Python 3.6 or higher.
     Skips tests marked 'integration_api' if CDP_ACCESS_KEY and CDP_PRIVATE_KEY
     and skips tests marked 'integration_token' if CDP_TOKEN environment variable is not set.
     """
+    # Skip all tests if Python version is less than 3.8
+    if sys.version_info < (3, 6):
+        skip_python = pytest.skip(
+            "Skipping on Python %s. cloudera.cloud supports Python 3.6 and higher."
+            % sys.version,
+        )
+        for item in items:
+            item.add_marker(skip_python)
+        return
+
     # Initialize skip markers
     skip_api = None
     skip_token = None
@@ -59,15 +70,6 @@ def pytest_collection_modifyitems(items):
             item.add_marker(skip_api)
         elif "integration_token" in item.keywords and skip_token:
             item.add_marker(skip_token)
-
-
-@pytest.fixture(autouse=True)
-def skip_python():
-    if sys.version_info < (3, 6):
-        pytest.skip(
-            "Skipping on Python %s. cloudera.cloud supports Python 3.6 and higher."
-            % sys.version,
-        )
 
 
 @pytest.fixture
