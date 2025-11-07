@@ -33,3 +33,6 @@ class AnsibleExitJson(Exception):
             kwargs.get("msg", "General module success"),
         )
         self.__dict__.update(kwargs)
+
+    def __getattr__(self, attr):
+        return self.__dict__[attr]
