@@ -29,6 +29,7 @@ from ansible.module_utils.common.parameters import env_fallback
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     load_cdp_config,
+    AnsibleCdpClient,
 )
 
 
@@ -135,7 +136,7 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
                 ),
                 endpoint=dict(required=True, type="str", aliases=["url"]),
                 debug=dict(required=False, type="bool", default=False),
-                agent_header=dict(
+                http_agent=dict(
                     required=False,
                     type="str",
                     default="cloudera.cloud",
@@ -146,7 +147,7 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
             no_log=no_log,
             mutually_exclusive=mutually_exclusive
             + [["access_key", "credentials_path"]],
-            required_one_of=required_one_of + [["access_key", "credentials_path"]],
+            required_one_of=required_one_of, # + [["access_key", "credentials_path"]], # TODO check this logic, might now allow a default credentials_path
             add_file_common_args=add_file_common_args,
             supports_check_mode=supports_check_mode,
             required_if=required_if,
@@ -156,7 +157,6 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
         # Initialize common parameters
         self.endpoint: str = self.get_param("endpoint")
         self.debug_log: bool = self.get_param("debug")
-        self.agent_header: str = self.get_param("agent_header")
 
         # Load CDP credentials - check if provided via parameters first
         access_key = self.get_param("access_key")
@@ -208,7 +208,15 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
 
             root_logger.addHandler(handler)
 
-        self.logger.debug("cloudera.cloud API agent: %s", self.agent_header)
+        self.logger.debug("cloudera.cloud API agent: %s", self.get_param("http_agent"))
+
+        # Create the CDP client
+        self.api_client = AnsibleCdpClient(
+            module=self.module,
+            base_url=self.endpoint,
+            access_key=self.access_key,
+            private_key=self.private_key,
+        )
 
     def get_param(self, param, default=None) -> Any:
         if self.module.params is not None and isinstance(self.module.params, dict):

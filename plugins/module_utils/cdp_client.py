@@ -217,12 +217,12 @@ class CdpError(Exception):
         self.status = status
 
 
-class CdpClient:
-    """Abstract base class for CDP API clients."""
+class RestClient:
+    """Abstract base class for CDP REST API clients."""
 
     def __init__(self, default_page_size: int = 100):
         """
-        Initialize CDP client.
+        Initialize CDP REST client.
 
         Args:
             default_page_size: Default page size for paginated requests
@@ -270,13 +270,13 @@ class CdpClient:
         Decorator to handle automatic pagination for CDP API methods.
 
         Usage:
-            @CdpClient.paginated()
+            @RestClient.paginated()
             def some_api_method(self, param1, param2, startingToken=None, pageSize=None):
                 # Method implementation
                 pass
 
         Args:
-            default_page_size: Default page size to use if not provided
+            page_size: Default page size to use if not provided
 
         Returns:
             Decorator function
@@ -285,8 +285,19 @@ class CdpClient:
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self, *args, **kwargs):
+                # Add default page size if not specified
+                paginated_kwargs = kwargs.copy()
+                if "pageSize" not in paginated_kwargs:
+                    # Use instance page size if available, otherwise use decorator default
+                    page_size = getattr(
+                        self,
+                        "page_size",
+                        default_page_size,
+                    )
+                    paginated_kwargs["pageSize"] = page_size
+
                 # Get the initial response
-                response = func(self, *args, **kwargs)
+                response = func(self, *args, **paginated_kwargs)
 
                 if not isinstance(response, dict) or "nextToken" not in response:
                     return response
@@ -316,7 +327,7 @@ class CdpClient:
                         # Use instance page size if available, otherwise use decorator default
                         page_size = getattr(
                             self,
-                            "default_page_size",
+                            "page_size",
                             default_page_size,
                         )
                         paginated_kwargs["pageSize"] = page_size
@@ -344,75 +355,52 @@ class CdpClient:
         return decorator
 
 
-class CdpConsumptionClient(CdpClient):
-    """Abstract base class for CDP Consumption API clients."""
+class CdpClient:
+    """CDP client that uses a RestClient instance to delegate HTTP methods."""
 
-    @CdpClient.paginated()
-    def list_compute_usage_records(
+    def __init__(
         self,
-        from_timestamp: str,
-        to_timestamp: str,
-        startingToken: Optional[str] = None,
-        pageSize: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        api_client: RestClient,
+        default_page_size: int = 100,
+    ):
         """
-        List compute usage records within a time range.
+        Initialize Delegated CDP client.
 
         Args:
-            from_timestamp: Start timestamp for usage records
-            to_timestamp: End timestamp for usage records
-            startingToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Usage records response with automatic pagination handling
+            api_client: CdpClient instance to delegate HTTP methods to
+            default_page_size: Default page size for paginated requests
         """
-        json_data: Dict[str, Any] = {
-            "fromTimestamp": from_timestamp,
-            "toTimestamp": to_timestamp,
-        }
+        self.default_page_size = default_page_size
+        self.api_client: RestClient = api_client
 
-        # Add pagination parameters if provided
-        if startingToken is not None:
-            json_data["startingToken"] = startingToken
-        if pageSize is not None:
-            json_data["pageSize"] = pageSize
-
-        return self._post(
-            "/api/v1/consumption/listComputeUsageRecords",
-            json_data=json_data,
-        )
-
-    def list_compute_usage_records_single_page(
+    def get(
         self,
-        from_timestamp: str,
-        to_timestamp: str,
-        startingToken: Optional[str] = None,
-        pageSize: Optional[int] = None,
+        path: str,
+        params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """
-        List compute usage records within a time range (single page only).
+        return self.api_client._get(path, params)
 
-        This is the non-paginated version for cases where you only want one page.
-        """
-        json_data: Dict[str, Any] = {
-            "fromTimestamp": from_timestamp,
-            "toTimestamp": to_timestamp,
-        }
+    def post(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        return self.api_client._post(path, data, json_data)
 
-        # Add pagination parameters if provided
-        if startingToken is not None:
-            json_data["startingToken"] = startingToken
-        if pageSize is not None:
-            json_data["pageSize"] = pageSize
+    def put(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        return self.api_client._put(path, data, json_data)
 
-        return self._post(
-            "/api/v1/consumption/listComputeUsageRecords",
-            json_data=json_data,
-        )
+    def delete(self, path: str) -> Dict[str, Any]:
+        return self.api_client._delete(path)
 
 
-class AnsibleCdpClient(CdpConsumptionClient):
+class AnsibleCdpClient(RestClient):
     """Ansible-based CDP client using native Ansible HTTP methods."""
 
     def __init__(
