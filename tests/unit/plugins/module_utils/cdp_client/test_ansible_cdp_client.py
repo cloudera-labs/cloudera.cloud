@@ -21,11 +21,12 @@ __metaclass__ = type
 import json
 import pytest
 
+from ansible_collections.cloudera.cloud.tests.unit import AnsibleFailJson
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     AnsibleCdpClient,
     CdpError,
 )
-
 
 BASE_URL = "https://cloudera.internal/api"
 ACCESS_KEY = "test-access-key"
@@ -195,11 +196,10 @@ def test_make_request_http_401(mock_ansible_module, mocker):
         private_key=PRIVATE_KEY,
     )
 
-    with pytest.raises(CdpError) as exc_info:
+    with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path")
 
-    assert exc_info.value.status == 401
-    assert "Unauthorized access to /test/path" in str(exc_info.value)
+    mock_ansible_module.fail_json.assert_called_once_with(msg="Unauthorized access to /test/path")
 
 
 def test_make_request_http_403(mock_ansible_module, mocker):
@@ -227,11 +227,10 @@ def test_make_request_http_403(mock_ansible_module, mocker):
         private_key=PRIVATE_KEY,
     )
 
-    with pytest.raises(CdpError) as exc_info:
+    with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path")
 
-    assert exc_info.value.status == 403
-    assert "Forbidden access to /test/path" in str(exc_info.value)
+    mock_ansible_module.fail_json.assert_called_once_with(msg="Forbidden access to /test/path")
 
 
 def test_make_request_http_404(mock_ansible_module, mocker):
@@ -265,11 +264,10 @@ def test_make_request_http_404(mock_ansible_module, mocker):
         private_key=PRIVATE_KEY,
     )
 
-    with pytest.raises(CdpError) as exc_info:
+    with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path")
 
-    assert exc_info.value.status == 404
-    assert "Not Found [404]" in str(exc_info.value)
+    mock_ansible_module.fail_json.assert_called_once_with(msg="Not Found [404] for https://cloudera.internal/api/test/path")
 
 
 def test_make_request_http_500_with_retry(mock_ansible_module, mocker):
@@ -304,11 +302,11 @@ def test_make_request_http_500_with_retry(mock_ansible_module, mocker):
         private_key=PRIVATE_KEY,
     )
 
-    with pytest.raises(CdpError) as exc_info:
+    with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path", max_retries=2)
 
-    assert exc_info.value.status == 500
-    assert "Internal Server Error" in str(exc_info.value)
+    mock_ansible_module.fail_json.assert_called_once_with(msg="Internal Server Error [500] for https://cloudera.internal/api/test/path") 
+    
     # Should retry once (2 total attempts)
     assert mock_fetch_url.call_count == 2
     assert mock_sleep.call_count == 1
@@ -346,11 +344,11 @@ def test_make_request_http_429_with_retry(mock_ansible_module, mocker):
         private_key=PRIVATE_KEY,
     )
 
-    with pytest.raises(CdpError) as exc_info:
+    with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path", max_retries=3)
 
-    assert exc_info.value.status == 429
-    assert "Too Many Requests" in str(exc_info.value)
+    mock_ansible_module.fail_json.assert_called_once_with(msg="Too Many Requests [429] for https://cloudera.internal/api/test/path")
+
     # Should retry 2 times (3 total attempts)
     assert mock_fetch_url.call_count == 3
     assert mock_sleep.call_count == 2
@@ -383,11 +381,11 @@ def test_make_request_connection_error_with_retry(mock_ansible_module, mocker):
         private_key=PRIVATE_KEY,
     )
 
-    with pytest.raises(CdpError) as exc_info:
+    with pytest.raises(AnsibleFailJson) as exc_info:
         client._make_request("GET", "/test/path", max_retries=2)
 
-    assert "Request failed after 2 attempts" in str(exc_info.value)
-    assert "Connection refused" in str(exc_info.value)
+    mock_ansible_module.fail_json.assert_called_once_with(msg="Request failed after 2 attempts for https://cloudera.internal/api/test/path: Connection refused")
+
     # Should retry once (2 total attempts)
     assert mock_fetch_url.call_count == 2
     assert mock_sleep.call_count == 1

@@ -103,10 +103,10 @@ def patch_module(monkeypatch):
 @pytest.fixture
 def mock_ansible_module(mocker):
     """Fixture for mock AnsibleModule."""
-    module = mocker.MagicMock()
+    module = mocker.Mock()
     module.params = {}
-    module.fail_json = mocker.MagicMock(side_effect=Exception("fail_json called"))
-    module.exit_json = mocker.MagicMock(side_effect=Exception("exit_json called"))
+    module.fail_json = mocker.Mock(side_effect=AnsibleFailJson({"msg": "fail_json called"}))
+    module.exit_json = mocker.Mock(side_effect=AnsibleExitJson({"msg": "exit_json called"}))
     return module
 
 

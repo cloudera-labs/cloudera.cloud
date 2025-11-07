@@ -460,8 +460,8 @@ class AnsibleCdpClient(RestClient):
 
         Args:
             method: HTTP method (GET, POST, PUT, DELETE)
-            path: API endpoint path
-            params: URL parameters
+            path: Path on the API endpoint
+            params: URL query parameters
             data: Form data
             json_data: JSON data
             max_retries: Maximum number of retry attempts
@@ -470,122 +470,126 @@ class AnsibleCdpClient(RestClient):
             Response data as dictionary or None for 204 responses
 
         Raises:
-            AtlasError: On HTTP errors or connection failures
+            AnsibleModule.fail_json: On HTTP errors or connection failures
         """
-        url = self._url(path)
 
-        # Create the CDP signature headers
-        self.headers["x-altus-date"] = formatdate(usegmt=True)
-        self.headers["x-altus-auth"] = make_signature_header(
-            method,
-            url,
-            self.headers,
-            self.access_key,
-            self.private_key,
-        )
+        try:
+            url = self._url(path)
 
-        # Add query parameters to URL if provided
-        if params:
-            # Handle list parameters (e.g., guid=[guid1, guid2])
-            query_params = []
-            for key, value in params.items():
-                if isinstance(value, list):
-                    for item in value:
-                        query_params.append(f"{key}={item}")
-                else:
-                    query_params.append(f"{key}={value}")
-            url = f"{url}?{'&'.join(query_params)}"
+            # Create the CDP signature headers
+            self.headers["x-altus-date"] = formatdate(usegmt=True)
+            self.headers["x-altus-auth"] = make_signature_header(
+                method,
+                url,
+                self.headers,
+                self.access_key,
+                self.private_key,
+            )
 
-        # Prepare request body
-        body = None
-        if json_data is not None:
-            body = json.dumps(json_data)
-        elif data is not None:
-            body = json.dumps(data)
+            # Add query parameters to URL if provided
+            if params:
+                # Handle list parameters (e.g., guid=[guid1, guid2])
+                query_params = []
+                for key, value in params.items():
+                    if isinstance(value, list):
+                        for item in value:
+                            query_params.append(f"{key}={item}")
+                    else:
+                        query_params.append(f"{key}={value}")
+                url = f"{url}?{'&'.join(query_params)}"
 
-        # Retry logic
-        last_error = None
-        for attempt in range(max_retries):
-            try:
-                resp, info = fetch_url(
-                    self.module,
-                    url,
-                    method=method,
-                    headers=self.headers,
-                    data=body,
-                    timeout=self.timeout,
-                )
+            # Prepare request body
+            body = None
+            if json_data is not None:
+                body = json.dumps(json_data)
+            elif data is not None:
+                body = json.dumps(data)
 
-                status_code = info["status"]
+            # Retry logic
+            last_error = None
+            for attempt in range(max_retries):
+                try:
+                    resp, info = fetch_url(
+                        self.module,
+                        url,
+                        method=method,
+                        headers=self.headers,
+                        data=body,
+                        timeout=self.timeout,
+                    )
 
-                # Handle authentication errors
-                if status_code == 401:
-                    raise CdpError(f"Unauthorized access to {path}", status=401)
+                    status_code = info["status"]
 
-                if status_code == 403:
-                    raise CdpError(f"Forbidden access to {path}", status=403)
+                    # Handle authentication errors
+                    if status_code == 401:
+                        raise CdpError(f"Unauthorized access to {path}", status=401)
 
-                # Handle success responses
-                if 200 <= status_code < 300:
-                    # 204 No Content - return None
-                    if status_code == 204:
-                        return None
+                    if status_code == 403:
+                        raise CdpError(f"Forbidden access to {path}", status=403)
 
-                    if resp:
-                        response_text = resp.read().decode("utf-8")
-                        if response_text:
-                            try:
-                                return json.loads(response_text)
-                            except json.JSONDecodeError:
-                                return {"response": response_text}
+                    # Handle success responses
+                    if 200 <= status_code < 300:
+                        # 204 No Content - return None
+                        if status_code == 204:
+                            return None
+
+                        if resp:
+                            response_text = resp.read().decode("utf-8")
+                            if response_text:
+                                try:
+                                    return json.loads(response_text)
+                                except json.JSONDecodeError:
+                                    return {"response": response_text}
+                            else:
+                                return {}
                         else:
                             return {}
-                    else:
-                        return {}
 
-                # Handle error responses
-                error_message = f"HTTP {status_code} Error"
-                if resp:
-                    try:
-                        error_data = json.loads(info.get("body"))
-                        error_message = f"{error_data.get('errorMessage', 'Unknown error')} [{error_data.get('errorCode', 'Unknown code')}]"
-                    except:
-                        error_message = f"{info.get('msg', 'Unknown error')}"
+                    # Handle error responses
+                    error_message = f"HTTP {status_code} Error"
+                    if resp:
+                        try:
+                            error_data = json.loads(info.get("body"))
+                            error_message = f"{error_data.get('errorMessage', 'Unknown error')}"
+                        except:
+                            error_message = f"{info.get('msg', 'Unknown error')}"
 
-                # Retry on server errors (5xx) or specific client errors
-                if status_code >= 500 or status_code in [408, 429]:
+                    # Retry on server errors (5xx) or specific client errors
+                    if status_code >= 500 or status_code in [408, 429]:
+                        if attempt < max_retries - 1:
+                            # Exponential backoff: 0.5s, 1s, 2s, 4s, 5s (max)
+                            wait_time = min(0.5 * (2**attempt), 5)
+                            time.sleep(wait_time)
+                            last_error = CdpError(
+                                f"{error_message} for {url}",
+                                status=status_code,
+                            )
+                            continue
+
+                    raise CdpError(f"{error_message} [{status_code}] for {url}")
+
+                except CdpError:
+                    raise
+                except Exception as e:
+                    # Retry on connection errors
                     if attempt < max_retries - 1:
-                        # Exponential backoff: 0.5s, 1s, 2s, 4s, 5s (max)
                         wait_time = min(0.5 * (2**attempt), 5)
                         time.sleep(wait_time)
                         last_error = CdpError(
-                            f"{error_message} for {url}",
-                            status=status_code,
+                            f"Connection error for {url}: {str(e)}",
                         )
                         continue
+                    else:
+                        raise CdpError(
+                            f"Request failed after {max_retries} attempts for {url}: {str(e)}",
+                        )
 
-                raise CdpError(f"{error_message} for {url}", status=status_code)
-
-            except CdpError:
-                raise
-            except Exception as e:
-                # Retry on connection errors
-                if attempt < max_retries - 1:
-                    wait_time = min(0.5 * (2**attempt), 5)
-                    time.sleep(wait_time)
-                    last_error = CdpError(
-                        f"Connection error for {url}: {str(e)}",
-                    )
-                    continue
-                else:
-                    raise CdpError(
-                        f"Request failed after {max_retries} attempts for {url}: {str(e)}",
-                    )
-
-        # If we exhausted all retries
-        if last_error:
-            raise last_error
-        raise CdpError(f"Request failed for {url}")
+            # If we exhausted all retries
+            if last_error:
+                raise last_error
+            raise CdpError(f"Request failed for {url}")
+        except Exception as e:
+            self.module.fail_json(msg=str(e))
 
     def _get(
         self,
