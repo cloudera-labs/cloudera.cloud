@@ -108,3 +108,20 @@ def mock_ansible_module(mocker):
     module.fail_json = mocker.MagicMock(side_effect=Exception("fail_json called"))
     module.exit_json = mocker.MagicMock(side_effect=Exception("exit_json called"))
     return module
+
+
+@pytest.fixture()
+def mock_load_cdp_config(mocker):
+    """Mock the load_cdp_config function."""
+    mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+        return_value=("test-access-key", "test-private-key"),
+    )
+
+@pytest.fixture()
+def unset_cdp_env_vars(monkeypatch):
+    """Fixture to unset any prior CDP-related environment variables."""
+    monkeypatch.delenv("CDP_ACCESS_KEY", raising=False)
+    monkeypatch.delenv("CDP_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("CDP_CREDENTIALS_PATH", raising=False)
+    monkeypatch.delenv("CDP_PROFILE", raising=False)

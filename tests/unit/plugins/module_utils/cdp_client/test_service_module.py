@@ -215,24 +215,9 @@ class ConcreteServicesModuleWithMixin(ServicesModule, MessageParameter):
         self.logger.info("Process method called")
 
 
+@pytest.mark.usefixtures("mock_load_cdp_config", "unset_cdp_env_vars")
 class TestConcreteServicesModule:
     """Test cases for concrete ServicesModule implementations."""
-
-    @pytest.fixture(autouse=True)
-    def mock_load_cdp_config(self, mocker):
-        """Mock the load_cdp_config function."""
-        mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-            return_value=("test-access-key", "test-private-key"),
-        )
-
-    @pytest.fixture(autouse=True)
-    def unset_cdp_env_vars(self, monkeypatch):
-        """Fixture to unset any prior CDP-related environment variables."""
-        monkeypatch.delenv("CDP_ACCESS_KEY", raising=False)
-        monkeypatch.delenv("CDP_PRIVATE_KEY", raising=False)
-        monkeypatch.delenv("CDP_CREDENTIALS_PATH", raising=False)
-        monkeypatch.delenv("CDP_PROFILE", raising=False)
 
     def test_services_module_initialization_basic(
         self,
