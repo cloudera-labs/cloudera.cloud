@@ -18,35 +18,138 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import os
 import pytest
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    AnsibleCdpClient,
-)
+from ansible_collections.cloudera.cloud.tests.unit import AnsibleExitJson
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import RestClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_consumption import CdpConsumptionClient
 
 
 BASE_URL = "https://cloudera.internal/api"
 ACCESS_KEY = "test-access-key"
 PRIVATE_KEY = "test-private-key"
 
+FROM_TIMESTAMP = "2025-10-31T00:00:00Z"
+TO_TIMESTAMP = "2025-10-31T12:00:00Z"
+
+
+class TestCdpConsumptionClient:
+    """Unit tests for CdpConsumptionClient."""
+
+    def test_list_compute_usage_records(self, mocker):
+        """Test listing compute usage records."""
+
+        # Mock response data
+        mock_response = {
+            "records": [
+                {"id": "record1", "usage": 100},
+                {"id": "record2", "usage": 200},
+            ],
+        }
+
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
+
+        # Create the CdpConsumptionClient instance
+        client = CdpConsumptionClient(api_client=api_client)
+
+        response = client.list_compute_usage_records(
+            from_timestamp=FROM_TIMESTAMP,
+            to_timestamp=TO_TIMESTAMP,
+        )
+
+        assert "records" in response
+        assert len(response["records"]) == 2
+        assert response["records"][0]["id"] == "record1"
+
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/consumption/listComputeUsageRecords",
+            None,
+            {
+                "fromTimestamp": FROM_TIMESTAMP,
+                "toTimestamp": TO_TIMESTAMP,
+                "pageSize": 100,
+            },
+        )
+
+    def test_list_compute_usage_records_pagination(self, mocker):
+        """Test listing compute usage records."""
+
+        # Mock response data
+        mock_response1 = {
+            "records": [
+                {"id": "record1", "usage": 100},
+                {"id": "record2", "usage": 200},
+            ],
+            "nextToken": "token123"
+        }
+
+        mock_response2 = {
+            "records": [
+                {"id": "record3", "usage": 300},
+                {"id": "record4", "usage": 400},
+            ],
+        }
+
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.side_effect = [mock_response1, mock_response2]
+
+        # Create the CdpConsumptionClient instance
+        client = CdpConsumptionClient(api_client=api_client)
+
+        response = client.list_compute_usage_records(
+            from_timestamp=FROM_TIMESTAMP,
+            to_timestamp=TO_TIMESTAMP,
+        )
+
+        assert "records" in response
+        assert len(response["records"]) == 4
+        assert response["records"][0]["id"] == "record1"
+        assert response["records"][2]["id"] == "record3"
+
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_has_calls([
+            mocker.call(
+                "/api/v1/consumption/listComputeUsageRecords",
+                None,
+                {
+                    "fromTimestamp": FROM_TIMESTAMP,
+                    "toTimestamp": TO_TIMESTAMP,
+                    "pageSize": 100,
+                },
+            ),
+            mocker.call(
+                "/api/v1/consumption/listComputeUsageRecords",
+                None,
+                {
+                    "fromTimestamp": FROM_TIMESTAMP,
+                    "toTimestamp": TO_TIMESTAMP,
+                    "pageSize": 100,
+                    "startingToken": "token123",
+                },
+            ),
+        ])
+
 
 @pytest.mark.integration_api
-def test_list_compute_usage_records_integration(mock_ansible_module):
-    """Test listing compute usage records."""
+class TestCdpConsumptionClientIntegration:
+    """Integration tests for CdpConsumptionClient."""
 
-    client = AnsibleCdpClient(
-        module=mock_ansible_module,
-        base_url="https://api.us-west-1.cdp.cloudera.com",
-        access_key=os.getenv("CDP_ACCESS_KEY", "unknown"),
-        private_key=os.getenv("CDP_PRIVATE_KEY", "unknown"),
-    )
+    def test_list_compute_usage_records(self, api_client):
+        """Test listing compute usage records."""
 
-    response = client.list_compute_usage_records(
-        from_timestamp="2024-01-01T00:00:00Z",
-        to_timestamp="2024-01-31T23:59:59Z",
-    )
+        # Create the CdpConsumptionClient instance
+        client = CdpConsumptionClient(api_client=api_client)
 
-    assert "records" in response
-    assert len(response["records"]) > 0
-    assert isinstance(response["records"][0], dict)
+        response = client.list_compute_usage_records(
+            from_timestamp=FROM_TIMESTAMP,
+            to_timestamp=TO_TIMESTAMP,
+        )
+
+        assert "records" in response
+        assert len(response["records"]) > 0
+        assert isinstance(response["records"][0], dict)
