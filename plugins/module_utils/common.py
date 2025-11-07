@@ -85,7 +85,7 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
 
     def __init__(
         self,
-        argument_spec: dict = {},
+        argument_spec: dict[str, dict[str, Any]] = {},
         bypass_checks: bool = False,
         no_log: bool =False,
         mutually_exclusive: list[str] = [],
@@ -147,7 +147,7 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
             no_log=no_log,
             mutually_exclusive=mutually_exclusive
             + [["access_key", "credentials_path"]],
-            required_one_of=required_one_of, # + [["access_key", "credentials_path"]], # TODO check this logic, might now allow a default credentials_path
+            required_one_of=required_one_of,
             add_file_common_args=add_file_common_args,
             supports_check_mode=supports_check_mode,
             required_if=required_if,
