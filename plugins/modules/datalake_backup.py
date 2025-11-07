@@ -47,8 +47,7 @@ options:
         description:
             - The location of the backup to use during the restore
             - When not specified the location used will be the backup storage of the environment
-            - If provided the I(backup_id) parameter is required
-            - Only applicable when I(state=restore)
+            - The I(backup_id) parameter is required when provided with I(state=restore), 
         required: false
         type: str
     skip_atlas_indexes:
@@ -455,9 +454,9 @@ class DatalakeBackup(CdpModule):
         self.backup_name = self._get_param("backup_name")
         self.state = self._get_param("state").lower()
         self.wait = self._get_param("wait", False)
+        self.backup_location = self._get_param("backup_location")
         # ...variables for restore only
         self.backup_id = self._get_param("backup_id")
-        self.backup_location = self._get_param("backup_location")
         self.skip_atlas_indexes = self._get_param("skip_atlas_indexes")
         self.skip_atlas_metadata = self._get_param("skip_atlas_metadata")
         self.skip_ranger_audits = self._get_param("skip_ranger_audits")
@@ -476,7 +475,6 @@ class DatalakeBackup(CdpModule):
         # Check parameters that should only specified with state=restore
         if self.state == "backup" and (
             self.backup_id
-            or self.backup_location
             or self.skip_atlas_indexes
             or self.skip_atlas_metadata
             or self.skip_ranger_audits
@@ -484,8 +482,14 @@ class DatalakeBackup(CdpModule):
             or self.skip_validation
         ):
             self.module.fail_json(
-                msg="Unable to use 'state=backup' with args 'backup_id', 'backup_location', 'skip_atlas_indexes', 'skip_atlas_metadata', 'skip_ranger_audits', 'skip_ranger_hms_metadata' or 'skip_validation'",
+                msg="Unable to use 'state=backup' with args 'backup_id', 'skip_atlas_indexes', 'skip_atlas_metadata', 'skip_ranger_audits', 'skip_ranger_hms_metadata' or 'skip_validation'",
             )
+
+        # Validate that backup_location requires backup_id only when state=restore
+        if self.state == "restore" and self.backup_location and not self.backup_id:
+            self.module.fail_json(
+                msg="backup_location requires backup_id when state=restore"
+        )
 
         # Confirm datalake exists
         datalake_info = self.cdpy.datalake.describe_datalake(self.datalake_name)
@@ -500,6 +504,7 @@ class DatalakeBackup(CdpModule):
                 backup = self.cdpy.datalake.create_datalake_backup(
                     datalake_name=self.datalake_name,
                     backup_name=self.backup_name,
+                    backup_location=self.backup_location,
                 )
 
                 if self.wait:
@@ -604,9 +609,6 @@ def main():
             skip_ranger_hms_metadata=dict(required=False, type="bool"),
             skip_validation=dict(required=False, type="bool"),
         ),
-        required_by={
-            "backup_location": ("backup_id"),
-        },
         mutually_exclusive=[
             ["backup_name", "backup_id"],
         ],
