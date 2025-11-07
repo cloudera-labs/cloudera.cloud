@@ -47,7 +47,7 @@ options:
         description:
             - The location of the backup to use during the restore
             - When not specified the location used will be the backup storage of the environment
-            - The I(backup_id) parameter is required when provided with I(state=restore), 
+            - The I(backup_id) parameter is required when provided with I(state=restore),
         required: false
         type: str
     skip_atlas_indexes:
@@ -488,8 +488,8 @@ class DatalakeBackup(CdpModule):
         # Validate that backup_location requires backup_id only when state=restore
         if self.state == "restore" and self.backup_location and not self.backup_id:
             self.module.fail_json(
-                msg="backup_location requires backup_id when state=restore"
-        )
+                msg="backup_location requires backup_id when state=restore",
+            )
 
         # Confirm datalake exists
         datalake_info = self.cdpy.datalake.describe_datalake(self.datalake_name)
