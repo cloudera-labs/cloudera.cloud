@@ -85,16 +85,16 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
 
     def __init__(
         self,
-        argument_spec={},
-        bypass_checks=False,
-        no_log=False,
-        mutually_exclusive=[],
-        required_together=[],
-        required_one_of=[],
-        add_file_common_args=False,
-        supports_check_mode=False,
-        required_if=None,
-        required_by=None,
+        argument_spec: dict = {},
+        bypass_checks: bool = False,
+        no_log: bool =False,
+        mutually_exclusive: list[str] = [],
+        required_together: list[list[str]] = [],
+        required_one_of: list[list[str]] = [],
+        add_file_common_args: bool =False,
+        supports_check_mode: bool = False,
+        required_if: list[list[Any]] = [],
+        required_by: dict[str, list[str]] = {}
     ):
         """Initializes the base Cloudera on cloud service module"""
         super().__init__()
