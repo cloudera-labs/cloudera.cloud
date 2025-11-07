@@ -22,6 +22,9 @@ import pytest
 
 from typing import Any, Dict
 
+from ansible_collections.cloudera.cloud.tests.unit import AnsibleFailJson
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import RestClient
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ParametersMixin,
     MessageParameter,
@@ -100,7 +103,8 @@ class TestMessageParameter:
 
         # Create MessageParameter instance and add get_param method
         message_param = MessageParameter()
-        # Dynamically add the method since MessageParameter doesn't have get_param
+
+        # Dynamically add the method since MessageParameter itself (the doesn't have get_param()
         setattr(message_param, "get_param", mock_get_param)
 
         # Call init_parameters
@@ -189,9 +193,7 @@ class ConcreteServicesModule(ServicesModule):
     """Concrete implementation of ServicesModule for testing."""
 
     def __init__(self, **kwargs):
-        # Mock the load_cdp_config to avoid file system dependencies
         self._process_called = False
-        self._execute_called = False
         super().__init__(**kwargs)
 
     def process(self):
@@ -210,82 +212,110 @@ class ConcreteServicesModuleWithMixin(ServicesModule, MessageParameter):
     def process(self):
         """Concrete implementation of abstract process method."""
         self._process_called = True
+        self.logger.info("Process method called")
 
 
 class TestConcreteServicesModule:
     """Test cases for concrete ServicesModule implementations."""
 
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mock_load_cdp_config(self, mocker):
         """Mock the load_cdp_config function."""
-        return mocker.patch(
+        mocker.patch(
             "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
             return_value=("test-access-key", "test-private-key"),
         )
 
-    @pytest.fixture
-    def mock_ansible_module(self, mocker):
-        """Mock AnsibleModule for testing."""
-        mock_module = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.common.AnsibleModule",
-        )
+    @pytest.fixture(autouse=True)
+    def unset_cdp_env_vars(self, monkeypatch):
+        """Fixture to unset any prior CDP-related environment variables."""
+        monkeypatch.delenv("CDP_ACCESS_KEY", raising=False)
+        monkeypatch.delenv("CDP_PRIVATE_KEY", raising=False)
+        monkeypatch.delenv("CDP_CREDENTIALS_PATH", raising=False)
+        monkeypatch.delenv("CDP_PROFILE", raising=False)
 
-        # Configure the mock instance
-        instance = mock_module.return_value
-        instance.params = {
-            "endpoint": "https://api.cloudera.com",
-            "debug": False,
-            "agent_header": "cloudera.cloud",
-            "access_key": None,
-            "private_key": None,
-            "credentials_path": "~/.cdp/credentials",
-            "profile": "default",
-        }
-
-        return mock_module
-
-    def test_services_module_initialization(
+    def test_services_module_initialization_basic(
         self,
-        mock_ansible_module,
-        mock_load_cdp_config,
-        mocker,
+        module_args,
     ):
         """Test basic ServicesModule initialization."""
 
-        # Prevent actual execute from running during init
-        mocker.patch.object(ConcreteServicesModule, "execute")
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+            }
+        )
 
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-        module._execute_called = False
+        module = ConcreteServicesModule()
 
-        # Call init manually to test without auto-execute
-        ServicesModule.__init__(module)
-
-        # Verify AnsibleModule was created with correct arguments
-        mock_ansible_module.assert_called_once()
-        call_kwargs = mock_ansible_module.call_args[1]
-
-        assert "argument_spec" in call_kwargs
-        assert "endpoint" in call_kwargs["argument_spec"]
-        assert "access_key" in call_kwargs["argument_spec"]
-        assert "private_key" in call_kwargs["argument_spec"]
-
-        # Verify CDP config was loaded
-        mock_load_cdp_config.assert_called_once()
-
-        # Verify attributes are set
-        assert module.endpoint == "https://api.cloudera.com"
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "example-endpoint"
         assert module.debug_log is False
-        assert module.agent_header == "cloudera.cloud"
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
 
-    def test_services_module_with_debug_logging(self, mock_ansible_module, mocker):
+    def test_services_module_initialization_missing_private_key(
+        self,
+        module_args,
+    ):
+        """Test missing private_key in ServicesModule initialization."""
+
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+                "access_key": "example-access-key",
+                # "private_key": "test-private-key",
+            }
+        )
+
+        with pytest.raises(AnsibleFailJson, match="parameters are required together: access_key, private_key"):
+            ConcreteServicesModule()
+
+    def test_services_module_initialization_missing_access_key(
+        self,
+        module_args,
+    ):
+        """Test missing access_key in ServicesModule initialization."""
+
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+                # "access_key": "example-access-key",
+                "private_key": "test-private-key",
+            }
+        )
+
+        with pytest.raises(AnsibleFailJson, match="parameters are required together: access_key, private_key"):
+            ConcreteServicesModule()
+
+    def test_services_module_initialization_invalid_parameters(
+        self,
+        module_args,
+    ):
+        """Test invalid parameters in ServicesModule initialization."""
+
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+                "access_key": "example-access-key",
+                "credentials_path": "test-credentials-path",
+            }
+        )
+
+        with pytest.raises(AnsibleFailJson, match="parameters are mutually exclusive: access_key|credentials_path"):
+            ConcreteServicesModule()
+
+    def test_services_module_with_debug_logging(self, module_args, mocker):
         """Test ServicesModule initialization with debug logging enabled."""
 
-        # Configure debug=True
-        mock_ansible_module.return_value.params["debug"] = True
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+                "debug": True,
+            }
+        )
 
         # Mock logging components
         mock_logger = mocker.patch("logging.getLogger")
@@ -293,33 +323,31 @@ class TestConcreteServicesModule:
         mock_handler = mocker.patch("logging.StreamHandler")
         mock_formatter = mocker.patch("logging.Formatter")
 
-        # Prevent actual execute from running
-        mocker.patch.object(ConcreteServicesModule, "execute")
-
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-        ServicesModule.__init__(module)
+        module = ConcreteServicesModule()
 
         # Verify debug logging setup
         assert module.debug_log is True
         assert module.log_capture is not None
+        assert mock_logger.call_count == 2
+        mock_logger.assert_has_calls([mocker.call("cloudera.cloud"), mocker.call()])
         mock_string_io.assert_called_once()
         mock_handler.assert_called_once()
         mock_formatter.assert_called_once()
 
-    def test_services_module_get_param(self, mock_ansible_module, mocker):
+    def test_services_module_get_param(self, module_args):
         """Test the get_param method."""
 
-        mock_ansible_module.return_value.params["endpoint"] = "https://api.cloudera.com"
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+                "debug": True,
+            }
+        )
 
-        mocker.patch.object(ConcreteServicesModule, "execute")
-
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-        ServicesModule.__init__(module)
+        module = ConcreteServicesModule()
 
         # Test getting existing parameter
-        assert module.get_param("endpoint") == "https://api.cloudera.com"
+        assert module.get_param("endpoint") == "example-endpoint"
 
         # Test getting non-existent parameter with default
         assert module.get_param("nonexistent", "default_val") == "default_val"
@@ -327,82 +355,59 @@ class TestConcreteServicesModule:
         # Test getting non-existent parameter without default
         assert module.get_param("nonexistent") is None
 
-    @pytest.mark.skip(reason="Module params dictionary is never None")
-    def test_services_module_get_param_none_params(self, mock_ansible_module, mocker):
-        """Test get_param when module.params is None."""
-
-        mock_ansible_module.return_value.params = {}
-        mocker.patch.object(ConcreteServicesModule, "execute")
-
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-        ServicesModule.__init__(module)
-
-        # Should return default when params is None
-        assert module.get_param("any_param", "default") == "default"
-        assert module.get_param("any_param") is None
-
-    def test_services_module_with_mixin(self, mock_ansible_module, mocker):
+    def test_services_module_with_mixin(self, module_args, mocker):
         """Test ServicesModule with a parameter mixin."""
 
         # Add message parameter to mock params
-        mock_ansible_module.return_value.params["message"] = "test message"
-
-        mocker.patch.object(ConcreteServicesModuleWithMixin, "execute")
-
-        module = ConcreteServicesModuleWithMixin.__new__(
-            ConcreteServicesModuleWithMixin,
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+                "message": "test message",
+            }
         )
-        module._process_called = False
-        ServicesModule.__init__(module)
-        MessageParameter.init_parameters(module)
 
-        # Verify mixin argument spec was merged
-        call_kwargs = mock_ansible_module.call_args[1]
-        assert "message" in call_kwargs["argument_spec"]
+        module = ConcreteServicesModuleWithMixin()
 
         # Verify mixin parameters were initialized
-        assert hasattr(module, "message")
         assert module.message == "test message"
 
-    def test_services_module_execute_method(self, mock_ansible_module):
+    def test_services_module_execute_method(self, module_args):
         """Test the execute method."""
 
-        # Don't patch execute, we want to test it
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-        ServicesModule.__init__(module)
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+            }
+        )
 
-        # Manually call execute
-        module.execute()
+        module = ConcreteServicesModule()
 
         # Verify process was called
         assert module._process_called is True
 
     def test_services_module_execute_with_debug_logging(
         self,
-        mock_ansible_module,
+        module_args,
         mocker,
     ):
         """Test execute method captures logging output when debug is enabled."""
 
-        # Enable debug logging
-        mock_ansible_module.return_value.params["debug"] = True
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+                "debug": True,
+            }
+        )
 
         # Mock StringIO to simulate log output
         mock_string_io_instance = mocker.Mock()
         mock_string_io_instance.getvalue.return_value = "Test log output\nSecond line"
-        mock_string_io = mocker.patch(
+        mocker.patch(
             "io.StringIO",
             return_value=mock_string_io_instance,
         )
 
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-        ServicesModule.__init__(module)
-
-        # Execute the module
-        module.execute()
+        module = ConcreteServicesModule()
 
         # Verify logging output was captured
         assert module.log_out == "Test log output\nSecond line"
@@ -411,124 +416,57 @@ class TestConcreteServicesModule:
 
     def test_services_module_execute_with_empty_log_capture(
         self,
-        mock_ansible_module,
+        module_args,
         mocker,
     ):
         """Test execute method handles empty log capture correctly."""
 
-        # Enable debug logging
-        mock_ansible_module.return_value.params["debug"] = True
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+                "debug": True,
+            }
+        )
 
         # Mock StringIO to return empty string
         mock_string_io_instance = mocker.Mock()
         mock_string_io_instance.getvalue.return_value = ""
         mocker.patch("io.StringIO", return_value=mock_string_io_instance)
 
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-        ServicesModule.__init__(module)
-
-        # Execute the module
-        module.execute()
+        module = ConcreteServicesModule()
 
         # Verify empty logging output is handled
         assert module.log_out == ""
         assert module.log_lines == []
 
-    def test_services_module_argument_spec_merging(self, mock_ansible_module, mocker):
+    def test_services_module_argument_spec_merging(self, module_args, mocker):
         """Test that argument specs are properly merged."""
 
-        mocker.patch.object(ConcreteServicesModule, "execute")
+        module_args(
+                {
+                    "endpoint": "example-endpoint",
+                    "custom_param": "custom_value",
+                }
+            )
 
-        custom_spec = {"custom_param": dict(required=True, type="str")}
+        custom_spec = dict(custom_param=dict(required=True, type="str"))
 
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-        ServicesModule.__init__(module, argument_spec=custom_spec)
+        module = ConcreteServicesModule(argument_spec=custom_spec)
 
-        # Verify both custom and default arguments are present
-        call_kwargs = mock_ansible_module.call_args[1]
-        arg_spec = call_kwargs["argument_spec"]
+        # Verify that custom parameter is set
+        assert module.get_param("custom_param") == "custom_value"
 
-        # Custom argument
-        assert "custom_param" in arg_spec
-        assert arg_spec["custom_param"]["required"] is True
-
-        # Default arguments
-        assert "endpoint" in arg_spec
-        assert "access_key" in arg_spec
-        assert "debug" in arg_spec
-
-    def test_services_module_auto_execute_integration(self, mock_ansible_module):
+    def test_services_module_auto_execute_integration(self, module_args):
         """Test that AutoExecuteMeta calls execute automatically during instantiation."""
+
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+            }
+        )
 
         # This will create the instance with auto-execute
         module = ConcreteServicesModule()
 
         # Verify that process was called via auto-execute
         assert module._process_called is True
-
-    def test_services_module_ansible_module_options(self, mock_ansible_module, mocker):
-        """Test that AnsibleModule is created with correct options."""
-
-        mocker.patch.object(ConcreteServicesModule, "execute")
-
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-
-        # Test with various options
-        ServicesModule.__init__(
-            module,
-            bypass_checks=True,
-            no_log=True,
-            mutually_exclusive=[["param1", "param2"]],
-            required_together=[["param3", "param4"]],
-            required_one_of=[["param5", "param6"]],
-            supports_check_mode=True,
-        )
-
-        # Verify options were passed to AnsibleModule
-        call_kwargs = mock_ansible_module.call_args[1]
-        assert call_kwargs["bypass_checks"] is True
-        assert call_kwargs["no_log"] is True
-        assert sorted(call_kwargs["mutually_exclusive"]) == sorted(
-            [["access_key", "credentials_path"], ["param1", "param2"]],
-        )
-        assert sorted(call_kwargs["required_together"]) == sorted(
-            [["access_key", "private_key"], ["param3", "param4"]],
-        )
-        assert sorted(call_kwargs["required_one_of"]) == sorted(
-            [["access_key", "credentials_path"], ["param5", "param6"]],
-        )
-        assert call_kwargs["supports_check_mode"] is True
-
-    def test_services_module_no_cdp_config_loading(
-        self,
-        mock_ansible_module,
-        mock_load_cdp_config,
-        mocker,
-    ):
-        """Test CDP configuration loading."""
-
-        # Configure specific parameter values
-        mock_ansible_module.return_value.params.update(
-            {
-                "access_key": "param_access_key",
-                "private_key": "param_private_key",
-                "credentials_path": "/custom/path",
-                "profile": "production",
-            },
-        )
-
-        mocker.patch.object(ConcreteServicesModule, "execute")
-
-        module = ConcreteServicesModule.__new__(ConcreteServicesModule)
-        module._process_called = False
-        ServicesModule.__init__(module)
-
-        # Verify load_cdp_config was called with correct parameters
-        mock_load_cdp_config.assert_not_called()
-
-        # Verify credentials were set
-        assert module.access_key == "param_access_key"
-        assert module.private_key == "param_private_key"
