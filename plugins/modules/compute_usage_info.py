@@ -26,8 +26,10 @@ RETURN = r"""
 
 from typing import Any
 
-from ansible_collections.cloudera.runtime.plugins.module_utils.common import ServicesModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import AnsibleCdpClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_consumption import CdpConsumptionClient
 
 
 class ConsumptionComputeUsageRecordsInfo(ServicesModule):
@@ -48,18 +50,14 @@ class ConsumptionComputeUsageRecordsInfo(ServicesModule):
         self.records = []
 
     def process(self):
-        client = AnsibleCdpClient(
-            module=self.module,
-            base_url=self.endpoint,
-            access_key=self.access_key,
-            private_key=self.private_key,
-        )
+        client = CdpConsumptionClient(api_client=self.api_client)
 
-        # TODO error handling for missing 'records' key
-        self.records = client.list_compute_usage_records(
+        result = client.list_compute_usage_records(
             from_timestamp=self.from_timestamp,
             to_timestamp=self.to_timestamp,
-        ).get("records", [])
+        )
+
+        self.records = result.get("records", [])
 
 
 def main():
