@@ -45,7 +45,6 @@ def test_paginated_decorator_single_page(mocker):
     # Call the paginated method
     response = TestClient().decorated_func()
 
-    # Should return original response since no nextToken
     assert response == test_data
     assert len(response["computeUsageRecords"]) == 2
     assert response["computeUsageRecords"][1]["id"] == "record2"
@@ -63,7 +62,7 @@ def test_paginated_decorator_multiple_pages(mocker):
             {"id": "record1", "usage": 100},
             {"id": "record2", "usage": 200},
         ],
-        "nextToken": "token123",
+        "nextPageToken": "token123",
     }
 
     page2_data = {
@@ -84,7 +83,6 @@ def test_paginated_decorator_multiple_pages(mocker):
     # Call the paginated method
     response = TestClient().decorated_func()
     
-    # Should combine all records from both pages
     assert len(response["computeUsageRecords"]) == 4
     assert response["computeUsageRecords"][0]["id"] == "record1"
     assert response["computeUsageRecords"][3]["id"] == "record4"
@@ -115,7 +113,6 @@ def test_paginated_decorator_with_custom_page_size_single(mocker):
     # Call the paginated method
     response = TestClient().decorated_func()
 
-    # Should return original response since no nextToken
     assert response == test_data
     assert len(response["computeUsageRecords"]) == 2
     assert response["computeUsageRecords"][1]["id"] == "record2"
@@ -136,7 +133,7 @@ def test_paginated_decorator_with_custom_page_size_multiple(mocker):
             {"id": "record1", "usage": 100},
             {"id": "record2", "usage": 200},
         ],
-        "nextToken": "token123",
+        "nextPageToken": "token123",
     }
     test_data2 = {
         "computeUsageRecords": [
@@ -156,7 +153,6 @@ def test_paginated_decorator_with_custom_page_size_multiple(mocker):
     # Call the paginated method
     response = TestClient().decorated_func()
 
-    # Should return original response since no nextToken
     assert len(response["computeUsageRecords"]) == 4
     assert response["computeUsageRecords"][0]["id"] == "record1"
     assert response["computeUsageRecords"][3]["id"] == "record4"
@@ -167,7 +163,7 @@ def test_paginated_decorator_with_custom_page_size_multiple(mocker):
     # Verify that the page size is set correctly
     mock_func.assert_has_calls([
         mocker.call(pageSize=2),
-        mocker.call(pageSize=2, startingToken="token123"),
+        mocker.call(pageSize=2, pageToken="token123"),
     ])
 
 
@@ -187,7 +183,6 @@ def test_paginated_decorator_non_dict_response(mocker):
     # Call the paginated method
     response = TestClient().decorated_func()
 
-    # Should return original response since no nextToken
     assert response == "Not a dict response"
     
     # Should make only one request
@@ -200,7 +195,7 @@ def test_paginated_decorator_empty_list_keys(mock_ansible_module, mocker):
     # Mock responses with no list fields
     test_data1 = {
         "summary": "usage summary",
-        "nextToken": "token123",
+        "nextPageToken": "token123",
         "count": 0,
     }
     test_data2 = {
@@ -230,7 +225,7 @@ def test_paginated_decorator_empty_list_keys(mock_ansible_module, mocker):
     # Verify that the page size is set correctly
     mock_func.assert_has_calls([
         mocker.call(pageSize=100),
-        mocker.call(pageSize=100, startingToken="token123"),
+        mocker.call(pageSize=100, pageToken="token123"),
     ])
 
 
@@ -256,7 +251,6 @@ def test_paginated_decorator_with_explicit_page_size_single(mocker):
     # Call the paginated method
     response = TestClient().decorated_func(pageSize=10)
 
-    # Should return original response since no nextToken
     assert response == test_data
     assert len(response["computeUsageRecords"]) == 2
     assert response["computeUsageRecords"][1]["id"] == "record2"
@@ -277,7 +271,7 @@ def test_paginated_decorator_with_explicit_page_size_multiple(mocker):
             {"id": "record1", "usage": 100},
             {"id": "record2", "usage": 200},
         ],
-        "nextToken": "token123",
+        "nextPageToken": "token123",
     }
     test_data2 = {
         "computeUsageRecords": [
@@ -308,5 +302,5 @@ def test_paginated_decorator_with_explicit_page_size_multiple(mocker):
     # Verify that the page size is set correctly
     mock_func.assert_has_calls([
         mocker.call(pageSize=2),
-        mocker.call(pageSize=2, startingToken="token123"),
+        mocker.call(pageSize=2, pageToken="token123"),
     ])

@@ -299,7 +299,7 @@ class RestClient:
                 # Get the initial response
                 response = func(self, *args, **paginated_kwargs)
 
-                if not isinstance(response, dict) or "nextToken" not in response:
+                if not isinstance(response, dict) or "nextPageToken" not in response:
                     return response
 
                 # Collect all items from paginated responses
@@ -314,13 +314,13 @@ class RestClient:
                     else:
                         all_items[key] = value
 
-                # Continue pagination while nextToken exists
-                while "nextToken" in all_items:
-                    token = all_items.pop("nextToken")
+                # Continue pagination while nextPageToken exists
+                while "nextPageToken" in all_items:
+                    token = all_items.pop("nextPageToken")
 
                     # Add pagination parameters
                     paginated_kwargs = kwargs.copy()
-                    paginated_kwargs["startingToken"] = token
+                    paginated_kwargs["pageToken"] = token
 
                     # Add default page size if not specified
                     if "pageSize" not in paginated_kwargs:
@@ -409,7 +409,7 @@ class AnsibleCdpClient(RestClient):
         base_url: str,
         access_key: str,
         private_key: str,
-        timeout_seconds: int = 30,
+        timeout_seconds: int = 60,
         proxy_context_path: Optional[str] = None,
         default_page_size: int = 100,
     ):
@@ -553,7 +553,12 @@ class AnsibleCdpClient(RestClient):
                             error_message = f"{error_data.get('errorMessage', 'Unknown error')}"
                         except:
                             error_message = f"{info.get('msg', 'Unknown error')}"
-
+                    else:
+                        try:
+                            error_message = info.get("msg", "Unknown error")
+                        except:
+                            pass
+                    
                     # Retry on server errors (5xx) or specific client errors
                     if status_code >= 500 or status_code in [408, 429]:
                         if attempt < max_retries - 1:
