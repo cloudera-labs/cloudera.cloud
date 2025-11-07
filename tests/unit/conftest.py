@@ -31,6 +31,8 @@ from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
 )
 
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import AnsibleCdpClient
+
 
 def pytest_collection_modifyitems(items):
     """
@@ -83,6 +85,18 @@ def module_args():
     return prep_args
 
 
+@pytest.fixture
+def module_creds():
+    """Prepare module credentials"""
+
+    return {
+        "access_key": os.getenv("CDP_ACCESS_KEY", "test-access-key"),
+        "private_key": os.getenv("CDP_PRIVATE_KEY", "test-private-key"),
+        "token": os.getenv("CDP_TOKEN", "test-token"),
+        "endpoint": os.getenv("CDP_API_ENDPOINT", "https://cloudera.internal/api"),
+    }
+
+
 @pytest.fixture(autouse=True)
 def patch_module(monkeypatch):
     """Patch AnsibleModule to raise exceptions on success and failure"""
@@ -125,3 +139,15 @@ def unset_cdp_env_vars(monkeypatch):
     monkeypatch.delenv("CDP_PRIVATE_KEY", raising=False)
     monkeypatch.delenv("CDP_CREDENTIALS_PATH", raising=False)
     monkeypatch.delenv("CDP_PROFILE", raising=False)
+
+
+@pytest.fixture()
+def api_client(module_creds, mock_ansible_module):
+    """Fixture for creating an Ansible API client instance."""
+
+    return AnsibleCdpClient(
+        module=mock_ansible_module,
+        base_url=module_creds["endpoint"],
+        access_key=module_creds["access_key"],
+        private_key=module_creds["private_key"],
+    )
