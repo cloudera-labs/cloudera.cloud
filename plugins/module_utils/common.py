@@ -108,13 +108,14 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
                     merged_argument_spec.update(mixin_spec)
 
         # Initialize the Ansible module
+        # TODO Add CDP_ACCESS_TOKEN
         self.module = AnsibleModule(
             argument_spec=dict(
                 **merged_argument_spec,
                 access_key=dict(
                     required=False,
                     type="str",
-                    fallback=(env_fallback, ["CDP_ACCESS_KEY"]),
+                    fallback=(env_fallback, ["CDP_ACCESS_KEY_ID"]),
                 ),
                 private_key=dict(
                     required=False,
