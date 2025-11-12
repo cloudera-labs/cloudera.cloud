@@ -550,7 +550,9 @@ class AnsibleCdpClient(RestClient):
                     if resp:
                         try:
                             error_data = json.loads(info.get("body"))
-                            error_message = f"{error_data.get('errorMessage', 'Unknown error')}"
+                            error_message = (
+                                f"{error_data.get('errorMessage', 'Unknown error')}"
+                            )
                         except:
                             error_message = f"{info.get('msg', 'Unknown error')}"
                     else:
@@ -558,7 +560,7 @@ class AnsibleCdpClient(RestClient):
                             error_message = info.get("msg", "Unknown error")
                         except:
                             pass
-                    
+
                     # Retry on server errors (5xx) or specific client errors
                     if status_code >= 500 or status_code in [408, 429]:
                         if attempt < max_retries - 1:

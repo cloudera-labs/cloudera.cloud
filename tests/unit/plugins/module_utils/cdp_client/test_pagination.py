@@ -19,7 +19,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    RestClient
+    RestClient,
 )
 
 
@@ -82,7 +82,7 @@ def test_paginated_decorator_multiple_pages(mocker):
 
     # Call the paginated method
     response = TestClient().decorated_func()
-    
+
     assert len(response["computeUsageRecords"]) == 4
     assert response["computeUsageRecords"][0]["id"] == "record1"
     assert response["computeUsageRecords"][3]["id"] == "record4"
@@ -119,7 +119,7 @@ def test_paginated_decorator_with_custom_page_size_single(mocker):
 
     # Should make only one request
     assert mock_func.call_count == 1
-    
+
     # Verify that the page size is set correctly
     mock_func.assert_called_with(pageSize=10)
 
@@ -159,12 +159,14 @@ def test_paginated_decorator_with_custom_page_size_multiple(mocker):
 
     # Should make only one request
     assert mock_func.call_count == 2
-    
+
     # Verify that the page size is set correctly
-    mock_func.assert_has_calls([
-        mocker.call(pageSize=2),
-        mocker.call(pageSize=2, pageToken="token123"),
-    ])
+    mock_func.assert_has_calls(
+        [
+            mocker.call(pageSize=2),
+            mocker.call(pageSize=2, pageToken="token123"),
+        ],
+    )
 
 
 def test_paginated_decorator_non_dict_response(mocker):
@@ -184,7 +186,7 @@ def test_paginated_decorator_non_dict_response(mocker):
     response = TestClient().decorated_func()
 
     assert response == "Not a dict response"
-    
+
     # Should make only one request
     assert mock_func.call_count == 1
 
@@ -223,10 +225,12 @@ def test_paginated_decorator_empty_list_keys(mock_ansible_module, mocker):
     assert mock_func.call_count == 2
 
     # Verify that the page size is set correctly
-    mock_func.assert_has_calls([
-        mocker.call(pageSize=100),
-        mocker.call(pageSize=100, pageToken="token123"),
-    ])
+    mock_func.assert_has_calls(
+        [
+            mocker.call(pageSize=100),
+            mocker.call(pageSize=100, pageToken="token123"),
+        ],
+    )
 
 
 def test_paginated_decorator_with_explicit_page_size_single(mocker):
@@ -257,7 +261,7 @@ def test_paginated_decorator_with_explicit_page_size_single(mocker):
 
     # Should make only one request
     assert mock_func.call_count == 1
-    
+
     # Verify that the page size is set correctly
     mock_func.assert_called_with(pageSize=10)
 
@@ -298,9 +302,11 @@ def test_paginated_decorator_with_explicit_page_size_multiple(mocker):
 
     # Should make only one request
     assert mock_func.call_count == 2
-    
+
     # Verify that the page size is set correctly
-    mock_func.assert_has_calls([
-        mocker.call(pageSize=2),
-        mocker.call(pageSize=2, pageToken="token123"),
-    ])
+    mock_func.assert_has_calls(
+        [
+            mocker.call(pageSize=2),
+            mocker.call(pageSize=2, pageToken="token123"),
+        ],
+    )

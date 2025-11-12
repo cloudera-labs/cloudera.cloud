@@ -31,7 +31,9 @@ from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
 )
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import AnsibleCdpClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
+    AnsibleCdpClient,
+)
 
 
 def pytest_collection_modifyitems(items):
@@ -119,8 +121,12 @@ def mock_ansible_module(mocker):
     """Fixture for mock AnsibleModule."""
     module = mocker.Mock()
     module.params = {}
-    module.fail_json = mocker.Mock(side_effect=AnsibleFailJson({"msg": "fail_json called"}))
-    module.exit_json = mocker.Mock(side_effect=AnsibleExitJson({"msg": "exit_json called"}))
+    module.fail_json = mocker.Mock(
+        side_effect=AnsibleFailJson({"msg": "fail_json called"}),
+    )
+    module.exit_json = mocker.Mock(
+        side_effect=AnsibleExitJson({"msg": "exit_json called"}),
+    )
     return module
 
 
@@ -131,6 +137,7 @@ def mock_load_cdp_config(mocker):
         "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
         return_value=("test-access-key", "test-private-key"),
     )
+
 
 @pytest.fixture()
 def unset_cdp_env_vars(monkeypatch):

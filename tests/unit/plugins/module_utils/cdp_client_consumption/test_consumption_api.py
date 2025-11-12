@@ -22,8 +22,12 @@ import pytest
 
 from ansible_collections.cloudera.cloud.tests.unit import AnsibleExitJson
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import RestClient
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_consumption import CdpConsumptionClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
+    RestClient,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_consumption import (
+    CdpConsumptionClient,
+)
 
 
 BASE_URL = "https://cloudera.internal/api"
@@ -84,7 +88,7 @@ class TestCdpConsumptionClient:
                 {"id": "record1", "usage": 100},
                 {"id": "record2", "usage": 200},
             ],
-            "nextPageToken": "token123"
+            "nextPageToken": "token123",
         }
 
         mock_response2 = {
@@ -112,27 +116,29 @@ class TestCdpConsumptionClient:
         assert response["records"][2]["id"] == "record3"
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_has_calls([
-            mocker.call(
-                "/api/v1/consumption/listComputeUsageRecords",
-                None,
-                {
-                    "fromTimestamp": FROM_TIMESTAMP,
-                    "toTimestamp": TO_TIMESTAMP,
-                    "pageSize": 100,
-                },
-            ),
-            mocker.call(
-                "/api/v1/consumption/listComputeUsageRecords",
-                None,
-                {
-                    "fromTimestamp": FROM_TIMESTAMP,
-                    "toTimestamp": TO_TIMESTAMP,
-                    "pageSize": 100,
-                    "pageToken": "token123",
-                },
-            ),
-        ])
+        api_client._post.assert_has_calls(
+            [
+                mocker.call(
+                    "/api/v1/consumption/listComputeUsageRecords",
+                    None,
+                    {
+                        "fromTimestamp": FROM_TIMESTAMP,
+                        "toTimestamp": TO_TIMESTAMP,
+                        "pageSize": 100,
+                    },
+                ),
+                mocker.call(
+                    "/api/v1/consumption/listComputeUsageRecords",
+                    None,
+                    {
+                        "fromTimestamp": FROM_TIMESTAMP,
+                        "toTimestamp": TO_TIMESTAMP,
+                        "pageSize": 100,
+                        "pageToken": "token123",
+                    },
+                ),
+            ],
+        )
 
 
 @pytest.mark.integration_api

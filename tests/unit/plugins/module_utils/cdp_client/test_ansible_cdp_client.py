@@ -199,7 +199,9 @@ def test_make_request_http_401(mock_ansible_module, mocker):
     with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path")
 
-    mock_ansible_module.fail_json.assert_called_once_with(msg="Unauthorized access to /test/path")
+    mock_ansible_module.fail_json.assert_called_once_with(
+        msg="Unauthorized access to /test/path",
+    )
 
 
 def test_make_request_http_403(mock_ansible_module, mocker):
@@ -230,7 +232,9 @@ def test_make_request_http_403(mock_ansible_module, mocker):
     with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path")
 
-    mock_ansible_module.fail_json.assert_called_once_with(msg="Forbidden access to /test/path")
+    mock_ansible_module.fail_json.assert_called_once_with(
+        msg="Forbidden access to /test/path",
+    )
 
 
 def test_make_request_http_404(mock_ansible_module, mocker):
@@ -267,7 +271,9 @@ def test_make_request_http_404(mock_ansible_module, mocker):
     with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path")
 
-    mock_ansible_module.fail_json.assert_called_once_with(msg="Not Found [404] for https://cloudera.internal/api/test/path")
+    mock_ansible_module.fail_json.assert_called_once_with(
+        msg="Not Found [404] for https://cloudera.internal/api/test/path",
+    )
 
 
 def test_make_request_http_500_with_retry(mock_ansible_module, mocker):
@@ -305,8 +311,10 @@ def test_make_request_http_500_with_retry(mock_ansible_module, mocker):
     with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path", max_retries=2)
 
-    mock_ansible_module.fail_json.assert_called_once_with(msg="Internal Server Error [500] for https://cloudera.internal/api/test/path") 
-    
+    mock_ansible_module.fail_json.assert_called_once_with(
+        msg="Internal Server Error [500] for https://cloudera.internal/api/test/path",
+    )
+
     # Should retry once (2 total attempts)
     assert mock_fetch_url.call_count == 2
     assert mock_sleep.call_count == 1
@@ -347,7 +355,9 @@ def test_make_request_http_429_with_retry(mock_ansible_module, mocker):
     with pytest.raises(AnsibleFailJson):
         client._make_request("GET", "/test/path", max_retries=3)
 
-    mock_ansible_module.fail_json.assert_called_once_with(msg="Too Many Requests [429] for https://cloudera.internal/api/test/path")
+    mock_ansible_module.fail_json.assert_called_once_with(
+        msg="Too Many Requests [429] for https://cloudera.internal/api/test/path",
+    )
 
     # Should retry 2 times (3 total attempts)
     assert mock_fetch_url.call_count == 3
@@ -384,7 +394,9 @@ def test_make_request_connection_error_with_retry(mock_ansible_module, mocker):
     with pytest.raises(AnsibleFailJson) as exc_info:
         client._make_request("GET", "/test/path", max_retries=2)
 
-    mock_ansible_module.fail_json.assert_called_once_with(msg="Request failed after 2 attempts for https://cloudera.internal/api/test/path: Connection refused")
+    mock_ansible_module.fail_json.assert_called_once_with(
+        msg="Request failed after 2 attempts for https://cloudera.internal/api/test/path: Connection refused",
+    )
 
     # Should retry once (2 total attempts)
     assert mock_fetch_url.call_count == 2

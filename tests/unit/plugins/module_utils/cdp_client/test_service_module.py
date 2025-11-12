@@ -24,7 +24,9 @@ from typing import Any, Dict
 
 from ansible_collections.cloudera.cloud.tests.unit import AnsibleFailJson
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import RestClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
+    RestClient,
+)
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ParametersMixin,
     MessageParameter,
@@ -228,7 +230,7 @@ class TestConcreteServicesModule:
         module_args(
             {
                 "endpoint": "example-endpoint",
-            }
+            },
         )
 
         module = ConcreteServicesModule()
@@ -252,10 +254,13 @@ class TestConcreteServicesModule:
                 "endpoint": "example-endpoint",
                 "access_key": "example-access-key",
                 # "private_key": "test-private-key",
-            }
+            },
         )
 
-        with pytest.raises(AnsibleFailJson, match="parameters are required together: access_key, private_key"):
+        with pytest.raises(
+            AnsibleFailJson,
+            match="parameters are required together: access_key, private_key",
+        ):
             ConcreteServicesModule()
 
     def test_services_module_initialization_missing_access_key(
@@ -269,10 +274,13 @@ class TestConcreteServicesModule:
                 "endpoint": "example-endpoint",
                 # "access_key": "example-access-key",
                 "private_key": "test-private-key",
-            }
+            },
         )
 
-        with pytest.raises(AnsibleFailJson, match="parameters are required together: access_key, private_key"):
+        with pytest.raises(
+            AnsibleFailJson,
+            match="parameters are required together: access_key, private_key",
+        ):
             ConcreteServicesModule()
 
     def test_services_module_initialization_invalid_parameters(
@@ -286,10 +294,13 @@ class TestConcreteServicesModule:
                 "endpoint": "example-endpoint",
                 "access_key": "example-access-key",
                 "credentials_path": "test-credentials-path",
-            }
+            },
         )
 
-        with pytest.raises(AnsibleFailJson, match="parameters are mutually exclusive: access_key|credentials_path"):
+        with pytest.raises(
+            AnsibleFailJson,
+            match="parameters are mutually exclusive: access_key|credentials_path",
+        ):
             ConcreteServicesModule()
 
     def test_services_module_with_debug_logging(self, module_args, mocker):
@@ -299,7 +310,7 @@ class TestConcreteServicesModule:
             {
                 "endpoint": "example-endpoint",
                 "debug": True,
-            }
+            },
         )
 
         # Mock logging components
@@ -326,7 +337,7 @@ class TestConcreteServicesModule:
             {
                 "endpoint": "example-endpoint",
                 "debug": True,
-            }
+            },
         )
 
         module = ConcreteServicesModule()
@@ -348,7 +359,7 @@ class TestConcreteServicesModule:
             {
                 "endpoint": "example-endpoint",
                 "message": "test message",
-            }
+            },
         )
 
         module = ConcreteServicesModuleWithMixin()
@@ -362,7 +373,7 @@ class TestConcreteServicesModule:
         module_args(
             {
                 "endpoint": "example-endpoint",
-            }
+            },
         )
 
         module = ConcreteServicesModule()
@@ -381,7 +392,7 @@ class TestConcreteServicesModule:
             {
                 "endpoint": "example-endpoint",
                 "debug": True,
-            }
+            },
         )
 
         # Mock StringIO to simulate log output
@@ -410,7 +421,7 @@ class TestConcreteServicesModule:
             {
                 "endpoint": "example-endpoint",
                 "debug": True,
-            }
+            },
         )
 
         # Mock StringIO to return empty string
@@ -428,11 +439,11 @@ class TestConcreteServicesModule:
         """Test that argument specs are properly merged."""
 
         module_args(
-                {
-                    "endpoint": "example-endpoint",
-                    "custom_param": "custom_value",
-                }
-            )
+            {
+                "endpoint": "example-endpoint",
+                "custom_param": "custom_value",
+            },
+        )
 
         custom_spec = dict(custom_param=dict(required=True, type="str"))
 
@@ -447,7 +458,7 @@ class TestConcreteServicesModule:
         module_args(
             {
                 "endpoint": "example-endpoint",
-            }
+            },
         )
 
         # This will create the instance with auto-execute
