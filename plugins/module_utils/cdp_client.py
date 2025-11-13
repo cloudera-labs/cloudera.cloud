@@ -155,8 +155,14 @@ def create_encoded_authn_params_string(
     auth_params = OrderedDict()
     auth_params["access_key_id"] = access_key
     auth_params["auth_method"] = auth_method
-    encoded_json = json.dumps(auth_params).encode("utf-8")
-    return urlsafe_b64encode(encoded_json).strip()
+
+    try:
+        encoded_json = json.dumps(auth_params).encode("utf-8")
+        return urlsafe_b64encode(encoded_json).strip()
+    except TypeError as e:
+        raise CdpCredentialError(
+            "Error encoding authentication parameters: %s" % str(e),
+        )
 
 
 def create_signature_header(

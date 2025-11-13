@@ -20,11 +20,13 @@ __metaclass__ = type
 
 import json
 import pytest
+import unittest.mock
 
 from base64 import b64decode, urlsafe_b64encode
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     create_encoded_authn_params_string,
+    CdpCredentialError,
 )
 
 
@@ -201,41 +203,43 @@ def test_create_encoded_authn_params_string_different_auth_methods():
         assert result == expected
 
 
-def test_create_encoded_authn_params_string_json_serialization_error(mocker):
+def test_create_encoded_authn_params_string_json_serialization_error():
     """Test authentication parameters when JSON serialization fails."""
 
     access_key = "test-key"
     auth_method = "ed25519v1"
 
-    # Mock json.dumps to raise an exception - mocker automatically cleans up
-    mocker.patch(
+    # Use unittest.mock directly with a more targeted approach
+    with unittest.mock.patch(
         "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps",
-        side_effect=TypeError("Object not JSON serializable"),
-    )
+    ) as mock_dumps:
+        mock_dumps.side_effect = TypeError("Object not JSON serializable")
 
-    with pytest.raises(TypeError) as exc_info:
-        create_encoded_authn_params_string(access_key, auth_method)
+        with pytest.raises(CdpCredentialError) as exc_info:
+            create_encoded_authn_params_string(access_key, auth_method)
 
-    assert "Object not JSON serializable" in str(exc_info.value)
+        assert "Error encoding authentication parameters" in str(exc_info.value)
+        assert "Object not JSON serializable" in str(exc_info.value)
 
 
-def test_create_encoded_authn_params_string_base64_error(mocker):
+def test_create_encoded_authn_params_string_base64_error():
     """Test authentication parameters when base64 encoding fails."""
 
     access_key = "test-key"
     auth_method = "ed25519v1"
 
-    # Mock json.dumps and urlsafe_b64encode - mocker automatically cleans up
-    mocker.patch(
+    # Use unittest.mock directly with a more targeted approach
+    with unittest.mock.patch(
         "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps",
-        return_value='{"access_key_id": "test-key", "auth_method": "ed25519v1"}',
-    )
-    mocker.patch(
+    ) as mock_dumps, unittest.mock.patch(
         "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.urlsafe_b64encode",
-        side_effect=ValueError("Invalid input for base64 encoding"),
-    )
+    ) as mock_b64encode:
+        mock_dumps.return_value = (
+            '{"access_key_id": "test-key", "auth_method": "ed25519v1"}'
+        )
+        mock_b64encode.side_effect = ValueError("Invalid input for base64 encoding")
 
-    with pytest.raises(ValueError) as exc_info:
-        create_encoded_authn_params_string(access_key, auth_method)
+        with pytest.raises(ValueError) as exc_info:
+            create_encoded_authn_params_string(access_key, auth_method)
 
-    assert "Invalid input for base64 encoding" in str(exc_info.value)
+        assert "Invalid input for base64 encoding" in str(exc_info.value)
