@@ -39,7 +39,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 def pytest_collection_modifyitems(items):
     """
     Skips all tests if not running Python 3.6 or higher.
-    Skips tests marked 'integration_api' if CDP_ACCESS_KEY and CDP_PRIVATE_KEY
+    Skips tests marked 'integration_api' if CDP_ACCESS_KEY_ID and CDP_PRIVATE_KEY
     and skips tests marked 'integration_token' if CDP_TOKEN environment variable is not set.
     """
     # Skip all tests if Python version is less than 3.8
@@ -57,7 +57,7 @@ def pytest_collection_modifyitems(items):
     skip_token = None
 
     # Check if the environment variables are *not* set
-    if "CDP_ACCESS_KEY" not in os.environ or "CDP_PRIVATE_KEY" not in os.environ:
+    if "CDP_ACCESS_KEY_ID" not in os.environ or "CDP_PRIVATE_KEY" not in os.environ:
         # Create a skip marker for API credentials
         skip_api = pytest.mark.skip(
             reason="CDP API credentials not set in env vars. Skipping integration tests.",
@@ -92,7 +92,7 @@ def module_creds():
     """Prepare module credentials"""
 
     return {
-        "access_key": os.getenv("CDP_ACCESS_KEY", "test-access-key"),
+        "access_key": os.getenv("CDP_ACCESS_KEY_ID", "test-access-key"),
         "private_key": os.getenv("CDP_PRIVATE_KEY", "test-private-key"),
         "token": os.getenv("CDP_TOKEN", "test-token"),
         "endpoint": os.getenv("CDP_API_ENDPOINT", "https://cloudera.internal/api"),
