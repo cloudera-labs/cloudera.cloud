@@ -91,7 +91,7 @@ class LookupModule(LookupBase):
 
         if not terms:
             raise AnsibleError(
-                "cai_workspace lookup requires at least one workspace name"
+                "cai_workspace lookup requires at least one workspace name",
             )
 
         env = self.get_option("environment")
@@ -130,5 +130,5 @@ class LookupModule(LookupBase):
         except CdpError as e:
             raise AnsibleError(
                 "Error retrieving CAI workspace in environment '%s': %s"
-                % (env, to_native(e))
+                % (env, to_native(e)),
             )
