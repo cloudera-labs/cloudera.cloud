@@ -17,7 +17,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-from plugins.modules import iam_role_info
+from ansible_collections.cloudera.cloud.plugins.modules import iam_role_info
 
 from ansible_collections.cloudera.cloud.tests.unit.plugins.modules.utils import (
     AnsibleExitJson,

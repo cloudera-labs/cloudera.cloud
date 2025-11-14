@@ -18,14 +18,143 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import json
+import os
 import sys
 import pytest
 
+from ansible.module_utils import basic
+from ansible.module_utils.common.text.converters import to_bytes
 
-@pytest.fixture(autouse=True)
-def skip_python():
+from ansible_collections.cloudera.cloud.tests.unit import (
+    AnsibleFailJson,
+    AnsibleExitJson,
+)
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
+    AnsibleCdpClient,
+)
+
+
+def pytest_collection_modifyitems(items):
+    """
+    Skips all tests if not running Python 3.6 or higher.
+    Skips tests marked 'integration_api' if CDP_ACCESS_KEY_ID and CDP_PRIVATE_KEY
+    and skips tests marked 'integration_token' if CDP_TOKEN environment variable is not set.
+    """
+    # Skip all tests if Python version is less than 3.8
     if sys.version_info < (3, 6):
-        pytest.skip(
+        skip_python = pytest.skip(
             "Skipping on Python %s. cloudera.cloud supports Python 3.6 and higher."
             % sys.version,
         )
+        for item in items:
+            item.add_marker(skip_python)
+        return
+
+    # Initialize skip markers
+    skip_api = None
+    skip_token = None
+
+    # Check if the environment variables are *not* set
+    if "CDP_ACCESS_KEY_ID" not in os.environ or "CDP_PRIVATE_KEY" not in os.environ:
+        # Create a skip marker for API credentials
+        skip_api = pytest.mark.skip(
+            reason="CDP API credentials not set in env vars. Skipping integration tests.",
+        )
+
+    if "CDP_TOKEN" not in os.environ:
+        skip_token = pytest.mark.skip(
+            reason="CDP token not set in env vars. Skipping integration tests.",
+        )
+
+    # Apply the marker to all tests with the 'integration' mark
+    for item in items:
+        if "integration_api" in item.keywords and skip_api:
+            item.add_marker(skip_api)
+        elif "integration_token" in item.keywords and skip_token:
+            item.add_marker(skip_token)
+
+
+@pytest.fixture
+def module_args():
+    """Prepare module arguments"""
+
+    def prep_args(args=dict()):
+        args = json.dumps({"ANSIBLE_MODULE_ARGS": args})
+        basic._ANSIBLE_ARGS = to_bytes(args)
+
+    return prep_args
+
+
+@pytest.fixture
+def module_creds():
+    """Prepare module credentials"""
+
+    return {
+        "access_key": os.getenv("CDP_ACCESS_KEY_ID", "test-access-key"),
+        "private_key": os.getenv("CDP_PRIVATE_KEY", "test-private-key"),
+        "token": os.getenv("CDP_TOKEN", "test-token"),
+        "endpoint": os.getenv("CDP_API_ENDPOINT", "https://cloudera.internal/api"),
+    }
+
+
+@pytest.fixture(autouse=True)
+def patch_module(monkeypatch):
+    """Patch AnsibleModule to raise exceptions on success and failure"""
+
+    def exit_json(*args, **kwargs):
+        if "changed" not in kwargs:
+            kwargs["changed"] = False
+        raise AnsibleExitJson(kwargs)
+
+    def fail_json(*args, **kwargs):
+        kwargs["failed"] = True
+        raise AnsibleFailJson(kwargs)
+
+    monkeypatch.setattr(basic.AnsibleModule, "exit_json", exit_json)
+    monkeypatch.setattr(basic.AnsibleModule, "fail_json", fail_json)
+
+
+@pytest.fixture
+def mock_ansible_module(mocker):
+    """Fixture for mock AnsibleModule."""
+    module = mocker.Mock()
+    module.params = {}
+    module.fail_json = mocker.Mock(
+        side_effect=AnsibleFailJson({"msg": "fail_json called"}),
+    )
+    module.exit_json = mocker.Mock(
+        side_effect=AnsibleExitJson({"msg": "exit_json called"}),
+    )
+    return module
+
+
+@pytest.fixture()
+def mock_load_cdp_config(mocker):
+    """Mock the load_cdp_config function."""
+    mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+        return_value=("test-access-key", "test-private-key"),
+    )
+
+
+@pytest.fixture()
+def unset_cdp_env_vars(monkeypatch):
+    """Fixture to unset any prior CDP-related environment variables."""
+    monkeypatch.delenv("CDP_ACCESS_KEY", raising=False)
+    monkeypatch.delenv("CDP_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("CDP_CREDENTIALS_PATH", raising=False)
+    monkeypatch.delenv("CDP_PROFILE", raising=False)
+
+
+@pytest.fixture()
+def api_client(module_creds, mock_ansible_module):
+    """Fixture for creating an Ansible API client instance."""
+
+    return AnsibleCdpClient(
+        module=mock_ansible_module,
+        base_url=module_creds["endpoint"],
+        access_key=module_creds["access_key"],
+        private_key=module_creds["private_key"],
+    )
