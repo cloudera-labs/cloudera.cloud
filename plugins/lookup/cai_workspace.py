@@ -21,20 +21,20 @@ __metaclass__ = type
 DOCUMENTATION = """
     lookup: cai_workspace
     author: Ronald Suplina (@rsuplina) <rsuplina@cloudera.com>
-    short_description: Get the API URL for a CDP Public Cloud CAI (Cloudera AI) Workspace
+    short_description: Get the API URL for Cloudera AI Workspace in Cloudera on cloud.
     description:
-        - Allows you to retrieve the API URL for a given CDP Public Cloud CAI Workspace.
-        - If the Environment is not found or is ambiguous, the lookup will return an error.
-        - If the workspace is not found, the lookup will return the C(default) value.
+        - Allows you to retrieve the API URL for a given Cloudera AI Workspace in Cloudera on cloud.
+        - If the Environment is not found, the lookup will return an empty list.
+        - If the workspace is not found in the specified Environment, the lookup will return the C(default) value.
     version_added: "3.2.0"
     options:
         _terms:
             description:
-                - The name of the CAI Workspace or list of workspace names to query.
-                - Returns the API endpoint URL (instanceUrl) for each workspace.
+                - The name of the Cloudera AI Workspace or list of workspace names to query.
+                - Returns the API endpoint URL for each workspace.
             required: True
         environment:
-            description: Name of the CDP Environment where the workspace is deployed
+            description: Name of the Cloudera on cloud Environment where the workspace is deployed
             type: string
             required: True
             aliases:
@@ -49,7 +49,7 @@ DOCUMENTATION = """
 """
 
 EXAMPLES = """
-- name: Retrieve the API URL for a CAI Workspace
+- name: Retrieve the API URL for a Cloudera AI Workspace
   ansible.builtin.debug:
     msg: "{{ lookup('cloudera.cloud.cai_workspace', 'my-workspace', env='example-env') }}"
 
@@ -72,7 +72,7 @@ EXAMPLES = """
 
 RETURN = """
   _list:
-    description: List of API URLs for the queried CAI Workspaces
+    description: List of API URLs for the queried Cloudera AI Workspaces
     type: list
     elements: str
 """
