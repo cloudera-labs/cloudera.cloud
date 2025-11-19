@@ -24,7 +24,7 @@ author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
   - "Ronald Suplina (@rsuplina)"
-version_added: "3.2.0"
+version_added: "1.0.0"
 options:
   name:
     description:
