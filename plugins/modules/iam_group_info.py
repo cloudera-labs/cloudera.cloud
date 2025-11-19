@@ -64,12 +64,14 @@ EXAMPLES = r"""
 
 RETURN = r"""
 groups:
-  description: The information about the named Group or Groups
+  description:
+    - Returns a list of group records.
+    - Each record represents a CDP IAM group and its details.
   type: list
   returned: always
   elements: dict
   contains:
-    creationDate:
+    creation_date:
       description: The date when this group record was created.
       returned: on success
       type: str
@@ -78,7 +80,7 @@ groups:
       description: The CRN of the group.
       returned: on success
       type: str
-    groupName:
+    group_name:
       description: The group name.
       returned: on success
       type: str
@@ -99,17 +101,16 @@ groups:
       type: list
       elements: dict
       contains:
-        resourceCrn:
+        resource_crn:
           description: The CRN of the resource granted the rights of the role.
           returned: on success
           type: str
-        resourceRoleCrn:
+        resource_role_crn:
           description: The CRN of the CDP Role.
           returned: on success
           type: str
-    syncMembershipOnUserLogin:
-      description: Flag indicating whether group membership is synced when a user logs in. The default is to sync group
-        membership.
+    sync_membership_on_user_login:
+      description: Flag indicating whether group membership is synced when a user logs in. The default is to sync group membership.
       returned: when supported
       type: bool
 sdk_out:
