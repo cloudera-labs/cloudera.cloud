@@ -161,10 +161,11 @@ class IAMGroupInfo(ServicesModule):
         result = client.list_groups(group_names=self.name)
         self.groups = result.get("groups", [])
 
+
 # NOTE: Snake_case conversion deferred until 4.0 to maintain backward compatibility.
-      # self.groups = [
-      #     camel_dict_to_snake_dict(group) for group in result.get("groups", [])
-      # ]
+# self.groups = [
+#     camel_dict_to_snake_dict(group) for group in result.get("groups", [])
+# ]
 
 
 def main():
