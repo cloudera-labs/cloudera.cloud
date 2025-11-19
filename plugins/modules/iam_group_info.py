@@ -71,7 +71,7 @@ groups:
   returned: always
   elements: dict
   contains:
-    creation_date:
+    # creation_date:
       description: The date when this group record was created.
       returned: on success
       type: str
@@ -80,7 +80,7 @@ groups:
       description: The CRN of the group.
       returned: on success
       type: str
-    group_name:
+    # group_name:
       description: The group name.
       returned: on success
       type: str
@@ -101,15 +101,15 @@ groups:
       type: list
       elements: dict
       contains:
-        resource_crn:
+        # resource_crn:
           description: The CRN of the resource granted the rights of the role.
           returned: on success
           type: str
-        resource_role_crn:
+        # resource_role_crn:
           description: The CRN of the CDP Role.
           returned: on success
           type: str
-    sync_membership_on_user_login:
+    # sync_membership_on_user_login:
       description: Flag indicating whether group membership is synced when a user logs in. The default is to sync group membership.
       returned: when supported
       type: bool
@@ -160,10 +160,10 @@ class IAMGroupInfo(ServicesModule):
         client = CdpIamClient(api_client=self.api_client)
 
         result = client.list_groups(group_names=self.name)
-
-        self.groups = [
-            camel_dict_to_snake_dict(group) for group in result.get("groups", [])
-        ]
+        self.groups = result.get("groups", [])
+        # self.groups = [
+        #      camel_dict_to_snake_dict(group) for group in result.get("groups", [])
+        # ]
 
 
 def main():
