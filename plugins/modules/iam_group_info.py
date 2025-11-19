@@ -23,7 +23,8 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
-version_added: "1.0.0"
+  - "Ronald Suplina (@rsuplina)"
+version_added: "3.2.0"
 options:
   name:
     description:
@@ -36,21 +37,24 @@ options:
     aliases:
       - group_name
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# Gather information about all Groups
-- cloudera.cloud.iam_group_info:
+ - name: Gather information about all Groups
+   cloudera.cloud.iam_group_info:
 
-# Gather information about a named Group
-- cloudera.cloud.iam_group_info:
-    name: example-01
-
-# Gather information about several named Groups
+ - name: Gather information about a named Group
+   cloudera.cloud.iam_group_info:
+     name: example-01
+ - name: Gather information about several named Groups
+   cloudera.cloud.iam_group_info:
+     name:
+       - example-01
+       - example-02
+       - example-03
 - cloudera.cloud.iam_group_info:
     name:
       - example-01
@@ -109,62 +113,73 @@ groups:
       returned: when supported
       type: bool
 sdk_out:
-  description: Returns the captured CDP SDK log.
+  description: Returns the captured API HTTP log.
   returned: when supported
   type: str
 sdk_out_lines:
-  description: Returns a list of each line of the captured CDP SDK log.
+  description: Returns a list of each line of the captured API HTTP log.
   returned: when supported
   type: list
   elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any
+
+from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
+    CdpIamClient,
+)
 
 
-class IAMGroupInfo(CdpModule):
-    def __init__(self, module):
-        super(IAMGroupInfo, self).__init__(module)
+class IAMGroupInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(
+                    required=False,
+                    type="list",
+                    elements="str",
+                    aliases=["group_name"],
+                ),
+            ),
+            supports_check_mode=True,
+        )
 
-        # Set variables
-        self.name = self._get_param("name")
+        # Set parameters
+        self.name = self.get_param("name")
 
         # Initialize the return values
-        self.info = []
+        self.groups = []
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        self.info = self.cdpy.iam.gather_groups(self.name)
+        client = CdpIamClient(api_client=self.api_client)
+
+        result = client.list_groups(group_names=self.name)
+
+        self.groups = [
+            camel_dict_to_snake_dict(group) for group in result.get("groups", [])
+        ]
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(
-                required=False,
-                type="list",
-                elements="str",
-                aliases=["group_name"],
-            ),
-        ),
-        supports_check_mode=True,
-    )
+    result = IAMGroupInfo()
 
-    result = IAMGroupInfo(module)
-
-    output = dict(
+    output: dict[str, Any] = dict(
         changed=False,
-        groups=result.info,
+        groups=result.groups,
     )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
