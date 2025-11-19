@@ -133,9 +133,9 @@ def mock_ansible_module(mocker):
 @pytest.fixture()
 def mock_load_cdp_config(mocker):
     """Mock the load_cdp_config function."""
-    mocker.patch(
+    return mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-        return_value=("test-access-key", "test-private-key"),
+        return_value=("test-access-key", "test-private-key", "test-region"),
     )
 
 
@@ -146,6 +146,7 @@ def unset_cdp_env_vars(monkeypatch):
     monkeypatch.delenv("CDP_PRIVATE_KEY", raising=False)
     monkeypatch.delenv("CDP_CREDENTIALS_PATH", raising=False)
     monkeypatch.delenv("CDP_PROFILE", raising=False)
+    monkeypatch.delenv("CDP_REGION", raising=False)
 
 
 @pytest.fixture()
