@@ -44,16 +44,17 @@ class CdpCredentialError(Exception):
 def load_cdp_config(
     credentials_path: str,
     profile: str,
-) -> Tuple[str, str]:
+) -> Tuple[str, str, str]:
     """
-    Load CDP credential configuration by parsing credential file.
+    Load CDP credential configuration by parsing credential file. If the profile has a region specified, it will be
+    returned; otherwise, the default region "us-west-1" will be used.
 
     Args:
         credentials_path: Path to CDP credentials file (supports ~ expansion)
         profile: Profile name to load from the credentials file
 
     Returns:
-        Tuple of (access_key, private_key)
+        Tuple of (access_key, private_key, region)
 
     Raises:
         CdpCredentialError: If file doesn't exist, profile not found, or keys missing
@@ -85,7 +86,13 @@ def load_cdp_config(
         msg = "CDP profile '{0}' is missing 'cdp_private_key'"
         raise CdpCredentialError(msg.format(profile))
 
-    return access_key, private_key
+    # Load region
+    if config.has_option(profile, "cdp_region"):
+        region = config.get(profile, "cdp_region")
+    else:
+        region = "us-west-1"
+
+    return access_key, private_key, region
 
 
 def create_canonical_request_string(
@@ -490,6 +497,12 @@ class AnsibleCdpClient(RestClient):
                 self.headers,
                 self.access_key,
                 self.private_key,
+            )
+
+            # Populate validate_certs from endpoint_tls
+            self.module.params["validate_certs"] = self.module.params.get(
+                "endpoint_tls",
+                True,
             )
 
             # Add query parameters to URL if provided

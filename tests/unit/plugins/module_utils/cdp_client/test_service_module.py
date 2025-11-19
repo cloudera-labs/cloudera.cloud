@@ -337,7 +337,7 @@ class TestConcreteServicesModule:
 
         module_args(
             {
-                 "endpoint_region": "ap-1",
+                "endpoint_region": "ap-1",
             },
         )
 
@@ -383,7 +383,7 @@ class TestConcreteServicesModule:
         module_args(
             {
                 "access_key": "explicit-access-key",
-                "private_key": "explicit-private-key"
+                "private_key": "explicit-private-key",
             },
         )
 
@@ -425,7 +425,7 @@ class TestConcreteServicesModule:
         self,
         module_args,
         monkeypatch,
-        mock_load_cdp_config
+        mock_load_cdp_config,
     ):
         """Test ServicesModule environment variable credentials."""
 
@@ -454,7 +454,7 @@ class TestConcreteServicesModule:
         self,
         module_args,
         monkeypatch,
-        mock_load_cdp_config
+        mock_load_cdp_config,
     ):
         """Test ServicesModule environment variable credentials."""
 
@@ -487,7 +487,7 @@ class TestConcreteServicesModule:
 
         module_args(
             {
-                "endpoint_region": "invalid-region"
+                "endpoint_region": "invalid-region",
             },
         )
 
