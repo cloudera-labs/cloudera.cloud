@@ -312,7 +312,17 @@ class RestClient:
                 # Get the initial response
                 response = func(self, *args, **paginated_kwargs)
 
-                if not isinstance(response, dict) or "nextPageToken" not in response:
+                if not isinstance(response, dict):
+                    return response
+                
+                # Determine which pagination token is used
+                next_token_key = None
+                if "nextPageToken" in response:
+                    next_token_key = "nextPageToken"
+                elif "nextToken" in response:
+                    next_token_key = "nextToken"
+                else:
+                    # No pagination token found, return as-is
                     return response
 
                 # Collect all items from paginated responses
@@ -327,9 +337,9 @@ class RestClient:
                     else:
                         all_items[key] = value
 
-                # Continue pagination while nextPageToken exists
-                while "nextPageToken" in all_items:
-                    token = all_items.pop("nextPageToken")
+                # Continue pagination while nextToken exists
+                while next_token_key in all_items:
+                    token = all_items.pop(next_token_key)
 
                     # Add pagination parameters
                     paginated_kwargs = kwargs.copy()
