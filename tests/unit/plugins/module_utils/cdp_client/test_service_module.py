@@ -228,6 +228,26 @@ class TestConcreteServicesModule:
         """Test basic ServicesModule initialization."""
 
         module_args(
+            {},
+        )
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "test-access-key"
+        assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_endpoint_explicit(
+        self,
+        module_args,
+    ):
+        """Test ServicesModule explicit endpoint."""
+
+        module_args(
             {
                 "endpoint": "example-endpoint",
             },
@@ -243,6 +263,259 @@ class TestConcreteServicesModule:
         assert module.api_client is not None
         assert isinstance(module.api_client, RestClient)
 
+    def test_services_module_initialization_endpoint_region_default(
+        self,
+        module_args,
+    ):
+        """Test ServicesModule default endpoint."""
+
+        module_args(
+            {
+                "endpoint_region": "default",
+            },
+        )
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "https://api.us-west-1.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "test-access-key"
+        assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_endpoint_region_us_west_1(
+        self,
+        module_args,
+    ):
+        """Test ServicesModule US-WEST-1 endpoint."""
+
+        module_args(
+            {
+                "endpoint_region": "us-west-1",
+            },
+        )
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "https://api.us-west-1.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "test-access-key"
+        assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_endpoint_region_eu_1(
+        self,
+        module_args,
+    ):
+        """Test ServicesModule EU-1 endpoint."""
+
+        module_args(
+            {
+                "endpoint_region": "eu-1",
+            },
+        )
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "https://api.eu-1.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "test-access-key"
+        assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_endpoint_region_ap_1(
+        self,
+        module_args,
+    ):
+        """Test ServicesModule AP-1 endpoint."""
+
+        module_args(
+            {
+                "endpoint_region": "ap-1",
+            },
+        )
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "https://api.ap-1.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "test-access-key"
+        assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_endpoint_region_env(
+        self,
+        module_args,
+        monkeypatch,
+    ):
+        """Test ServicesModule environment variable endpoint."""
+
+        module_args(
+            {},
+        )
+
+        monkeypatch.setenv("CDP_REGION", "eu-1")
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "https://api.eu-1.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "test-access-key"
+        assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_credentials(
+        self,
+        module_args,
+    ):
+        """Test ServicesModule explicit credentials."""
+
+        module_args(
+            {
+                "access_key": "explicit-access-key",
+                "private_key": "explicit-private-key",
+            },
+        )
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "explicit-access-key"
+        assert module.private_key == "explicit-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_credentials_env(
+        self,
+        module_args,
+        monkeypatch,
+    ):
+        """Test ServicesModule environment variable credentials."""
+
+        module_args(
+            {},
+        )
+
+        monkeypatch.setenv("CDP_ACCESS_KEY_ID", "env-access-key")
+        monkeypatch.setenv("CDP_PRIVATE_KEY", "env-private-key")
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "env-access-key"
+        assert module.private_key == "env-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_profile_env(
+        self,
+        module_args,
+        monkeypatch,
+        mock_load_cdp_config,
+    ):
+        """Test ServicesModule environment variable credentials."""
+
+        module_args(
+            {},
+        )
+
+        monkeypatch.setenv("CDP_PROFILE", "env-profile")
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        mock_load_cdp_config.assert_called_once_with(
+            credentials_path="~/.cdp/credentials",
+            profile="env-profile",
+        )
+
+        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "test-access-key"
+        assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_cred_path_env(
+        self,
+        module_args,
+        monkeypatch,
+        mock_load_cdp_config,
+    ):
+        """Test ServicesModule environment variable credentials."""
+
+        module_args(
+            {},
+        )
+
+        monkeypatch.setenv("CDP_CREDENTIALS_PATH", "env-cred-path")
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        mock_load_cdp_config.assert_called_once_with(
+            credentials_path="env-cred-path",
+            profile="default",
+        )
+
+        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "test-access-key"
+        assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, RestClient)
+
+    def test_services_module_initialization_invalid_endpoint_region(
+        self,
+        module_args,
+    ):
+        """Test invalid endpoint region in ServicesModule initialization."""
+
+        module_args(
+            {
+                "endpoint_region": "invalid-region",
+            },
+        )
+
+        with pytest.raises(
+            AnsibleFailJson,
+            match="value of endpoint_region must be one of: default, us-west-1, eu-1, ap-1, got: invalid-region",
+        ):
+            ConcreteServicesModule()
+
+    def test_services_module_initialization_invalid_endpoint_parameters(
+        self,
+        module_args,
+    ):
+        """Test invalid parameters in ServicesModule endpoint initialization."""
+
+        module_args(
+            {
+                "endpoint": "example-endpoint",
+                "endpoint_region": "example-region",
+            },
+        )
+
+        with pytest.raises(
+            AnsibleFailJson,
+            match="parameters are mutually exclusive: endpoint|endpoint_region",
+        ):
+            ConcreteServicesModule()
+
     def test_services_module_initialization_missing_private_key(
         self,
         module_args,
@@ -251,9 +524,7 @@ class TestConcreteServicesModule:
 
         module_args(
             {
-                "endpoint": "example-endpoint",
                 "access_key": "example-access-key",
-                # "private_key": "test-private-key",
             },
         )
 
@@ -271,8 +542,6 @@ class TestConcreteServicesModule:
 
         module_args(
             {
-                "endpoint": "example-endpoint",
-                # "access_key": "example-access-key",
                 "private_key": "test-private-key",
             },
         )
@@ -283,7 +552,7 @@ class TestConcreteServicesModule:
         ):
             ConcreteServicesModule()
 
-    def test_services_module_initialization_invalid_parameters(
+    def test_services_module_initialization_invalid_credential_parameters(
         self,
         module_args,
     ):
@@ -291,7 +560,6 @@ class TestConcreteServicesModule:
 
         module_args(
             {
-                "endpoint": "example-endpoint",
                 "access_key": "example-access-key",
                 "credentials_path": "test-credentials-path",
             },

@@ -135,19 +135,46 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
                     fallback=(env_fallback, ["CDP_PROFILE"]),
                     default="default",
                 ),
-                endpoint=dict(required=True, type="str", aliases=["url"]),
-                debug=dict(required=False, type="bool", default=False),
+                endpoint=dict(
+                    required=False,
+                    type="str",
+                    aliases=["endpoint_url", "url"],
+                ),
+                endpoint_region=dict(
+                    required=False,
+                    type="str",
+                    fallback=(env_fallback, ["CDP_REGION"]),
+                    # default="us-west-1", # NOTE: Handled by load_cdp_region()
+                    aliases=["cdp_endpoint_region", "cdp_region", "region"],
+                    choices=["default", "us-west-1", "eu-1", "ap-1"],
+                ),
+                endpoint_tls=dict(
+                    required=False,
+                    type="bool",
+                    default=True,
+                    aliases=["verify_endpoint_tls", "verify_tls", "verify_api_tls"],
+                ),
+                debug=dict(
+                    required=False,
+                    type="bool",
+                    default=False,
+                    aliases=["debug_endpoints"],
+                ),
                 http_agent=dict(
                     required=False,
                     type="str",
                     default="cloudera.cloud",
+                    aliases=["agent_header"],
                 ),
             ),
             required_together=required_together + [["access_key", "private_key"]],
             bypass_checks=bypass_checks,
             no_log=no_log,
             mutually_exclusive=mutually_exclusive
-            + [["access_key", "credentials_path"]],
+            + [
+                ["access_key", "credentials_path"],
+                ["endpoint", "endpoint_region"],
+            ],
             required_one_of=required_one_of,
             add_file_common_args=add_file_common_args,
             supports_check_mode=supports_check_mode,
@@ -162,10 +189,11 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
         # Load CDP credentials - check if provided via parameters first
         access_key = self.get_param("access_key")
         private_key = self.get_param("private_key")
+        region = self.get_param("endpoint_region")
 
-        # If either credential is missing, load from credentials file
-        if access_key is None or private_key is None:
-            file_access_key, file_private_key = load_cdp_config(
+        # If any credential is missing, load from credentials file
+        if access_key is None or private_key is None or region is None:
+            file_access_key, file_private_key, file_region = load_cdp_config(
                 credentials_path=self.get_param("credentials_path"),
                 profile=self.get_param("profile"),
             )
@@ -174,9 +202,22 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
                 access_key = file_access_key
             if private_key is None:
                 private_key = file_private_key
+            if region is None:
+                region = file_region
 
         self.access_key: str = access_key
         self.private_key: str = private_key
+
+        # Handle legacy parameter value
+        if region == "default":
+            self.endpoint_region = "us-west-1"
+        else:
+            self.endpoint_region: str = region
+
+        # NOTE: If endpoint is not provided, construct the endpoint parameter from the region
+        # NOTE: IAM endpoints for us-west-1 need to be explicitly set to iamapi.us-west-1.altus.cloudera.com
+        if self.endpoint is None:
+            self.endpoint = f"https://api.{self.endpoint_region}.cdp.cloudera.com"
 
         # Initialize mixins parameters
         for base in self.__class__.__mro__:

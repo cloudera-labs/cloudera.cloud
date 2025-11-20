@@ -50,20 +50,63 @@ options:
   endpoint:
     description:
       - The Cloudera on cloud API endpoint to use.
+      - Mutually exclusive with O(endpoint_region).
     type: str
-    required: True
+    required: False
     aliases:
+      - endpoint_url
       - url
+  endpoint_region:
+    description:
+      - Specify the Cloudera on cloud API endpoint region.
+      - See L(Cloudera Control Plane regions,https://docs.cloudera.com/cdp-public-cloud/cloud/cp-regions/topics/cdp-control-plane-regions.html) for more information.
+      - If not provided, the API will attempt to use the value from the environment variable E(CDP_REGION).
+      - V(default) is an alias for the V(us-west-1) region.
+      - Mutually exclusive with O(endpoint).
+    type: str
+    required: False
+    default: "us-west-1"
+    choices:
+      - default
+      - us-west-1
+      - eu-1
+      - ap-1
+    aliases:
+      - cdp_endpoint_region
+      - cdp_region
+      - region
+  endpoint_tls:
+    description:
+      - Verify the TLS certificates for the Cloudera on cloud API endpoint.
+    type: bool
+    required: False
+    default: True
+    aliases:
+      - verify_endpoint_tls
+      - verify_tls
+      - verify_api_tls
   debug:
     description:
       - If C(true), the module will capture the Cloudera on cloud HTTP log and return it in the RV(sdk_out) and RV(sdk_out_lines) fields.
     type: bool
     required: False
     default: False
+    aliases:
+      - debug_endpoints
   http_agent:
     description:
       - The HTTP user agent to use for Cloudera on cloud API requests.
     type: str
     required: False
     default: "cloudera.cloud"
+    aliases:
+      - agent_header
+  strict:
+    description:
+      - Legacy CDPy SDK error handling.
+    type: bool
+    required: False
+    default: False
+    aliases:
+      - strict_errors
 """

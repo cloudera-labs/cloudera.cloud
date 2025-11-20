@@ -38,13 +38,37 @@ cdp_private_key = file-private-key
     mock_open_object = mocker.mock_open(read_data=config_content)
     mocker.patch("builtins.open", mock_open_object)
 
-    result_access, result_private = load_cdp_config(
+    result_access, result_private, result_region = load_cdp_config(
         credentials_path="/mock/path",
         profile="default",
     )
 
     assert result_access == "file-access-key"
     assert result_private == "file-private-key"
+    assert result_region == "us-west-1"
+
+
+def test_load_cdp_config_reads_from_file_successfully_region(mocker):
+    """Test successful reading of credentials from configuration file with cdp_region."""
+
+    config_content = """[default]
+cdp_access_key_id = file-access-key
+cdp_private_key = file-private-key
+cdp_region = file-region
+"""
+
+    mocker.patch("os.path.exists", return_value=True)
+    mock_open_object = mocker.mock_open(read_data=config_content)
+    mocker.patch("builtins.open", mock_open_object)
+
+    result_access, result_private, result_region = load_cdp_config(
+        credentials_path="/mock/path",
+        profile="default",
+    )
+
+    assert result_access == "file-access-key"
+    assert result_private == "file-private-key"
+    assert result_region == "file-region"
 
 
 def test_load_cdp_config_missing_credentials_file(mocker):
@@ -124,19 +148,21 @@ cdp_private_key = default-private
 [production]
 cdp_access_key_id = prod-access-key
 cdp_private_key = prod-private-key
+cdp_region = prod-region
 """
 
     mocker.patch("os.path.exists", return_value=True)
     mock_open_object = mocker.mock_open(read_data=config_content)
     mocker.patch("builtins.open", mock_open_object)
 
-    result_access, result_private = load_cdp_config(
+    result_access, result_private, result_region = load_cdp_config(
         credentials_path="/mock/path",
         profile="production",
     )
 
     assert result_access == "prod-access-key"
     assert result_private == "prod-private-key"
+    assert result_region == "prod-region"
 
 
 def test_load_cdp_config_expands_user_path(mocker):
@@ -160,7 +186,7 @@ cdp_private_key = test-private-key
     mock_open_object = mocker.mock_open(read_data=config_content)
     mocker.patch("builtins.open", mock_open_object)
 
-    result_access, result_private = load_cdp_config(
+    result_access, result_private, result_region = load_cdp_config(
         credentials_path="~/.cdp/credentials",
         profile="default",
     )
@@ -172,6 +198,7 @@ cdp_private_key = test-private-key
     # Verify credentials were loaded
     assert result_access == "test-access-key"
     assert result_private == "test-private-key"
+    assert result_region == "us-west-1"
 
 
 def test_load_cdp_config_path_expansion_error_message(mocker):
