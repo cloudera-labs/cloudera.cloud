@@ -314,7 +314,7 @@ class RestClient:
 
                 if not isinstance(response, dict):
                     return response
-                
+
                 # Determine which pagination token is used
                 next_token_key = None
                 if "nextPageToken" in response:
