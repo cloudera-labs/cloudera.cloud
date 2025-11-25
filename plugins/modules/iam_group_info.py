@@ -49,12 +49,14 @@ EXAMPLES = r"""
  - name: Gather information about a named Group
    cloudera.cloud.iam_group_info:
      name: example-01
+
  - name: Gather information about several named Groups
    cloudera.cloud.iam_group_info:
      name:
        - example-01
        - example-02
        - example-03
+
 - cloudera.cloud.iam_group_info:
     name:
       - example-01
@@ -71,6 +73,7 @@ groups:
   returned: always
   elements: dict
   contains:
+    creationDate:
     # creation_date:
       description: The date when this group record was created.
       returned: on success
@@ -80,35 +83,13 @@ groups:
       description: The CRN of the group.
       returned: on success
       type: str
+    groupName:
     # group_name:
       description: The group name.
       returned: on success
       type: str
       sample: example-01
-    users:
-      description: List of User CRNs which are members of the group.
-      returned: on success
-      type: list
-      elements: str
-    roles:
-      description: List of Role CRNs assigned to the group.
-      returned: on success
-      type: list
-      elements: str
-    resource_roles:
-      description: List of Resource-to-Role assignments, by CRN, that are associated with the group.
-      returned: on success
-      type: list
-      elements: dict
-      contains:
-        # resource_crn:
-          description: The CRN of the resource granted the rights of the role.
-          returned: on success
-          type: str
-        # resource_role_crn:
-          description: The CRN of the CDP Role.
-          returned: on success
-          type: str
+    syncMembershipOnUserLogin:
     # sync_membership_on_user_login:
       description: Flag indicating whether group membership is synced when a user logs in. The default is to sync group membership.
       returned: when supported
@@ -126,7 +107,7 @@ sdk_out_lines:
 
 from typing import Any
 
-from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
+# from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
