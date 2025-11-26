@@ -258,6 +258,7 @@ class RestClient:
         path: str,
         data: Optional[Dict[str, Any]] = None,
         json_data: Optional[Dict[str, Any]] = None,
+        squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
         """Execute HTTP POST request."""
         pass
@@ -268,12 +269,17 @@ class RestClient:
         path: str,
         data: Optional[Dict[str, Any]] = None,
         json_data: Optional[Dict[str, Any]] = None,
+        squelch: Optional[Dict[int, Any]] = {},
     ) -> Dict[str, Any]:
         """Execute HTTP PUT request."""
         pass
 
     @abc.abstractmethod
-    def _delete(self, path: str) -> Dict[str, Any]:
+    def _delete(
+        self,
+        path: str,
+        squelch: Dict[int, Any] = {},
+    ) -> Dict[str, Any]:
         """Execute HTTP DELETE request."""
         pass
 
@@ -408,19 +414,21 @@ class CdpClient:
         path: str,
         data: Optional[Dict[str, Any]] = None,
         json_data: Optional[Dict[str, Any]] = None,
+        squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
-        return self.api_client._post(path, data, json_data)
+        return self.api_client._post(path, data, json_data, squelch=squelch)
 
     def put(
         self,
         path: str,
         data: Optional[Dict[str, Any]] = None,
         json_data: Optional[Dict[str, Any]] = None,
+        squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
-        return self.api_client._put(path, data, json_data)
+        return self.api_client._put(path, data, json_data, squelch=squelch)
 
-    def delete(self, path: str) -> Dict[str, Any]:
-        return self.api_client._delete(path)
+    def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
+        return self.api_client._delete(path, squelch=squelch)
 
 
 class AnsibleCdpClient(RestClient):
@@ -477,6 +485,7 @@ class AnsibleCdpClient(RestClient):
         data: Optional[Union[Dict[str, Any], List[Any]]] = None,
         json_data: Optional[Union[Dict[str, Any], List[Any]]] = None,
         max_retries: int = 3,
+        squelch: Optional[Dict[int, Any]] = None,
     ) -> Any:
         """
         Make HTTP request with retry logic using Ansible's fetch_url.
@@ -488,6 +497,7 @@ class AnsibleCdpClient(RestClient):
             data: Form data
             json_data: JSON data
             max_retries: Maximum number of retry attempts
+            squelch: Dictionary of HTTP status codes to squelch with default return values
 
         Returns:
             Response data as dictionary or None for 204 responses
@@ -555,6 +565,12 @@ class AnsibleCdpClient(RestClient):
 
                     if status_code == 403:
                         raise CdpError(f"Forbidden access to {path}", status=403)
+
+                    if status_code in squelch:
+                        self.module.warn(
+                            f"Squelched error {status_code} for {url}",
+                        )
+                        return squelch[status_code]
 
                     # Handle success responses
                     if 200 <= status_code < 300:
@@ -640,19 +656,25 @@ class AnsibleCdpClient(RestClient):
         path: str,
         data: Optional[Dict[str, Any]] = None,
         json_data: Optional[Dict[str, Any]] = None,
+        squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
         """Execute HTTP POST request."""
-        return self._make_request("POST", path, data=data, json_data=json_data)
+        return self._make_request(
+            "POST", path, data=data, json_data=json_data, squelch=squelch
+        )
 
     def _put(
         self,
         path: str,
         data: Optional[Dict[str, Any]] = None,
         json_data: Optional[Dict[str, Any]] = None,
+        squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
         """Execute HTTP PUT request."""
-        return self._make_request("PUT", path, data=data, json_data=json_data)
+        return self._make_request(
+            "PUT", path, data=data, json_data=json_data, squelch=squelch
+        )
 
-    def _delete(self, path: str) -> Dict[str, Any]:
+    def _delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
         """Execute HTTP DELETE request."""
-        return self._make_request("DELETE", path)
+        return self._make_request("DELETE", path, squelch=squelch)
