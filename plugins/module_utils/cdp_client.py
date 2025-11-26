@@ -269,7 +269,7 @@ class RestClient:
         path: str,
         data: Optional[Dict[str, Any]] = None,
         json_data: Optional[Dict[str, Any]] = None,
-        squelch: Optional[Dict[int, Any]] = {},
+        squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
         """Execute HTTP PUT request."""
         pass
@@ -485,7 +485,7 @@ class AnsibleCdpClient(RestClient):
         data: Optional[Union[Dict[str, Any], List[Any]]] = None,
         json_data: Optional[Union[Dict[str, Any], List[Any]]] = None,
         max_retries: int = 3,
-        squelch: Optional[Dict[int, Any]] = None,
+        squelch: Dict[int, Any] = None,
     ) -> Any:
         """
         Make HTTP request with retry logic using Ansible's fetch_url.
