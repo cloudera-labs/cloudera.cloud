@@ -244,13 +244,14 @@ class TestCdpIamClient:
                 "crn": "crn:cdp:iam:us-west-1:altus:group:new-team",
                 "creationDate": "2024-02-01T09:00:00.000Z",
                 "syncMembershipOnUserLogin": True,
-            }
+            },
         }
 
         mock_api_client._post.return_value = mock_response
 
         response = iam_client.create_group(
-            group_name="new-team", sync_membership_on_user_login=True
+            group_name="new-team",
+            sync_membership_on_user_login=True,
         )
 
         assert "group" in response
@@ -296,7 +297,8 @@ class TestCdpIamClient:
         mock_api_client._post.return_value = mock_response
 
         response = iam_client.update_group(
-            group_name="existing-team", sync_membership_on_user_login=False
+            group_name="existing-team",
+            sync_membership_on_user_login=False,
         )
 
         assert isinstance(response, dict)
@@ -313,7 +315,11 @@ class TestCdpIamClient:
         )
 
     def test_list_group_members(
-        self, mock_api_client, iam_client, sample_users, sample_machine_users
+        self,
+        mock_api_client,
+        iam_client,
+        sample_users,
+        sample_machine_users,
     ):
         """Test listing group members."""
 
@@ -393,7 +399,10 @@ class TestCdpIamClient:
         )
 
     def test_add_machine_user_to_group(
-        self, mock_api_client, iam_client, sample_machine_users
+        self,
+        mock_api_client,
+        iam_client,
+        sample_machine_users,
     ):
         """Test adding a machine user to a group."""
 
@@ -421,7 +430,10 @@ class TestCdpIamClient:
         )
 
     def test_remove_machine_user_from_group(
-        self, mock_api_client, iam_client, sample_machine_users
+        self,
+        mock_api_client,
+        iam_client,
+        sample_machine_users,
     ):
         """Test removing a machine user from a group."""
 
@@ -520,7 +532,7 @@ class TestCdpIamClient:
         mock_api_client._post.return_value = mock_response
 
         response = iam_client.list_group_assigned_resource_roles(
-            group_name="data-engineers"
+            group_name="data-engineers",
         )
 
         assert "resourceAssignments" in response
@@ -538,7 +550,10 @@ class TestCdpIamClient:
         )
 
     def test_assign_group_resource_role(
-        self, mock_api_client, iam_client, sample_resource_roles
+        self,
+        mock_api_client,
+        iam_client,
+        sample_resource_roles,
     ):
         """Test assigning a resource role to a group."""
 
@@ -568,7 +583,10 @@ class TestCdpIamClient:
         )
 
     def test_unassign_group_resource_role(
-        self, mock_api_client, iam_client, sample_resource_roles
+        self,
+        mock_api_client,
+        iam_client,
+        sample_resource_roles,
     ):
         """Test unassigning a resource role from a group."""
 
@@ -602,7 +620,10 @@ class TestCdpIamClient:
     # ============================================================================
 
     def test_manage_group_users_add_only(
-        self, mock_api_client, iam_client, sample_users
+        self,
+        mock_api_client,
+        iam_client,
+        sample_users,
     ):
         """Test adding users to a group without removing any."""
         mock_api_client._post.return_value = {}
@@ -637,7 +658,10 @@ class TestCdpIamClient:
         assert changed is True
 
     def test_manage_group_users_no_changes(
-        self, mock_api_client, iam_client, sample_users
+        self,
+        mock_api_client,
+        iam_client,
+        sample_users,
     ):
         """Test when no user changes are needed."""
         current_members = sample_users
@@ -654,7 +678,10 @@ class TestCdpIamClient:
         mock_api_client._post.assert_not_called()
 
     def test_manage_group_users_machine_user(
-        self, mock_api_client, iam_client, sample_machine_users
+        self,
+        mock_api_client,
+        iam_client,
+        sample_machine_users,
     ):
         """Test adding machine users to a group."""
         mock_api_client._post.return_value = {}
@@ -686,7 +713,8 @@ class TestCdpIamClientIntegration:
         try:
             # 1. Create a new group
             create_response = client.create_group(
-                group_name=test_group_name, sync_membership_on_user_login=True
+                group_name=test_group_name,
+                sync_membership_on_user_login=True,
             )
 
             assert "group" in create_response
@@ -701,7 +729,8 @@ class TestCdpIamClientIntegration:
 
             # 3. Update the group (change sync setting)
             update_response = client.update_group(
-                group_name=test_group_name, sync_membership_on_user_login=False
+                group_name=test_group_name,
+                sync_membership_on_user_login=False,
             )
             assert isinstance(update_response, dict)
 
@@ -731,7 +760,8 @@ class TestCdpIamClientIntegration:
         try:
             # 1. Create a test group
             client.create_group(
-                group_name=test_group_name, sync_membership_on_user_login=True
+                group_name=test_group_name,
+                sync_membership_on_user_login=True,
             )
 
             # 2. Get current user to add to group
@@ -741,7 +771,8 @@ class TestCdpIamClientIntegration:
             if user_crn:
                 # 3. Add user to group
                 add_response = client.add_user_to_group(
-                    group_name=test_group_name, user_id=user_crn
+                    group_name=test_group_name,
+                    user_id=user_crn,
                 )
                 assert isinstance(add_response, dict)
 
@@ -752,7 +783,8 @@ class TestCdpIamClientIntegration:
 
                 # 5. Remove user from group
                 remove_response = client.remove_user_from_group(
-                    group_name=test_group_name, user_id=user_crn
+                    group_name=test_group_name,
+                    user_id=user_crn,
                 )
                 assert isinstance(remove_response, dict)
 
@@ -777,7 +809,8 @@ class TestCdpIamClientIntegration:
         try:
             # 1. Create a test group
             client.create_group(
-                group_name=test_group_name, sync_membership_on_user_login=True
+                group_name=test_group_name,
+                sync_membership_on_user_login=True,
             )
 
             # 2. Get available roles
@@ -788,26 +821,28 @@ class TestCdpIamClientIntegration:
 
                 # 3. Assign role to group
                 assign_response = client.assign_group_role(
-                    group_name=test_group_name, role=test_role_crn
+                    group_name=test_group_name,
+                    role=test_role_crn,
                 )
                 assert isinstance(assign_response, dict)
 
                 # 4. Verify role was assigned
                 assigned_roles = client.list_group_assigned_roles(
-                    group_name=test_group_name
+                    group_name=test_group_name,
                 )
                 assert "roleCrns" in assigned_roles
                 assert test_role_crn in assigned_roles["roleCrns"]
 
                 # 5. Unassign role from group
                 unassign_response = client.unassign_group_role(
-                    group_name=test_group_name, role=test_role_crn
+                    group_name=test_group_name,
+                    role=test_role_crn,
                 )
                 assert isinstance(unassign_response, dict)
 
                 # 6. Verify role was unassigned
                 roles_after = client.list_group_assigned_roles(
-                    group_name=test_group_name
+                    group_name=test_group_name,
                 )
                 assert test_role_crn not in roles_after.get("roleCrns", [])
 
@@ -828,7 +863,8 @@ class TestCdpIamClientIntegration:
         try:
             # 1. Create a test group
             client.create_group(
-                group_name=test_group_name, sync_membership_on_user_login=True
+                group_name=test_group_name,
+                sync_membership_on_user_login=True,
             )
 
             # 2. Get list of machine users
@@ -845,7 +881,8 @@ class TestCdpIamClientIntegration:
 
                 # 3. Add machine user to group
                 add_response = client.add_machine_user_to_group(
-                    group_name=test_group_name, machine_user_name=machine_user_name
+                    group_name=test_group_name,
+                    machine_user_name=machine_user_name,
                 )
                 assert isinstance(add_response, dict)
 
@@ -855,7 +892,8 @@ class TestCdpIamClientIntegration:
 
                 # 5. Remove machine user from group
                 remove_response = client.remove_machine_user_from_group(
-                    group_name=test_group_name, machine_user_name=machine_user_name
+                    group_name=test_group_name,
+                    machine_user_name=machine_user_name,
                 )
                 assert isinstance(remove_response, dict)
 
