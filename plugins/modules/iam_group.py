@@ -246,10 +246,14 @@ class IAMGroup(ServicesModule):
                     elements="dict",
                     options=dict(
                         resource=dict(
-                            required=True, type="str", aliases=["resource_crn"]
+                            required=True,
+                            type="str",
+                            aliases=["resource_crn"],
                         ),
                         role=dict(
-                            required=True, type="str", aliases=["resource_role_crn"]
+                            required=True,
+                            type="str",
+                            aliases=["resource_role_crn"],
                         ),
                     ),
                 ),
@@ -289,7 +293,8 @@ class IAMGroup(ServicesModule):
                 self.group = {"groupName": self.name}
             else:
                 response = self.client.create_group(
-                    group_name=self.name, sync_membership_on_user_login=self.sync
+                    group_name=self.name,
+                    sync_membership_on_user_login=self.sync,
                 )
                 self.group = response.get("group", {})
             self.changed = True
@@ -299,7 +304,8 @@ class IAMGroup(ServicesModule):
 
             if self.sync != current_group.get("syncMembershipOnUserLogin"):
                 self.client.update_group(
-                    group_name=self.name, sync_membership_on_user_login=self.sync
+                    group_name=self.name,
+                    sync_membership_on_user_login=self.sync,
                 )
                 self.changed = True
 

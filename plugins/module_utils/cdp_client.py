@@ -660,7 +660,11 @@ class AnsibleCdpClient(RestClient):
     ) -> Dict[str, Any]:
         """Execute HTTP POST request."""
         return self._make_request(
-            "POST", path, data=data, json_data=json_data, squelch=squelch
+            "POST",
+            path,
+            data=data,
+            json_data=json_data,
+            squelch=squelch,
         )
 
     def _put(
@@ -672,7 +676,11 @@ class AnsibleCdpClient(RestClient):
     ) -> Dict[str, Any]:
         """Execute HTTP PUT request."""
         return self._make_request(
-            "PUT", path, data=data, json_data=json_data, squelch=squelch
+            "PUT",
+            path,
+            data=data,
+            json_data=json_data,
+            squelch=squelch,
         )
 
     def _delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:

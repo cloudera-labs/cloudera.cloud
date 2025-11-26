@@ -75,7 +75,7 @@ class CdpIamClient(CdpClient):
 
         # Get assigned resource roles
         resource_roles_response = self.list_group_assigned_resource_roles(
-            group_name=group_name
+            group_name=group_name,
         )
         resource_assignments = resource_roles_response.get("resourceAssignments", [])
 
@@ -119,7 +119,8 @@ class CdpIamClient(CdpClient):
             for user_crn in users_to_remove:
                 if self._is_machine_user(user_crn):
                     self.remove_machine_user_from_group(
-                        machine_user_name=user_crn, group_name=group_name
+                        machine_user_name=user_crn,
+                        group_name=group_name,
                     )
                 else:
                     self.remove_user_from_group(user_id=user_crn, group_name=group_name)
@@ -130,7 +131,8 @@ class CdpIamClient(CdpClient):
         for user_crn in users_to_add:
             if self._is_machine_user(user_crn):
                 self.add_machine_user_to_group(
-                    machine_user_name=user_crn, group_name=group_name
+                    machine_user_name=user_crn,
+                    group_name=group_name,
                 )
             else:
                 self.add_user_to_group(user_id=user_crn, group_name=group_name)
@@ -837,7 +839,9 @@ class CdpIamClient(CdpClient):
         )
 
     def add_machine_user_to_group(
-        self, group_name: str, machine_user_name: str
+        self,
+        group_name: str,
+        machine_user_name: str,
     ) -> Dict[str, Any]:
         """
         Add a machine user to a group.
@@ -881,7 +885,9 @@ class CdpIamClient(CdpClient):
         )
 
     def remove_machine_user_from_group(
-        self, group_name: str, machine_user_name: str
+        self,
+        group_name: str,
+        machine_user_name: str,
     ) -> Dict[str, Any]:
         """
         Remove a machine user from a group.
@@ -927,7 +933,10 @@ class CdpIamClient(CdpClient):
         )
 
     def assign_group_resource_role(
-        self, group_name: str, resource_crn: str, resource_role_crn: str
+        self,
+        group_name: str,
+        resource_crn: str,
+        resource_role_crn: str,
     ) -> Dict[str, Any]:
         """
         Assign a resource role to a group.
@@ -973,7 +982,10 @@ class CdpIamClient(CdpClient):
         )
 
     def unassign_group_resource_role(
-        self, group_name: str, resource_crn: str, resource_role_crn: str
+        self,
+        group_name: str,
+        resource_crn: str,
+        resource_role_crn: str,
     ) -> Dict[str, Any]:
         """
         Unassign a resource role from a group.
