@@ -142,7 +142,7 @@ def mock_load_cdp_config(mocker):
 @pytest.fixture()
 def unset_cdp_env_vars(monkeypatch):
     """Fixture to unset any prior CDP-related environment variables."""
-    monkeypatch.delenv("CDP_ACCESS_KEY", raising=False)
+    monkeypatch.delenv("CDP_ACCESS_KEY_ID", raising=False)
     monkeypatch.delenv("CDP_PRIVATE_KEY", raising=False)
     monkeypatch.delenv("CDP_CREDENTIALS_PATH", raising=False)
     monkeypatch.delenv("CDP_PROFILE", raising=False)
