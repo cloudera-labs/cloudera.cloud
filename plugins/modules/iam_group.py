@@ -281,67 +281,70 @@ class IAMGroup(ServicesModule):
     def process(self):
         current_group = self.client.get_group_details(group_name=self.name)
 
+        # Delete
         if self.state == "absent":
             if current_group:
                 if not self.module.check_mode:
                     self.client.delete_group(group_name=self.name)
                 self.changed = True
-            return self.group
+        
+        if self.state == "present":
+            # Create
+            if not current_group:
+              if self.module.check_mode:
+                  self.group = {"groupName": self.name}
+              else:
+                  response = self.client.create_group(
+                      group_name=self.name,
+                      sync_membership_on_user_login=self.sync,
+                  )
+                  self.group = response.get("group", {})
+              self.changed = True
+              current_group = self.client.get_group_details(group_name=self.name)
 
-        if self.state == "present" and not current_group:
-            if self.module.check_mode:
-                self.group = {"groupName": self.name}
+            # Reconcile
+            if not self.module.check_mode and current_group:
+
+                if self.sync != current_group.get("syncMembershipOnUserLogin"):
+                    self.client.update_group(
+                        group_name=self.name,
+                        sync_membership_on_user_login=self.sync,
+                    )
+                    self.changed = True
+
+                if self.users is not None or self.purge:
+                    if self.client.manage_group_users(
+                        group_name=self.name,
+                        current_members=current_group.get("members", []),
+                        desired_users=self.users if self.users is not None else [],
+                        purge=self.purge,
+                    ):
+                        self.changed = True
+
+                if self.roles is not None or self.purge:
+                    if self.client.manage_group_roles(
+                        group_name=self.name,
+                        current_roles=current_group.get("roles", []),
+                        desired_roles=self.roles if self.roles is not None else [],
+                        purge=self.purge,
+                    ):
+                        self.changed = True
+
+                if self.resource_roles is not None or self.purge:
+                    if self.client.manage_group_resource_roles(
+                        group_name=self.name,
+                        current_assignments=current_group.get("resourceAssignments", []),
+                        desired_assignments=(
+                            self.resource_roles if self.resource_roles is not None else []
+                        ),
+                        purge=self.purge,
+                    ):
+                        self.changed = True
+
+            if self.changed and not self.module.check_mode:
+                self.group = self.client.get_group_details(group_name=self.name)
             else:
-                response = self.client.create_group(
-                    group_name=self.name,
-                    sync_membership_on_user_login=self.sync,
-                )
-                self.group = response.get("group", {})
-            self.changed = True
-            current_group = self.client.get_group_details(group_name=self.name)
-
-        if not self.module.check_mode and current_group:
-
-            if self.sync != current_group.get("syncMembershipOnUserLogin"):
-                self.client.update_group(
-                    group_name=self.name,
-                    sync_membership_on_user_login=self.sync,
-                )
-                self.changed = True
-
-            if self.users is not None or self.purge:
-                if self.client.manage_group_users(
-                    group_name=self.name,
-                    current_members=current_group.get("members", []),
-                    desired_users=self.users if self.users is not None else [],
-                    purge=self.purge,
-                ):
-                    self.changed = True
-
-            if self.roles is not None or self.purge:
-                if self.client.manage_group_roles(
-                    group_name=self.name,
-                    current_roles=current_group.get("roles", []),
-                    desired_roles=self.roles if self.roles is not None else [],
-                    purge=self.purge,
-                ):
-                    self.changed = True
-
-            if self.resource_roles is not None or self.purge:
-                if self.client.manage_group_resource_roles(
-                    group_name=self.name,
-                    current_assignments=current_group.get("resourceAssignments", []),
-                    desired_assignments=(
-                        self.resource_roles if self.resource_roles is not None else []
-                    ),
-                    purge=self.purge,
-                ):
-                    self.changed = True
-
-        if self.changed and not self.module.check_mode:
-            self.group = self.client.get_group_details(group_name=self.name)
-        else:
-            self.group = current_group
+                self.group = current_group
 
 
 def main():
