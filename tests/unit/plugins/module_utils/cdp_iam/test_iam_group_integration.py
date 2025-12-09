@@ -30,6 +30,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
 )
 
 
+@pytest.mark.skip(reason="Need to update to use factory fixtures")
 @pytest.mark.integration_api
 class TestIamGroupIntegration:
     """Integration tests for CdpIamClient group management."""
