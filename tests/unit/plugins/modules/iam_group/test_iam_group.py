@@ -55,7 +55,7 @@ def test_iam_group_default(module_args):
         iam_group.main()
 
 
-def test_iam_group_name(module_args, mocker):
+def test_iam_group_absent(module_args, mocker):
     """Test iam_group module with missing parameters."""
 
     module_args(
