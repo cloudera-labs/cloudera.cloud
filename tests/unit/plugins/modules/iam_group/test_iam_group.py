@@ -32,6 +32,10 @@ from ansible_collections.cloudera.cloud.plugins.modules import iam_group
 BASE_URL = "https://cloudera.internal/api"
 ACCESS_KEY = "test-access-key"
 PRIVATE_KEY = "test-private-key"
+FILE_ACCESS_KEY = "file-access-key"
+FILE_PRIVATE_KEY = "file-private-key"
+FILE_REGION = "default"
+
 GROUP_NAME = "test-group"
 
 
@@ -64,7 +68,13 @@ def test_iam_group_name(module_args, mocker):
         },
     )
 
-    # Patch AnsibleCdpClient to avoid real API calls
+    # Patch load_cdp_config to avoid reading real config files
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpIamClient to avoid real API calls
     client = mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.modules.iam_group.CdpIamClient",
         autospec=True,
