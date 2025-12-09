@@ -33,28 +33,28 @@ ACCESS_KEY = "test-access-key"
 PRIVATE_KEY = "test-private-key"
 
 SAMPLE_USERS = [
-        "crn:cdp:iam:us-west-1:altus:user:alice@example.com",
-        "crn:cdp:iam:us-west-1:altus:user:bob@example.com",
-    ]
+    "crn:cdp:iam:us-west-1:altus:user:alice@example.com",
+    "crn:cdp:iam:us-west-1:altus:user:bob@example.com",
+]
 SAMPLE_MACHINE_USERS = [
-        "crn:cdp:iam:us-west-1:altus:machineUser:service-account-1",
-        "crn:cdp:iam:us-west-1:altus:machineUser:service-account-2",
-    ]
+    "crn:cdp:iam:us-west-1:altus:machineUser:service-account-1",
+    "crn:cdp:iam:us-west-1:altus:machineUser:service-account-2",
+]
 SAMPLE_ROLES = [
-        "crn:cdp:iam:us-west-1:altus:role:PowerUser",
-        "crn:cdp:iam:us-west-1:altus:role:EnvironmentCreator",
-        "crn:cdp:iam:us-west-1:altus:role:DFCatalogAdmin",
-    ]
+    "crn:cdp:iam:us-west-1:altus:role:PowerUser",
+    "crn:cdp:iam:us-west-1:altus:role:EnvironmentCreator",
+    "crn:cdp:iam:us-west-1:altus:role:DFCatalogAdmin",
+]
 SAMPLE_RESOURCE_ROLES = [
-        {
-            "resource": "crn:cdp:environments:us-west-1:altus:environment:dev-env",
-            "role": "crn:cdp:iam:us-west-1:altus:resourceRole:EnvironmentUser",
-        },
-        {
-            "resource": "crn:cdp:datalake:us-west-1:altus:datalake:prod-dl",
-            "role": "crn:cdp:iam:us-west-1:altus:resourceRole:DataLakeAdmin",
-        },
-    ]
+    {
+        "resource": "crn:cdp:environments:us-west-1:altus:environment:dev-env",
+        "role": "crn:cdp:iam:us-west-1:altus:resourceRole:EnvironmentUser",
+    },
+    {
+        "resource": "crn:cdp:datalake:us-west-1:altus:datalake:prod-dl",
+        "role": "crn:cdp:iam:us-west-1:altus:resourceRole:DataLakeAdmin",
+    },
+]
 
 
 class TestCdpIamClient:

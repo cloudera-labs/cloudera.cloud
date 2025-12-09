@@ -81,7 +81,7 @@ def test_iam_group_absent(module_args, mocker):
     ).return_value
     client.get_group_details.return_value = GROUP_NAME
 
-    # Expect the module to fail due to missing required parameter
+    # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
         iam_group.main()
 

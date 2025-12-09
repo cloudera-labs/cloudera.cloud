@@ -287,20 +287,20 @@ class IAMGroup(ServicesModule):
                 if not self.module.check_mode:
                     self.client.delete_group(group_name=self.name)
                 self.changed = True
-        
+
         if self.state == "present":
             # Create
             if not current_group:
-              if self.module.check_mode:
-                  self.group = {"groupName": self.name}
-              else:
-                  response = self.client.create_group(
-                      group_name=self.name,
-                      sync_membership_on_user_login=self.sync,
-                  )
-                  self.group = response.get("group", {})
-              self.changed = True
-              current_group = self.client.get_group_details(group_name=self.name)
+                if self.module.check_mode:
+                    self.group = {"groupName": self.name}
+                else:
+                    response = self.client.create_group(
+                        group_name=self.name,
+                        sync_membership_on_user_login=self.sync,
+                    )
+                    self.group = response.get("group", {})
+                self.changed = True
+                current_group = self.client.get_group_details(group_name=self.name)
 
             # Reconcile
             if not self.module.check_mode and current_group:
@@ -333,9 +333,14 @@ class IAMGroup(ServicesModule):
                 if self.resource_roles is not None or self.purge:
                     if self.client.manage_group_resource_roles(
                         group_name=self.name,
-                        current_assignments=current_group.get("resourceAssignments", []),
+                        current_assignments=current_group.get(
+                            "resourceAssignments",
+                            [],
+                        ),
                         desired_assignments=(
-                            self.resource_roles if self.resource_roles is not None else []
+                            self.resource_roles
+                            if self.resource_roles is not None
+                            else []
                         ),
                         purge=self.purge,
                     ):
