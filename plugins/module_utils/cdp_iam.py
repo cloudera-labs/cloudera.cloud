@@ -225,8 +225,12 @@ class CdpIamClient(CdpClient):
             for assignment in assignments_to_remove:
                 self.unassign_group_resource_role(
                     group_name=group_name,
-                    resource_crn=assignment["resource"],
-                    resource_role_crn=assignment["role"],
+                    resource_crn=assignment[
+                        "resource"
+                    ],  # pyright: ignore[reportArgumentType]
+                    resource_role_crn=assignment[
+                        "role"
+                    ],  # pyright: ignore[reportArgumentType]
                 )
                 changed = True
 
@@ -237,8 +241,12 @@ class CdpIamClient(CdpClient):
         for assignment in assignments_to_add:
             self.assign_group_resource_role(
                 group_name=group_name,
-                resource_crn=assignment["resource"],
-                resource_role_crn=assignment["role"],
+                resource_crn=assignment[
+                    "resource"
+                ],  # pyright: ignore[reportArgumentType]
+                resource_role_crn=assignment[
+                    "role"
+                ],  # pyright: ignore[reportArgumentType]
             )
             changed = True
 
