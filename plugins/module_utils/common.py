@@ -266,11 +266,11 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
         return default
 
     @abc.abstractmethod
-    def process(self):
+    def process(self) -> None:
         """Abstract method that Service modules must implement to perform their logic."""
         pass
 
-    def execute(self):
+    def execute(self) -> None:
         """Execute the process method and capture logging output."""
         try:
             # Call the abstract process method

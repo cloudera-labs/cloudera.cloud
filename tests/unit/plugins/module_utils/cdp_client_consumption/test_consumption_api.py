@@ -20,8 +20,6 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.cloudera.cloud.tests.unit import AnsibleExitJson
-
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     RestClient,
 )

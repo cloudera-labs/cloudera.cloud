@@ -485,7 +485,7 @@ class AnsibleCdpClient(RestClient):
         data: Optional[Union[Dict[str, Any], List[Any]]] = None,
         json_data: Optional[Union[Dict[str, Any], List[Any]]] = None,
         max_retries: int = 3,
-        squelch: Dict[int, Any] = None,
+        squelch: Dict[int, Any] = {},
     ) -> Any:
         """
         Make HTTP request with retry logic using Ansible's fetch_url.
