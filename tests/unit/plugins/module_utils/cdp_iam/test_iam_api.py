@@ -18,8 +18,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import pytest
-
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     RestClient,
 )
@@ -144,8 +142,7 @@ class TestCdpIamClient:
             squelch={404: {}},
         )
 
-    # TODO Update remaining tests to use mocker fixture style
-    def test_create_group(self, iam_client):
+    def test_create_group(self, mocker):
         """Test creating a new IAM group."""
 
         # Mock response data
@@ -158,9 +155,14 @@ class TestCdpIamClient:
             },
         }
 
-        iam_client.create_group.return_value = mock_response
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
 
-        response = iam_client.create_group(
+        # Create the CdpIamClient instance
+        client = CdpIamClient(api_client=api_client)
+
+        response = client.create_group(
             group_name="new-team",
             sync_membership_on_user_login=True,
         )
@@ -168,288 +170,257 @@ class TestCdpIamClient:
         assert "group" in response
         assert response["group"]["groupName"] == "new-team"
 
-        # Verify that the method was called with correct parameters
-        iam_client.create_group.assert_called_once_with(
-            group_name="new-team",
-            sync_membership_on_user_login=True,
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/iam/createGroup",
+            None,
+            {
+                "groupName": "new-team",
+                "syncMembershipOnUserLogin": True,
+            },
+            squelch={},
         )
 
-    def test_delete_group(self, iam_client):
+    def test_delete_group(self, mocker):
         """Test deleting an IAM group."""
 
         # Mock response data (delete operations typically return empty)
         mock_response = {}
 
-        iam_client.delete_group.return_value = mock_response
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
 
-        response = iam_client.delete_group(group_name="old-team")
+        # Create the CdpIamClient instance
+        client = CdpIamClient(api_client=api_client)
+
+        response = client.delete_group(group_name="old-team")
 
         assert isinstance(response, dict)
 
-        # Verify that the method was called with correct parameters
-        iam_client.delete_group.assert_called_once_with(group_name="old-team")
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/iam/deleteGroup",
+            None,
+            {
+                "groupName": "old-team",
+            },
+            squelch={},
+        )
 
-    def test_update_group(self, iam_client):
+    def test_update_group(self, mocker):
         """Test updating an IAM group."""
 
         # Mock response data
         mock_response = {}
 
-        iam_client.update_group.return_value = mock_response
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
 
-        response = iam_client.update_group(
+        # Create the CdpIamClient instance
+        client = CdpIamClient(api_client=api_client)
+
+        response = client.update_group(
             group_name="existing-team",
             sync_membership_on_user_login=False,
         )
 
         assert isinstance(response, dict)
 
-        # Verify that the method was called with correct parameters
-        iam_client.update_group.assert_called_once_with(
-            group_name="existing-team",
-            sync_membership_on_user_login=False,
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/iam/updateGroup",
+            None,
+            {
+                "groupName": "existing-team",
+                "syncMembershipOnUserLogin": False,
+            },
+            squelch={},
         )
 
-    def test_list_group_members(
-        self,
-        iam_client,
-        sample_users,
-        sample_machine_users,
-    ):
+    def test_list_group_members(self, mocker):
         """Test listing group members."""
 
         # Mock response data
         mock_response = {
-            "memberCrns": sample_users + [sample_machine_users[0]],
+            "memberCrns": SAMPLE_USERS + [SAMPLE_MACHINE_USERS[0]],
         }
 
-        iam_client.list_group_members.return_value = mock_response
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
 
-        response = iam_client.list_group_members(group_name="data-engineers")
+        # Create the CdpIamClient instance
+        client = CdpIamClient(api_client=api_client)
+
+        response = client.list_group_members(group_name="data-engineers")
 
         assert "memberCrns" in response
         assert len(response["memberCrns"]) == 3
 
-        # Verify that the method was called with correct parameters
-        iam_client.list_group_members.assert_called_once_with(
-            group_name="data-engineers",
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/iam/listGroupMembers",
+            None,
+            {
+                "pageSize": 100,
+                "groupName": "data-engineers",
+            },
+            squelch={},
         )
 
-    def test_add_user_to_group(self, iam_client, sample_users):
+    def test_add_user_to_group(self, mocker):
         """Test adding a user to a group."""
 
         # Mock response data
         mock_response = {}
 
-        iam_client.add_user_to_group.return_value = mock_response
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
 
-        response = iam_client.add_user_to_group(
-            user_id=sample_users[0],
+        # Create the CdpIamClient instance
+        client = CdpIamClient(api_client=api_client)
+
+        response = client.add_user_to_group(
+            user_id=SAMPLE_USERS[0],
             group_name="data-engineers",
         )
 
         assert isinstance(response, dict)
 
-        # Verify that the method was called with correct parameters
-        iam_client.add_user_to_group.assert_called_once_with(
-            user_id=sample_users[0],
-            group_name="data-engineers",
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/iam/addUserToGroup",
+            None,
+            {
+                "userId": SAMPLE_USERS[0],
+                "groupName": "data-engineers",
+            },
+            squelch={},
         )
 
-    def test_remove_user_from_group(self, iam_client, sample_users):
+    def test_remove_user_from_group(self, mocker):
         """Test removing a user from a group."""
 
         # Mock response data
         mock_response = {}
 
-        iam_client.remove_user_from_group.return_value = mock_response
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
 
-        response = iam_client.remove_user_from_group(
-            user_id=sample_users[1],
+        # Create the CdpIamClient instance
+        client = CdpIamClient(api_client=api_client)
+
+        response = client.remove_user_from_group(
+            user_id=SAMPLE_USERS[1],
             group_name="data-engineers",
         )
 
         assert isinstance(response, dict)
 
-        # Verify that the method was called with correct parameters
-        iam_client.remove_user_from_group.assert_called_once_with(
-            user_id=sample_users[1],
-            group_name="data-engineers",
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/iam/removeUserFromGroup",
+            None,
+            {
+                "userId": SAMPLE_USERS[1],
+                "groupName": "data-engineers",
+            },
+            squelch={},
         )
 
-    def test_add_machine_user_to_group(
-        self,
-        iam_client,
-        sample_machine_users,
-    ):
+    def test_add_machine_user_to_group(self, mocker):
         """Test adding a machine user to a group."""
 
         # Mock response data
         mock_response = {}
 
-        iam_client.add_machine_user_to_group.return_value = mock_response
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
 
-        response = iam_client.add_machine_user_to_group(
-            machine_user_name=sample_machine_users[0],
+        # Create the CdpIamClient instance
+        client = CdpIamClient(api_client=api_client)
+
+        response = client.add_machine_user_to_group(
+            machine_user_name=SAMPLE_MACHINE_USERS[0],
             group_name="data-engineers",
         )
 
         assert isinstance(response, dict)
 
-        # Verify that the method was called with correct parameters
-        iam_client.add_machine_user_to_group.assert_called_once_with(
-            machine_user_name=sample_machine_users[0],
-            group_name="data-engineers",
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/iam/addMachineUserToGroup",
+            None,
+            {
+                "machineUserName": SAMPLE_MACHINE_USERS[0],
+                "groupName": "data-engineers",
+            },
+            squelch={},
         )
 
-    def test_remove_machine_user_from_group(
-        self,
-        iam_client,
-        sample_machine_users,
-    ):
+    def test_remove_machine_user_from_group(self, mocker):
         """Test removing a machine user from a group."""
 
         # Mock response data
         mock_response = {}
 
-        iam_client.remove_machine_user_from_group.return_value = mock_response
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
 
-        response = iam_client.remove_machine_user_from_group(
-            machine_user_name=sample_machine_users[0],
+        # Create the CdpIamClient instance
+        client = CdpIamClient(api_client=api_client)
+
+        response = client.remove_machine_user_from_group(
+            machine_user_name=SAMPLE_MACHINE_USERS[0],
             group_name="data-engineers",
         )
 
         assert isinstance(response, dict)
 
-        # Verify that the method was called with correct parameters
-        iam_client.remove_machine_user_from_group.assert_called_once_with(
-            machine_user_name=sample_machine_users[0],
-            group_name="data-engineers",
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/iam/removeMachineUserFromGroup",
+            None,
+            {
+                "machineUserName": SAMPLE_MACHINE_USERS[0],
+                "groupName": "data-engineers",
+            },
+            squelch={},
         )
 
-    def test_assign_group_role(self, iam_client, sample_roles):
+    def test_assign_group_role(self, mocker):
         """Test assigning a role to a group."""
 
         # Mock response data
         mock_response = {}
 
-        iam_client.assign_group_role.return_value = mock_response
+        # Mock the RestClient instance
+        api_client = mocker.create_autospec(RestClient, instance=True)
+        api_client._post.return_value = mock_response
 
-        response = iam_client.assign_group_role(
+        # Create the CdpIamClient instance
+        client = CdpIamClient(api_client=api_client)
+
+        response = client.assign_group_role(
             group_name="data-engineers",
-            role=sample_roles[0],
+            role=SAMPLE_ROLES[0],
         )
 
         assert isinstance(response, dict)
 
-        # Verify that the method was called with correct parameters
-        iam_client.assign_group_role.assert_called_once_with(
-            group_name="data-engineers",
-            role=sample_roles[0],
-        )
-
-    def test_unassign_group_role(self, iam_client, sample_roles):
-        """Test unassigning a role from a group."""
-
-        # Mock response data
-        mock_response = {}
-
-        iam_client.unassign_group_role.return_value = mock_response
-
-        response = iam_client.unassign_group_role(
-            group_name="data-engineers",
-            role=sample_roles[0],
-        )
-
-        assert isinstance(response, dict)
-
-        # Verify that the method was called with correct parameters
-        iam_client.unassign_group_role.assert_called_once_with(
-            group_name="data-engineers",
-            role=sample_roles[0],
-        )
-
-    def test_list_group_assigned_resource_roles(self, iam_client):
-        """Test listing resource roles assigned to a group."""
-
-        # Mock response data
-        mock_response = {
-            "resourceAssignments": [
-                {
-                    "resourceCrn": "crn:cdp:environments:us-west-1:altus:environment:dev-env",
-                    "resourceRoleCrn": "crn:cdp:iam:us-west-1:altus:resourceRole:EnvironmentUser",
-                },
-                {
-                    "resourceCrn": "crn:cdp:datalake:us-west-1:altus:datalake:prod-dl",
-                    "resourceRoleCrn": "crn:cdp:iam:us-west-1:altus:resourceRole:DataLakeAdmin",
-                },
-            ],
-        }
-
-        iam_client.list_group_assigned_resource_roles.return_value = mock_response
-
-        response = iam_client.list_group_assigned_resource_roles(
-            group_name="data-engineers",
-        )
-
-        assert "resourceAssignments" in response
-        assert len(response["resourceAssignments"]) == 2
-
-        # Verify that the method was called with correct parameters
-        iam_client.list_group_assigned_resource_roles.assert_called_once_with(
-            group_name="data-engineers",
-        )
-
-    def test_assign_group_resource_role(
-        self,
-        iam_client,
-        sample_resource_roles,
-    ):
-        """Test assigning a resource role to a group."""
-
-        # Mock response data
-        mock_response = {}
-
-        iam_client.assign_group_resource_role.return_value = mock_response
-
-        response = iam_client.assign_group_resource_role(
-            group_name="data-engineers",
-            resource_crn=sample_resource_roles[0]["resource"],
-            resource_role_crn=sample_resource_roles[0]["role"],
-        )
-
-        assert isinstance(response, dict)
-
-        # Verify that the method was called with correct parameters
-        iam_client.assign_group_resource_role.assert_called_once_with(
-            group_name="data-engineers",
-            resource_crn=sample_resource_roles[0]["resource"],
-            resource_role_crn=sample_resource_roles[0]["role"],
-        )
-
-    def test_unassign_group_resource_role(
-        self,
-        iam_client,
-        sample_resource_roles,
-    ):
-        """Test unassigning a resource role from a group."""
-
-        # Mock response data
-        mock_response = {}
-
-        iam_client.unassign_group_resource_role.return_value = mock_response
-
-        response = iam_client.unassign_group_resource_role(
-            group_name="data-engineers",
-            resource_crn=sample_resource_roles[0]["resource"],
-            resource_role_crn=sample_resource_roles[0]["role"],
-        )
-
-        assert isinstance(response, dict)
-
-        # Verify that the method was called with correct parameters
-        iam_client.unassign_group_resource_role.assert_called_once_with(
-            group_name="data-engineers",
-            resource_crn=sample_resource_roles[0]["resource"],
-            resource_role_crn=sample_resource_roles[0]["role"],
+        # Verify that the post method was called with correct parameters
+        api_client._post.assert_called_once_with(
+            "/api/v1/iam/assignGroupRole",
+            None,
+            {
+                "groupName": "data-engineers",
+                "role": SAMPLE_ROLES[0],
+            },
+            squelch={},
         )
