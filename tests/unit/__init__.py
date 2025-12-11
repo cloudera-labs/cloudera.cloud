@@ -79,14 +79,17 @@ class TestRestClient(CdpClient):
         )
 
     def get(self, path: str, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        # Prepare query parameters
         if params:
             path += "?" + urlencode(params)
 
         url = f"{self.endpoint}/{path.strip('/')}"
 
+        self.set_credential_headers(method="GET", url=url)
+
         response:HTTPResponse = Request().get(
             url=url,
-            headers=self.set_credential_headers(method="GET", url=url),
+            headers=self.headers
         )
 
         if response:
@@ -102,8 +105,6 @@ class TestRestClient(CdpClient):
             return {}
     
     def post(self, path: str, data: Dict[str, Any] | None = None, json_data: Dict[str, Any] | None = None, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
-        url = f"{self.endpoint}/{path.strip('/')}"
-
         # Prepare request body
         body = None
         if json_data is not None:
@@ -111,16 +112,21 @@ class TestRestClient(CdpClient):
         elif data is not None:
             body = json.dumps(data)
 
+        url = f"{self.endpoint}/{path.strip('/')}"
+
         self.set_credential_headers(method="POST", url=url)
 
         try:
-            response:HTTPResponse = self.request.post(
+            response:HTTPResponse = Request().post(
                 url=url,
                 headers=self.headers,
                 data=body,
             )
         except HTTPError as e:
-            raise e
+            if e.code in squelch:
+                return squelch[e.code]
+            else:
+                raise
 
         if response:
             response_text = response.read().decode("utf-8")
