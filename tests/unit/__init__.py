@@ -83,6 +83,32 @@ def handle_response(func):
     return wrapper
 
 
+def set_credential_headers(method:str, url:str, access_key:str, private_key:str) -> Dict:
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    headers["x-altus-date"] = formatdate(usegmt=True)
+    headers["x-altus-auth"] = make_signature_header(
+        method,
+        url,
+        headers,
+        access_key,
+        private_key,
+    )
+
+    return headers
+
+
+def prepare_body(data:Dict[str, Any]|None = None, json_data:Dict[str, Any]|None = None) -> str|None:
+    if json_data is not None:
+        return json.dumps(json_data)
+    elif data is not None:
+        return urlencode(data)
+    else:
+        return None
+
+
 class TestCdpClient(CdpClient):
     def __init__(self, endpoint: str, access_key:str, private_key:str, default_page_size: int = 100):
         super().__init__(default_page_size)
@@ -90,20 +116,7 @@ class TestCdpClient(CdpClient):
         self.endpoint = endpoint.rstrip("/")
         self.access_key = access_key
         self.private_key = private_key
-        self.headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-
-    def set_credential_headers(self, method:str, url:str):
-        self.headers["x-altus-date"] = formatdate(usegmt=True)
-        self.headers["x-altus-auth"] = make_signature_header(
-            method,
-            url,
-            self.headers,
-            self.access_key,
-            self.private_key,
-        )
+    
 
     @handle_response
     def get(self, path: str, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
@@ -113,34 +126,54 @@ class TestCdpClient(CdpClient):
 
         url = f"{self.endpoint}/{path.strip('/')}"
 
-        self.set_credential_headers(method="GET", url=url)
-
         return Request().get(
             url=url,
-            headers=self.headers
+            headers=set_credential_headers(
+                method="GET",
+                url=url,
+                access_key=self.access_key,
+                private_key=self.private_key,
+            ),
         )
     
     @handle_response
     def post(self, path: str, data: Dict[str, Any] | None = None, json_data: Dict[str, Any] | None = None, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
-        # Prepare request body
-        body = None
-        if json_data is not None:
-            body = json.dumps(json_data)
-        elif data is not None:
-            body = json.dumps(data)
-
         url = f"{self.endpoint}/{path.strip('/')}"
-
-        self.set_credential_headers(method="POST", url=url)
 
         return Request().post(
             url=url,
-            headers=self.headers,
-            data=body,
+            headers=set_credential_headers(
+                method="POST",
+                url=url,
+                access_key=self.access_key,
+                private_key=self.private_key,
+            ),
+            data=prepare_body(data, json_data),
         )
     
     def put(self, path: str, data: Dict[str, Any] | None = None, json_data: Dict[str, Any] | None = None, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
-        return {}
+        url = f"{self.endpoint}/{path.strip('/')}"
+
+        return Request().put(
+            url=url,
+            headers=set_credential_headers(
+                method="PUT",
+                url=url,
+                access_key=self.access_key,
+                private_key=self.private_key,
+            ),
+            data=prepare_body(data, json_data),
+        )
     
     def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
-        return {}
+        url = f"{self.endpoint}/{path.strip('/')}"
+
+        return Request().delete(
+            url=url,
+            headers=set_credential_headers(
+                method="DELETE",
+                url=url,
+                access_key=self.access_key,
+                private_key=self.private_key,
+            ),
+        )
