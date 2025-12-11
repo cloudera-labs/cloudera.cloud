@@ -65,7 +65,7 @@ def test_compute_usage_info_integration(module_args):
     module_args(
         {
             "endpoint": os.getenv("CDP_API_ENDPOINT", BASE_URL),
-            "access_key": os.getenv("CDP_ACCESS_KEY", ACCESS_KEY),
+            "access_key": os.getenv("CDP_ACCESS_KEY_ID", ACCESS_KEY),
             "private_key": os.getenv("CDP_PRIVATE_KEY", PRIVATE_KEY),
             "from_timestamp": "2024-01-31T00:00:00Z",
             "to_timestamp": "2024-01-31T23:59:59Z",
