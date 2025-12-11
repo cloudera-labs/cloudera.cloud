@@ -46,9 +46,9 @@ pytestmark = pytest.mark.integration_api
 
 
 @pytest.fixture
-def iam_client(cdp_rest_client) -> CdpIamClient:
+def iam_client(test_cdp_client) -> CdpIamClient:
     """Fixture to provide an IAM client for tests."""
-    return CdpIamClient(api_client=cdp_rest_client)
+    return CdpIamClient(api_client=test_cdp_client)
 
 
 @pytest.fixture
@@ -82,10 +82,10 @@ def iam_group_create(iam_client, iam_group_delete) -> Callable[[str], None]:
     return _iam_group_module
 
 @pytest.mark.skip("Utility test, not part of main suite")
-def test_iam_user(cdp_rest_client, iam_client):
+def test_iam_user(test_cdp_client, iam_client):
     """Test that the IAM client can successfully make an API call."""
 
-    rest_result = cdp_rest_client.post("/iam/getUser", data={})
+    rest_result = test_cdp_client.post("/iam/getUser", data={})
     assert "user" in rest_result
 
     iam_result = iam_client.get_user()

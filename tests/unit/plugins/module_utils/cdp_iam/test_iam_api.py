@@ -200,6 +200,7 @@ class TestCdpIamClient:
             json_data={
                 "groupName": "old-team",
             },
+            squelch={404: {}},
         )
 
     def test_update_group(self, mocker):

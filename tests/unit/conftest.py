@@ -34,7 +34,7 @@ from ansible.module_utils.common.text.converters import to_bytes
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleFailJson,
     AnsibleExitJson,
-    TestRestClient,
+    TestCdpClient,
 )
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
@@ -156,7 +156,7 @@ def unset_cdp_env_vars(monkeypatch: MonkeyPatch):
 
 
 @pytest.fixture()
-def api_client(module_creds: dict[str, str], mock_ansible_module: Mock) -> AnsibleCdpClient:
+def ansible_cdp_client(module_creds: dict[str, str], mock_ansible_module: Mock) -> AnsibleCdpClient:
     """Fixture for creating an Ansible API client instance."""
 
     return AnsibleCdpClient(
@@ -167,11 +167,11 @@ def api_client(module_creds: dict[str, str], mock_ansible_module: Mock) -> Ansib
     )
 
 @pytest.fixture(scope="session")
-def cdp_rest_client() -> TestRestClient:
+def test_cdp_client() -> TestCdpClient:
     if "CDP_ACCESS_KEY_ID" not in os.environ or "CDP_PRIVATE_KEY" not in os.environ:
         pytest.skip("CDP API credentials not set in env vars. Skipping integration tests.")
 
-    return TestRestClient(
+    return TestCdpClient(
         endpoint=os.getenv("CDP_API_ENDPOINT"), # pyright: ignore[reportArgumentType]
         access_key=os.getenv("CDP_ACCESS_KEY_ID"), # pyright: ignore[reportArgumentType]
         private_key=os.getenv("CDP_PRIVATE_KEY"), # pyright: ignore[reportArgumentType]

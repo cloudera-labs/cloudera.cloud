@@ -140,11 +140,11 @@ class TestCdpConsumptionClient:
 class TestCdpConsumptionClientIntegration:
     """Integration tests for CdpConsumptionClient."""
 
-    def test_list_compute_usage_records(self, api_client):
+    def test_list_compute_usage_records(self, ansible_cdp_client):
         """Test listing compute usage records."""
 
         # Create the CdpConsumptionClient instance
-        client = CdpConsumptionClient(api_client=api_client)
+        client = CdpConsumptionClient(api_client=ansible_cdp_client)
 
         response = client.list_compute_usage_records(
             from_timestamp=FROM_TIMESTAMP,

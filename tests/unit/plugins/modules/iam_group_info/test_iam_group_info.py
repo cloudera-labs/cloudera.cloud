@@ -119,11 +119,11 @@ class TestCdpIamClient:
 class TestCdpIamClientIntegration:
     """Integration tests for CdpIamClient."""
 
-    def test_list_groups(self, api_client):
+    def test_list_groups(self, ansible_cdp_client):
         """Integration test for listing IAM groups."""
 
         # Create the CdpIamClient instance
-        client = CdpIamClient(api_client=api_client)
+        client = CdpIamClient(api_client=ansible_cdp_client)
 
         response = client.list_groups()
 
