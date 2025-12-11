@@ -794,6 +794,7 @@ class CdpIamClient():
         return self.api_client.post(
             "/api/v1/iam/deleteGroup",
             json_data=json_data,
+            squelch={404: {}},
         )
 
     def update_group(
