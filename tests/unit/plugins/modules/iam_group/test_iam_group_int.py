@@ -22,6 +22,8 @@ import os
 import pytest
 import uuid
 
+from typing import Callable, Generator
+
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleFailJson,
     AnsibleExitJson,
@@ -43,34 +45,60 @@ GROUP_NAME = f"test-group-int-{uuid.uuid4().hex[:8]}"
 pytestmark = pytest.mark.integration_api
 
 
+@pytest.fixture
+def iam_client(cdp_rest_client) -> CdpIamClient:
+    """Fixture to provide an IAM client for tests."""
+    return CdpIamClient(api_client=cdp_rest_client)
 
 
+@pytest.fixture
+def iam_group_delete(iam_client) -> Generator[Callable[[str], None], None, None]:
+    """Fixture to clean up IAM groups created during tests."""
 
-# @pytest.fixture
-# def iam_group_cleanup():
-#     """Fixture to clean up IAM groups created during tests."""
+    group_names = []
 
-#     group_names = []
-
-#     def _iam_group_module(name:str):
-#         group_names.append(name)
-#         return
+    def _iam_group_module(name: str):
+        group_names.append(name)
+        return
     
-#     yield _iam_group_module
+    yield _iam_group_module
 
-#     for name in group_names:
-#         try:
+    for name in group_names:
+        try:
+            iam_client.delete_group(group_name=name)
+        except Exception as e:
+            pytest.fail(f"Failed to clean up IAM group: {name}. {e}")
 
 
-def test_iam_user(iam_client):
+@pytest.fixture
+def iam_group_create(iam_client, iam_group_delete) -> Callable[[str], None]:
+    """Fixture to clean up IAM groups created during tests."""
+
+    def _iam_group_module(name: str, sync: bool = False):
+        iam_group_delete(name)
+        iam_client.create_group(group_name=name, sync_membership_on_user_login=sync)
+        return
+
+    return _iam_group_module
+
+@pytest.mark.skip("Utility test, not part of main suite")
+def test_iam_user(cdp_rest_client, iam_client):
     """Test that the IAM client can successfully make an API call."""
-    result = iam_client.post("/iam/getUser", data={})
-    assert "user" in result
+
+    rest_result = cdp_rest_client.post("/iam/getUser", data={})
+    assert "user" in rest_result
+
+    iam_result = iam_client.get_user()
+    assert iam_result
 
 
-def test_iam_group_create(module_args):
+def test_iam_group_create(module_args, iam_group_delete):
     """Test creating a new IAM group with real API calls."""
-    # Step 1: Create the group
+
+    # Ensure cleanup after the test
+    iam_group_delete(GROUP_NAME)
+
+    # Execute function
     module_args(
         {
             "endpoint": BASE_URL,
@@ -82,89 +110,81 @@ def test_iam_group_create(module_args):
         },
     )
 
-    try:
-        with pytest.raises(AnsibleExitJson) as result:
-            iam_group.main()
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group.main()
 
-        assert result.value.changed is True
-        assert result.value.group["groupName"] == GROUP_NAME
-        assert result.value.group["syncMembershipOnUserLogin"] is True
-        assert "crn" in result.value.group
+    assert result.value.changed is True
+    assert result.value.group["groupName"] == GROUP_NAME
+    assert result.value.group["syncMembershipOnUserLogin"] is True
+    assert "crn" in result.value.group
 
-    finally:
-        # Cleanup: Delete the test group
-        cleanup_module_args = {
+    # Idempotency check
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group.main()
+
+    assert result.value.changed is False
+    assert result.value.group["groupName"] == GROUP_NAME
+    assert result.value.group["syncMembershipOnUserLogin"] is True
+    assert "crn" in result.value.group
+
+
+def test_iam_group_delete(module_args, iam_group_create):
+    """Test deleting an IAM group with real API calls."""
+
+    # Create the group to be deleted
+    iam_group_create(name=GROUP_NAME, sync=True)
+
+    # Execute function
+    module_args(
+        {
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "name": GROUP_NAME,
             "state": "absent",
-        }
-        try:
-            module_args(cleanup_module_args)
-            with pytest.raises(AnsibleExitJson):
-                iam_group.main()
-        except Exception:
-            pass
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group.main()
+
+    assert result.value.changed is True
+
+    # Idempotency check
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group.main()
+
+    assert result.value.changed is False
 
 
-def test_iam_group_update_and_delete(module_args):
-    """Test creating, updating, and deleting an IAM group with real API calls."""
+def test_iam_group_update(module_args, iam_group_create):
+    """Test updating an IAM group with real API calls."""
 
-    unique_group = f"test-group-update-{uuid.uuid4().hex[:8]}"
-    # Step 1: Create the group
+    # Create the group to be updated
+    iam_group_create(name=GROUP_NAME, sync=False)
+
+    # Execute function
     module_args(
         {
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
-            "name": unique_group,
+            "name": GROUP_NAME,
             "state": "present",
-            "sync": True,
+            "sync": True, # Update sync setting to True
         },
     )
 
-    try:
-        with pytest.raises(AnsibleExitJson) as result:
-            iam_group.main()
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group.main()
 
-        assert result.value.changed is True
-        assert result.value.group["groupName"] == unique_group
-        assert result.value.group["syncMembershipOnUserLogin"] is True
+    assert result.value.changed is True
+    assert result.value.group["groupName"] == GROUP_NAME
+    assert result.value.group["syncMembershipOnUserLogin"] is True
 
-        # Step 2: Update the sync setting
-        module_args(
-            {
-                "endpoint": BASE_URL,
-                "access_key": ACCESS_KEY,
-                "private_key": PRIVATE_KEY,
-                "name": unique_group,
-                "state": "present",
-                "sync": False,
-            },
-        )
+    # Idempotency check
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group.main()
 
-        with pytest.raises(AnsibleExitJson) as result:
-            iam_group.main()
-
-        assert result.value.changed is True
-        assert result.value.group["syncMembershipOnUserLogin"] is False
-
-    finally:
-        # Step 3: Delete the group
-        module_args(
-            {
-                "endpoint": BASE_URL,
-                "access_key": ACCESS_KEY,
-                "private_key": PRIVATE_KEY,
-                "name": unique_group,
-                "state": "absent",
-            },
-        )
-
-        try:
-            with pytest.raises(AnsibleExitJson) as result:
-                iam_group.main()
-            assert result.value.changed is True
-        except Exception:
-            pass
+    assert result.value.changed is False
+    assert result.value.group["syncMembershipOnUserLogin"] is True
