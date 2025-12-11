@@ -215,7 +215,6 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
             self.endpoint_region: str = region
 
         # NOTE: If endpoint is not provided, construct the endpoint parameter from the region
-        # NOTE: IAM endpoints for us-west-1 need to be explicitly set to iamapi.us-west-1.altus.cloudera.com
         if self.endpoint is None:
             self.endpoint = f"https://api.{self.endpoint_region}.cdp.cloudera.com"
 
