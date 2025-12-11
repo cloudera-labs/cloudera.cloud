@@ -59,9 +59,10 @@ class AnsibleExitJson(Exception):
 
 def handle_response(func):
     """Decorator to handle HTTP response parsing and error squelching."""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
-        squelch = kwargs.get('squelch', {})
+        squelch = kwargs.get("squelch", {})
         try:
             response: HTTPResponse = func(*args, **kwargs)
             if response:
@@ -80,10 +81,16 @@ def handle_response(func):
                 return squelch[e.code]
             else:
                 raise
+
     return wrapper
 
 
-def set_credential_headers(method:str, url:str, access_key:str, private_key:str) -> Dict:
+def set_credential_headers(
+    method: str,
+    url: str,
+    access_key: str,
+    private_key: str,
+) -> Dict:
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -100,7 +107,10 @@ def set_credential_headers(method:str, url:str, access_key:str, private_key:str)
     return headers
 
 
-def prepare_body(data:Dict[str, Any]|None = None, json_data:Dict[str, Any]|None = None) -> str|None:
+def prepare_body(
+    data: Dict[str, Any] | None = None,
+    json_data: Dict[str, Any] | None = None,
+) -> str | None:
     if json_data is not None:
         return json.dumps(json_data)
     elif data is not None:
@@ -110,13 +120,18 @@ def prepare_body(data:Dict[str, Any]|None = None, json_data:Dict[str, Any]|None 
 
 
 class TestCdpClient(CdpClient):
-    def __init__(self, endpoint: str, access_key:str, private_key:str, default_page_size: int = 100):
+    def __init__(
+        self,
+        endpoint: str,
+        access_key: str,
+        private_key: str,
+        default_page_size: int = 100,
+    ):
         super().__init__(default_page_size)
         self.request = Request(http_agent="TestCdpClient/1.0")
         self.endpoint = endpoint.rstrip("/")
         self.access_key = access_key
         self.private_key = private_key
-    
 
     @handle_response
     def get(self, path: str, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
@@ -135,9 +150,15 @@ class TestCdpClient(CdpClient):
                 private_key=self.private_key,
             ),
         )
-    
+
     @handle_response
-    def post(self, path: str, data: Dict[str, Any] | None = None, json_data: Dict[str, Any] | None = None, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
+    def post(
+        self,
+        path: str,
+        data: Dict[str, Any] | None = None,
+        json_data: Dict[str, Any] | None = None,
+        squelch: Dict[int, Any] = {},
+    ) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
 
         return Request().post(
@@ -150,8 +171,14 @@ class TestCdpClient(CdpClient):
             ),
             data=prepare_body(data, json_data),
         )
-    
-    def put(self, path: str, data: Dict[str, Any] | None = None, json_data: Dict[str, Any] | None = None, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
+
+    def put(
+        self,
+        path: str,
+        data: Dict[str, Any] | None = None,
+        json_data: Dict[str, Any] | None = None,
+        squelch: Dict[int, Any] = {},
+    ) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
 
         return Request().put(
@@ -164,7 +191,7 @@ class TestCdpClient(CdpClient):
             ),
             data=prepare_body(data, json_data),
         )
-    
+
     def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
 

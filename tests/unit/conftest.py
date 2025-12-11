@@ -156,7 +156,10 @@ def unset_cdp_env_vars(monkeypatch: MonkeyPatch):
 
 
 @pytest.fixture()
-def ansible_cdp_client(module_creds: dict[str, str], mock_ansible_module: Mock) -> AnsibleCdpClient:
+def ansible_cdp_client(
+    module_creds: dict[str, str],
+    mock_ansible_module: Mock,
+) -> AnsibleCdpClient:
     """Fixture for creating an Ansible API client instance."""
 
     return AnsibleCdpClient(
@@ -166,13 +169,18 @@ def ansible_cdp_client(module_creds: dict[str, str], mock_ansible_module: Mock) 
         private_key=module_creds["private_key"],
     )
 
+
 @pytest.fixture(scope="session")
 def test_cdp_client() -> TestCdpClient:
     if "CDP_ACCESS_KEY_ID" not in os.environ or "CDP_PRIVATE_KEY" not in os.environ:
-        pytest.skip("CDP API credentials not set in env vars. Skipping integration tests.")
+        pytest.skip(
+            "CDP API credentials not set in env vars. Skipping integration tests.",
+        )
 
     return TestCdpClient(
-        endpoint=os.getenv("CDP_API_ENDPOINT"), # pyright: ignore[reportArgumentType]
-        access_key=os.getenv("CDP_ACCESS_KEY_ID"), # pyright: ignore[reportArgumentType]
-        private_key=os.getenv("CDP_PRIVATE_KEY"), # pyright: ignore[reportArgumentType]
+        endpoint=os.getenv("CDP_API_ENDPOINT"),  # pyright: ignore[reportArgumentType]
+        access_key=os.getenv(
+            "CDP_ACCESS_KEY_ID",
+        ),  # pyright: ignore[reportArgumentType]
+        private_key=os.getenv("CDP_PRIVATE_KEY"),  # pyright: ignore[reportArgumentType]
     )

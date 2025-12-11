@@ -60,7 +60,7 @@ def iam_group_delete(iam_client) -> Generator[Callable[[str], None], None, None]
     def _iam_group_module(name: str):
         group_names.append(name)
         return
-    
+
     yield _iam_group_module
 
     for name in group_names:
@@ -80,6 +80,7 @@ def iam_group_create(iam_client, iam_group_delete) -> Callable[[str], None]:
         return
 
     return _iam_group_module
+
 
 @pytest.mark.skip("Utility test, not part of main suite")
 def test_iam_user(test_cdp_client, iam_client):
@@ -171,7 +172,7 @@ def test_iam_group_update(module_args, iam_group_create):
             "private_key": PRIVATE_KEY,
             "name": GROUP_NAME,
             "state": "present",
-            "sync": True, # Update sync setting to True
+            "sync": True,  # Update sync setting to True
         },
     )
 

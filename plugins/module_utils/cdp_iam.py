@@ -25,7 +25,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 )
 
 
-class CdpIamClient():
+class CdpIamClient:
     """CDP IAM API client."""
 
     def __init__(self, api_client: CdpClient):
