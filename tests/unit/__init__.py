@@ -17,6 +17,7 @@
 import json
 
 from email.utils import formatdate
+from functools import wraps
 from typing import Any, Dict
 from urllib.parse import urlencode
 from urllib.error import HTTPError
@@ -56,10 +57,36 @@ class AnsibleExitJson(Exception):
         return self.__dict__[attr]
 
 
-class TestRestClient(CdpClient):
+def handle_response(func):
+    """Decorator to handle HTTP response parsing and error squelching."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        squelch = kwargs.get('squelch', {})
+        try:
+            response: HTTPResponse = func(*args, **kwargs)
+            if response:
+                response_text = response.read().decode("utf-8")
+                if response_text:
+                    try:
+                        return json.loads(response_text)
+                    except json.JSONDecodeError:
+                        return {"response": response_text}
+                else:
+                    return {}
+            else:
+                return {}
+        except HTTPError as e:
+            if e.code in squelch:
+                return squelch[e.code]
+            else:
+                raise
+    return wrapper
+
+
+class TestCdpClient(CdpClient):
     def __init__(self, endpoint: str, access_key:str, private_key:str, default_page_size: int = 100):
         super().__init__(default_page_size)
-        self.request = Request(http_agent="PytestRestClient/1.0")
+        self.request = Request(http_agent="TestCdpClient/1.0")
         self.endpoint = endpoint.rstrip("/")
         self.access_key = access_key
         self.private_key = private_key
@@ -78,6 +105,7 @@ class TestRestClient(CdpClient):
             self.private_key,
         )
 
+    @handle_response
     def get(self, path: str, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
         # Prepare query parameters
         if params:
@@ -87,23 +115,12 @@ class TestRestClient(CdpClient):
 
         self.set_credential_headers(method="GET", url=url)
 
-        response:HTTPResponse = Request().get(
+        return Request().get(
             url=url,
             headers=self.headers
         )
-
-        if response:
-            response_text = response.read().decode("utf-8")
-            if response_text:
-                try:
-                    return json.loads(response_text)
-                except json.JSONDecodeError:
-                    return {"response": response_text}
-            else:
-                return {}
-        else:
-            return {}
     
+    @handle_response
     def post(self, path: str, data: Dict[str, Any] | None = None, json_data: Dict[str, Any] | None = None, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
         # Prepare request body
         body = None
@@ -116,29 +133,11 @@ class TestRestClient(CdpClient):
 
         self.set_credential_headers(method="POST", url=url)
 
-        try:
-            response:HTTPResponse = Request().post(
-                url=url,
-                headers=self.headers,
-                data=body,
-            )
-        except HTTPError as e:
-            if e.code in squelch:
-                return squelch[e.code]
-            else:
-                raise
-
-        if response:
-            response_text = response.read().decode("utf-8")
-            if response_text:
-                try:
-                    return json.loads(response_text)
-                except json.JSONDecodeError:
-                    return {"response": response_text}
-            else:
-                return {}
-        else:
-            return {}
+        return Request().post(
+            url=url,
+            headers=self.headers,
+            data=body,
+        )
     
     def put(self, path: str, data: Dict[str, Any] | None = None, json_data: Dict[str, Any] | None = None, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
         return {}
