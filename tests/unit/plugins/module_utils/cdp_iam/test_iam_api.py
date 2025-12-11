@@ -19,7 +19,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    RestClient,
+    CdpClient,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
     CdpIamClient,
@@ -79,9 +79,9 @@ class TestCdpIamClient:
             ],
         }
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -94,10 +94,9 @@ class TestCdpIamClient:
         assert response["groups"][1]["syncMembershipOnUserLogin"] == False
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/listGroups",
-            None,
-            {
+            json_data={
                 "pageSize": 100,
             },
             squelch={404: {}},
@@ -118,9 +117,9 @@ class TestCdpIamClient:
             ],
         }
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -132,10 +131,9 @@ class TestCdpIamClient:
         assert response["groups"][0]["groupName"] == "data-engineers"
 
         # Verify that the method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/listGroups",
-            None,
-            {
+            json_data={
                 "pageSize": 100,
                 "groupNames": ["data-engineers"],
             },
@@ -155,9 +153,9 @@ class TestCdpIamClient:
             },
         }
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -171,14 +169,12 @@ class TestCdpIamClient:
         assert response["group"]["groupName"] == "new-team"
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/createGroup",
-            None,
-            {
+            json_data={
                 "groupName": "new-team",
                 "syncMembershipOnUserLogin": True,
             },
-            squelch={},
         )
 
     def test_delete_group(self, mocker):
@@ -187,9 +183,9 @@ class TestCdpIamClient:
         # Mock response data (delete operations typically return empty)
         mock_response = {}
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -199,13 +195,11 @@ class TestCdpIamClient:
         assert isinstance(response, dict)
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/deleteGroup",
-            None,
-            {
+            json_data={
                 "groupName": "old-team",
             },
-            squelch={},
         )
 
     def test_update_group(self, mocker):
@@ -214,9 +208,9 @@ class TestCdpIamClient:
         # Mock response data
         mock_response = {}
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -229,14 +223,12 @@ class TestCdpIamClient:
         assert isinstance(response, dict)
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/updateGroup",
-            None,
-            {
+            json_data={
                 "groupName": "existing-team",
                 "syncMembershipOnUserLogin": False,
             },
-            squelch={},
         )
 
     def test_list_group_members(self, mocker):
@@ -247,9 +239,9 @@ class TestCdpIamClient:
             "memberCrns": SAMPLE_USERS + [SAMPLE_MACHINE_USERS[0]],
         }
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -260,14 +252,12 @@ class TestCdpIamClient:
         assert len(response["memberCrns"]) == 3
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/listGroupMembers",
-            None,
-            {
+            json_data={
                 "pageSize": 100,
                 "groupName": "data-engineers",
             },
-            squelch={},
         )
 
     def test_add_user_to_group(self, mocker):
@@ -276,9 +266,9 @@ class TestCdpIamClient:
         # Mock response data
         mock_response = {}
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -291,14 +281,12 @@ class TestCdpIamClient:
         assert isinstance(response, dict)
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/addUserToGroup",
-            None,
-            {
+            json_data={
                 "userId": SAMPLE_USERS[0],
                 "groupName": "data-engineers",
             },
-            squelch={},
         )
 
     def test_remove_user_from_group(self, mocker):
@@ -307,9 +295,9 @@ class TestCdpIamClient:
         # Mock response data
         mock_response = {}
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -322,14 +310,12 @@ class TestCdpIamClient:
         assert isinstance(response, dict)
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/removeUserFromGroup",
-            None,
-            {
+            json_data={
                 "userId": SAMPLE_USERS[1],
                 "groupName": "data-engineers",
             },
-            squelch={},
         )
 
     def test_add_machine_user_to_group(self, mocker):
@@ -338,9 +324,9 @@ class TestCdpIamClient:
         # Mock response data
         mock_response = {}
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -353,14 +339,12 @@ class TestCdpIamClient:
         assert isinstance(response, dict)
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/addMachineUserToGroup",
-            None,
-            {
+            json_data={
                 "machineUserName": SAMPLE_MACHINE_USERS[0],
                 "groupName": "data-engineers",
             },
-            squelch={},
         )
 
     def test_remove_machine_user_from_group(self, mocker):
@@ -369,9 +353,9 @@ class TestCdpIamClient:
         # Mock response data
         mock_response = {}
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -384,14 +368,12 @@ class TestCdpIamClient:
         assert isinstance(response, dict)
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/removeMachineUserFromGroup",
-            None,
-            {
+            json_data={
                 "machineUserName": SAMPLE_MACHINE_USERS[0],
                 "groupName": "data-engineers",
             },
-            squelch={},
         )
 
     def test_assign_group_role(self, mocker):
@@ -400,9 +382,9 @@ class TestCdpIamClient:
         # Mock response data
         mock_response = {}
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -415,12 +397,10 @@ class TestCdpIamClient:
         assert isinstance(response, dict)
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/assignGroupRole",
-            None,
-            {
+            json_data={
                 "groupName": "data-engineers",
                 "role": SAMPLE_ROLES[0],
             },
-            squelch={},
         )

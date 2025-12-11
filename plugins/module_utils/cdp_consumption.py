@@ -21,24 +21,23 @@ A REST client for the Cloudera on Cloud Platform (CDP) Consumption API
 from typing import Any, Dict, Optional
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    RestClient,
     CdpClient,
 )
 
 
-class CdpConsumptionClient(CdpClient):
+class CdpConsumptionClient():
     """CDP Consumption API client."""
 
-    def __init__(self, api_client: RestClient):
+    def __init__(self, api_client: CdpClient):
         """
         Initialize CDP Consumption client.
 
         Args:
-            api_client: RestClient instance for managing HTTP method calls
+            api_client: CdpClient instance for managing HTTP method calls
         """
-        super().__init__(api_client=api_client)
+        self.api_client = api_client
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_compute_usage_records(
         self,
         from_timestamp: str,
@@ -69,7 +68,7 @@ class CdpConsumptionClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/consumption/listComputeUsageRecords",
             json_data=json_data,
         )

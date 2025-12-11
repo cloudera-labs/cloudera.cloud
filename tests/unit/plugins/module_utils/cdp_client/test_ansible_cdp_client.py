@@ -25,7 +25,6 @@ from ansible_collections.cloudera.cloud.tests.unit import AnsibleFailJson
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     AnsibleCdpClient,
-    CdpError,
 )
 
 BASE_URL = "https://cloudera.internal/api"
