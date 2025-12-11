@@ -140,6 +140,7 @@ class TestCdpConsumptionClient:
 class TestCdpConsumptionClientIntegration:
     """Integration tests for CdpConsumptionClient."""
 
+    @pytest.mark.slow
     def test_list_compute_usage_records(self, ansible_cdp_client):
         """Test listing compute usage records."""
 
