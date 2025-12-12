@@ -23,12 +23,18 @@ import os
 import sys
 import pytest
 
+from pytest import MonkeyPatch
+from pytest_mock import MockerFixture
+from typing import Callable
+from unittest.mock import MagicMock, Mock
+
 from ansible.module_utils import basic
 from ansible.module_utils.common.text.converters import to_bytes
 
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleFailJson,
     AnsibleExitJson,
+    TestCdpClient,
 )
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
@@ -77,7 +83,7 @@ def pytest_collection_modifyitems(items):
 
 
 @pytest.fixture
-def module_args():
+def module_args() -> Callable[[dict], None]:
     """Prepare module arguments"""
 
     def prep_args(args=dict()):
@@ -88,7 +94,7 @@ def module_args():
 
 
 @pytest.fixture
-def module_creds():
+def module_creds() -> dict[str, str]:
     """Prepare module credentials"""
 
     return {
@@ -100,7 +106,7 @@ def module_creds():
 
 
 @pytest.fixture(autouse=True)
-def patch_module(monkeypatch):
+def patch_module(monkeypatch: MonkeyPatch):
     """Patch AnsibleModule to raise exceptions on success and failure"""
 
     def exit_json(*args, **kwargs):
@@ -117,7 +123,7 @@ def patch_module(monkeypatch):
 
 
 @pytest.fixture
-def mock_ansible_module(mocker):
+def mock_ansible_module(mocker: MockerFixture) -> Mock:
     """Fixture for mock AnsibleModule."""
     module = mocker.Mock()
     module.params = {}
@@ -131,7 +137,7 @@ def mock_ansible_module(mocker):
 
 
 @pytest.fixture()
-def mock_load_cdp_config(mocker):
+def mock_load_cdp_config(mocker: MockerFixture) -> MagicMock:
     """Mock the load_cdp_config function."""
     return mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
@@ -140,9 +146,9 @@ def mock_load_cdp_config(mocker):
 
 
 @pytest.fixture()
-def unset_cdp_env_vars(monkeypatch):
+def unset_cdp_env_vars(monkeypatch: MonkeyPatch):
     """Fixture to unset any prior CDP-related environment variables."""
-    monkeypatch.delenv("CDP_ACCESS_KEY", raising=False)
+    monkeypatch.delenv("CDP_ACCESS_KEY_ID", raising=False)
     monkeypatch.delenv("CDP_PRIVATE_KEY", raising=False)
     monkeypatch.delenv("CDP_CREDENTIALS_PATH", raising=False)
     monkeypatch.delenv("CDP_PROFILE", raising=False)
@@ -150,7 +156,10 @@ def unset_cdp_env_vars(monkeypatch):
 
 
 @pytest.fixture()
-def api_client(module_creds, mock_ansible_module):
+def ansible_cdp_client(
+    module_creds: dict[str, str],
+    mock_ansible_module: Mock,
+) -> AnsibleCdpClient:
     """Fixture for creating an Ansible API client instance."""
 
     return AnsibleCdpClient(
@@ -158,4 +167,20 @@ def api_client(module_creds, mock_ansible_module):
         base_url=module_creds["endpoint"],
         access_key=module_creds["access_key"],
         private_key=module_creds["private_key"],
+    )
+
+
+@pytest.fixture(scope="session")
+def test_cdp_client() -> TestCdpClient:
+    if "CDP_ACCESS_KEY_ID" not in os.environ or "CDP_PRIVATE_KEY" not in os.environ:
+        pytest.skip(
+            "CDP API credentials not set in env vars. Skipping integration tests.",
+        )
+
+    return TestCdpClient(
+        endpoint=os.getenv("CDP_API_ENDPOINT"),  # pyright: ignore[reportArgumentType]
+        access_key=os.getenv(
+            "CDP_ACCESS_KEY_ID",
+        ),  # pyright: ignore[reportArgumentType]
+        private_key=os.getenv("CDP_PRIVATE_KEY"),  # pyright: ignore[reportArgumentType]
     )

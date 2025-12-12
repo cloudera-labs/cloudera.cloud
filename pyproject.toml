@@ -76,6 +76,7 @@ filterwarnings = [
 markers = [
   "integration_api: marks tests as integration tests using CDP API credentials",
   "integration_token: marks tests as integration tests using CDP token credentials",
+  "slow: marks tests as slow tests",
 ]
 
 [build-system]

@@ -14,6 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
+from email.utils import formatdate
+from functools import wraps
+from typing import Any, Dict
+from urllib.parse import urlencode
+from urllib.error import HTTPError
+from http.client import HTTPResponse
+
+from ansible.module_utils.urls import Request
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
+    make_signature_header,
+)
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
+    CdpClient,
+)
+
 
 class AnsibleFailJson(Exception):
     """Exception class to be raised by module.fail_json and caught by the test case"""
@@ -36,3 +55,152 @@ class AnsibleExitJson(Exception):
 
     def __getattr__(self, attr):
         return self.__dict__[attr]
+
+
+def handle_response(func):
+    """Decorator to handle HTTP response parsing and error squelching."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        squelch = kwargs.get("squelch", {})
+        try:
+            response: HTTPResponse = func(*args, **kwargs)
+            if response:
+                response_text = response.read().decode("utf-8")
+                if response_text:
+                    try:
+                        return json.loads(response_text)
+                    except json.JSONDecodeError:
+                        return {"response": response_text}
+                else:
+                    return {}
+            else:
+                return {}
+        except HTTPError as e:
+            if e.code in squelch:
+                return squelch[e.code]
+            else:
+                raise
+
+    return wrapper
+
+
+def set_credential_headers(
+    method: str,
+    url: str,
+    access_key: str,
+    private_key: str,
+) -> Dict:
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    headers["x-altus-date"] = formatdate(usegmt=True)
+    headers["x-altus-auth"] = make_signature_header(
+        method,
+        url,
+        headers,
+        access_key,
+        private_key,
+    )
+
+    return headers
+
+
+def prepare_body(
+    data: Dict[str, Any] | None = None,
+    json_data: Dict[str, Any] | None = None,
+) -> str | None:
+    if json_data is not None:
+        return json.dumps(json_data)
+    elif data is not None:
+        return urlencode(data)
+    else:
+        return None
+
+
+class TestCdpClient(CdpClient):
+    def __init__(
+        self,
+        endpoint: str,
+        access_key: str,
+        private_key: str,
+        default_page_size: int = 100,
+    ):
+        super().__init__(default_page_size)
+        self.request = Request(http_agent="TestCdpClient/1.0")
+        self.endpoint = endpoint.rstrip("/")
+        self.access_key = access_key
+        self.private_key = private_key
+
+    @handle_response
+    def get(self, path: str, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        # Prepare query parameters
+        if params:
+            path += "?" + urlencode(params)
+
+        url = f"{self.endpoint}/{path.strip('/')}"
+
+        return Request().get(
+            url=url,
+            headers=set_credential_headers(
+                method="GET",
+                url=url,
+                access_key=self.access_key,
+                private_key=self.private_key,
+            ),
+        )
+
+    @handle_response
+    def post(
+        self,
+        path: str,
+        data: Dict[str, Any] | None = None,
+        json_data: Dict[str, Any] | None = None,
+        squelch: Dict[int, Any] = {},
+    ) -> Dict[str, Any]:
+        url = f"{self.endpoint}/{path.strip('/')}"
+
+        return Request().post(
+            url=url,
+            headers=set_credential_headers(
+                method="POST",
+                url=url,
+                access_key=self.access_key,
+                private_key=self.private_key,
+            ),
+            data=prepare_body(data, json_data),
+        )
+
+    def put(
+        self,
+        path: str,
+        data: Dict[str, Any] | None = None,
+        json_data: Dict[str, Any] | None = None,
+        squelch: Dict[int, Any] = {},
+    ) -> Dict[str, Any]:
+        url = f"{self.endpoint}/{path.strip('/')}"
+
+        return Request().put(
+            url=url,
+            headers=set_credential_headers(
+                method="PUT",
+                url=url,
+                access_key=self.access_key,
+                private_key=self.private_key,
+            ),
+            data=prepare_body(data, json_data),
+        )
+
+    def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
+        url = f"{self.endpoint}/{path.strip('/')}"
+
+        return Request().delete(
+            url=url,
+            headers=set_credential_headers(
+                method="DELETE",
+                url=url,
+                access_key=self.access_key,
+                private_key=self.private_key,
+            ),
+        )

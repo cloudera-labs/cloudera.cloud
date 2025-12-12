@@ -19,7 +19,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    RestClient,
+    CdpClient,
 )
 
 
@@ -37,8 +37,8 @@ def test_paginated_decorator_single_page(mocker):
     mock_func.return_value = test_data
 
     # Create a function to be decorated
-    class TestClient(RestClient):
-        @RestClient.paginated()
+    class TestClient(CdpClient):
+        @CdpClient.paginated()
         def decorated_func(self, *args, **kwargs):
             return mock_func(*args, **kwargs)
 
@@ -75,8 +75,8 @@ def test_paginated_decorator_multiple_pages(mocker):
     mock_func.side_effect = [page1_data, page2_data]
 
     # Create a function to be decorated
-    class TestClient(RestClient):
-        @RestClient.paginated()
+    class TestClient(CdpClient):
+        @CdpClient.paginated()
         def decorated_func(self, *args, **kwargs):
             return mock_func(*args, **kwargs)
 
@@ -105,8 +105,8 @@ def test_paginated_decorator_with_custom_page_size_single(mocker):
     mock_func.return_value = test_data
 
     # Create a function to be decorated
-    class TestClient(RestClient):
-        @RestClient.paginated(default_page_size=10)
+    class TestClient(CdpClient):
+        @CdpClient.paginated(default_page_size=10)
         def decorated_func(self, *args, **kwargs):
             return mock_func(*args, **kwargs)
 
@@ -145,8 +145,8 @@ def test_paginated_decorator_with_custom_page_size_multiple(mocker):
     mock_func.side_effect = [test_data1, test_data2]
 
     # Create a function to be decorated
-    class TestClient(RestClient):
-        @RestClient.paginated(default_page_size=2)
+    class TestClient(CdpClient):
+        @CdpClient.paginated(default_page_size=2)
         def decorated_func(self, *args, **kwargs):
             return mock_func(*args, **kwargs)
 
@@ -177,8 +177,8 @@ def test_paginated_decorator_non_dict_response(mocker):
     mock_func.return_value = "Not a dict response"
 
     # Create a function to be decorated
-    class TestClient(RestClient):
-        @RestClient.paginated()
+    class TestClient(CdpClient):
+        @CdpClient.paginated()
         def decorated_func(self, *args, **kwargs):
             return mock_func(*args, **kwargs)
 
@@ -208,8 +208,8 @@ def test_paginated_decorator_empty_list_keys(mock_ansible_module, mocker):
     mock_func.side_effect = [test_data1, test_data2]
 
     # Create a function to be decorated
-    class TestClient(RestClient):
-        @RestClient.paginated()
+    class TestClient(CdpClient):
+        @CdpClient.paginated()
         def decorated_func(self, *args, **kwargs):
             return mock_func(*args, **kwargs)
 
@@ -247,8 +247,8 @@ def test_paginated_decorator_with_explicit_page_size_single(mocker):
     mock_func.return_value = test_data
 
     # Create a function to be decorated
-    class TestClient(RestClient):
-        @RestClient.paginated()
+    class TestClient(CdpClient):
+        @CdpClient.paginated()
         def decorated_func(self, *args, **kwargs):
             return mock_func(*args, **kwargs)
 
@@ -287,8 +287,8 @@ def test_paginated_decorator_with_explicit_page_size_multiple(mocker):
     mock_func.side_effect = [test_data1, test_data2]
 
     # Create a function to be decorated
-    class TestClient(RestClient):
-        @RestClient.paginated()
+    class TestClient(CdpClient):
+        @CdpClient.paginated()
         def decorated_func(self, *args, **kwargs):
             return mock_func(*args, **kwargs)
 

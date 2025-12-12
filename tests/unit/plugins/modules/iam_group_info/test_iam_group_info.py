@@ -26,7 +26,7 @@ from ansible_collections.cloudera.cloud.tests.unit import (
 )
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    RestClient,
+    CdpClient,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
     CdpIamClient,
@@ -60,9 +60,9 @@ class TestCdpIamClient:
             ],
         }
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -74,10 +74,10 @@ class TestCdpIamClient:
         assert response["groups"][0]["groupName"] == "group1"
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/listGroups",
-            None,
-            {"pageSize": 100},
+            json_data={"pageSize": 100},
+            squelch={404: {}},
         )
 
     def test_list_groups_with_filter(self, mocker):
@@ -94,9 +94,9 @@ class TestCdpIamClient:
             ],
         }
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpIamClient instance
         client = CdpIamClient(api_client=api_client)
@@ -108,10 +108,10 @@ class TestCdpIamClient:
         assert response["groups"][0]["groupName"] == "specific-group"
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/iam/listGroups",
-            None,
-            {"groupNames": ["specific-group"], "pageSize": 100},
+            json_data={"groupNames": ["specific-group"], "pageSize": 100},
+            squelch={404: {}},
         )
 
 
@@ -119,11 +119,11 @@ class TestCdpIamClient:
 class TestCdpIamClientIntegration:
     """Integration tests for CdpIamClient."""
 
-    def test_list_groups(self, api_client):
+    def test_list_groups(self, ansible_cdp_client):
         """Integration test for listing IAM groups."""
 
         # Create the CdpIamClient instance
-        client = CdpIamClient(api_client=api_client)
+        client = CdpIamClient(api_client=ansible_cdp_client)
 
         response = client.list_groups()
 
