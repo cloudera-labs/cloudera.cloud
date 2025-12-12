@@ -25,7 +25,7 @@ from typing import Any, Dict
 from ansible_collections.cloudera.cloud.tests.unit import AnsibleFailJson
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    RestClient,
+    CdpClient,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ParametersMixin,
@@ -239,7 +239,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_endpoint_explicit(
         self,
@@ -261,7 +261,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_endpoint_region_default(
         self,
@@ -283,7 +283,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_endpoint_region_us_west_1(
         self,
@@ -305,7 +305,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_endpoint_region_eu_1(
         self,
@@ -327,7 +327,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_endpoint_region_ap_1(
         self,
@@ -349,7 +349,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_endpoint_region_env(
         self,
@@ -372,7 +372,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_credentials(
         self,
@@ -395,7 +395,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "explicit-access-key"
         assert module.private_key == "explicit-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_credentials_env(
         self,
@@ -419,7 +419,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "env-access-key"
         assert module.private_key == "env-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_profile_env(
         self,
@@ -448,7 +448,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_cred_path_env(
         self,
@@ -477,7 +477,7 @@ class TestConcreteServicesModule:
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
         assert module.api_client is not None
-        assert isinstance(module.api_client, RestClient)
+        assert isinstance(module.api_client, CdpClient)
 
     def test_services_module_initialization_invalid_endpoint_region(
         self,

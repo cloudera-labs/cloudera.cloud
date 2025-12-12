@@ -30,7 +30,7 @@ from collections import OrderedDict
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from email.utils import formatdate
 from typing import Any, Dict, Optional, List, Tuple, Union
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlparse
 
 from ansible.module_utils.urls import fetch_url
 
@@ -230,7 +230,7 @@ class CdpError(Exception):
         self.status = status
 
 
-class RestClient:
+class CdpClient:
     """Abstract base class for CDP REST API clients."""
 
     def __init__(self, default_page_size: int = 100):
@@ -244,7 +244,7 @@ class RestClient:
 
     # Abstract HTTP methods that must be implemented by subclasses
     @abc.abstractmethod
-    def _get(
+    def get(
         self,
         path: str,
         params: Optional[Dict[str, Any]] = None,
@@ -253,7 +253,7 @@ class RestClient:
         pass
 
     @abc.abstractmethod
-    def _post(
+    def post(
         self,
         path: str,
         data: Optional[Dict[str, Any]] = None,
@@ -264,7 +264,7 @@ class RestClient:
         pass
 
     @abc.abstractmethod
-    def _put(
+    def put(
         self,
         path: str,
         data: Optional[Dict[str, Any]] = None,
@@ -275,7 +275,7 @@ class RestClient:
         pass
 
     @abc.abstractmethod
-    def _delete(
+    def delete(
         self,
         path: str,
         squelch: Dict[int, Any] = {},
@@ -289,7 +289,7 @@ class RestClient:
         Decorator to handle automatic pagination for CDP API methods.
 
         Usage:
-            @RestClient.paginated()
+            @CdpClient.paginated()
             def some_api_method(self, param1, param2, startingToken=None, pageSize=None):
                 # Method implementation
                 pass
@@ -384,54 +384,7 @@ class RestClient:
         return decorator
 
 
-class CdpClient:
-    """CDP client that uses a RestClient instance to delegate HTTP methods."""
-
-    def __init__(
-        self,
-        api_client: RestClient,
-        default_page_size: int = 100,
-    ):
-        """
-        Initialize Delegated CDP client.
-
-        Args:
-            api_client: CdpClient instance to delegate HTTP methods to
-            default_page_size: Default page size for paginated requests
-        """
-        self.default_page_size = default_page_size
-        self.api_client: RestClient = api_client
-
-    def get(
-        self,
-        path: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        return self.api_client._get(path, params)
-
-    def post(
-        self,
-        path: str,
-        data: Optional[Dict[str, Any]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
-        squelch: Dict[int, Any] = {},
-    ) -> Dict[str, Any]:
-        return self.api_client._post(path, data, json_data, squelch=squelch)
-
-    def put(
-        self,
-        path: str,
-        data: Optional[Dict[str, Any]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
-        squelch: Dict[int, Any] = {},
-    ) -> Dict[str, Any]:
-        return self.api_client._put(path, data, json_data, squelch=squelch)
-
-    def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
-        return self.api_client._delete(path, squelch=squelch)
-
-
-class AnsibleCdpClient(RestClient):
+class AnsibleCdpClient(CdpClient):
     """Ansible-based CDP client using native Ansible HTTP methods."""
 
     def __init__(
@@ -643,7 +596,7 @@ class AnsibleCdpClient(RestClient):
         except Exception as e:
             self.module.fail_json(msg=str(e))
 
-    def _get(
+    def get(
         self,
         path: str,
         params: Optional[Dict[str, Any]] = None,
@@ -651,7 +604,7 @@ class AnsibleCdpClient(RestClient):
         """Execute HTTP GET request."""
         return self._make_request("GET", path, params=params)
 
-    def _post(
+    def post(
         self,
         path: str,
         data: Optional[Dict[str, Any]] = None,
@@ -667,7 +620,7 @@ class AnsibleCdpClient(RestClient):
             squelch=squelch,
         )
 
-    def _put(
+    def put(
         self,
         path: str,
         data: Optional[Dict[str, Any]] = None,
@@ -683,6 +636,6 @@ class AnsibleCdpClient(RestClient):
             squelch=squelch,
         )
 
-    def _delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
+    def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
         """Execute HTTP DELETE request."""
         return self._make_request("DELETE", path, squelch=squelch)

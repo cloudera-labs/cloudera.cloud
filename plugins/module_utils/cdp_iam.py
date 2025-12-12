@@ -21,22 +21,21 @@ A REST client for the Cloudera on Cloud Platform (CDP) IAM API
 from typing import Any, Dict, List, Optional
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    RestClient,
     CdpClient,
 )
 
 
-class CdpIamClient(CdpClient):
+class CdpIamClient:
     """CDP IAM API client."""
 
-    def __init__(self, api_client: RestClient):
+    def __init__(self, api_client: CdpClient):
         """
         Initialize CDP IAM client.
 
         Args:
-            api_client: RestClient instance for managing HTTP method calls
+            api_client: CdpClient instance for managing HTTP method calls
         """
-        super().__init__(api_client=api_client)
+        self.api_client = api_client
 
     def _is_machine_user(self, user_crn: str) -> bool:
         """Check if a user CRN represents a machine user."""
@@ -252,7 +251,7 @@ class CdpIamClient(CdpClient):
 
         return changed
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_groups(
         self,
         group_names: Optional[List[str]] = None,
@@ -282,13 +281,13 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listGroups",
             json_data=json_data,
             squelch={404: {}},
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_users(
         self,
         user_ids: Optional[List[str]] = None,
@@ -319,7 +318,7 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listUsers",
             json_data=json_data,
         )
@@ -340,14 +339,14 @@ class CdpIamClient(CdpClient):
         if user_id is not None:
             json_data["userId"] = user_id
 
-        response = self.post(
+        response = self.api_client.post(
             "/api/v1/iam/getUser",
             json_data=json_data,
         )
 
         return response.get("user", {})
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_group_assigned_resource_roles(
         self,
         group_name: str,
@@ -372,12 +371,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listGroupAssignedResourceRoles",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_group_assigned_roles(
         self,
         group_name: str,
@@ -402,12 +401,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listGroupAssignedRoles",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_group_members(
         self,
         group_name: str,
@@ -432,12 +431,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listGroupMembers",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_groups_for_machine_user(
         self,
         machine_user_name: str,
@@ -462,12 +461,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listGroupsForMachineUser",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_groups_for_user(
         self,
         user_id: str,
@@ -492,12 +491,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listGroupsForUser",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_machine_user_assigned_resource_roles(
         self,
         machine_user_name: str,
@@ -522,12 +521,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listMachineUserAssignedResourceRoles",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_machine_user_assigned_roles(
         self,
         machine_user_name: str,
@@ -552,12 +551,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listMachineUserAssignedRoles",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_machine_users(
         self,
         machine_user_names: Optional[List[str]] = None,
@@ -585,12 +584,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listMachineUsers",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_resource_assignees(
         self,
         resource_crn: str,
@@ -615,12 +614,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listResourceAssignees",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_resource_roles(
         self,
         resource_role_names: Optional[List[str]] = None,
@@ -648,12 +647,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listResourceRoles",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_roles(
         self,
         role_names: Optional[List[str]] = None,
@@ -681,12 +680,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listRoles",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_user_assigned_resource_roles(
         self,
         user: Optional[str] = None,
@@ -714,12 +713,12 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listUserAssignedResourceRoles",
             json_data=json_data,
         )
 
-    @RestClient.paginated()
+    @CdpClient.paginated()
     def list_user_assigned_roles(
         self,
         user: Optional[str] = None,
@@ -747,7 +746,7 @@ class CdpIamClient(CdpClient):
         if pageSize is not None:
             json_data["pageSize"] = pageSize
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/listUserAssignedRoles",
             json_data=json_data,
         )
@@ -775,7 +774,7 @@ class CdpIamClient(CdpClient):
         if sync_membership_on_user_login is not None:
             json_data["syncMembershipOnUserLogin"] = sync_membership_on_user_login
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/createGroup",
             json_data=json_data,
         )
@@ -792,9 +791,10 @@ class CdpIamClient(CdpClient):
         """
         json_data: Dict[str, Any] = {"groupName": group_name}
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/deleteGroup",
             json_data=json_data,
+            squelch={404: {}},
         )
 
     def update_group(
@@ -818,7 +818,7 @@ class CdpIamClient(CdpClient):
         if sync_membership_on_user_login is not None:
             json_data["syncMembershipOnUserLogin"] = sync_membership_on_user_login
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/updateGroup",
             json_data=json_data,
         )
@@ -841,7 +841,7 @@ class CdpIamClient(CdpClient):
             "userId": user_id,
         }
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/addUserToGroup",
             json_data=json_data,
         )
@@ -866,7 +866,7 @@ class CdpIamClient(CdpClient):
             "machineUserName": machine_user_name,
         }
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/addMachineUserToGroup",
             json_data=json_data,
         )
@@ -887,7 +887,7 @@ class CdpIamClient(CdpClient):
             "userId": user_id,
         }
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/removeUserFromGroup",
             json_data=json_data,
         )
@@ -912,7 +912,7 @@ class CdpIamClient(CdpClient):
             "machineUserName": machine_user_name,
         }
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/removeMachineUserFromGroup",
             json_data=json_data,
         )
@@ -935,7 +935,7 @@ class CdpIamClient(CdpClient):
             "role": role,
         }
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/assignGroupRole",
             json_data=json_data,
         )
@@ -963,7 +963,7 @@ class CdpIamClient(CdpClient):
             "resourceRoleCrn": resource_role_crn,
         }
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/assignGroupResourceRole",
             json_data=json_data,
         )
@@ -984,7 +984,7 @@ class CdpIamClient(CdpClient):
             "role": role,
         }
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/unassignGroupRole",
             json_data=json_data,
         )
@@ -1012,7 +1012,7 @@ class CdpIamClient(CdpClient):
             "resourceRoleCrn": resource_role_crn,
         }
 
-        return self.post(
+        return self.api_client.post(
             "/api/v1/iam/unassignGroupResourceRole",
             json_data=json_data,
         )

@@ -35,10 +35,10 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
 class TestIamGroupIntegration:
     """Integration tests for CdpIamClient group management."""
 
-    def test_create_update_delete_group_lifecycle(self, api_client):
+    def test_create_update_delete_group_lifecycle(self, ansible_cdp_client):
         """Integration test for complete group lifecycle: create, update, delete."""
 
-        client = CdpIamClient(api_client=api_client)
+        client = CdpIamClient(api_client=ansible_cdp_client)
 
         test_group_name = "test-integration-group"
 
@@ -82,10 +82,10 @@ class TestIamGroupIntegration:
                 pass
             raise e
 
-    def test_group_membership_management(self, api_client):
+    def test_group_membership_management(self, ansible_cdp_client):
         """Integration test for adding and removing users from a group."""
 
-        client = CdpIamClient(api_client=api_client)
+        client = CdpIamClient(api_client=ansible_cdp_client)
 
         test_group_name = "test-membership-group"
 
@@ -131,10 +131,10 @@ class TestIamGroupIntegration:
             except:
                 pass
 
-    def test_group_role_assignment(self, api_client):
+    def test_group_role_assignment(self, ansible_cdp_client):
         """Integration test for assigning and unassigning roles to/from a group."""
 
-        client = CdpIamClient(api_client=api_client)
+        client = CdpIamClient(api_client=ansible_cdp_client)
 
         test_group_name = "test-role-assignment-group"
 
@@ -185,10 +185,10 @@ class TestIamGroupIntegration:
             except:
                 pass
 
-    def test_machine_user_group_membership(self, api_client):
+    def test_machine_user_group_membership(self, ansible_cdp_client):
         """Integration test for adding and removing machine users from a group."""
 
-        client = CdpIamClient(api_client=api_client)
+        client = CdpIamClient(api_client=ansible_cdp_client)
 
         test_group_name = "test-machine-user-group"
 
