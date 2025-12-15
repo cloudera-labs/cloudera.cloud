@@ -291,16 +291,14 @@ class IAMGroup(ServicesModule):
         if self.state == "present":
             # Create
             if not current_group:
-                if self.module.check_mode:
-                    self.group = {"groupName": self.name}
-                else:
+                if not self.module.check_mode:
                     response = self.client.create_group(
                         group_name=self.name,
                         sync_membership_on_user_login=self.sync,
                     )
                     self.group = response.get("group", {})
+                    current_group = self.client.get_group_details(group_name=self.name)
                 self.changed = True
-                current_group = self.client.get_group_details(group_name=self.name)
 
             # Reconcile
             if not self.module.check_mode and current_group:
@@ -316,7 +314,7 @@ class IAMGroup(ServicesModule):
                     if self.client.manage_group_users(
                         group_name=self.name,
                         current_members=current_group.get("members", []),
-                        desired_users=self.users if self.users is not None else [],
+                        desired_users=self.users or [],
                         purge=self.purge,
                     ):
                         self.changed = True
@@ -325,7 +323,7 @@ class IAMGroup(ServicesModule):
                     if self.client.manage_group_roles(
                         group_name=self.name,
                         current_roles=current_group.get("roles", []),
-                        desired_roles=self.roles if self.roles is not None else [],
+                        desired_roles=self.roles or [],
                         purge=self.purge,
                     ):
                         self.changed = True
@@ -337,11 +335,7 @@ class IAMGroup(ServicesModule):
                             "resourceAssignments",
                             [],
                         ),
-                        desired_assignments=(
-                            self.resource_roles
-                            if self.resource_roles is not None
-                            else []
-                        ),
+                        desired_assignments=(self.resource_roles or []),
                         purge=self.purge,
                     ):
                         self.changed = True

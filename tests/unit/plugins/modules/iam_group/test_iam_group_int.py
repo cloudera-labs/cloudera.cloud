@@ -189,3 +189,89 @@ def test_iam_group_update(module_args, iam_group_create):
 
     assert result.value.changed is False
     assert result.value.group["syncMembershipOnUserLogin"] is True
+
+
+def test_iam_group_roles_update(module_args, iam_group_delete):
+    """Test updating IAM group roles with real API calls."""
+
+    # Ensure cleanup after the test
+    iam_group_delete(GROUP_NAME)
+
+    # Create group with initial roles
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": GROUP_NAME,
+            "state": "present",
+            "roles": [
+                "crn:altus:iam:us-west-1:altus:role:BillingAdmin",
+                "crn:altus:iam:us-west-1:altus:role:ClassicClustersCreator",
+            ],
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group.main()
+
+    assert result.value.changed is True
+    assert result.value.group["groupName"] == GROUP_NAME
+    assert len(result.value.group["roles"]) == 2
+    assert (
+        "crn:altus:iam:us-west-1:altus:role:BillingAdmin" in result.value.group["roles"]
+    )
+    assert (
+        "crn:altus:iam:us-west-1:altus:role:ClassicClustersCreator"
+        in result.value.group["roles"]
+    )
+
+    # Update roles - add three new roles
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": GROUP_NAME,
+            "state": "present",
+            "roles": [
+                "crn:altus:iam:us-west-1:altus:role:DFCatalogAdmin",
+                "crn:altus:iam:us-west-1:altus:role:DFCatalogPublisher",
+                "crn:altus:iam:us-west-1:altus:role:DFCatalogViewer",
+            ],
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group.main()
+
+    assert result.value.changed is True
+    assert result.value.group["groupName"] == GROUP_NAME
+    assert len(result.value.group["roles"]) == 5
+    # Verify all roles are present
+    assert (
+        "crn:altus:iam:us-west-1:altus:role:BillingAdmin" in result.value.group["roles"]
+    )
+    assert (
+        "crn:altus:iam:us-west-1:altus:role:ClassicClustersCreator"
+        in result.value.group["roles"]
+    )
+    assert (
+        "crn:altus:iam:us-west-1:altus:role:DFCatalogAdmin"
+        in result.value.group["roles"]
+    )
+    assert (
+        "crn:altus:iam:us-west-1:altus:role:DFCatalogPublisher"
+        in result.value.group["roles"]
+    )
+    assert (
+        "crn:altus:iam:us-west-1:altus:role:DFCatalogViewer"
+        in result.value.group["roles"]
+    )
+
+    # Idempotency check
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group.main()
+
+    assert result.value.changed is False
+    assert len(result.value.group["roles"]) == 5
