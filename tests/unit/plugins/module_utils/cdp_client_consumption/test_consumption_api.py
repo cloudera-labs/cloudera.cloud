@@ -20,10 +20,8 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.cloudera.cloud.tests.unit import AnsibleExitJson
-
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    RestClient,
+    CdpClient,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_consumption import (
     CdpConsumptionClient,
@@ -52,9 +50,9 @@ class TestCdpConsumptionClient:
             ],
         }
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.return_value = mock_response
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
 
         # Create the CdpConsumptionClient instance
         client = CdpConsumptionClient(api_client=api_client)
@@ -69,10 +67,9 @@ class TestCdpConsumptionClient:
         assert response["records"][0]["id"] == "record1"
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_called_once_with(
+        api_client.post.assert_called_once_with(
             "/api/v1/consumption/listComputeUsageRecords",
-            None,
-            {
+            json_data={
                 "fromTimestamp": FROM_TIMESTAMP,
                 "toTimestamp": TO_TIMESTAMP,
                 "pageSize": 100,
@@ -98,9 +95,9 @@ class TestCdpConsumptionClient:
             ],
         }
 
-        # Mock the RestClient instance
-        api_client = mocker.create_autospec(RestClient, instance=True)
-        api_client._post.side_effect = [mock_response1, mock_response2]
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.side_effect = [mock_response1, mock_response2]
 
         # Create the CdpConsumptionClient instance
         client = CdpConsumptionClient(api_client=api_client)
@@ -116,12 +113,11 @@ class TestCdpConsumptionClient:
         assert response["records"][2]["id"] == "record3"
 
         # Verify that the post method was called with correct parameters
-        api_client._post.assert_has_calls(
+        api_client.post.assert_has_calls(
             [
                 mocker.call(
                     "/api/v1/consumption/listComputeUsageRecords",
-                    None,
-                    {
+                    json_data={
                         "fromTimestamp": FROM_TIMESTAMP,
                         "toTimestamp": TO_TIMESTAMP,
                         "pageSize": 100,
@@ -129,8 +125,7 @@ class TestCdpConsumptionClient:
                 ),
                 mocker.call(
                     "/api/v1/consumption/listComputeUsageRecords",
-                    None,
-                    {
+                    json_data={
                         "fromTimestamp": FROM_TIMESTAMP,
                         "toTimestamp": TO_TIMESTAMP,
                         "pageSize": 100,
@@ -145,11 +140,12 @@ class TestCdpConsumptionClient:
 class TestCdpConsumptionClientIntegration:
     """Integration tests for CdpConsumptionClient."""
 
-    def test_list_compute_usage_records(self, api_client):
+    @pytest.mark.slow
+    def test_list_compute_usage_records(self, ansible_cdp_client):
         """Test listing compute usage records."""
 
         # Create the CdpConsumptionClient instance
-        client = CdpConsumptionClient(api_client=api_client)
+        client = CdpConsumptionClient(api_client=ansible_cdp_client)
 
         response = client.list_compute_usage_records(
             from_timestamp=FROM_TIMESTAMP,

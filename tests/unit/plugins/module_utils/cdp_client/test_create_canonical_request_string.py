@@ -18,8 +18,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import pytest
-
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     create_canonical_request_string,
 )
