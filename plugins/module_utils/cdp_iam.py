@@ -342,6 +342,7 @@ class CdpIamClient:
         response = self.api_client.post(
             "/api/v1/iam/getUser",
             json_data=json_data,
+            squelch={404: {}},
         )
 
         return response.get("user", {})
@@ -1015,4 +1016,40 @@ class CdpIamClient:
         return self.api_client.post(
             "/api/v1/iam/unassignGroupResourceRole",
             json_data=json_data,
+        )
+
+    @CdpClient.paginated()
+    def list_machine_users(
+        self,
+        machine_user_names: Optional[List[str]] = None,
+        pageToken: Optional[str] = None,
+        pageSize: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        List IAM machine users with automatic pagination.
+
+        Args:
+            machine_user_names: Optional list of machine user names or CRNs to filter by
+            pageToken: Token for pagination (automatically handled by decorator)
+            pageSize: Page size for pagination (automatically handled by decorator)
+
+        Returns:
+            Response with automatic pagination handling containing machineUsers list
+        """
+        json_data: Dict[str, Any] = {}
+
+        # Add machine user names filter if provided
+        if machine_user_names is not None:
+            json_data["machineUserNames"] = machine_user_names
+
+        # Add pagination parameters if provided
+        if pageToken is not None:
+            json_data["startingToken"] = pageToken
+        if pageSize is not None:
+            json_data["pageSize"] = pageSize
+
+        return self.api_client.post(
+            "/api/v1/iam/listMachineUsers",
+            json_data=json_data,
+            squelch={404: {}},
         )
