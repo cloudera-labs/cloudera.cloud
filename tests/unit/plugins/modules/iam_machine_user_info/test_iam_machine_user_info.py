@@ -75,7 +75,7 @@ def test_iam_machine_user_info_default(module_args, mocker):
                 "creationDate": "2025-01-02T00:00:00Z",
                 "status": "ACTIVE",
             },
-        ]
+        ],
     }
 
     # Test module execution
@@ -122,8 +122,8 @@ def test_iam_machine_user_info_single_name(module_args, mocker):
                 "creationDate": "2025-01-01T00:00:00Z",
                 "status": "ACTIVE",
                 "workloadUsername": f"wl_{MACHINE_USER_NAME}",
-            }
-        ]
+            },
+        ],
     }
 
     # Test module execution
@@ -137,7 +137,7 @@ def test_iam_machine_user_info_single_name(module_args, mocker):
 
     # Verify CdpIamClient was called correctly with the machine user name
     client.list_machine_users.assert_called_once_with(
-        machine_user_names=[MACHINE_USER_NAME]
+        machine_user_names=[MACHINE_USER_NAME],
     )
 
 
@@ -175,7 +175,7 @@ def test_iam_machine_user_info_multiple_names(module_args, mocker):
                 "status": "ACTIVE",
             }
             for name in machine_user_names
-        ]
+        ],
     }
 
     # Test module execution
@@ -191,7 +191,7 @@ def test_iam_machine_user_info_multiple_names(module_args, mocker):
 
     # Verify CdpIamClient was called correctly with the list of names
     client.list_machine_users.assert_called_once_with(
-        machine_user_names=machine_user_names
+        machine_user_names=machine_user_names,
     )
 
 
@@ -229,5 +229,5 @@ def test_iam_machine_user_info_not_found(module_args, mocker):
 
     # Verify CdpIamClient was called correctly
     client.list_machine_users.assert_called_once_with(
-        machine_user_names=["nonexistent-machine-user"]
+        machine_user_names=["nonexistent-machine-user"],
     )
