@@ -229,11 +229,14 @@ def test_create_encoded_authn_params_string_base64_error():
     auth_method = "ed25519v1"
 
     # Use unittest.mock directly with a more targeted approach
-    with unittest.mock.patch(
-        "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps",
-    ) as mock_dumps, unittest.mock.patch(
-        "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.urlsafe_b64encode",
-    ) as mock_b64encode:
+    with (
+        unittest.mock.patch(
+            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.json.dumps",
+        ) as mock_dumps,
+        unittest.mock.patch(
+            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client.urlsafe_b64encode",
+        ) as mock_b64encode,
+    ):
         mock_dumps.return_value = (
             '{"access_key_id": "test-key", "auth_method": "ed25519v1"}'
         )
