@@ -43,15 +43,17 @@ def iam_client(test_cdp_client) -> CdpIamClient:
     """Fixture to provide an IAM client for tests."""
     return CdpIamClient(api_client=test_cdp_client)
 
+
 @pytest.fixture
 def existing_machine_user_name(iam_client) -> str:
     """Fixture to provide an existing machine user name for tests."""
     response = iam_client.list_machine_users()
-    
+
     if len(response.get("machineUsers", [])) == 0:
         pytest.skip("No machine users available for testing")
-    
+
     return response["machineUsers"][0]["machineUserName"]
+
 
 def test_iam_machine_user_info_list_all(module_args):
     """Test listing all IAM machine users with real API calls."""
