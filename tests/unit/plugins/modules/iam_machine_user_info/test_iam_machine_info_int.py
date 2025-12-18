@@ -43,6 +43,15 @@ def iam_client(test_cdp_client) -> CdpIamClient:
     """Fixture to provide an IAM client for tests."""
     return CdpIamClient(api_client=test_cdp_client)
 
+@pytest.fixture
+def existing_machine_user_name(iam_client) -> str:
+    """Fixture to provide an existing machine user name for tests."""
+    response = iam_client.list_machine_users()
+    
+    if len(response.get("machineUsers", [])) == 0:
+        pytest.skip("No machine users available for testing")
+    
+    return response["machineUsers"][0]["machineUserName"]
 
 def test_iam_machine_user_info_list_all(module_args):
     """Test listing all IAM machine users with real API calls."""
@@ -63,24 +72,15 @@ def test_iam_machine_user_info_list_all(module_args):
     assert isinstance(result.value.machine_users, list)
 
 
-def test_iam_machine_user_info_list_by_name(module_args, iam_client):
+def test_iam_machine_user_info_list_by_name(module_args, existing_machine_user_name):
     """Test listing IAM machine users by name with real API calls."""
-
-    # First, get a list of machine users to find at least one
-    response = iam_client.list_machine_users()
-
-    if len(response.get("machineUsers", [])) == 0:
-        pytest.skip("No machine users available for testing")
-
-    # Get the first machine user name
-    machine_user_name = response["machineUsers"][0]["machineUserName"]
 
     module_args(
         {
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
-            "name": [machine_user_name],
+            "name": [existing_machine_user_name],
         },
     )
 
@@ -88,9 +88,9 @@ def test_iam_machine_user_info_list_by_name(module_args, iam_client):
         iam_machine_user_info.main()
 
     assert result.value.changed is False
-    assert len(result.value.machine_users) >= 1
+    assert len(result.value.machine_users) == 1
     assert any(
-        mu["machine_user_name"] == machine_user_name
+        mu["machine_user_name"] == existing_machine_user_name
         for mu in result.value.machine_users
     )
 
