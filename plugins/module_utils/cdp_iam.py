@@ -1053,3 +1053,370 @@ class CdpIamClient:
             json_data=json_data,
             squelch={404: {}},
         )
+
+    def get_machine_user_details(
+        self,
+        machine_user_name: str,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get complete machine user information including roles and resource assignments.
+
+        This method makes multiple API calls to assemble a comprehensive machine user profile:
+        - Basic machine user information (from list_machine_users)
+        - Assigned roles
+        - Assigned resource roles
+
+        Returns:
+            Complete machine user information dict, or None if machine user doesn't exist
+        """
+        machine_users = self.list_machine_users(
+            machine_user_names=[machine_user_name],
+        ).get("machineUsers", [])
+
+        if not machine_users:
+            return None
+
+        machine_user_info = machine_users[0]
+
+        # Get assigned roles
+        roles_response = self.list_machine_user_assigned_roles(
+            machine_user_name=machine_user_name,
+        )
+        roles = roles_response.get("roleCrns", [])
+
+        # Get assigned resource roles
+        resource_roles_response = self.list_machine_user_assigned_resource_roles(
+            machine_user_name=machine_user_name,
+        )
+        resource_assignments = resource_roles_response.get("resourceAssignments", [])
+
+        # Build complete machine user object
+        return {
+            "machineUserName": machine_user_info.get("machineUserName"),
+            "crn": machine_user_info.get("crn"),
+            "creationDate": machine_user_info.get("creationDate"),
+            "status": machine_user_info.get("status"),
+            "workloadUsername": machine_user_info.get("workloadUsername"),
+            "roles": roles,
+            "resourceAssignments": resource_assignments,
+        }
+
+    def manage_machine_user_roles(
+        self,
+        machine_user_name: str,
+        current_roles: List[str],
+        desired_roles: List[str],
+        purge: bool = False,
+    ) -> bool:
+        """
+        Manage machine user role assignments.
+
+        Args:
+            machine_user_name: The name of the machine user
+            current_roles: List of current role CRNs
+            desired_roles: List of desired role CRNs
+            purge: If True, remove roles not in desired list
+
+        Returns:
+            True if changes were made, False otherwise
+        """
+        changed = False
+
+        if purge:
+            # Remove all roles not in desired list
+            roles_to_remove = [
+                role for role in current_roles if role not in desired_roles
+            ]
+            for role_crn in roles_to_remove:
+                self.unassign_machine_user_role(
+                    machine_user_name=machine_user_name,
+                    role=role_crn,
+                )
+                changed = True
+
+        # Add missing roles
+        roles_to_add = [role for role in desired_roles if role not in current_roles]
+        for role_crn in roles_to_add:
+            self.assign_machine_user_role(
+                machine_user_name=machine_user_name,
+                role=role_crn,
+            )
+            changed = True
+
+        return changed
+
+    def manage_machine_user_resource_roles(
+        self,
+        machine_user_name: str,
+        current_assignments: List[Dict[str, str]],
+        desired_assignments: List[Dict[str, str]],
+        purge: bool = False,
+    ) -> bool:
+        """
+        Manage machine user resource role assignments.
+
+        Args:
+            machine_user_name: The name of the machine user
+            current_assignments: List of current resource role assignments
+            desired_assignments: List of desired resource role assignments
+            purge: If True, remove assignments not in desired list
+
+        Returns:
+            True if changes were made, False otherwise
+        """
+        changed = False
+
+        # Normalize current assignments for comparison
+        current_normalized = [
+            {
+                "resource": a.get("resourceCrn"),
+                "role": a.get("resourceRoleCrn"),
+            }
+            for a in current_assignments
+        ]
+
+        # Normalize desired assignments
+        desired_normalized = [
+            {
+                "resource": a.get("resource") or a.get("resourceCrn"),
+                "role": a.get("role") or a.get("resourceRoleCrn"),
+            }
+            for a in desired_assignments
+        ]
+
+        if purge:
+            # Remove all assignments not in desired list
+            assignments_to_remove = [
+                a for a in current_normalized if a not in desired_normalized
+            ]
+            for assignment in assignments_to_remove:
+                self.unassign_machine_user_resource_role(
+                    machine_user_name=machine_user_name,
+                    resource_crn=assignment["resource"],
+                    resource_role_crn=assignment["role"],
+                )
+                changed = True
+
+        # Add missing assignments
+        assignments_to_add = [
+            a for a in desired_normalized if a not in current_normalized
+        ]
+        for assignment in assignments_to_add:
+            self.assign_machine_user_resource_role(
+                machine_user_name=machine_user_name,
+                resource_crn=assignment["resource"],
+                resource_role_crn=assignment["role"],
+            )
+            changed = True
+
+        return changed
+
+    def create_machine_user(self, machine_user_name: str) -> Dict[str, Any]:
+        """
+        Create a new machine user.
+
+        Args:
+            machine_user_name: The name of the machine user to create
+
+        Returns:
+            Response containing the created machine user information
+        """
+        json_data: Dict[str, Any] = {
+            "machineUserName": machine_user_name,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/createMachineUser",
+            json_data=json_data,
+        )
+
+    def delete_machine_user(self, machine_user_name: str) -> Dict[str, Any]:
+        """
+        Delete a machine user.
+
+        Args:
+            machine_user_name: The name or CRN of the machine user to delete
+
+        Returns:
+            Response confirming the machine user was deleted
+        """
+        json_data: Dict[str, Any] = {
+            "machineUserName": machine_user_name,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/deleteMachineUser",
+            json_data=json_data,
+        )
+
+    # Machine User Role Assignment Methods
+
+    def assign_machine_user_role(
+        self,
+        machine_user_name: str,
+        role: str,
+    ) -> Dict[str, Any]:
+        """
+        Assign a role to a machine user.
+
+        Args:
+            machine_user_name: The machine user name or CRN
+            role: The role name or CRN to assign
+
+        Returns:
+            Response confirming the role was assigned to the machine user
+        """
+        json_data: Dict[str, Any] = {
+            "machineUserName": machine_user_name,
+            "role": role,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/assignMachineUserRole",
+            json_data=json_data,
+        )
+
+    def assign_machine_user_resource_role(
+        self,
+        machine_user_name: str,
+        resource_crn: str,
+        resource_role_crn: str,
+    ) -> Dict[str, Any]:
+        """
+        Assign a resource role to a machine user.
+
+        Args:
+            machine_user_name: The machine user name or CRN
+            resource_crn: The resource CRN for which the resource role rights are granted
+            resource_role_crn: The CRN of the resource role being assigned
+
+        Returns:
+            Response confirming the resource role was assigned to the machine user
+        """
+        json_data: Dict[str, Any] = {
+            "machineUserName": machine_user_name,
+            "resourceCrn": resource_crn,
+            "resourceRoleCrn": resource_role_crn,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/assignMachineUserResourceRole",
+            json_data=json_data,
+        )
+
+    def unassign_machine_user_role(
+        self,
+        machine_user_name: str,
+        role: str,
+    ) -> Dict[str, Any]:
+        """
+        Unassign a role from a machine user.
+
+        Args:
+            machine_user_name: The machine user name or CRN
+            role: The role name or CRN to unassign
+
+        Returns:
+            Response confirming the role was unassigned from the machine user
+        """
+        json_data: Dict[str, Any] = {
+            "machineUserName": machine_user_name,
+            "role": role,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/unassignMachineUserRole",
+            json_data=json_data,
+        )
+
+    def unassign_machine_user_resource_role(
+        self,
+        machine_user_name: str,
+        resource_crn: str,
+        resource_role_crn: str,
+    ) -> Dict[str, Any]:
+        """
+        Unassign a resource role from a machine user.
+
+        Args:
+            machine_user_name: The machine user name or CRN
+            resource_crn: The CRN of the resource for which the resource role rights will be unassigned
+            resource_role_crn: The CRN of the resource role to unassign
+
+        Returns:
+            Response confirming the resource role was unassigned from the machine user
+        """
+        json_data: Dict[str, Any] = {
+            "machineUserName": machine_user_name,
+            "resourceCrn": resource_crn,
+            "resourceRoleCrn": resource_role_crn,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/unassignMachineUserResourceRole",
+            json_data=json_data,
+        )
+
+    @CdpClient.paginated()
+    def list_machine_user_assigned_roles(
+        self,
+        machine_user_name: str,
+        pageToken: Optional[str] = None,
+        pageSize: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        List roles assigned to a machine user with automatic pagination.
+
+        Args:
+            machine_user_name: The machine user name or CRN
+            pageToken: Token for pagination (automatically handled by decorator)
+            pageSize: Page size for pagination (automatically handled by decorator)
+
+        Returns:
+            Response with automatic pagination handling containing assigned roles
+        """
+        json_data: Dict[str, Any] = {
+            "machineUserName": machine_user_name,
+        }
+
+        if pageToken is not None:
+            json_data["startingToken"] = pageToken
+        if pageSize is not None:
+            json_data["pageSize"] = pageSize
+
+        return self.api_client.post(
+            "/api/v1/iam/listMachineUserAssignedRoles",
+            json_data=json_data,
+        )
+
+    @CdpClient.paginated()
+    def list_machine_user_assigned_resource_roles(
+        self,
+        machine_user_name: str,
+        pageToken: Optional[str] = None,
+        pageSize: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        List resource roles assigned to a machine user with automatic pagination.
+
+        Args:
+            machine_user_name: The machine user name or CRN
+            pageToken: Token for pagination (automatically handled by decorator)
+            pageSize: Page size for pagination (automatically handled by decorator)
+
+        Returns:
+            Response with automatic pagination handling containing assigned resource roles
+        """
+        json_data: Dict[str, Any] = {
+            "machineUserName": machine_user_name,
+        }
+
+        if pageToken is not None:
+            json_data["startingToken"] = pageToken
+        if pageSize is not None:
+            json_data["pageSize"] = pageSize
+
+        return self.api_client.post(
+            "/api/v1/iam/listMachineUserAssignedResourceRoles",
+            json_data=json_data,
+        )
