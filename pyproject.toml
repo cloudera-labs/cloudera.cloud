@@ -3,7 +3,7 @@ name = "cloud"
 dynamic = ["version"]
 description = "cloudera.cloud Ansible collection"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9" # hatch-semver requires 3.9+
 license = "Apache-2.0"
 keywords = []
 authors = [
@@ -19,7 +19,6 @@ scheme = "semver"
 validate-bump = true
 
 [tool.hatch.envs.default]
-python = "3.12"
 detached = true
 dependencies = [
   "pre-commit",
@@ -40,6 +39,46 @@ dependencies = [
 lint = [
   "pre-commit run -a",
   "antsibull-docs lint-collection-docs --plugin-docs --validate-collection-refs=all --skip-rstcheck ."
+]
+
+[tool.hatch.envs.hatch-test]
+matrix-name-format = "{variable}_{value}"
+extra-dependencies = [
+  "pytest",
+  "pytest-mock",
+  "molecule",
+  "molecule-plugins",
+  "molecule-plugins[ec2]",
+  # "ansible-core<2.17", # For RHEL 8 support
+  "cdpy @ git+https://github.com/cloudera-labs/cdpy@main#egg=cdpy",
+]
+
+# Ansible 2.18 - Python >= 3.11
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.13", "3.12", "3.11"]
+ansible = ["2.18"]
+
+# Ansible 2.17 - Python >= 3.10
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.13", "3.12", "3.11", "3.10"]
+ansible = ["2.17"]
+
+# Ansible 2.16 - Python >= 3.10
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.13", "3.12", "3.11", "3.10"]
+ansible = ["2.16"]
+
+# Ansible 2.15 - Python <= 3.12
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.12", "3.11", "3.10", "3.9"]
+ansible = ["2.15"]
+
+[tool.hatch.envs.hatch-test.overrides]
+matrix.ansible.dependencies = [
+  { value = "ansible-core==2.18", if = ["2.18"] },
+  { value = "ansible-core==2.17", if = ["2.17"] },
+  { value = "ansible-core==2.16", if = ["2.16"] },
+  { value = "ansible-core==2.15", if = ["2.15"] },
 ]
 
 [tool.hatch.envs.docs]
