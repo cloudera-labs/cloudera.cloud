@@ -74,6 +74,7 @@ class TestCdpConsumptionClient:
                 "toTimestamp": TO_TIMESTAMP,
                 "pageSize": 100,
             },
+            squelch={},
         )
 
     def test_list_compute_usage_records_pagination(self, mocker):
@@ -122,6 +123,7 @@ class TestCdpConsumptionClient:
                         "toTimestamp": TO_TIMESTAMP,
                         "pageSize": 100,
                     },
+                    squelch={},
                 ),
                 mocker.call(
                     "/api/v1/consumption/listComputeUsageRecords",
@@ -131,6 +133,7 @@ class TestCdpConsumptionClient:
                         "pageSize": 100,
                         "pageToken": "token123",
                     },
+                    squelch={},
                 ),
             ],
         )
