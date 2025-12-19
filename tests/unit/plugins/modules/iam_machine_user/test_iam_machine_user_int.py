@@ -101,7 +101,9 @@ def test_iam_user(test_cdp_client, iam_client):
 
 
 def test_iam_machine_user_create(
-    module_args, iam_machine_user_delete, unique_machine_user_name
+    module_args,
+    iam_machine_user_delete,
+    unique_machine_user_name,
 ):
     """Test creating a new IAM machine user with real API calls."""
 
@@ -136,7 +138,9 @@ def test_iam_machine_user_create(
 
 
 def test_iam_machine_user_delete(
-    module_args, iam_machine_user_create, unique_machine_user_name
+    module_args,
+    iam_machine_user_create,
+    unique_machine_user_name,
 ):
     """Test deleting an IAM machine user with real API calls."""
 
@@ -169,7 +173,9 @@ def test_iam_machine_user_delete(
 
 
 def test_iam_machine_user_roles_update(
-    module_args, iam_machine_user_delete, unique_machine_user_name
+    module_args,
+    iam_machine_user_delete,
+    unique_machine_user_name,
 ):
     """Test updating IAM machine user roles with real API calls."""
 
@@ -259,7 +265,9 @@ def test_iam_machine_user_roles_update(
 
 
 def test_iam_machine_user_roles_purge(
-    module_args, iam_machine_user_delete, unique_machine_user_name
+    module_args,
+    iam_machine_user_delete,
+    unique_machine_user_name,
 ):
     """Test purging IAM machine user roles with real API calls."""
 

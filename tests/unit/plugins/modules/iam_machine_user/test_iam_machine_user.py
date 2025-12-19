@@ -92,8 +92,8 @@ def test_iam_machine_user_absent(module_args, mocker):
 
     # Verify CdpIamClient was called correctly
     client.get_machine_user_details.assert_called_once_with(
-        machine_user_name=MACHINE_USER_NAME
+        machine_user_name=MACHINE_USER_NAME,
     )
     client.delete_machine_user.assert_called_once_with(
-        machine_user_name=MACHINE_USER_NAME
+        machine_user_name=MACHINE_USER_NAME,
     )
