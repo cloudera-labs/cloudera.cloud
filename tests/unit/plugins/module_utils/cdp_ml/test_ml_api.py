@@ -160,7 +160,7 @@ class TestCdpMlClient:
         # Create the CdpMlClient instance
         client = CdpMlClient(api_client=api_client)
         response = client.describe_workspace(
-            crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123"
+            crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123",
         )
 
         # Validate the response
@@ -175,7 +175,7 @@ class TestCdpMlClient:
         api_client.post.assert_called_once_with(
             "/api/v1/ml/describeWorkspace",
             json_data={
-                "workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123"
+                "workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123",
             },
             squelch={404: {}, 500: {}},
         )
@@ -311,7 +311,7 @@ class TestCdpMlClient:
         # Create the CdpMlClient instance
         client = CdpMlClient(api_client=api_client)
         response = client.describe_workspace(
-            crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:nonexistent"
+            crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:nonexistent",
         )
 
         # Validate the response is empty
@@ -322,7 +322,7 @@ class TestCdpMlClient:
         api_client.post.assert_called_once_with(
             "/api/v1/ml/describeWorkspace",
             json_data={
-                "workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:nonexistent"
+                "workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:nonexistent",
             },
             squelch={404: {}, 500: {}},
         )
@@ -355,21 +355,21 @@ class TestCdpMlClient:
                     "crn": "crn:cdp:ml:us-west-1:account:workspace:ws1",
                     "instanceName": "workspace1",
                     "instanceStatus": "installation:finished",
-                }
+                },
             },
             {
                 "workspace": {
                     "crn": "crn:cdp:ml:us-west-1:account:workspace:ws2",
                     "instanceName": "workspace2",
                     "instanceStatus": "installation:finished",
-                }
+                },
             },
             {
                 "workspace": {
                     "crn": "crn:cdp:ml:us-west-1:account:workspace:ws3",
                     "instanceName": "workspace3",
                     "instanceStatus": "installation:finished",
-                }
+                },
             },
         ]
 
@@ -441,14 +441,14 @@ class TestCdpMlClient:
                     "crn": "crn:cdp:ml:us-west-1:account:workspace:ws1",
                     "instanceName": "workspace1",
                     "environmentName": "test-env",
-                }
+                },
             },
             {
                 "workspace": {
                     "crn": "crn:cdp:ml:us-west-1:account:workspace:ws2",
                     "instanceName": "workspace2",
                     "environmentName": "test-env",
-                }
+                },
             },
         ]
 

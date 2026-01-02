@@ -45,7 +45,7 @@ def test_ml_info_integration(module_args):
             "endpoint": os.getenv("CDP_API_ENDPOINT", BASE_URL),
             "access_key": os.getenv("CDP_ACCESS_KEY_ID", ACCESS_KEY),
             "private_key": os.getenv("CDP_PRIVATE_KEY", PRIVATE_KEY),
-        }
+        },
     )
 
     with pytest.raises(AnsibleExitJson) as result:
