@@ -32,22 +32,25 @@ BASE_URL = os.getenv("CDP_API_ENDPOINT", "not set")
 ACCESS_KEY = os.getenv("CDP_ACCESS_KEY_ID", "not set")
 PRIVATE_KEY = os.getenv("CDP_PRIVATE_KEY", "not set")
 
+
 @pytest.mark.integration_api
 @pytest.mark.slow
 def test_ml_info_integration(module_args):
     """Integration test for ml_info module.
-       Lists all ML workspaces.
+    Lists all ML workspaces.
     """
-    
-    module_args({
-        "endpoint": os.getenv("CDP_API_ENDPOINT", BASE_URL),
-        "access_key": os.getenv("CDP_ACCESS_KEY_ID", ACCESS_KEY),
-        "private_key": os.getenv("CDP_PRIVATE_KEY", PRIVATE_KEY),
-    })
-    
+
+    module_args(
+        {
+            "endpoint": os.getenv("CDP_API_ENDPOINT", BASE_URL),
+            "access_key": os.getenv("CDP_ACCESS_KEY_ID", ACCESS_KEY),
+            "private_key": os.getenv("CDP_PRIVATE_KEY", PRIVATE_KEY),
+        }
+    )
+
     with pytest.raises(AnsibleExitJson) as result:
         ml_info.main()
-    
+
     assert hasattr(result.value, "workspaces")
     assert isinstance(result.value.workspaces, list)
     assert result.value.changed is False

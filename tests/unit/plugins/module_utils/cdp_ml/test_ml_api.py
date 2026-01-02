@@ -25,6 +25,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_ml import (
     CdpMlClient,
 )
 
+
 class TestCdpMlClient:
     """Unit tests for CdpMlClient."""
 
@@ -67,7 +68,7 @@ class TestCdpMlClient:
             "/api/v1/ml/listWorkspaces",
             json_data={},
             squelch={404: []},
-        )        
+        )
 
     def test_list_workspaces_with_env_filter(self, mocker):
         """Test listing ML workspaces with environment filter."""
@@ -115,7 +116,7 @@ class TestCdpMlClient:
 
         # Mock empty response data
         mock_response = {
-            "workspaces": []
+            "workspaces": [],
         }
 
         # Mock the CdpClient instance
@@ -149,7 +150,7 @@ class TestCdpMlClient:
                 "crn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123",
                 "instanceStatus": "installation:finished",
                 "instanceUrl": "https://test.cloudera.site",
-            }
+            },
         }
 
         # Mock the CdpClient instance
@@ -158,17 +159,24 @@ class TestCdpMlClient:
 
         # Create the CdpMlClient instance
         client = CdpMlClient(api_client=api_client)
-        response = client.describe_workspace(crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123")
+        response = client.describe_workspace(
+            crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123"
+        )
 
         # Validate the response
         assert "workspace" in response
         assert response["workspace"]["instanceName"] == "test-workspace"
-        assert response["workspace"]["crn"] == "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123"
+        assert (
+            response["workspace"]["crn"]
+            == "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123"
+        )
 
         # Verify that the post method was called with ONLY workspaceCrn
         api_client.post.assert_called_once_with(
             "/api/v1/ml/describeWorkspace",
-            json_data={"workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123"},
+            json_data={
+                "workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123"
+            },
             squelch={404: {}, 500: {}},
         )
 
@@ -188,7 +196,7 @@ class TestCdpMlClient:
                 "crn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:xyz789",
                 "instanceStatus": "installation:finished",
                 "instanceUrl": "https://my-workspace.cloudera.site",
-            }
+            },
         }
 
         # Mock the CdpClient instance
@@ -209,7 +217,7 @@ class TestCdpMlClient:
             "/api/v1/ml/describeWorkspace",
             json_data={
                 "environmentName": "my-env",
-                "workspaceName": "my-workspace"
+                "workspaceName": "my-workspace",
             },
             squelch={404: {}, 500: {}},
         )
@@ -227,7 +235,7 @@ class TestCdpMlClient:
                 "instanceName": "name-only-workspace",
                 "crn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:name123",
                 "instanceStatus": "installation:finished",
-            }
+            },
         }
 
         # Mock the CdpClient instance
@@ -263,7 +271,7 @@ class TestCdpMlClient:
                 "environmentName": "env-only-test",
                 "crn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:env456",
                 "instanceStatus": "installation:finished",
-            }
+            },
         }
 
         # Mock the CdpClient instance
@@ -302,7 +310,9 @@ class TestCdpMlClient:
 
         # Create the CdpMlClient instance
         client = CdpMlClient(api_client=api_client)
-        response = client.describe_workspace(crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:nonexistent")
+        response = client.describe_workspace(
+            crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:nonexistent"
+        )
 
         # Validate the response is empty
         assert response == {}
@@ -311,7 +321,9 @@ class TestCdpMlClient:
         # Verify that the post method was called with squelch parameters for 404 and 500
         api_client.post.assert_called_once_with(
             "/api/v1/ml/describeWorkspace",
-            json_data={"workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:nonexistent"},
+            json_data={
+                "workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:nonexistent"
+            },
             squelch={404: {}, 500: {}},
         )
 
@@ -321,22 +333,49 @@ class TestCdpMlClient:
         # Mock list_workspaces response
         mock_list_response = {
             "workspaces": [
-                {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws1", "instanceName": "workspace1"},
-                {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws2", "instanceName": "workspace2"},
-                {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws3", "instanceName": "workspace3"},
-            ]
+                {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws1",
+                    "instanceName": "workspace1",
+                },
+                {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws2",
+                    "instanceName": "workspace2",
+                },
+                {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws3",
+                    "instanceName": "workspace3",
+                },
+            ],
         }
 
         # Mock describe_workspace responses
         mock_describe_responses = [
-            {"workspace": {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws1", "instanceName": "workspace1", "instanceStatus": "installation:finished"}},
-            {"workspace": {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws2", "instanceName": "workspace2", "instanceStatus": "installation:finished"}},
-            {"workspace": {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws3", "instanceName": "workspace3", "instanceStatus": "installation:finished"}},
+            {
+                "workspace": {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws1",
+                    "instanceName": "workspace1",
+                    "instanceStatus": "installation:finished",
+                }
+            },
+            {
+                "workspace": {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws2",
+                    "instanceName": "workspace2",
+                    "instanceStatus": "installation:finished",
+                }
+            },
+            {
+                "workspace": {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws3",
+                    "instanceName": "workspace3",
+                    "instanceStatus": "installation:finished",
+                }
+            },
         ]
 
         # Mock the CdpClient instance
         api_client = mocker.create_autospec(CdpClient, instance=True)
-        
+
         # Set up post method to return different responses based on endpoint
         def post_side_effect(endpoint, json_data, squelch=None):
             if endpoint == "/api/v1/ml/listWorkspaces":
@@ -347,7 +386,7 @@ class TestCdpMlClient:
                     if response["workspace"]["crn"] == json_data.get("workspaceCrn"):
                         return response
             return {}
-        
+
         api_client.post.side_effect = post_side_effect
 
         # Create the CdpMlClient instance
@@ -369,7 +408,11 @@ class TestCdpMlClient:
 
         # Verify describe_workspace was called 3 times with correct CRNs
         assert api_client.post.call_count == 4  # 1 list + 3 describe calls
-        describe_calls = [call for call in api_client.post.call_args_list if "/api/v1/ml/describeWorkspace" in str(call)]
+        describe_calls = [
+            call
+            for call in api_client.post.call_args_list
+            if "/api/v1/ml/describeWorkspace" in str(call)
+        ]
         assert len(describe_calls) == 3
 
     def test_describe_all_workspaces_with_env_filter(self, mocker):
@@ -378,20 +421,40 @@ class TestCdpMlClient:
         # Mock list_workspaces response (already filtered by env)
         mock_list_response = {
             "workspaces": [
-                {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws1", "instanceName": "workspace1", "environmentName": "test-env"},
-                {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws2", "instanceName": "workspace2", "environmentName": "test-env"},
-            ]
+                {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws1",
+                    "instanceName": "workspace1",
+                    "environmentName": "test-env",
+                },
+                {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws2",
+                    "instanceName": "workspace2",
+                    "environmentName": "test-env",
+                },
+            ],
         }
 
         # Mock describe_workspace responses
         mock_describe_responses = [
-            {"workspace": {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws1", "instanceName": "workspace1", "environmentName": "test-env"}},
-            {"workspace": {"crn": "crn:cdp:ml:us-west-1:account:workspace:ws2", "instanceName": "workspace2", "environmentName": "test-env"}},
+            {
+                "workspace": {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws1",
+                    "instanceName": "workspace1",
+                    "environmentName": "test-env",
+                }
+            },
+            {
+                "workspace": {
+                    "crn": "crn:cdp:ml:us-west-1:account:workspace:ws2",
+                    "instanceName": "workspace2",
+                    "environmentName": "test-env",
+                }
+            },
         ]
 
         # Mock the CdpClient instance
         api_client = mocker.create_autospec(CdpClient, instance=True)
-        
+
         def post_side_effect(endpoint, json_data, squelch=None):
             if endpoint == "/api/v1/ml/listWorkspaces":
                 return mock_list_response
@@ -400,7 +463,7 @@ class TestCdpMlClient:
                     if response["workspace"]["crn"] == json_data.get("workspaceCrn"):
                         return response
             return {}
-        
+
         api_client.post.side_effect = post_side_effect
 
         # Create the CdpMlClient instance
@@ -424,7 +487,7 @@ class TestCdpMlClient:
 
         # Mock list_workspaces response with empty list
         mock_list_response = {
-            "workspaces": []
+            "workspaces": [],
         }
 
         # Mock the CdpClient instance
@@ -447,4 +510,3 @@ class TestCdpMlClient:
             json_data={},
             squelch={404: []},
         )
-        

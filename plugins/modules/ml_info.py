@@ -278,16 +278,17 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_ml import (
     CdpMlClient,
 )
 
+
 class MLInfo(ServicesModule):
     def __init__(self):
         super().__init__(
             argument_spec=dict(
-                name=dict(required=False,       type="str", aliases=["workspace"]),
+                name=dict(required=False, type="str", aliases=["workspace"]),
                 environment=dict(required=False, type="str", aliases=["env"]),
                 crn=dict(required=False, type="str", aliases=["workspace_crn"]),
             ),
             supports_check_mode=True,
-            required_by={"name": ("environment")}
+            required_by={"name": ("environment")},
         )
 
         # Set variables
@@ -314,17 +315,20 @@ class MLInfo(ServicesModule):
         else:
             self.workspaces = client.describe_all_workspaces(self.env)
 
+
 def main():
 
     result = MLInfo()
     output: dict[str, Any] = dict(
-        changed=False, 
-        workspaces=result.workspaces)
+        changed=False,
+        workspaces=result.workspaces,
+    )
 
     if result.debug_log:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
     result.module.exit_json(**output)
+
 
 if __name__ == "__main__":
     main()

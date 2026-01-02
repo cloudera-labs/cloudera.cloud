@@ -60,8 +60,9 @@ MOCK_WORKSPACE_SINGLE = {
         "crn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123",
         "instanceStatus": "installation:finished",
         "instanceUrl": "https://my-workspace.cloudera.site",
-    }
+    },
 }
+
 
 def test_ml_info_name_without_environment_fails(module_args):
     """Test ml_info module fails when name is provided without environment."""
@@ -79,6 +80,7 @@ def test_ml_info_name_without_environment_fails(module_args):
     # Expect the module to fail due to missing required parameter
     with pytest.raises(AnsibleFailJson, match="environment"):
         ml_info.main()
+
 
 def test_ml_info_default_list_all(module_args, mocker):
     """Test ml_info module listing all workspaces."""
@@ -102,7 +104,7 @@ def test_ml_info_default_list_all(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.ml_info.CdpMlClient",
         autospec=True,
     ).return_value
-    
+
     # Mock describe_all_workspaces to return list of workspaces
     client.describe_all_workspaces.return_value = MOCK_WORKSPACES
 
@@ -112,14 +114,15 @@ def test_ml_info_default_list_all(module_args, mocker):
 
     # Assert result.value.changed is False
     assert result.value.changed is False
-    
+
     # Assert result.value.workspaces is a list
     assert hasattr(result.value, "workspaces")
     assert isinstance(result.value.workspaces, list)
     assert len(result.value.workspaces) == 2
-    
+
     # Verify describe_all_workspaces was called with env=None
     client.describe_all_workspaces.assert_called_once_with(None)
+
 
 def test_ml_info_list_by_environment(module_args, mocker):
     """Test ml_info module listing workspaces by environment."""
@@ -144,7 +147,7 @@ def test_ml_info_list_by_environment(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.ml_info.CdpMlClient",
         autospec=True,
     ).return_value
-    
+
     # Mock describe_all_workspaces to return filtered list
     client.describe_all_workspaces.return_value = MOCK_WORKSPACES
 
@@ -154,18 +157,19 @@ def test_ml_info_list_by_environment(module_args, mocker):
 
     # Assert result.value.changed is False
     assert result.value.changed is False
-    
+
     # Assert result.value.workspaces is a list
     assert hasattr(result.value, "workspaces")
     assert isinstance(result.value.workspaces, list)
     assert len(result.value.workspaces) == 2
-    
+
     # Verify all workspaces are from test-env
     for workspace in result.value.workspaces:
         assert workspace["environmentName"] == "test-env"
-    
+
     # Verify describe_all_workspaces was called with env="test-env"
     client.describe_all_workspaces.assert_called_once_with("test-env")
+
 
 def test_ml_info_describe_by_name_and_env(module_args, mocker):
     """Test ml_info module describing a workspace by name and environment."""
@@ -191,7 +195,7 @@ def test_ml_info_describe_by_name_and_env(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.ml_info.CdpMlClient",
         autospec=True,
     ).return_value
-    
+
     # Mock describe_workspace to return single workspace wrapped in "workspace" key
     client.describe_workspace.return_value = MOCK_WORKSPACE_SINGLE
 
@@ -201,26 +205,27 @@ def test_ml_info_describe_by_name_and_env(module_args, mocker):
 
     # Assert result.value.changed is False
     assert result.value.changed is False
-    
+
     # Assert result.value.workspaces is a list with 1 element
     assert hasattr(result.value, "workspaces")
     assert isinstance(result.value.workspaces, list)
     assert len(result.value.workspaces) == 1
-    
+
     # Assert workspace details are correct
     workspace = result.value.workspaces[0]
     assert workspace["instanceName"] == "my-workspace"
     assert workspace["environmentName"] == "my-env"
-    
+
     # Verify describe_workspace was called with correct name and env parameters
     client.describe_workspace.assert_called_once_with(
         name="my-workspace",
         env="my-env",
         crn=None,
     )
-    
+
     # Verify describe_all_workspaces was NOT called
     client.describe_all_workspaces.assert_not_called()
+
 
 def test_ml_info_describe_by_crn(module_args, mocker):
     """Test ml_info module describing a workspace by CRN."""
@@ -245,7 +250,7 @@ def test_ml_info_describe_by_crn(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.ml_info.CdpMlClient",
         autospec=True,
     ).return_value
-    
+
     # Mock describe_workspace to return single workspace
     client.describe_workspace.return_value = MOCK_WORKSPACE_SINGLE
 
@@ -255,25 +260,29 @@ def test_ml_info_describe_by_crn(module_args, mocker):
 
     # Assert result.value.changed is False
     assert result.value.changed is False
-    
+
     # Assert result.value.workspaces contains single workspace
     assert hasattr(result.value, "workspaces")
     assert isinstance(result.value.workspaces, list)
     assert len(result.value.workspaces) == 1
-    
+
     # Assert workspace CRN matches
     workspace = result.value.workspaces[0]
-    assert workspace["crn"] == "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123"
-    
+    assert (
+        workspace["crn"]
+        == "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123"
+    )
+
     # Verify describe_workspace was called with crn parameter
     client.describe_workspace.assert_called_once_with(
         name=None,
         env=None,
         crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:abc123",
     )
-    
+
     # Verify describe_all_workspaces was NOT called
     client.describe_all_workspaces.assert_not_called()
+
 
 def test_ml_info_empty_workspaces_list(module_args, mocker):
     """Test ml_info module with empty workspaces list."""
@@ -297,7 +306,7 @@ def test_ml_info_empty_workspaces_list(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.ml_info.CdpMlClient",
         autospec=True,
     ).return_value
-    
+
     # Mock describe_all_workspaces to return empty list
     client.describe_all_workspaces.return_value = []
 
@@ -307,15 +316,16 @@ def test_ml_info_empty_workspaces_list(module_args, mocker):
 
     # Assert result.value.changed is False
     assert result.value.changed is False
-    
+
     # Assert result.value.workspaces is empty list
     assert hasattr(result.value, "workspaces")
     assert isinstance(result.value.workspaces, list)
     assert len(result.value.workspaces) == 0
     assert result.value.workspaces == []
-    
+
     # Verify describe_all_workspaces was called
     client.describe_all_workspaces.assert_called_once_with(None)
+
 
 def test_ml_info_workspace_not_found(module_args, mocker):
     """Test ml_info module when workspace is not found."""
@@ -341,7 +351,7 @@ def test_ml_info_workspace_not_found(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.ml_info.CdpMlClient",
         autospec=True,
     ).return_value
-    
+
     # Mock describe_workspace to return None (not found)
     client.describe_workspace.return_value = None
 
@@ -351,19 +361,18 @@ def test_ml_info_workspace_not_found(module_args, mocker):
 
     # Assert result.value.changed is False
     assert result.value.changed is False
-    
+
     # Assert result.value.workspaces is empty (None is not appended)
     assert hasattr(result.value, "workspaces")
     assert isinstance(result.value.workspaces, list)
     assert len(result.value.workspaces) == 0
-    
+
     # Verify describe_workspace was called with correct parameters
     client.describe_workspace.assert_called_once_with(
         name="non-existent-workspace",
         env="non-existent-env",
         crn=None,
     )
-    
+
     # Verify describe_all_workspaces was NOT called
     client.describe_all_workspaces.assert_not_called()
-        

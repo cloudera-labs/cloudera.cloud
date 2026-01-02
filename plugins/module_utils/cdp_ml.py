@@ -38,13 +38,12 @@ class CdpMlClient:
         self.api_client = api_client
 
     def list_workspaces(
-            self, 
-            env: Optional[str] = None
-        ) -> List[Dict[str, Any]]:
-        
+        self,
+        env: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """
         List ML Workspaces in the Tenant.
-        
+
         Args:
             env: Optional environment name to filter workspaces by.
 
@@ -55,24 +54,24 @@ class CdpMlClient:
         resp = self.api_client.post(
             "/api/v1/ml/listWorkspaces",
             json_data={},
-            squelch={404: []}
+            squelch={404: []},
         )
-        
+
         if env:
             workspaces = resp.get("workspaces", [])
             resp["workspaces"] = [x for x in workspaces if env == x["environmentName"]]
-        
+
         return resp
 
     def describe_workspace(
-            self,
-            env: Optional[str] = None,
-            name: Optional[str] = None,
-            crn: Optional[str] = None,
-        ) -> Dict[str, Any]:
+        self,
+        env: Optional[str] = None,
+        name: Optional[str] = None,
+        crn: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Describe a single ML Workspace.
-        
+
         Args:
             env: Optional environment name.
             name: Optional workspace name.
@@ -81,7 +80,7 @@ class CdpMlClient:
         Returns:
             Workspace details dictionary.
         """
-        
+
         json_data: Dict[str, Any] = {}
 
         if crn is not None:
@@ -95,17 +94,19 @@ class CdpMlClient:
         return self.api_client.post(
             "/api/v1/ml/describeWorkspace",
             json_data=json_data,
-            squelch={404: {},
-                     500: {}}
+            squelch={
+                404: {},
+                500: {},
+            },
         )
-  
+
     def describe_all_workspaces(
-            self,
-            env: Optional[str] = None
-        ) -> List[Dict[str, Any]]:
+        self,
+        env: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Describe all ML Workspaces in the Tenant, optionally filtered by environment.
-        
+
         Args:
             env: Optional environment name to filter workspaces by.
 
@@ -114,7 +115,7 @@ class CdpMlClient:
         """
         ws_list = self.list_workspaces(env)
         resp = []
-        
+
         for ws in ws_list.get("workspaces", []):
             ws_desc = self.describe_workspace(crn=ws["crn"])
             if ws_desc is not None:
