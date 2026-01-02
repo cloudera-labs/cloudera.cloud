@@ -23,6 +23,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Jim Enright (@jimright)"
 version_added: "1.0.0"
 requirements:
   - cdpy
@@ -51,29 +52,28 @@ options:
     aliases:
       - workspace_crn
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# List basic information about all ML Workspaces
-- cloudera.cloud.ml_info:
+- name: List basic information about all ML Workspaces
+  cloudera.cloud.ml_info:
 
-# Gather detailed information about a named Workspace
-- cloudera.cloud.ml_info:
+- name: Gather detailed information about a named Workspace
+  cloudera.cloud.ml_info:
     name: example-workspace
     env: example-environment
 
-# Gather detailed information about a named Workspace using a CRN
-- cloudera.cloud.ml_info:
+- name: Gather detailed information about a named Workspace using a CRN
+  cloudera.cloud.ml_info:
     crn: example-workspace-crn
 """
 
 RETURN = r"""
 workspaces:
-  description: The information about the named Workspace or Workspaces
+  description: Returns information about the named Cloudera AI Workspace or Workspaces
   type: list
   returned: always
   elements: complex
@@ -269,60 +269,62 @@ sdk_out_lines:
   elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any
 
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_ml import (
+    CdpMlClient,
+)
 
-class MLInfo(CdpModule):
-    def __init__(self, module):
-        super(MLInfo, self).__init__(module)
+class MLInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(required=False,       type="str", aliases=["workspace"]),
+                environment=dict(required=False, type="str", aliases=["env"]),
+                crn=dict(required=False, type="str", aliases=["workspace_crn"]),
+            ),
+            supports_check_mode=True,
+            required_by={"name": ("environment")}
+        )
 
         # Set variables
-        self.name = self._get_param("name")
-        self.env = self._get_param("environment")
-        self.crn = self._get_param("crn")
+        self.name = self.get_param("name")
+        self.env = self.get_param("environment")
+        self.crn = self.get_param("crn")
 
         # Initialize return values
         self.workspaces = []
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
+        client = CdpMlClient(api_client=self.api_client)
+
         if (
             self.name and self.env
         ) or self.crn:  # Note that both None and '' will trigger this
-            workspace_single = self.cdpy.ml.describe_workspace(
+            workspace_single = client.describe_workspace(
                 name=self.name,
                 env=self.env,
                 crn=self.crn,
             )
             if workspace_single is not None:
-                self.workspaces.append(workspace_single)
+                self.workspaces.append(workspace_single.get("workspace", []))
         else:
-            self.workspaces = self.cdpy.ml.describe_all_workspaces(self.env)
-
+            self.workspaces = client.describe_all_workspaces(self.env)
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="str", aliases=["workspace"]),
-            environment=dict(required=False, type="str", aliases=["env"]),
-            crn=dict(required=False, type="str", aliases=["workspace_crn"]),
-        ),
-        supports_check_mode=True,
-        required_by={"name": ("environment")},
-    )
 
-    result = MLInfo(module)
-    output = dict(changed=False, workspaces=result.workspaces)
+    result = MLInfo()
+    output: dict[str, Any] = dict(
+        changed=False, 
+        workspaces=result.workspaces)
 
-    if result.debug:
+    if result.debug_log:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
-    module.exit_json(**output)
-
+    result.module.exit_json(**output)
 
 if __name__ == "__main__":
     main()
