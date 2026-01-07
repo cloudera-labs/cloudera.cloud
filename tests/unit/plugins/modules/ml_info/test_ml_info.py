@@ -118,7 +118,7 @@ def test_ml_info_default_list_all(module_args, mocker):
     # Assert result.value.workspaces is a list
     assert hasattr(result.value, "workspaces")
     assert isinstance(result.value.workspaces, list)
-    assert len(result.value.workspaces) == 2
+    assert len(result.value.workspaces) == len(MOCK_WORKSPACES)
 
     # Verify describe_all_workspaces was called with env=None
     client.describe_all_workspaces.assert_called_once_with(None)
@@ -126,6 +126,9 @@ def test_ml_info_default_list_all(module_args, mocker):
 
 def test_ml_info_list_by_environment(module_args, mocker):
     """Test ml_info module listing workspaces by environment."""
+
+    # Target environment for filtering
+    TEST_ENV_NAME = "test-env"
 
     module_args(
         {
@@ -161,14 +164,14 @@ def test_ml_info_list_by_environment(module_args, mocker):
     # Assert result.value.workspaces is a list
     assert hasattr(result.value, "workspaces")
     assert isinstance(result.value.workspaces, list)
-    assert len(result.value.workspaces) == 2
+    assert len(result.value.workspaces) == len(MOCK_WORKSPACES)
 
     # Verify all workspaces are from test-env
     for workspace in result.value.workspaces:
-        assert workspace["environmentName"] == "test-env"
+        assert workspace["environmentName"] == MOCK_WORKSPACES[0]["environmentName"]
 
     # Verify describe_all_workspaces was called with env="test-env"
-    client.describe_all_workspaces.assert_called_once_with("test-env")
+    client.describe_all_workspaces.assert_called_once_with(TEST_ENV_NAME)
 
 
 def test_ml_info_describe_by_name_and_env(module_args, mocker):

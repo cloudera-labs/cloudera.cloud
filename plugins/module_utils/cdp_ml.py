@@ -40,7 +40,7 @@ class CdpMlClient:
     def list_workspaces(
         self,
         env: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         List ML Workspaces in the Tenant.
 
