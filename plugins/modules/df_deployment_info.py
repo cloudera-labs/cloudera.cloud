@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,9 +22,8 @@ description:
     - Gather information about CDP DataFlow Deployments
 author:
   - "Dan Chaffelson (@chaffelson)"
+  - "Ronald Suplina (@rsuplina)"
 version_added: "1.6.0"
-requirements:
-  - cdpy
 options:
   name:
     description:
@@ -42,8 +41,7 @@ options:
       - dep_crn
     required: False
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
@@ -52,9 +50,13 @@ EXAMPLES = r"""
 # List basic information about all DataFlow Deployments
 - cloudera.cloud.df_deployment_info:
 
+# Gather detailed information about a named DataFlow Deployment using a crn
+- cloudera.cloud.df_deployment_info:
+    crn: crn:cdp:df:region:tenant-uuid4:deployment:deployment-uuid4/deployment-uuid4
+
 # Gather detailed information about a named DataFlow Deployment using a name
 - cloudera.cloud.df_deployment_info:
-    name: crn:cdp:df:region:tenant-uuid4:deployment:deployment-uuid4/deployment-uuid4
+    name: test-dataflow-deployment
 """
 
 RETURN = r"""
@@ -191,60 +193,74 @@ deployments:
       returned: always
       type: int
 sdk_out:
-  description: Returns the captured CDP SDK log.
+  description: Returns the captured API HTTP log.
   returned: when supported
   type: str
 sdk_out_lines:
-  description: Returns a list of each line of the captured CDP SDK log.
+  description: Returns a list of each line of the captured API HTTP log.
   returned: when supported
   type: list
   elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
+    CdpDfClient,
+)
 
 
-class DFDeploymentInfo(CdpModule):
-    def __init__(self, module):
-        super(DFDeploymentInfo, self).__init__(module)
+class DFDeploymentInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(required=False, type="str"),
+                crn=dict(required=False, type="str", aliases=["dep_crn"]),
+            ),
+            supports_check_mode=True,
+            mutually_exclusive=[("name", "crn")],
+        )
 
-        # Set variables
-        self.name = self._get_param("name")
-        self.crn = self._get_param("crn")
+        # Set parameters
+        self.name = self.get_param("name")
+        self.crn = self.get_param("crn")
 
         # Initialize return values
         self.deployments = []
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        self.deployments = self.cdpy.df.list_deployments(
-            dep_crn=self.crn,
-            name=self.name,
-            described=True,
-        )
+        client = CdpDfClient(api_client=self.api_client)
+        if self.crn:
+            deployment = client.get_deployment_by_crn(self.crn)
+        elif self.name:
+            deployment = client.get_deployment_by_name(self.name)
+        else:
+            response = client.list_deployments()
+            self.deployments = response.get("deployments", [])
+            return
+
+        if deployment:
+            self.deployments.append(deployment["deployment"])
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="str"),
-            crn=dict(required=False, type="str", aliases=["dep_crn"]),
-        ),
-        supports_check_mode=True,
-        mutually_exclusive=[("name", "crn")],
+    result = DFDeploymentInfo()
+
+    output: dict[str, Any] = dict(
+        changed=False,
+        deployments=result.deployments,
     )
 
-    result = DFDeploymentInfo(module)
-    output = dict(changed=False, deployments=result.deployments)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
-
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":

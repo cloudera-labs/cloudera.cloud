@@ -142,3 +142,93 @@ class CdpDfClient:
             if service.get("environmentCrn") == env_crn:
                 return self.describe_service(service.get("crn"))
         return None
+
+    # ========================================================================
+    # Deployment Management Methods
+    # ========================================================================
+
+    @CdpClient.paginated()
+    def list_deployments(
+        self,
+        filters: Optional[List[str]] = None,
+        pageToken: Optional[str] = None,
+        pageSize: Optional[int] = None,
+        sorts: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        List DataFlow deployments.
+
+        Args:
+            filters: Filter criteria (see list-filter-options)
+            pageToken: Pagination token for getting the next page
+            pageSize: Number of results per page (1-100)
+            sorts: Sort criteria (updated|name|state|dataSent|dataReceived):(asc|desc)
+
+        Returns:
+            Dictionary containing:
+                - deployments: List of DeploymentSummary objects
+                - nextToken: Token for next page (if available)
+        """
+        data: Dict[str, Any] = {}
+        if filters is not None:
+            data["filters"] = filters
+        if pageToken is not None:
+            data["startingToken"] = pageToken
+        if pageSize is not None:
+            data["pageSize"] = pageSize
+        if sorts is not None:
+            data["sorts"] = sorts
+
+        return self.api_client.post(
+            "/api/v1/df/listDeployments",
+            data=data,
+            squelch={404: {"deployments": []}},
+        )
+
+    def describe_deployment(self, deployment_crn: str) -> Dict[str, Any]:
+        """
+        Describe a DataFlow deployment.
+
+        Args:
+            deployment_crn: The CRN of the deployment
+
+        Returns:
+            Dictionary containing deployment details
+        """
+        data = {"deploymentCrn": deployment_crn}
+        return self.api_client.post(
+            "/api/v1/df/describeDeployment",
+            data=data,
+            squelch={404: {}},
+        )
+
+    def get_deployment_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get deployment details by name.
+
+        Args:
+            name: The deployment name
+
+        Returns:
+            Deployment details dict, or None if not found
+        """
+        deployments = self.list_deployments()
+        for deployment in deployments.get("deployments", []):
+            if deployment.get("name") == name:
+                return self.describe_deployment(deployment.get("crn"))
+        return None
+
+    def get_deployment_by_crn(self, crn: str) -> Optional[Dict[str, Any]]:
+        """
+        Get deployment details by CRN.
+
+        Args:
+            crn: The deployment CRN
+
+        Returns:
+            Deployment details dict, or None if not found
+        """
+        try:
+            return self.describe_deployment(crn)
+        except Exception:
+            return None
