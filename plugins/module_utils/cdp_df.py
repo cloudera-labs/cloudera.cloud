@@ -73,7 +73,9 @@ class CdpDfClient:
         if sorts is not None:
             data["sorts"] = sorts
 
-        return self.api_client.post("/api/v1/df/listServices", data=data, squelch={404: {"services": []}})
+        return self.api_client.post(
+            "/api/v1/df/listServices", data=data, squelch={404: {"services": []}}
+        )
 
     def describe_service(self, crn: str) -> Dict[str, Any]:
         """
@@ -86,7 +88,9 @@ class CdpDfClient:
             Dictionary containing service details
         """
         data = {"serviceCrn": crn}
-        return self.api_client.post("/api/v1/df/describeService", data=data, squelch={404: {}})
+        return self.api_client.post(
+            "/api/v1/df/describeService", data=data, squelch={404: {}}
+        )
 
     def get_service_by_name(self, name: str) -> Optional[Dict[str, Any]]:
         """
