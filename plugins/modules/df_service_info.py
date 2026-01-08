@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,9 +23,8 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Ronald Suplina (@rsuplina)"
 version_added: "1.2.0"
-requirements:
-  - cdpy
 options:
   name:
     description:
@@ -47,30 +46,27 @@ options:
     type: str
     required: False
 
-notes:
-  - This feature this module is for is in Technical Preview
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 # List basic information about all DataFlow Services
-- cloudera.cloud.df_info:
+- cloudera.cloud.df_service_info:
 
 # Gather detailed information about a named DataFlow Service using a name
-- cloudera.cloud.df_info:
+- cloudera.cloud.df_service_info:
     name: example-service
 
 # Gather detailed information about a named DataFlow Service using a Dataflow CRN
-- cloudera.cloud.df_info:
+- cloudera.cloud.df_service_info:
     df_crn: crn:cdp:df:region:tenant-uuid4:service:service-uuid4
 
 # Gather detailed information about a named DataFlow Service using an Environment CRN
-- cloudera.cloud.df_info:
-    df_crn: crn:cdp:environments:region:tenant-uuid4:environment:environment-uuid4
+- cloudera.cloud.df_service_info:
+    env_crn: crn:cdp:environments:region:tenant-uuid4:environment:environment-uuid4
 """
 
 RETURN = r"""
@@ -164,64 +160,69 @@ sdk_out_lines:
   elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import CdpDfClient
 
 
-class DFServiceInfo(CdpModule):
-    def __init__(self, module):
-        super(DFServiceInfo, self).__init__(module)
+class DFServiceInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(required=False, type="str"),
+                df_crn=dict(required=False, type="str"),
+                env_crn=dict(required=False, type="str"),
+            ),
+            supports_check_mode=True,
+            mutually_exclusive=[["name", "df_crn", "env_crn"]],
+        )
 
-        # Set variables
-        self.name = self._get_param("name")
-        self.df_crn = self._get_param("df_crn")
-        self.env_crn = self._get_param("env_crn")
+        # Set parameters
+        self.name = self.get_param("name")
+        self.df_crn = self.get_param("df_crn")
+        self.env_crn = self.get_param("env_crn")
 
         # Initialize return values
         self.services = []
 
-        # Initialize internal values
-        self.all_services = []
-
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        # Note that parameters are defaulted to None, and are skipped if None at submission
-        self.all_services = self.cdpy.df.list_services(
-            df_crn=self.df_crn,
-            name=self.name,
-            env_crn=self.env_crn,
-        )
-        if any(x is not None for x in [self.name, self.df_crn, self.env_crn]):
-            # Any set parameter indicates a describe is preferred to the lower information list command
-            self.services = [
-                self.cdpy.df.describe_service(df_crn=x["crn"])
-                for x in self.all_services
-            ]
+        self.df_client = CdpDfClient(self.api_client)
+
+        if self.name:
+            service = self.df_client.get_service_by_name(self.name)
+        elif self.df_crn:
+            service = self.df_client.get_service_by_crn(self.df_crn)
+        elif self.env_crn:
+            service = self.df_client.get_service_by_env_crn(self.env_crn)
         else:
-            self.services = self.all_services
+            response = self.df_client.list_services()
+            self.services = [
+                self.df_client.describe_service(svc["crn"])
+                for svc in response.get("services", [])
+            ]
+            return
+
+        if service:
+            self.services.append(service)
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="str"),
-            df_crn=dict(required=False, type="str"),
-            env_crn=dict(required=False, type="str"),
-        ),
-        supports_check_mode=True,
-        mutually_exclusive=["name", "df_crn", "env_crn"],
+    result = DFServiceInfo()
+
+    output: dict[str, Any] = dict(
+        changed=False,
+        services=result.services,
     )
 
-    result = DFServiceInfo(module)
-    output = dict(changed=False, services=result.services)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
-
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":

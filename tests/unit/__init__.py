@@ -114,7 +114,7 @@ def prepare_body(
     if json_data is not None:
         return json.dumps(json_data)
     elif data is not None:
-        return urlencode(data)
+        return json.dumps(data)
     else:
         return None
 
