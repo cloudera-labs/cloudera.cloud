@@ -26,6 +26,7 @@ from ansible_collections.cloudera.cloud.tests.unit import AnsibleFailJson
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
+    CdpCredentialError,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ParametersMixin,
@@ -568,6 +569,26 @@ class TestConcreteServicesModule:
         with pytest.raises(
             AnsibleFailJson,
             match="parameters are mutually exclusive: access_key|credentials_path",
+        ):
+            ConcreteServicesModule()
+
+    def test_services_module_initialization_invalid_credentials_file(
+        self,
+        module_args,
+        mocker,
+    ):
+        """Test invalid credentials file in ServicesModule initialization."""
+
+        module_args({})
+
+        mocker.patch(
+            "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+            side_effect=CdpCredentialError("non-existent-file"),
+        )
+
+        with pytest.raises(
+            AnsibleFailJson,
+            match="access key, private_key, or region not provided and failed to load credentials from file: non-existent-file",
         ):
             ConcreteServicesModule()
 
