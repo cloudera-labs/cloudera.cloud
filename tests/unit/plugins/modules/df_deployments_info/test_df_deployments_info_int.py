@@ -185,15 +185,15 @@ def test_df_deployment_info_deployment_structure(module_args, df_client):
 
     assert result.value.changed is False
     assert hasattr(result.value, "deployments")
-    
+
     if len(result.value.deployments) > 0:
         deployment = result.value.deployments[0]
-        
+
         # Check for essential fields that should always be present
         assert "crn" in deployment
         assert "name" in deployment
         assert "status" in deployment
-        
+
         # Check status structure
         if "status" in deployment:
             status = deployment["status"]
