@@ -30,6 +30,7 @@ from ansible.module_utils.common.parameters import env_fallback
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     load_cdp_config,
     AnsibleCdpClient,
+    CdpCredentialError,
 )
 
 
@@ -193,10 +194,22 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
 
         # If any credential is missing, load from credentials file
         if access_key is None or private_key is None or region is None:
-            file_access_key, file_private_key, file_region = load_cdp_config(
-                credentials_path=self.get_param("credentials_path"),
-                profile=self.get_param("profile"),
-            )
+            try:
+                credentials_path = self.get_param("credentials_path")
+                profile = self.get_param("profile")
+
+                self.module.debug(
+                    f"Loading CDP credentials from file: {credentials_path}, profile: {profile}",
+                )
+
+                file_access_key, file_private_key, file_region = load_cdp_config(
+                    credentials_path=self.get_param("credentials_path"),
+                    profile=self.get_param("profile"),
+                )
+            except CdpCredentialError as e:
+                self.module.fail_json(
+                    msg=f"access key, private_key, or region not provided and failed to load credentials from file: {str(e)}",
+                )
             # Use file credentials for any missing parameters
             if access_key is None:
                 access_key = file_access_key
