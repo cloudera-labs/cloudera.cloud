@@ -286,7 +286,7 @@ class MLInfo(ServicesModule):
                 crn=dict(required=False, type="str", aliases=["workspace_crn"]),
             ),
             supports_check_mode=True,
-            required_by={"name": "environment"},
+            required_by={"name": ["environment"]},
         )
 
         # Set variables
