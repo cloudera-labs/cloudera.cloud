@@ -102,7 +102,7 @@ def test_df_service_info_list_all(module_args, mocker):
 
     assert result.value.changed is False
     assert len(result.value.services) == 2
-    assert result.value.services[0]["service"]["name"] == "env-1"
+    assert result.value.services[0]["name"] == "env-1"
 
     # Verify CdpDfClient was called correctly
     client.list_services.assert_called_once()
@@ -159,8 +159,8 @@ def test_df_service_info_by_name(module_args, mocker):
 
     assert result.value.changed is False
     assert len(result.value.services) == 1
-    assert result.value.services[0]["service"]["name"] == ENV_NAME
-    assert result.value.services[0]["service"]["crn"] == SERVICE_CRN
+    assert result.value.services[0]["name"] == ENV_NAME
+    assert result.value.services[0]["crn"] == SERVICE_CRN
 
     # Verify CdpDfClient was called correctly
     client.get_service_by_name.assert_called_once_with(ENV_NAME)
@@ -211,7 +211,7 @@ def test_df_service_info_by_df_crn(module_args, mocker):
 
     assert result.value.changed is False
     assert len(result.value.services) == 1
-    assert result.value.services[0]["service"]["crn"] == SERVICE_CRN
+    assert result.value.services[0]["crn"] == SERVICE_CRN
 
     # Verify CdpDfClient was called correctly
     client.get_service_by_crn.assert_called_once_with(SERVICE_CRN)
@@ -262,7 +262,7 @@ def test_df_service_info_by_env_crn(module_args, mocker):
 
     assert result.value.changed is False
     assert len(result.value.services) == 1
-    assert result.value.services[0]["service"]["environmentCrn"] == ENV_CRN
+    assert result.value.services[0]["environmentCrn"] == ENV_CRN
 
     # Verify CdpDfClient was called correctly
     client.get_service_by_env_crn.assert_called_once_with(ENV_CRN)
