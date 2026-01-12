@@ -199,13 +199,13 @@ class DFServiceInfo(ServicesModule):
         else:
             response = self.df_client.list_services()
             self.services = [
-                self.df_client.describe_service(svc["crn"])
+                self.df_client.describe_service(svc["crn"]).get("service", {})
                 for svc in response.get("services", [])
             ]
             return
 
         if service:
-            self.services.append(service)
+            self.services.append(service.get("service", {}))
 
 
 def main():
