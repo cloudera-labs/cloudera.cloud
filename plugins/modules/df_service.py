@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,8 @@ description:
     - Enable or Disable CDP DataFlow Services
 author:
   - "Dan Chaffelson (@chaffelson)"
+  - "Ronald Suplina (@rsuplina)"
 version_added: "1.2.0"
-requirements:
-  - cdpy
-  - jmespath
 options:
   env_crn:
     description:
@@ -94,10 +92,9 @@ options:
     required: False
   cluster_subnets_filter:
     description:
-      - L(JMESPath,https://jmespath.org/) expression to filter the subnets to be used for the Kubernetes cluster
-      - The expression will be applied to the full list of subnets for the specified environment
-      - "Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr"
-      - The filter expression must only filter the list, but not apply any attribute projection
+      - String pattern to filter the subnets to be used for the Kubernetes cluster
+      - The pattern will be matched against subnet names (case-insensitive)
+      - Only subnets with names containing this pattern will be selected
       - Mutually exclusive with the I(cluster_subnets) option.
     type: str
     required: False
@@ -109,13 +106,44 @@ options:
     required: False
   loadbalancer_subnets_filter:
     description:
-      - L(JMESPath,https://jmespath.org/) expression to filter the subnets to be used for the load balancer
-      - The expression will be applied to the full list of subnets for the specified environment
-      - "Each subnet in the list is an object with the following attributes: subnetId, subnetName, availabilityZone, cidr"
-      - The filter expression must only filter the list, but not apply any attribute projection
+      - String pattern to filter the subnets to be used for the load balancer
+      - The pattern will be matched against subnet names (case-insensitive)
+      - Only subnets with names containing this pattern will be selected
       - Mutually exclusive with the I(loadbalancer_subnets) option.
     type: str
     required: False
+  pod_cidr:
+    description:
+      - CIDR range from which to assign IPs to pods in the Kubernetes cluster
+      - Must be a valid CIDR block (e.g., "10.200.0.0/16")
+    type: str
+    required: False
+  service_cidr:
+    description:
+      - CIDR range from which to assign IPs to internal services in the Kubernetes cluster
+      - Must be a valid CIDR block (e.g., "10.201.0.0/16")
+    type: str
+    required: False
+  instance_type:
+    description:
+      - Indicates custom instance type to be used for Kubernetes nodes
+      - Cloud provider specific (e.g., "m5.2xlarge" for AWS, "Standard_D8s_v3" for Azure)
+    type: str
+    required: False
+  skip_preflight_checks:
+    description:
+      - Indicates whether to skip pre-flight checks during service enablement
+      - Use with caution - skipping checks may result in deployment failures
+    type: bool
+    required: False
+    default: False
+  user_defined_routing:
+    description:
+      - Indicates whether User Defined Routing (UDR) mode is enabled for AKS clusters
+      - Azure-specific option for controlling network routing behavior
+    type: bool
+    required: False
+    default: False
   persist:
     description: Whether or not to retain the database records of related entities during removal.
     type: bool
@@ -130,6 +158,7 @@ options:
     description: Flag to indicate if the DataFlow deletion should be forced.
     type: bool
     required: False
+    default: False
     aliases:
       - force_delete
   tags:
@@ -163,6 +192,16 @@ options:
       - polling_timeout
 notes:
   - This feature this module is for is in Technical Preview
+  - When updating an existing service, only the following parameters can be changed:
+    - nodes_min / nodes_max (both required together for updates)
+    - k8s_ip_ranges
+    - loadbalancer_ip_ranges
+    - skip_preflight_checks
+  - Network configuration (subnets, pod_cidr, service_cidr, cluster type) cannot be updated after creation
+  - To change immutable parameters, you must disable and recreate the service
+  - When I(state=absent) and I(force=true), if service is in NOT_ENABLED state, resetService API is used
+  - resetService only works on NOT_ENABLED services and does not clean up cloud resources
+  - Use I(force=true) with caution as manual resource cleanup may be required
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
@@ -281,293 +320,245 @@ sdk_out_lines:
   elements: str
 """
 
-import json
-import jmespath
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import CdpDfClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import CdpEnvClient
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
 
+class DFService(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                env_crn=dict(type="str", aliases=["name"]),
+                df_crn=dict(type="str"),
+                nodes_min=dict(type="int", default=3, aliases=["min_k8s_node_count"]),
+                nodes_max=dict(type="int", default=3, aliases=["max_k8s_node_count"]),
+                public_loadbalancer=dict(
+                    type="bool",
+                    default=False,
+                    aliases=["use_public_load_balancer"],
+                ),
+                private_cluster=dict(
+                    type="bool",
+                    default=False,
+                    aliases=["enable_private_cluster"],
+                ),
+                loadbalancer_ip_ranges=dict(type="list", elements="str", default=None),
+                k8s_ip_ranges=dict(type="list", elements="str", default=None),
+                cluster_subnets=dict(type="list", elements="str", default=None),
+                cluster_subnets_filter=dict(type="str", default=None),
+                loadbalancer_subnets=dict(type="list", elements="str", default=None),
+                loadbalancer_subnets_filter=dict(type="str", default=None),
+                pod_cidr=dict(type="str", default=None),
+                service_cidr=dict(type="str", default=None),
+                instance_type=dict(type="str", default=None),
+                skip_preflight_checks=dict(type="bool", default=False),
+                persist=dict(type="bool", default=False),
+                terminate=dict(type="bool", default=False),
+                force=dict(type="bool", default=False),
+                tags=dict(required=False, type="dict", default=None),
+                state=dict(
+                    type="str",
+                    choices=["present", "absent"],
+                    default="present",
+                ),
+                wait=dict(type="bool", default=True),
+                delay=dict(type="int", aliases=["polling_delay"], default=15),
+                timeout=dict(type="int", aliases=["polling_timeout"], default=3600),
+                user_defined_routing=dict(type="bool", default=False),
+            ),
+            supports_check_mode=True,
+            required_if=[
+                ("state", "absent", ("df_crn",), False),
+            ],
+            mutually_exclusive=[
+                ("cluster_subnets", "cluster_subnets_filter"),
+                ("loadbalancer_subnets", "loadbalancer_subnets_filter"),
+            ],
+        )
 
-class DFService(CdpModule):
-    def __init__(self, module):
-        super(DFService, self).__init__(module)
+        # Set parameters
+        self.env_crn = self.get_param("env_crn")
+        self.df_crn = self.get_param("df_crn")
+        self.state = self.get_param("state")
+        self.nodes_min = self.get_param("nodes_min")
+        self.nodes_max = self.get_param("nodes_max")
+        self.private_cluster = self.get_param("private_cluster")
+        self.loadbalancer_ip_ranges = self.get_param("loadbalancer_ip_ranges")
+        self.k8s_ip_ranges = self.get_param("k8s_ip_ranges")
+        self.cluster_subnets = self.get_param("cluster_subnets")
+        self.cluster_subnets_filter = self.get_param("cluster_subnets_filter")
+        self.loadbalancer_subnets = self.get_param("loadbalancer_subnets")
+        self.loadbalancer_subnets_filter = self.get_param("loadbalancer_subnets_filter")
+        self.pod_cidr = self.get_param("pod_cidr")
+        self.service_cidr = self.get_param("service_cidr")
+        self.instance_type = self.get_param("instance_type")
+        self.persist = self.get_param("persist")
+        self.terminate = self.get_param("terminate")
+        self.skip_preflight_checks = self.get_param("skip_preflight_checks")
+        self.force = self.get_param("force")
+        self.tags = self.get_param("tags")
+        self.user_defined_routing = self.get_param("user_defined_routing")
+        self.public_loadbalancer = self.get_param("public_loadbalancer")
+        self.wait = self.get_param("wait")
+        self.delay = self.get_param("delay")
+        self.timeout = self.get_param("timeout")
 
-        # Set variables
-        self.env_crn = self._get_param("env_crn")
-        self.df_crn = self._get_param("df_crn")
-        self.nodes_min = self._get_param("nodes_min")
-        self.nodes_max = self._get_param("nodes_max")
-        self.public_loadbalancer = self._get_param("public_loadbalancer")
-        self.private_cluster = self._get_param("private_cluster")
-        self.lb_ip_ranges = self._get_param("loadbalancer_ip_ranges")
-        self.k8s_ip_ranges = self._get_param("k8s_ip_ranges")
-        self.cluster_subnets = self._get_param("cluster_subnets")
-        self.cluster_subnets_filter = self._get_param("cluster_subnets_filter")
-        self.lb_subnets = self._get_param("loadbalancer_subnets")
-        self.lb_subnets_filter = self._get_param("loadbalancer_subnets_filter")
-        self.persist = self._get_param("persist")
-        self.terminate = self._get_param("terminate")
-        self.force = self._get_param("force")
-        self.tags = self._get_param("tags")
+        # Initialize DF client
+        self.df_client = CdpDfClient(self.api_client)
 
-        self.state = self._get_param("state")
-        self.wait = self._get_param("wait")
-        self.delay = self._get_param("delay")
-        self.timeout = self._get_param("timeout")
+        # Initialize Environment client (for listing environments and subnet filtering)
+        self.env_client = CdpEnvClient(self.api_client)
 
         # Initialize return values
         self.service = {}
         self.changed = False
 
-        # Initialize internal values
-        self.target = None
-
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        original_env_crn = self.env_crn
-        if self.env_crn is not None:
-            self.env_crn = self.cdpy.environments.resolve_environment_crn(self.env_crn)
-        if self.env_crn is not None or self.df_crn is not None:
-            self.target = self.cdpy.df.describe_service(
-                env_crn=self.env_crn,
-                df_crn=self.df_crn,
-            )
+        existing_service = None
+        if self.df_crn:
+            existing_service = self.df_client.get_service_by_crn(self.df_crn)
+        elif self.env_crn:
+            existing_service = self.df_client.get_service_by_env_crn(self.env_crn)
 
-        if self.target is not None:
-            # DF Database Entry exists
-            if self.state in ["absent"]:
-                if self.module.check_mode:
-                    self.service = self.target
-                else:
-                    self._disable_df()
-            elif self.state in ["present"]:
-                self.module.warn(
-                    "Dataflow Service already enabled and configuration validation and reconciliation is not "
-                    "supported; to change a Dataflow Service, explicitly disable and recreate the Service or "
-                    "use the UI",
-                )
-                if self.wait:
-                    self.service = self._wait_for_enabled()
-            else:
-                self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state,
-                )
-        else:
-            # Environment does not have DF database entry, and probably doesn't exist
-            if self.state in ["absent"]:
-                self.module.log(
-                    "Dataflow Service already disabled in CDP Environment %s"
-                    % self.env_crn,
-                )
-            elif self.state in ["present"]:
-                if self.env_crn is None:
-                    self.module.fail_json(
-                        msg="Could not retrieve CRN for CDP Environment %s"
-                        % original_env_crn,
-                    )
-                else:
-                    # create DF Service
-                    if self.cluster_subnets_filter or self.lb_subnets_filter:
-                        try:
-                            env_info = self.cdpy.environments.describe_environment(
-                                self.env_crn,
-                            )
-                            subnet_metadata = list(
-                                env_info["network"]["subnetMetadata"].values(),
-                            )
-                        except Exception:
-                            subnet_metadata = []
-                        if not subnet_metadata:
-                            self.module.fail_json(
-                                msg="Could not retrieve subnet metadata for CDP Environment %s"
-                                % self.env_crn,
-                            )
+        if existing_service:
+            service_details = existing_service.get("service", existing_service)
+            # Capture the CRN if we found the service by env_crn
+            if not self.df_crn:
+                self.df_crn = service_details.get("crn")
 
-                        if self.cluster_subnets_filter:
-                            self.cluster_subnets = self._filter_subnets(
-                                self.cluster_subnets_filter,
-                                subnet_metadata,
+            if self.state == "absent":
+                current_state = service_details.get("status", {}).get("state")
+
+                if not self.module.check_mode:
+                    # Force reset: Remove all references without cleanup (NOT_ENABLED only)
+                    if self.force and current_state == "NOT_ENABLED":
+                        self.df_client.reset_service(crn=self.df_crn)
+                        self.changed = True
+
+                    # Normal disable: Gracefully teardown service (not already disabled)
+                    elif current_state != "NOT_ENABLED":
+                        if self.wait:
+                            self.service = self.df_client.disable_service_and_wait(
+                                service_crn=self.df_crn,
+                                terminate_deployments=self.terminate,
+                                persist=self.persist,
+                                timeout=self.timeout,
+                                delay=self.delay,
                             )
-                            self.module.warn(
-                                "Found the following cluster subnets: %s"
-                                % ", ".join(self.cluster_subnets),
+                        else:
+                            self.df_client.disable_service(
+                                crn=self.df_crn,
+                                terminate_deployments=self.terminate,
+                                persist=self.persist,
                             )
-                        if self.lb_subnets_filter:
-                            self.lb_subnets = self._filter_subnets(
-                                self.lb_subnets_filter,
-                                subnet_metadata,
-                            )
-                            self.module.warn(
-                                "Found the following load balancer subnets: %s"
-                                % ", ".join(self.lb_subnets),
-                            )
+                            self.service = service_details
+                        self.changed = True
+
+                    # Already disabled: No action needed
+                    else:
+                        self.service = service_details
+                else:
+                    # Check mode: Would make a change if service exists
+                    self.service = service_details
+                    self.changed = True
+
+            elif self.state == "present":
+                # Service exists - check if update is needed
+                update_needed, update_params = self.df_client.check_service_updates(
+                    service_crn=self.df_crn,
+                    service_details=service_details,
+                    min_k8s_node_count=self.nodes_min,
+                    max_k8s_node_count=self.nodes_max,
+                    kubernetes_ip_cidr_blocks=self.k8s_ip_ranges,
+                    load_balancer_ip_cidr_blocks=self.loadbalancer_ip_ranges,
+                    skip_preflight_checks=self.skip_preflight_checks,
+                )
+
+                if update_needed:
+                    self.changed = True
+                    self.service = service_details
 
                     if not self.module.check_mode:
-                        self.service = self.cdpy.df.enable_service(
-                            env_crn=self.env_crn,
-                            min_nodes=self.nodes_min,
-                            max_nodes=self.nodes_max,
-                            enable_public_ip=self.public_loadbalancer,
-                            private_cluster=self.private_cluster,
-                            lb_ips=self.lb_ip_ranges,
-                            kube_ips=self.k8s_ip_ranges,
-                            # tags=self.tags,  # Currently overstrict blocking of values
-                            cluster_subnets=self.cluster_subnets,
-                            lb_subnets=self.lb_subnets,
-                        )
-                        self.changed = True
+                        result = self.df_client.update_service(**update_params)
+                        self.service = result.get("service", result)
+
                         if self.wait:
-                            self.service = self._wait_for_enabled()
-            else:
-                self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state,
-                )
-
-    def _wait_for_enabled(self):
-        return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.df.describe_service,
-            params=dict(env_crn=self.env_crn),
-            field=["status", "state"],
-            state=self.cdpy.sdk.STARTED_STATES,
-            delay=self.delay,
-            timeout=self.timeout,
-        )
-
-    def _filter_subnets(self, query, subnets):
-        """Apply a JMESPath to an array of subnets and return the id of the selected subnets.
-        The query must only filter the array, without applying any projection. The query result must also be an
-        array of subnet objects.
-
-        :param query: JMESpath query to filter the subnet array.
-        :param subnets: An array of subnet objects. Each subnet in the array is an object with the following attributes:
-        subnetId, subnetName, availabilityZone, cidr.
-        :return: An array of subnet ids.
-        """
-        filtered_subnets = []
-        try:
-            filtered_subnets = jmespath.search(query, subnets)
-        except Exception:
-            self.module.fail_json(
-                msg="The specified subnet filter is an invalid JMESPath expression: "
-                % query,
-            )
-        try:
-            return [s["subnetId"] for s in filtered_subnets]
-        except Exception:
-            self.module.fail_json(
-                msg='The subnet filter "%s" should return an array of subnet objects '
-                "but instead returned this: %s" % (query, json.dumps(filtered_subnets)),
-            )
-
-    def _disable_df(self):
-        # Attempt clean Disable, which also ensures we have tried at least once before we do a forced removal
-        if self.target["status"]["state"] in self.cdpy.sdk.REMOVABLE_STATES:
-            self.service = self.cdpy.df.disable_service(
-                df_crn=self.df_crn,
-                persist=self.persist,
-                terminate=self.terminate,
-            )
-            self.changed = True
-        elif self.target["status"]["state"] in self.cdpy.sdk.TERMINATION_STATES:
-            self.module.warn(
-                "DataFlow Service is already Disabling, skipping termination request",
-            )
-            pass
-        else:
-            self.module.warn(
-                "Attempting to disable DataFlow Service but state %s not in Removable States %s"
-                % (self.target["status"]["state"], self.cdpy.sdk.REMOVABLE_STATES),
-            )
-        if self.wait:
-            # Wait for Clean Disable, if possible
-            self.service = self.cdpy.sdk.wait_for_state(
-                describe_func=self.cdpy.df.describe_service,
-                params=dict(df_crn=self.df_crn),
-                field=["status", "state"],
-                state=self.cdpy.sdk.STOPPED_STATES
-                + self.cdpy.sdk.REMOVABLE_STATES
-                + [None],
-                delay=self.delay,
-                timeout=self.timeout,
-                ignore_failures=True,
-            )
-        else:
-            self.service = self.cdpy.df.describe_service(df_crn=self.df_crn)
-        # Check disable result against need for further forced delete action, in case it didn't work first time around
-        if self.service is not None:
-            if self.service["status"]["state"] in self.cdpy.sdk.REMOVABLE_STATES:
-                if self.force:
-                    self.service = self.cdpy.df.reset_service(df_crn=self.df_crn)
-                    self.changed = True
+                            self.service = self.df_client.wait_for_service_state(
+                                service_crn=self.df_crn,
+                                target_states=["GOOD_HEALTH"],
+                                timeout=self.timeout,
+                                delay=self.delay,
+                            )
                 else:
-                    self.module.fail_json(
-                        msg="DF Service Disable failed and Force delete not requested",
+                    # No update needed - service already in desired state
+                    self.service = service_details
+        else:
+
+            if self.state == "present":
+                # Apply subnet filtering if filter parameters are provided
+                if self.cluster_subnets_filter or self.loadbalancer_subnets_filter:
+                    subnets = self.env_client.get_environment_subnets(self.env_crn)
+                    if self.cluster_subnets_filter:
+                        self.cluster_subnets = (
+                            self.env_client.filter_subnets_by_name_pattern(
+                                subnets,
+                                self.cluster_subnets_filter,
+                            )
+                        )
+                    if self.loadbalancer_subnets_filter:
+                        self.loadbalancer_subnets = (
+                            self.env_client.filter_subnets_by_name_pattern(
+                                subnets,
+                                self.loadbalancer_subnets_filter,
+                            )
+                        )
+
+                if not self.module.check_mode:
+                    result = self.df_client.enable_service(
+                        environment_crn=self.env_crn,
+                        min_k8s_node_count=self.nodes_min,
+                        max_k8s_node_count=self.nodes_max,
+                        use_public_load_balancer=self.public_loadbalancer,
+                        private_cluster=self.private_cluster,
+                        load_balancer_ip_cidr_blocks=self.loadbalancer_ip_ranges,
+                        kubernetes_ip_cidr_blocks=self.k8s_ip_ranges,
+                        cluster_subnet_ids=self.cluster_subnets,
+                        load_balancer_subnet_ids=self.loadbalancer_subnets,
+                        pod_cidr=self.pod_cidr,
+                        service_cidr=self.service_cidr,
+                        instance_type=self.instance_type,
+                        skip_preflight_checks=self.skip_preflight_checks,
+                        user_defined_routing=self.user_defined_routing,
+                        tags=self.tags,
                     )
-            if self.wait:
-                self.service = self.cdpy.sdk.wait_for_state(
-                    describe_func=self.cdpy.df.describe_service,
-                    params=dict(df_crn=self.df_crn),
-                    field=None,  # This time we require removal or declare failure
-                    delay=self.delay,
-                    timeout=self.timeout,
-                )
-            else:
-                self.service = self.cdpy.df.describe_service(df_crn=self.df_crn)
+                    self.service = result.get("service", result)
+                    self.changed = True
+
+                    if self.wait:
+                        service_crn = self.service.get("crn")
+                        if service_crn:
+                            self.service = self.df_client.wait_for_service_state(
+                                service_crn=service_crn,
+                                target_states=["GOOD_HEALTH"],
+                                timeout=self.timeout,
+                                delay=self.delay,
+                            )
+            # No existing service found - Service already absent - nothing to do
+            if self.state == "absent":
+                return
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            env_crn=dict(type="str", aliases=["name"]),
-            df_crn=dict(type="str"),
-            nodes_min=dict(type="int", default=3, aliases=["min_k8s_node_count"]),
-            nodes_max=dict(type="int", default=3, aliases=["max_k8s_node_count"]),
-            public_loadbalancer=dict(
-                type="bool",
-                default=False,
-                aliases=["use_public_load_balancer"],
-            ),
-            private_cluster=dict(
-                type="bool",
-                default=False,
-                aliases=["enable_private_cluster"],
-            ),
-            loadbalancer_ip_ranges=dict(type="list", elements="str", default=None),
-            k8s_ip_ranges=dict(type="list", elements="str", default=None),
-            cluster_subnets=dict(type="list", elements="str", default=None),
-            cluster_subnets_filter=dict(type="str", default=None),
-            loadbalancer_subnets=dict(type="list", elements="str", default=None),
-            loadbalancer_subnets_filter=dict(type="str", default=None),
-            persist=dict(type="bool", default=False),
-            terminate=dict(type="bool", default=False),
-            tags=dict(required=False, type="dict", default=None),
-            state=dict(type="str", choices=["present", "absent"], default="present"),
-            force=dict(type="bool", default=False, aliases=["force_delete"]),
-            wait=dict(type="bool", default=True),
-            delay=dict(type="int", aliases=["polling_delay"], default=15),
-            timeout=dict(type="int", aliases=["polling_timeout"], default=3600),
-        ),
-        supports_check_mode=True,
-        required_if=[
-            ("state", "present", ("env_crn",), False),
-            ("state", "absent", ("df_crn",), False),
-        ],
-        mutually_exclusive=[
-            ("cluster_subnets", "cluster_subnets_filter"),
-            ("loadbalancer_subnets", "loadbalancer_subnets_filter"),
-        ],
-    )
-
-    result = DFService(module)
+    result = DFService()
     output = dict(changed=result.changed, service=result.service)
 
-    if result.debug:
+    if result.debug_log:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
