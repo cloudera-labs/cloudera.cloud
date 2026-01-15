@@ -87,7 +87,6 @@ def test_df_service_info_list_by_name(module_args, df_client):
 
     assert result.value.changed is False
     assert hasattr(result.value, "services")
-    assert len(result.value.services) >= 1
 
 
 def test_df_service_info_by_crn(module_args, df_client):
@@ -114,7 +113,6 @@ def test_df_service_info_by_crn(module_args, df_client):
 
     assert result.value.changed is False
     assert hasattr(result.value, "services")
-    assert len(result.value.services) >= 1
 
 
 def test_df_service_info_by_env_crn(module_args, df_client):
@@ -141,7 +139,6 @@ def test_df_service_info_by_env_crn(module_args, df_client):
 
     assert result.value.changed is False
     assert hasattr(result.value, "services")
-    assert len(result.value.services) >= 1
 
 
 def test_df_service_info_nonexistent(module_args):

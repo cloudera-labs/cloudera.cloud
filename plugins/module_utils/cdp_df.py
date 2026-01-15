@@ -37,6 +37,17 @@ class CdpDfClient:
         """
         self.api_client = api_client
 
+    # Service state constants
+    FAILED_STATES = ["BAD_HEALTH", "UNKNOWN"]
+    REMOVABLE_STATES = [
+        "GOOD_HEALTH",
+        "CONCERNING_HEALTH",
+        "BAD_HEALTH",
+        "UNKNOWN",
+    ]
+    TERMINATION_STATES = ["DISABLING"]
+    DISABLED_STATES = ["NOT_ENABLED"]
+
     # ========================================================================
     # Service Management Methods
     # ========================================================================
@@ -104,11 +115,13 @@ class CdpDfClient:
             name: The environment name
 
         Returns:
-            Service details dict, or None if not found
+            Service details dict, or None if not found or disabled
         """
         services = self.list_services(search_term=name)
         for service in services.get("services", []):
             if service.get("name") == name:
+                if service.get("status", {}).get("state") in self.DISABLED_STATES:
+                    return None
                 return self.describe_service(service.get("crn"))
         return None
 
@@ -120,12 +133,15 @@ class CdpDfClient:
             crn: The service CRN
 
         Returns:
-            Service details dict, or None if not found
+            Service details dict, or None if not found or disabled
         """
-        try:
-            return self.describe_service(crn)
-        except Exception:
-            return None
+        services = self.list_services()
+        for service in services.get("services", []):
+            if service.get("crn") == crn:
+                if service.get("status", {}).get("state") in self.DISABLED_STATES:
+                    return None
+                return self.describe_service(crn)
+        return None
 
     def get_service_by_env_crn(self, env_crn: str) -> Optional[Dict[str, Any]]:
         """
@@ -135,11 +151,13 @@ class CdpDfClient:
             env_crn: The environment CRN
 
         Returns:
-            Service details dict, or None if not found
+            Service details dict, or None if not found or disabled
         """
         services = self.list_services()
         for service in services.get("services", []):
             if service.get("environmentCrn") == env_crn:
+                if service.get("status", {}).get("state") in self.DISABLED_STATES:
+                    return None
                 return self.describe_service(service.get("crn"))
         return None
 

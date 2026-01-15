@@ -201,6 +201,7 @@ class DFServiceInfo(ServicesModule):
             self.services = [
                 self.df_client.describe_service(svc["crn"]).get("service", {})
                 for svc in response.get("services", [])
+                if svc.get("status", {}).get("state") not in CdpDfClient.DISABLED_STATES
             ]
             return
 
