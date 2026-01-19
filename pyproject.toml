@@ -22,7 +22,7 @@ validate-bump = true
 detached = true
 dependencies = [
   "pre-commit",
-  "coverage[toml]",
+  # "coverage[toml]",
   "pytest",
   "pytest-mock",
   # "pytest-cov",
@@ -44,13 +44,17 @@ lint = [
 [tool.hatch.envs.hatch-test]
 matrix-name-format = "{variable}_{value}"
 extra-dependencies = [
-  "pytest",
-  "pytest-mock",
   "molecule",
   "molecule-plugins",
   "molecule-plugins[ec2]",
-  # "ansible-core<2.17", # For RHEL 8 support
+  # "ansible-core<2.17", # Handled by matrix overrides
   "cdpy @ git+https://github.com/cloudera-labs/cdpy@main#egg=cdpy",
+]
+
+[tool.hatch.envs.hatch-test.scripts]
+run = [
+    "pip list --verbose",
+    "pytest{env:HATCH_TEST_ARGS:} {args}"
 ]
 
 # Ansible 2.18 - Python >= 3.11
@@ -68,9 +72,9 @@ ansible = ["2.17"]
 python = ["3.13", "3.12", "3.11", "3.10"]
 ansible = ["2.16"]
 
-# Ansible 2.15 - Python <= 3.12
+# Ansible 2.15 - Python <= 3.12, >=3.10
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.12", "3.11", "3.10", "3.9"]
+python = ["3.12", "3.11", "3.10"]
 ansible = ["2.15"]
 
 [tool.hatch.envs.hatch-test.overrides]
