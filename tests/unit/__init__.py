@@ -18,7 +18,7 @@ import json
 
 from email.utils import formatdate
 from functools import wraps
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 from urllib.error import HTTPError
 from http.client import HTTPResponse
@@ -54,7 +54,7 @@ class AnsibleExitJson(Exception):
         self.__dict__.update(kwargs)
 
     def __getattr__(self, attr):
-        return self.__dict__[attr]
+        return self.__dict__.get(attr, None)
 
 
 def handle_response(func):
@@ -108,9 +108,9 @@ def set_credential_headers(
 
 
 def prepare_body(
-    data: Dict[str, Any] | None = None,
-    json_data: Dict[str, Any] | None = None,
-) -> str | None:
+    data: Optional[Dict[str, Any]] = None,
+    json_data: Optional[Dict[str, Any]] = None,
+) -> Optional[str]:
     if json_data is not None:
         return json.dumps(json_data)
     elif data is not None:
@@ -134,7 +134,7 @@ class TestCdpClient(CdpClient):
         self.private_key = private_key
 
     @handle_response
-    def get(self, path: str, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         # Prepare query parameters
         if params:
             path += "?" + urlencode(params)
@@ -155,8 +155,8 @@ class TestCdpClient(CdpClient):
     def post(
         self,
         path: str,
-        data: Dict[str, Any] | None = None,
-        json_data: Dict[str, Any] | None = None,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
         squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
@@ -175,8 +175,8 @@ class TestCdpClient(CdpClient):
     def put(
         self,
         path: str,
-        data: Dict[str, Any] | None = None,
-        json_data: Dict[str, Any] | None = None,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
         squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
