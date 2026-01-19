@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import abc
 import io
 import logging
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.parameters import env_fallback
@@ -86,16 +86,16 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
 
     def __init__(
         self,
-        argument_spec: dict[str, dict[str, Any]] = {},
+        argument_spec: Dict[str, Dict[str, Any]] = {},
         bypass_checks: bool = False,
         no_log: bool = False,
-        mutually_exclusive: list[str] | list[list[str]] = [],
-        required_together: list[list[str]] = [],
-        required_one_of: list[list[str]] = [],
+        mutually_exclusive: Union[List[str], List[List[str]]] = [],
+        required_together: List[List[str]] = [],
+        required_one_of: List[List[str]] = [],
         add_file_common_args: bool = False,
         supports_check_mode: bool = False,
-        required_if: list[list[Any]] = [],
-        required_by: dict[str, list[str]] = {},
+        required_if: List[List[Any]] = [],
+        required_by: Dict[str, List[str]] = {},
     ):
         """Initializes the base Cloudera on cloud service module"""
         super().__init__()
@@ -245,7 +245,7 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
 
         # Initialize logging properties
         self.log_out: str = ""
-        self.log_lines: list[str] = []
+        self.log_lines: List[str] = []
         self.log_capture = None
 
         # If debug is enabled, set up logging capture to return in the module output
