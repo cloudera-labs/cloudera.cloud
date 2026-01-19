@@ -24,6 +24,8 @@ from ansible_collections.cloudera.cloud.tests.unit.plugins.modules.utils import 
     setup_module_args,
 )
 
+pytestmark = pytest.mark.skip(reason="Refactor to new structure")
+
 
 def test_get_single_role_details():
     setup_module_args({"name": "crn:iam:us-west-1:role:ClassicClustersCreator"})

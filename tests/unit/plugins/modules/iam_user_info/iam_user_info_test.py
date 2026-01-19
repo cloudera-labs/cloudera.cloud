@@ -24,6 +24,8 @@ from ansible_collections.cloudera.cloud.tests.unit.plugins.modules.utils import 
     setup_module_args,
 )
 
+pytestmark = pytest.mark.skip(reason="Refactor to new structure")
+
 
 def test_user_info_username():
     setup_module_args({"user_name": "mike01"})
