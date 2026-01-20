@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -267,7 +267,7 @@ sdk_out_lines:
   elements: str
 """
 
-from typing import Any
+from typing import Any, Dict
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
@@ -317,7 +317,7 @@ class MLInfo(ServicesModule):
 def main():
 
     result = MLInfo()
-    output: dict[str, Any] = dict(
+    output: Dict[str, Any] = dict(
         changed=False,
         workspaces=result.workspaces,
     )

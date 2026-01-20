@@ -160,7 +160,7 @@ sdk_out_lines:
   elements: str
 """
 
-from typing import Any
+from typing import Any, Dict
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
 )
@@ -212,7 +212,7 @@ class DFServiceInfo(ServicesModule):
 def main():
     result = DFServiceInfo()
 
-    output: dict[str, Any] = dict(
+    output: Dict[str, Any] = dict(
         changed=False,
         services=result.services,
     )

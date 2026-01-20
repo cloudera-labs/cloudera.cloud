@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -174,7 +174,7 @@ sdk_out_lines:
   elements: str
 """
 
-from typing import Any
+from typing import Any, Dict
 
 from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
 
@@ -293,7 +293,7 @@ class IAMMachineUser(ServicesModule):
 def main():
     result = IAMMachineUser()
 
-    output: dict[str, Any] = dict(
+    output: Dict[str, Any] = dict(
         changed=result.changed,
         machine_user=result.machine_user,
     )
