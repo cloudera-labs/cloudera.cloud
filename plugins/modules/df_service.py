@@ -92,9 +92,11 @@ options:
     required: False
   cluster_subnets_filter:
     description:
-      - String pattern to filter the subnets to be used for the Kubernetes cluster
-      - The pattern will be matched against subnet names (case-insensitive)
-      - Only subnets with names containing this pattern will be selected
+      - Filter expression to select subnets for the Kubernetes cluster
+      - Can be either a simple string pattern or a JMESPath query
+      - "Simple pattern: Just provide a string (e.g., 'pub', 'pvt') to match subnets containing that text in their name"
+      - "JMESPath query: Provide a full JMESPath expression (e.g., \"[?contains(subnetName, 'pub')]\") for advanced filtering"
+      - "The filter operates on subnet objects with attributes: subnetId, subnetName, availabilityZone, cidr"
       - Mutually exclusive with the I(cluster_subnets) option.
     type: str
     required: False
@@ -106,9 +108,11 @@ options:
     required: False
   loadbalancer_subnets_filter:
     description:
-      - String pattern to filter the subnets to be used for the load balancer
-      - The pattern will be matched against subnet names (case-insensitive)
-      - Only subnets with names containing this pattern will be selected
+      - Filter expression to select subnets for the load balancer
+      - Can be either a simple string pattern or a JMESPath query
+      - "Simple pattern: Just provide a string (e.g., 'pub', 'pvt') to match subnets containing that text in their name"
+      - "JMESPath query: Provide a full JMESPath expression (e.g., \"[?contains(subnetName, 'pub')]\") for advanced filtering"
+      - "The filter operates on subnet objects with attributes: subnetId, subnetName, availabilityZone, cidr"
       - Mutually exclusive with the I(loadbalancer_subnets) option.
     type: str
     required: False
@@ -192,32 +196,39 @@ options:
       - polling_timeout
 notes:
   - This feature this module is for is in Technical Preview
-  - When updating an existing service, only the following parameters can be changed:
-    - nodes_min / nodes_max (both required together for updates)
-    - k8s_ip_ranges
-    - loadbalancer_ip_ranges
-    - skip_preflight_checks
+  - "When updating an existing service, only the following parameters can be changed: nodes_min/nodes_max (both required together), k8s_ip_ranges, loadbalancer_ip_ranges, skip_preflight_checks"
   - Network configuration (subnets, pod_cidr, service_cidr, cluster type) cannot be updated after creation
   - To change immutable parameters, you must disable and recreate the service
   - When I(state=absent) and I(force=true), if service is in NOT_ENABLED state, resetService API is used
   - resetService only works on NOT_ENABLED services and does not clean up cloud resources
   - Use I(force=true) with caution as manual resource cleanup may be required
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# Create a Dataflow Service
+# Create a Dataflow Service with simple string pattern filters
 - cloudera.cloud.df_service:
     name: my-service
     nodes_min: 3
     nodes_max: 10
     public_loadbalancer: true
-    cluster_subnets_filter: "[?contains(subnetName, 'pvt')]"
-    loadbalancer_subnets_filter: "[?contains(subnetName, 'pub')]"
+    cluster_subnets_filter: "pvt"  # Simple pattern - matches subnets with 'pvt' in name
+    loadbalancer_subnets_filter: "pub"  # Simple pattern - matches subnets with 'pub' in name
+    k8s_ip_ranges: ['192.168.0.1/24']
+    state: present
+    wait: true
+
+# Create a Dataflow Service with JMESPath filter expressions
+- cloudera.cloud.df_service:
+    name: my-service
+    nodes_min: 3
+    nodes_max: 10
+    public_loadbalancer: true
+    cluster_subnets_filter: "[?contains(subnetName, 'pvt')]"  # JMESPath query
+    loadbalancer_subnets_filter: "[?contains(subnetName, 'pub')]"  # JMESPath query
     k8s_ip_ranges: ['192.168.0.1/24']
     state: present
     wait: true
@@ -323,8 +334,15 @@ sdk_out_lines:
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
 )
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import CdpDfClient
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import CdpEnvClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
+    CdpDfClient,
+    check_service_updates,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
+    CdpEnvClient,
+    filter_subnets_by_jmespath,
+    convert_to_jmespath_query,
+)
 
 
 class DFService(ServicesModule):
@@ -424,29 +442,28 @@ class DFService(ServicesModule):
             existing_service = self.df_client.get_service_by_env_crn(self.env_crn)
 
         if existing_service:
-            service_details = existing_service.get("service", existing_service)
-            # Capture the CRN if we found the service by env_crn
+            existing_service = existing_service.get("service", existing_service)
+
             if not self.df_crn:
-                self.df_crn = service_details.get("crn")
+                self.df_crn = existing_service.get("crn")
 
             if self.state == "absent":
-                current_state = service_details.get("status", {}).get("state")
+                current_state = existing_service.get("status", {}).get("state")
+                self.changed = True
 
                 if not self.module.check_mode:
-                    # Force reset: Remove all references without cleanup (NOT_ENABLED only)
-                    if self.force and current_state == "NOT_ENABLED":
+                    if self.force and current_state in CdpDfClient.DISABLED_STATES:
                         self.df_client.reset_service(crn=self.df_crn)
-                        self.changed = True
 
-                    # Normal disable: Gracefully teardown service (not already disabled)
-                    elif current_state != "NOT_ENABLED":
+                    elif current_state not in CdpDfClient.DISABLED_STATES:
                         if self.wait:
-                            self.service = self.df_client.disable_service_and_wait(
+                            self.df_client.wait_for_service_state(
                                 service_crn=self.df_crn,
-                                terminate_deployments=self.terminate,
-                                persist=self.persist,
+                                target_states=CdpDfClient.DISABLED_STATES,
                                 timeout=self.timeout,
                                 delay=self.delay,
+                                terminate_deployments=self.terminate,
+                                persist=self.persist,
                             )
                         else:
                             self.df_client.disable_service(
@@ -454,22 +471,12 @@ class DFService(ServicesModule):
                                 terminate_deployments=self.terminate,
                                 persist=self.persist,
                             )
-                            self.service = service_details
-                        self.changed = True
-
-                    # Already disabled: No action needed
-                    else:
-                        self.service = service_details
-                else:
-                    # Check mode: Would make a change if service exists
-                    self.service = service_details
-                    self.changed = True
 
             elif self.state == "present":
-                # Service exists - check if update is needed
-                update_needed, update_params = self.df_client.check_service_updates(
+
+                update_params = check_service_updates(
                     service_crn=self.df_crn,
-                    service_details=service_details,
+                    service_details=existing_service,
                     min_k8s_node_count=self.nodes_min,
                     max_k8s_node_count=self.nodes_max,
                     kubernetes_ip_cidr_blocks=self.k8s_ip_ranges,
@@ -477,9 +484,9 @@ class DFService(ServicesModule):
                     skip_preflight_checks=self.skip_preflight_checks,
                 )
 
-                if update_needed:
+                if update_params:
                     self.changed = True
-                    self.service = service_details
+                    self.service = existing_service
 
                     if not self.module.check_mode:
                         result = self.df_client.update_service(**update_params)
@@ -493,27 +500,30 @@ class DFService(ServicesModule):
                                 delay=self.delay,
                             )
                 else:
-                    # No update needed - service already in desired state
-                    self.service = service_details
+                    self.service = existing_service
         else:
-
+            # Service doesn't exist (or is already disabled)
             if self.state == "present":
                 # Apply subnet filtering if filter parameters are provided
                 if self.cluster_subnets_filter or self.loadbalancer_subnets_filter:
                     subnets = self.env_client.get_environment_subnets(self.env_crn)
+
                     if self.cluster_subnets_filter:
-                        self.cluster_subnets = (
-                            self.env_client.filter_subnets_by_name_pattern(
-                                subnets,
-                                self.cluster_subnets_filter,
-                            )
+                        query = convert_to_jmespath_query(
+                            self.cluster_subnets_filter,
                         )
+                        self.cluster_subnets = filter_subnets_by_jmespath(
+                            subnets,
+                            query,
+                        )
+
                     if self.loadbalancer_subnets_filter:
-                        self.loadbalancer_subnets = (
-                            self.env_client.filter_subnets_by_name_pattern(
-                                subnets,
-                                self.loadbalancer_subnets_filter,
-                            )
+                        query = convert_to_jmespath_query(
+                            self.loadbalancer_subnets_filter,
+                        )
+                        self.loadbalancer_subnets = filter_subnets_by_jmespath(
+                            subnets,
+                            query,
                         )
 
                 if not self.module.check_mode:
@@ -546,9 +556,6 @@ class DFService(ServicesModule):
                                 timeout=self.timeout,
                                 delay=self.delay,
                             )
-            # No existing service found - Service already absent - nothing to do
-            if self.state == "absent":
-                return
 
 
 def main():

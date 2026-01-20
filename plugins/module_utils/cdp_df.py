@@ -18,7 +18,7 @@
 A REST client for the Cloudera on Cloud Platform (CDP) DataFlow API
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import time
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
@@ -26,8 +26,95 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 )
 
 
+def check_service_updates(
+    service_crn: str,
+    service_details: Dict[str, Any],
+    min_k8s_node_count: Optional[int] = None,
+    max_k8s_node_count: Optional[int] = None,
+    kubernetes_ip_cidr_blocks: Optional[List[str]] = None,
+    load_balancer_ip_cidr_blocks: Optional[List[str]] = None,
+    skip_preflight_checks: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """
+    Check if service updates are needed and build update parameters.
+
+    Args:
+        service_crn: The CRN of the service to update
+        service_details: Current service details from API
+        min_k8s_node_count: Desired minimum number of Kubernetes nodes
+        max_k8s_node_count: Desired maximum number of Kubernetes nodes
+        kubernetes_ip_cidr_blocks: Desired CIDR blocks for Kubernetes API access
+        load_balancer_ip_cidr_blocks: Desired CIDR blocks for load balancer access
+        skip_preflight_checks: Whether to skip pre-flight checks during update
+
+    Returns:
+        Dictionary of update parameters if changes are needed, empty dict otherwise
+    """
+    update_params = {"service_crn": service_crn}
+    changes = []
+
+    param_mappings = [
+        (min_k8s_node_count, "minK8sNodeCount", "min_k8s_node_count"),
+        (max_k8s_node_count, "maxK8sNodeCount", "max_k8s_node_count"),
+    ]
+
+    for desired_value, service_key, api_param in param_mappings:
+        current_value = service_details.get(service_key)
+        if desired_value is not None and desired_value != current_value:
+            update_params[api_param] = desired_value
+            changes.append(api_param)
+
+    ip_range_mappings = [
+        (
+            kubernetes_ip_cidr_blocks,
+            "kubeApiAuthorizedIpRanges",
+            "kubernetes_ip_cidr_blocks",
+        ),
+        (
+            load_balancer_ip_cidr_blocks,
+            "loadBalancerAuthorizedIpRanges",
+            "load_balancer_ip_cidr_blocks",
+        ),
+    ]
+
+    for desired_ranges, service_key, api_param in ip_range_mappings:
+        if desired_ranges is not None:
+            current_ranges = service_details.get(service_key, [])
+            if set(desired_ranges) != set(current_ranges):
+                update_params[api_param] = desired_ranges
+                changes.append(api_param)
+
+    if skip_preflight_checks:
+        update_params["skip_preflight_checks"] = skip_preflight_checks
+
+    if changes:
+        if "min_k8s_node_count" not in update_params:
+            current_min = service_details.get("minK8sNodeCount")
+            if current_min is not None:
+                update_params["min_k8s_node_count"] = current_min
+        if "max_k8s_node_count" not in update_params:
+            current_max = service_details.get("maxK8sNodeCount")
+            if current_max is not None:
+                update_params["max_k8s_node_count"] = current_max
+
+        return update_params
+    else:
+        return {}
+
+
 class CdpDfClient:
     """CDP DataFlow API client."""
+
+    # Service state constants
+    FAILED_STATES = ["BAD_HEALTH", "UNKNOWN"]
+    REMOVABLE_STATES = [
+        "GOOD_HEALTH",
+        "CONCERNING_HEALTH",
+        "BAD_HEALTH",
+        "UNKNOWN",
+    ]
+    TERMINATION_STATES = ["DISABLING"]
+    DISABLED_STATES = ["NOT_ENABLED"]
 
     def __init__(self, api_client: CdpClient):
         """
@@ -139,6 +226,7 @@ class CdpDfClient:
         services = self.list_services()
         for service in services.get("services", []):
             if service.get("crn") == crn:
+                # Skip describe for disabled services (returns 500)
                 if service.get("status", {}).get("state") in self.DISABLED_STATES:
                     return None
                 return self.describe_service(crn)
@@ -157,6 +245,7 @@ class CdpDfClient:
         services = self.list_services()
         for service in services.get("services", []):
             if service.get("environmentCrn") == env_crn:
+                # Skip describe for disabled services (returns 500)
                 if service.get("status", {}).get("state") in self.DISABLED_STATES:
                     return None
                 return self.describe_service(service.get("crn"))
@@ -293,85 +382,6 @@ class CdpDfClient:
 
         return self.api_client.post("/api/v1/df/updateService", data=data)
 
-    def check_service_updates(
-        self,
-        service_crn: str,
-        service_details: Dict[str, Any],
-        min_k8s_node_count: Optional[int] = None,
-        max_k8s_node_count: Optional[int] = None,
-        kubernetes_ip_cidr_blocks: Optional[List[str]] = None,
-        load_balancer_ip_cidr_blocks: Optional[List[str]] = None,
-        skip_preflight_checks: Optional[bool] = None,
-    ) -> tuple[bool, Dict[str, Any]]:
-        """
-        Check if service updates are needed and build update parameters.
-
-        Args:
-            service_crn: The CRN of the service to update
-            service_details: Current service details from API
-            min_k8s_node_count: Desired minimum number of Kubernetes nodes
-            max_k8s_node_count: Desired maximum number of Kubernetes nodes
-            kubernetes_ip_cidr_blocks: Desired CIDR blocks for Kubernetes API access
-            load_balancer_ip_cidr_blocks: Desired CIDR blocks for load balancer access
-            skip_preflight_checks: Whether to skip pre-flight checks during update
-
-        Returns:
-            Tuple of (update_needed, update_params)
-        """
-        update_params = {"service_crn": service_crn}
-        changes = []
-
-        # Define updatable scalar parameters with their mappings
-        param_mappings = [
-            (min_k8s_node_count, "minK8sNodeCount", "min_k8s_node_count"),
-            (max_k8s_node_count, "maxK8sNodeCount", "max_k8s_node_count"),
-        ]
-
-        # Check scalar parameters
-        for desired_value, service_key, api_param in param_mappings:
-            current_value = service_details.get(service_key)
-            if desired_value is not None and desired_value != current_value:
-                update_params[api_param] = desired_value
-                changes.append(api_param)
-
-        # Check IP range list parameters (order-independent comparison)
-        ip_range_mappings = [
-            (
-                kubernetes_ip_cidr_blocks,
-                "kubeApiAuthorizedIpRanges",
-                "kubernetes_ip_cidr_blocks",
-            ),
-            (
-                load_balancer_ip_cidr_blocks,
-                "loadBalancerAuthorizedIpRanges",
-                "load_balancer_ip_cidr_blocks",
-            ),
-        ]
-
-        for desired_ranges, service_key, api_param in ip_range_mappings:
-            if desired_ranges is not None:
-                current_ranges = service_details.get(service_key, [])
-                if set(desired_ranges) != set(current_ranges):
-                    update_params[api_param] = desired_ranges
-                    changes.append(api_param)
-
-        # Include skip_preflight_checks if set
-        if skip_preflight_checks:
-            update_params["skip_preflight_checks"] = skip_preflight_checks
-
-        # Ensure both node counts are present (API requirement)
-        if changes:
-            if "min_k8s_node_count" not in update_params:
-                current_min = service_details.get("minK8sNodeCount")
-                if current_min is not None:
-                    update_params["min_k8s_node_count"] = current_min
-            if "max_k8s_node_count" not in update_params:
-                current_max = service_details.get("maxK8sNodeCount")
-                if current_max is not None:
-                    update_params["max_k8s_node_count"] = current_max
-
-        return bool(changes), update_params
-
     def disable_service(
         self,
         crn: str,
@@ -412,159 +422,130 @@ class CdpDfClient:
         data = {"serviceCrn": crn}
         return self.api_client.post("/api/v1/df/resetService", data=data)
 
+    def _get_service_state(
+        self,
+        service_crn: str,
+    ) -> Optional[Tuple[str, Dict[str, Any]]]:
+        """
+        Helper method to get current service state.
+
+        Args:
+            service_crn: The CRN of the service
+
+        Returns:
+            Tuple of (state, service_details) or None if service doesn't exist
+        """
+        service = self.get_service_by_crn(service_crn)
+        if not service:
+            return None
+
+        service_details = service.get("service", service)
+
+        try:
+            current_state = service_details["status"]["state"]
+            return (current_state, service_details)
+        except (KeyError, TypeError):
+            return (None, service_details)
+
     def wait_for_service_state(
         self,
         service_crn: str,
         target_states: List[str],
-        failed_states: Optional[List[str]] = None,
         timeout: int = 3600,
         delay: int = 60,
+        terminate_deployments: bool = False,
+        persist: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """
         Wait for a DataFlow service to reach a target state.
 
+        If target state is "NOT_ENABLED", automatically initiates service disablement if needed.
+
         Args:
             service_crn: The CRN of the service
             target_states: List of acceptable target states
-            failed_states: List of states that indicate failure (optional)
             timeout: Maximum time to wait in seconds
             delay: Polling interval in seconds
+            terminate_deployments: Whether to terminate all deployments (used when disabling)
+            persist: Whether to retain database records (used when disabling)
 
         Returns:
             Service details dict when target state is reached, or None if service is deleted
 
         Raises:
             CdpError: If timeout is reached or service enters a failed state
+
+        Notes:
+            When target_states includes "NOT_ENABLED", the method will:
+            1. Check current service state
+            2. If in REMOVABLE_STATES (healthy/unhealthy) → Call disable_service API
+            3. If already NOT_ENABLED → Return immediately
+            4. If already DISABLING → Skip to waiting loop
+            5. Otherwise → Raise error (cannot disable from current state)
+
+            Failed states are always: BAD_HEALTH, UNKNOWN
         """
 
-        failed_states = failed_states or ["BAD_HEALTH", "UNKNOWN"]
         start_time = time.time()
 
+        # If target is NOT_ENABLED, initiate disablement if needed
+        if "NOT_ENABLED" in target_states:
+            result = self._get_service_state(service_crn)
+            if result is None:
+                # Service doesn't exist
+                return None
+
+            current_state, service_details = result
+
+            # Define valid state transitions
+
+            # State-based decision for disablement
+            if current_state in self.REMOVABLE_STATES:
+                # Service is running - initiate disable
+                self.disable_service(
+                    crn=service_crn,
+                    terminate_deployments=terminate_deployments,
+                    persist=persist,
+                )
+            elif current_state in target_states:
+                # Already in target state - return immediately
+                return service_details
+            elif current_state in self.TERMINATION_STATES:
+                # Already disabling - proceed to waiting loop
+                pass
+            else:
+                # Cannot disable from this state
+                raise CdpError(
+                    f"Cannot disable service in state '{current_state}'. ",
+                )
+
+        # Wait for target state
         while True:
             elapsed = time.time() - start_time
             if elapsed > timeout:
                 raise CdpError(
-                    f"Timeout waiting for DataFlow service to reach {target_states} after {timeout} seconds",
+                    f"Timeout waiting for DataFlow service to reach {target_states} "
+                    f"after {timeout} seconds",
                 )
 
-            service = self.get_service_by_crn(service_crn)
+            result = self._get_service_state(service_crn)
 
-            if service is None:
+            # Service no longer exists
+            if result is None:
                 return None
 
-            # Handle response structure - could be {"service": {...}} or direct service object
-            if "service" in service:
-                service_details = service["service"]
-            else:
-                service_details = service
-
-            # Get current state - use dict access instead of .get() to avoid issues
-            try:
-                current_state = service_details["status"]["state"]
-            except (KeyError, TypeError) as e:
-                import sys
-
-                print(
-                    f"Warning: Could not find state in service response. Error: {e}",
-                    file=sys.stderr,
-                )
-                print(f"Service details type: {type(service_details)}", file=sys.stderr)
-                print(f"Service details: {service_details}", file=sys.stderr)
-                current_state = None
+            current_state, service_details = result
 
             # Check if in target state
             if current_state in target_states:
                 return service_details
 
             # Check if in failed state
-            if current_state in failed_states:
+            if current_state in self.FAILED_STATES:
                 msg = service_details.get("status", {}).get("message", "Unknown error")
                 raise CdpError(
                     f"DataFlow service entered failed state '{current_state}': {msg}",
                 )
-
-            time.sleep(delay)
-
-    def disable_service_and_wait(
-        self,
-        service_crn: str,
-        terminate_deployments: bool = False,
-        persist: bool = False,
-        timeout: int = 3600,
-        delay: int = 60,
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Disable a DataFlow service and wait for completion.
-
-        Args:
-            service_crn: The CRN of the service
-            terminate_deployments: Whether to terminate all deployments
-            persist: Whether to retain the database records of related entities
-            timeout: Maximum time to wait in seconds
-            delay: Polling interval in seconds
-
-        Returns:
-            Service details dict in final state, or None if deleted
-
-        Raises:
-            CdpError: If service is in unexpected state or timeout occurs
-        """
-
-        # Get current service state
-        service = self.get_service_by_crn(service_crn)
-        if not service or "service" not in service:
-            return None
-
-        service_details = service["service"]
-        try:
-            current_state = service_details["status"]["state"]
-        except (KeyError, TypeError):
-            current_state = None
-
-        REMOVABLE_STATES = ["GOOD_HEALTH", "CONCERNING_HEALTH", "BAD_HEALTH", "UNKNOWN"]
-        TERMINATION_STATES = ["DISABLING"]
-        STOPPED_STATES = ["NOT_ENABLED"]
-
-        # Attempt to disable if in removable state
-        if current_state in REMOVABLE_STATES:
-            self.disable_service(
-                crn=service_crn,
-                terminate_deployments=terminate_deployments,
-                persist=persist,
-            )
-        elif current_state in STOPPED_STATES:
-            # Already stopped
-            return service_details
-        elif current_state not in TERMINATION_STATES:
-            raise CdpError(
-                f"Cannot disable service in state '{current_state}'. Expected one of {REMOVABLE_STATES}",
-            )
-
-        # Wait for service to be disabled or deleted
-        start_time = time.time()
-
-        while True:
-            if time.time() - start_time > timeout:
-                raise CdpError(
-                    f"Timeout waiting for DataFlow service to disable after {timeout} seconds",
-                )
-
-            service = self.get_service_by_crn(service_crn)
-
-            # Service no longer exists - success!
-            if service is None:
-                return None
-
-            if "service" in service:
-                service_details = service["service"]
-                try:
-                    current_state = service_details["status"]["state"]
-                except (KeyError, TypeError):
-                    current_state = None
-
-                # Check if in stopped state
-                if current_state in STOPPED_STATES:
-                    return service_details
 
             time.sleep(delay)
 

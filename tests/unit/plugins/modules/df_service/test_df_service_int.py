@@ -18,39 +18,29 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import os
 import pytest
 
 from typing import Callable, Generator, Optional
 
 from ansible_collections.cloudera.cloud.tests.unit import (
-    AnsibleFailJson,
     AnsibleExitJson,
 )
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import CdpDfClient
 from ansible_collections.cloudera.cloud.plugins.modules import df_service
 
+# Required environment variables for integration tests
+REQUIRED_ENV_VARS = [
+    "ENV_CRN",
+]
 
-BASE_URL = os.getenv("CDP_API_ENDPOINT", "not set")
-ACCESS_KEY = os.getenv("CDP_ACCESS_KEY_ID", "not set")
-PRIVATE_KEY = os.getenv("CDP_PRIVATE_KEY", "not set")
-TEST_ENV_CRN = "crn:cdp:environments:us-west-1:5125151-8867-4357-8524-31231:environment:138fb0e4-5407-4538-b995-90e977b23ca3"
-TEST_SERVICE_CRN = "crn:cdp:df:us-west-1:142141-8867-4357-8524-41241:service:16f9c856-543c-4c68-81ec-8cd6624e7117"
-TEST_CLUSTER_SUBNETS = [
-    "subnet-058206f46dba69f9a",
-    "subnet-0f998049366aaebe0",
-    "subnet-06f423bb2ca14a4f9",
-]
-TEST_LOADBALANCER_SUBNETS = [
-    "subnet-058206f46dba69f9a",
-    "subnet-0f998049366aaebe0",
-    "subnet-06f423bb2ca14a4f9",
-]
+# Test configuration constants
 TEST_MIN_NODES = 3
 TEST_MAX_NODES = 10
 TEST_USE_PUBLIC_LB = True
 TEST_PRIVATE_CLUSTER = False
+TEST_CLUSTER_SUBNET_FILTER = "pub"
+TEST_LB_SUBNET_FILTER = "pub"
 TEST_TAGS = {
     "test1": "test1value",
     "test2": "test2_value",
@@ -67,100 +57,133 @@ def df_client(test_cdp_client) -> CdpDfClient:
 
 
 @pytest.fixture
-def df_service_crn(df_client) -> Generator[Optional[str], None, None]:
+def df_service_disable(df_client) -> Generator[Optional[str], None, None]:
     """
     Fixture to track and clean up DataFlow service.
-    
+
     Yields the service CRN if service is enabled during test.
     Ensures cleanup by disabling the service after test completion.
     """
-    service_crn = None
+    service_crn = {"value": None}
 
     def _set_crn(crn: str):
-        nonlocal service_crn
-        service_crn = crn
+        service_crn["value"] = crn
 
     # Yield the setter function
     yield _set_crn
 
     # Cleanup: disable service if it was created
-    if service_crn:
+    if service_crn["value"]:
         try:
-            df_client.disable_service(crn=service_crn, terminate_deployments=True)
+            df_client.disable_service(
+                crn=service_crn["value"], terminate_deployments=True
+            )
             # Wait for service to be fully disabled
             df_client.wait_for_service_state(
-                service_crn=service_crn,
-                target_states=["DISABLED"],
+                service_crn=service_crn["value"],
+                target_states=["NOT_ENABLED"],
                 timeout=1800,  # 30 minutes
                 delay=30,
             )
         except Exception as e:
-            pytest.fail(f"Failed to clean up DataFlow service: {service_crn}. {e}")
+            pytest.fail(
+                f"Failed to clean up DataFlow service: {service_crn['value']}. {e}"
+            )
 
 
 @pytest.fixture
-def df_service_enable(df_client, df_service_crn) -> Callable[[str], dict]:
+def df_service_enable(
+    df_client,
+    df_service_disable,
+    env_context,
+) -> Callable[[str, dict], dict]:
     """
     Fixture to enable DataFlow service for tests.
-    
+
     Returns a function that enables the service and registers it for cleanup.
     """
 
-    def _enable_service(env_crn: str) -> dict:
+    def _enable_service(env_crn: str = None, **kwargs) -> dict:
         """Enable DataFlow service and register for cleanup."""
-        result = df_client.enable_service(
-            environment_crn=env_crn,
-            min_k8s_node_count=TEST_MIN_NODES,
-            max_k8s_node_count=TEST_MAX_NODES,
-            cluster_subnet_ids=TEST_CLUSTER_SUBNETS,
-            load_balancer_subnet_ids=TEST_LOADBALANCER_SUBNETS,
-            use_public_load_balancer=TEST_USE_PUBLIC_LB,
-            private_cluster=TEST_PRIVATE_CLUSTER,
-            skip_preflight_checks=False,
-            user_defined_routing=False,
-            tags=TEST_TAGS,
-        )
-        
-        # Wait for service to be enabled
-        service_crn = result.get("service", {}).get("crn")
-        if service_crn:
-            df_service_crn(service_crn)
-            df_client.wait_for_service_state(
-                service_crn=service_crn,
-                target_states=["ENABLED"],
-                timeout=1800,  # 30 minutes
-                delay=30,
-            )
-        
+        if env_crn is None:
+            env_crn = env_context["ENV_CRN"]
+
+        # Check if service is already enabled for this environment
+        services = df_client.list_services().get("services", [])
+        existing_service = None
+        for service in services:
+            if service.get("environmentCrn") == env_crn:
+                existing_service = service
+                break
+
+        if existing_service:
+            # Service already exists, get full details
+            service_crn = existing_service.get("crn")
+            result = {"service": df_client.describe_service(service_crn)}
+
+            # Register for cleanup
+            df_service_disable(service_crn)
+
+            # Wait for service to be in a healthy state if it's still enabling
+            current_state = existing_service.get("status", {}).get("state")
+            if current_state not in df_client.REMOVABLE_STATES:
+                # Service exists but is not yet in a stable state (e.g., still ENABLING)
+                df_client.wait_for_service_state(
+                    service_crn=service_crn,
+                    target_states=df_client.REMOVABLE_STATES,
+                    timeout=1800,  # 30 minutes
+                    delay=30,
+                )
+        else:
+            # Merge default kwargs with provided ones
+            enable_params = {
+                "environment_crn": env_crn,
+                "min_k8s_node_count": TEST_MIN_NODES,
+                "max_k8s_node_count": TEST_MAX_NODES,
+                "use_public_load_balancer": TEST_USE_PUBLIC_LB,
+                "private_cluster": TEST_PRIVATE_CLUSTER,
+                "skip_preflight_checks": False,
+                "user_defined_routing": False,
+                "tags": TEST_TAGS,
+            }
+            enable_params.update(kwargs)
+
+            result = df_client.enable_service(**enable_params)
+
+            # Wait for service to be enabled
+            service_crn = result.get("service", {}).get("crn")
+            if service_crn:
+                df_service_disable(service_crn)
+                df_client.wait_for_service_state(
+                    service_crn=service_crn,
+                    target_states=["ENABLED"],
+                    timeout=1800,  # 30 minutes
+                    delay=30,
+                )
+
         return result
 
     return _enable_service
 
 
+def test_df_service_enable(module_args, env_context, df_service_disable):
+    """Test enabling DataFlow service with subnet filters."""
 
-def test_df_service_enable(module_args, df_service_crn):
-    """Test enabling DataFlow service with real API calls."""
-
-    # Ensure cleanup after the test
-    # The df_service_crn fixture will track the CRN for cleanup
-
-    # Execute module
     module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "env_crn": TEST_ENV_CRN,
+            "endpoint": env_context["endpoint"],
+            "access_key": env_context["access_key"],
+            "private_key": env_context["private_key"],
+            "env_crn": env_context["ENV_CRN"],
             "state": "present",
             "nodes_min": TEST_MIN_NODES,
             "nodes_max": TEST_MAX_NODES,
-            "cluster_subnets": TEST_CLUSTER_SUBNETS,
-            "loadbalancer_subnets": TEST_LOADBALANCER_SUBNETS,
+            "cluster_subnets_filter": TEST_CLUSTER_SUBNET_FILTER,
+            "loadbalancer_subnets_filter": TEST_LB_SUBNET_FILTER,
             "public_loadbalancer": TEST_USE_PUBLIC_LB,
             "private_cluster": TEST_PRIVATE_CLUSTER,
             "tags": TEST_TAGS,
             "wait": True,
-
         },
     )
 
@@ -169,8 +192,8 @@ def test_df_service_enable(module_args, df_service_crn):
 
     # Register the service CRN for cleanup
     service_crn = result.value.service.get("crn")
-    # assert service_crn is not None
-    # df_service_crn(service_crn)
+    assert service_crn is not None
+    df_service_disable(service_crn)
 
     # Verify the result
     assert result.value.changed is True
@@ -187,23 +210,77 @@ def test_df_service_enable(module_args, df_service_crn):
     assert result.value.service.get("crn") == service_crn
 
 
-def test_df_service_disable(module_args, df_service_enable):
-    """Test disabling DataFlow service with real API calls."""
+def test_df_service_enable_with_jmespath_filters(
+    module_args,
+    env_context,
+    df_service_disable,
+):
+    """Test enabling DataFlow service using JMESPath subnet filters."""
 
-    # Enable the service first
-    # enable_result = df_service_enable(TEST_ENV_CRN)
-    # service_crn = enable_result.get("service", {}).get("crn")
-    # assert service_crn is not None
+    # Execute module with JMESPath filters
+    module_args(
+        {
+            "endpoint": env_context["endpoint"],
+            "access_key": env_context["access_key"],
+            "private_key": env_context["private_key"],
+            "env_crn": env_context["ENV_CRN"],
+            "state": "present",
+            "nodes_min": TEST_MIN_NODES,
+            "nodes_max": TEST_MAX_NODES,
+            "cluster_subnets_filter": "[?contains(subnetName, 'pub')]",  # JMESPath query
+            "loadbalancer_subnets_filter": "[?contains(subnetName, 'pub')]",  # JMESPath query
+            "public_loadbalancer": TEST_USE_PUBLIC_LB,
+            "private_cluster": TEST_PRIVATE_CLUSTER,
+            "tags": TEST_TAGS,
+            "wait": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        df_service.main()
+
+    # Register the service CRN for cleanup
+    service_crn = result.value.service.get("crn")
+    assert service_crn is not None
+    df_service_disable(service_crn)
+
+    # Verify the result
+    assert result.value.changed is True
+    assert result.value.service is not None
+    assert result.value.service.get("crn") == service_crn
+    assert "environmentCrn" in result.value.service
+
+    # Verify that subnets were selected (should have cluster and load balancer subnets)
+    assert "clusterSubnets" in result.value.service
+    assert "loadBalancerSubnets" in result.value.service
+    assert len(result.value.service.get("clusterSubnets", [])) > 0
+    assert len(result.value.service.get("loadBalancerSubnets", [])) > 0
+
+
+def test_df_service_disable(
+    module_args, env_context, df_service_enable, df_service_disable, df_client
+):
+    """
+    Test disabling DataFlow service with real API calls.
+
+    NOTE: This test will disable the DataFlow service if one exists on the environment.
+    If you don't want to disable an existing service, skip this test.
+    """
+
+    # Enable the service first (or get existing one)
+    enable_result = df_service_enable()
+    service_crn = enable_result["service"].get("service", {}).get("crn")
 
     # Execute module to disable the service
     module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "df_crn": TEST_SERVICE_CRN,
+            "endpoint": env_context["endpoint"],
+            "access_key": env_context["access_key"],
+            "private_key": env_context["private_key"],
+            "df_crn": service_crn,
             "state": "absent",
-            "wait" : True,
+            "terminate": True,
+            "wait": True,
         },
     )
 
@@ -213,9 +290,12 @@ def test_df_service_disable(module_args, df_service_enable):
     # Verify the result
     assert result.value.changed is True
 
+    # Clear the registered CRN since we've already disabled the service
+    # This prevents the fixture cleanup from trying to disable again
+    df_service_disable(None)
 
     # Idempotency check - running again should not change anything
-    # with pytest.raises(AnsibleExitJson) as result:
-    #     df_service.main()
+    with pytest.raises(AnsibleExitJson) as result:
+        df_service.main()
 
-    # assert result.value.changed is False
+    assert result.value.changed is False

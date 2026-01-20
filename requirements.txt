@@ -13,3 +13,4 @@
 # limitations under the License.
 
 git+https://github.com/cloudera-labs/cdpy@main#egg=cdpy
+jmespath>=1.0.0

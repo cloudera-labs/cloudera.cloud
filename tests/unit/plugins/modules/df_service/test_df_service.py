@@ -146,7 +146,7 @@ def test_df_service_enable_by_name(module_args, mocker):
     # Module should successfully enable service (API would validate CRN format)
     assert result.value.changed is True
     assert result.value.service["crn"] == SERVICE_CRN
-    
+
     # Verify enable_service was called with the provided env_crn (even if it's a name)
     client.enable_service.assert_called_once()
     call_args = client.enable_service.call_args[1]
@@ -181,19 +181,20 @@ def test_df_service_already_enabled(module_args, mocker):
 
     # Mock: Service already exists
     client.get_service_by_env_crn.return_value = {
-        "service": {
-            "crn": SERVICE_CRN,
-            "name": ENV_NAME,
-            "environmentCrn": ENV_CRN,
-            "status": {"state": "ENABLED", "message": "Service is running"},
-            "deploymentCount": 5,
-            "minK8sNodeCount": 3,
-            "maxK8sNodeCount": 10,
-        },
+        "crn": SERVICE_CRN,
+        "name": ENV_NAME,
+        "environmentCrn": ENV_CRN,
+        "status": {"state": "ENABLED", "message": "Service is running"},
+        "deploymentCount": 5,
+        "minK8sNodeCount": 3,
+        "maxK8sNodeCount": 10,
     }
 
-    # Mock: No updates needed
-    client.check_service_updates.return_value = (False, {})
+    # Mock: No updates needed (patch the function instead of method)
+    check_updates = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.df_service.check_service_updates",
+    )
+    check_updates.return_value = {}
 
     # Test module execution - should warn and not change
     with pytest.raises(AnsibleExitJson) as result:
@@ -234,12 +235,10 @@ def test_df_service_disable_success(module_args, mocker):
 
     # Mock: Service exists and is enabled
     client.get_service_by_crn.return_value = {
-        "service": {
-            "crn": SERVICE_CRN,
-            "name": ENV_NAME,
-            "environmentCrn": ENV_CRN,
-            "status": {"state": "ENABLED", "message": "Service is running"},
-        },
+        "crn": SERVICE_CRN,
+        "name": ENV_NAME,
+        "environmentCrn": ENV_CRN,
+        "status": {"state": "ENABLED", "message": "Service is running"},
     }
 
     # Mock disable_service response
@@ -287,10 +286,8 @@ def test_df_service_disable_with_terminate(module_args, mocker):
 
     # Mock: Service exists
     client.get_service_by_crn.return_value = {
-        "service": {
-            "crn": SERVICE_CRN,
-            "status": {"state": "ENABLED"},
-        },
+        "crn": SERVICE_CRN,
+        "status": {"state": "ENABLED"},
     }
 
     client.disable_service.return_value = {}
@@ -305,6 +302,62 @@ def test_df_service_disable_with_terminate(module_args, mocker):
     client.disable_service.assert_called_once()
     call_args = client.disable_service.call_args[1]
     assert call_args["terminate_deployments"] is True
+
+
+def test_df_service_disable_with_wait(module_args, mocker):
+    """Test disabling a DataFlow service with wait enabled."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "df_crn": SERVICE_CRN,
+            "state": "absent",
+            "terminate": True,
+            "wait": True,
+        },
+    )
+
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpDfClient
+    mock_client_class = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.df_service.CdpDfClient",
+        autospec=True,
+    )
+    # Set the DISABLED_STATES class attribute
+    mock_client_class.DISABLED_STATES = ["NOT_ENABLED"]
+    client = mock_client_class.return_value
+
+    # Mock: Service exists
+    client.get_service_by_crn.return_value = {
+        "crn": SERVICE_CRN,
+        "status": {"state": "GOOD_HEALTH"},
+    }
+
+    # Mock wait_for_service_state response (module uses wait_for_service_state, not disable_service_and_wait)
+    client.wait_for_service_state.return_value = {
+        "crn": SERVICE_CRN,
+        "status": {"state": "NOT_ENABLED"},
+    }
+
+    # Test module execution
+    with pytest.raises(AnsibleExitJson) as result:
+        df_service.main()
+
+    assert result.value.changed is True
+
+    # Verify wait_for_service_state was called correctly
+    client.wait_for_service_state.assert_called_once()
+    call_args = client.wait_for_service_state.call_args[1]
+    assert call_args["service_crn"] == SERVICE_CRN
+    assert call_args["terminate_deployments"] is True
+    assert call_args["target_states"] == ["NOT_ENABLED"]
 
 
 def test_df_service_disable_already_disabled(module_args, mocker):
@@ -382,7 +435,6 @@ def test_df_service_enable_check_mode(module_args, mocker):
     # In check mode, should not make changes
     assert result.value.changed is False
     client.enable_service.assert_not_called()
-
 
 
 def test_df_service_enable_with_custom_params(module_args, mocker):
@@ -480,29 +532,27 @@ def test_df_service_update_success(module_args, mocker):
 
     # Mock: Service already exists with different configuration
     existing_service = {
-        "service": {
-            "crn": SERVICE_CRN,
-            "name": ENV_NAME,
-            "environmentCrn": ENV_CRN,
-            "status": {"state": "ENABLED", "message": "Service is running"},
-            "minK8sNodeCount": 3,
-            "maxK8sNodeCount": 10,
-            "kubeApiAuthorizedIpRanges": ["10.0.0.0/16"],
-            "loadBalancerAuthorizedIpRanges": [],
-        },
+        "crn": SERVICE_CRN,
+        "name": ENV_NAME,
+        "environmentCrn": ENV_CRN,
+        "status": {"state": "ENABLED", "message": "Service is running"},
+        "minK8sNodeCount": 3,
+        "maxK8sNodeCount": 10,
+        "kubeApiAuthorizedIpRanges": ["10.0.0.0/16"],
+        "loadBalancerAuthorizedIpRanges": [],
     }
     client.get_service_by_env_crn.return_value = existing_service
 
     # Mock check_service_updates to indicate update is needed
-    client.check_service_updates.return_value = (
-        True,  # update_needed
-        {
-            "service_crn": SERVICE_CRN,
-            "min_k8s_node_count": 5,
-            "max_k8s_node_count": 15,
-            "kubernetes_ip_cidr_blocks": ["10.0.0.0/16", "192.168.1.0/24"],
-        },
+    check_updates = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.df_service.check_service_updates",
     )
+    check_updates.return_value = {
+        "service_crn": SERVICE_CRN,
+        "min_k8s_node_count": 5,
+        "max_k8s_node_count": 15,
+        "kubernetes_ip_cidr_blocks": ["10.0.0.0/16", "192.168.1.0/24"],
+    }
 
     # Mock update_service response
     client.update_service.return_value = {
@@ -522,13 +572,15 @@ def test_df_service_update_success(module_args, mocker):
         df_service.main()
 
     assert result.value.changed is True
+    # Service response from update_service wraps in "service" key, then gets extracted
     assert result.value.service["minK8sNodeCount"] == 5
     assert result.value.service["maxK8sNodeCount"] == 15
 
     # Verify check_service_updates was called correctly
-    client.check_service_updates.assert_called_once()
-    check_args = client.check_service_updates.call_args[1]
+    check_updates.assert_called_once()
+    check_args = check_updates.call_args[1]
     assert check_args["service_crn"] == SERVICE_CRN
+    assert check_args["service_details"] == existing_service
     assert check_args["min_k8s_node_count"] == 5
     assert check_args["max_k8s_node_count"] == 15
     assert check_args["kubernetes_ip_cidr_blocks"] == ["10.0.0.0/16", "192.168.1.0/24"]
@@ -568,20 +620,21 @@ def test_df_service_update_no_changes(module_args, mocker):
 
     # Mock: Service already exists with same configuration
     existing_service = {
-        "service": {
-            "crn": SERVICE_CRN,
-            "name": ENV_NAME,
-            "environmentCrn": ENV_CRN,
-            "status": {"state": "ENABLED"},
-            "minK8sNodeCount": 3,
-            "maxK8sNodeCount": 10,
-            "kubeApiAuthorizedIpRanges": ["10.0.0.0/16"],
-        },
+        "crn": SERVICE_CRN,
+        "name": ENV_NAME,
+        "environmentCrn": ENV_CRN,
+        "status": {"state": "ENABLED"},
+        "minK8sNodeCount": 3,
+        "maxK8sNodeCount": 10,
+        "kubeApiAuthorizedIpRanges": ["10.0.0.0/16"],
     }
     client.get_service_by_env_crn.return_value = existing_service
 
     # Mock check_service_updates to indicate no update is needed
-    client.check_service_updates.return_value = (False, {"service_crn": SERVICE_CRN})
+    check_updates = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.df_service.check_service_updates",
+    )
+    check_updates.return_value = {}
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -592,7 +645,7 @@ def test_df_service_update_no_changes(module_args, mocker):
     assert result.value.service["crn"] == SERVICE_CRN
 
     # Verify check_service_updates was called
-    client.check_service_updates.assert_called_once()
+    check_updates.assert_called_once()
 
     # Verify update_service was NOT called
     client.update_service.assert_not_called()
@@ -628,24 +681,22 @@ def test_df_service_update_with_wait(module_args, mocker):
 
     # Mock: Service exists
     existing_service = {
-        "service": {
-            "crn": SERVICE_CRN,
-            "status": {"state": "ENABLED"},
-            "minK8sNodeCount": 3,
-            "maxK8sNodeCount": 10,
-        },
+        "crn": SERVICE_CRN,
+        "status": {"state": "ENABLED"},
+        "minK8sNodeCount": 3,
+        "maxK8sNodeCount": 10,
     }
     client.get_service_by_env_crn.return_value = existing_service
 
     # Mock check_service_updates to indicate update is needed
-    client.check_service_updates.return_value = (
-        True,
-        {
-            "service_crn": SERVICE_CRN,
-            "min_k8s_node_count": 5,
-            "max_k8s_node_count": 20,
-        },
+    check_updates = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.df_service.check_service_updates",
     )
+    check_updates.return_value = {
+        "service_crn": SERVICE_CRN,
+        "min_k8s_node_count": 5,
+        "max_k8s_node_count": 20,
+    }
 
     # Mock update_service response
     client.update_service.return_value = {
@@ -659,12 +710,10 @@ def test_df_service_update_with_wait(module_args, mocker):
 
     # Mock wait_for_service_state response
     client.wait_for_service_state.return_value = {
-        "service": {
-            "crn": SERVICE_CRN,
-            "status": {"state": "GOOD_HEALTH"},
-            "minK8sNodeCount": 5,
-            "maxK8sNodeCount": 20,
-        },
+        "crn": SERVICE_CRN,
+        "status": {"state": "GOOD_HEALTH"},
+        "minK8sNodeCount": 5,
+        "maxK8sNodeCount": 20,
     }
 
     # Test module execution
@@ -672,7 +721,7 @@ def test_df_service_update_with_wait(module_args, mocker):
         df_service.main()
 
     assert result.value.changed is True
-    result.value.service['service']['status']['state']
+    assert result.value.service["status"]["state"] == "GOOD_HEALTH"
 
     # Verify update_service was called
     client.update_service.assert_called_once()
@@ -714,24 +763,22 @@ def test_df_service_update_check_mode(module_args, mocker):
 
     # Mock: Service exists
     existing_service = {
-        "service": {
-            "crn": SERVICE_CRN,
-            "status": {"state": "ENABLED"},
-            "minK8sNodeCount": 3,
-            "maxK8sNodeCount": 10,
-        },
+        "crn": SERVICE_CRN,
+        "status": {"state": "ENABLED"},
+        "minK8sNodeCount": 3,
+        "maxK8sNodeCount": 10,
     }
     client.get_service_by_env_crn.return_value = existing_service
 
     # Mock check_service_updates to indicate update is needed
-    client.check_service_updates.return_value = (
-        True,
-        {
-            "service_crn": SERVICE_CRN,
-            "min_k8s_node_count": 5,
-            "max_k8s_node_count": 20,
-        },
+    check_updates = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.df_service.check_service_updates",
     )
+    check_updates.return_value = {
+        "service_crn": SERVICE_CRN,
+        "min_k8s_node_count": 5,
+        "max_k8s_node_count": 20,
+    }
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -742,8 +789,7 @@ def test_df_service_update_check_mode(module_args, mocker):
     assert result.value.service["crn"] == SERVICE_CRN
 
     # Verify check_service_updates was called
-    client.check_service_updates.assert_called_once()
+    check_updates.assert_called_once()
 
     # Verify update_service was NOT called in check mode
     client.update_service.assert_not_called()
-
