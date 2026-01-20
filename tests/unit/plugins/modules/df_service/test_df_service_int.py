@@ -76,7 +76,8 @@ def df_service_disable(df_client) -> Generator[Optional[str], None, None]:
     if service_crn["value"]:
         try:
             df_client.disable_service(
-                crn=service_crn["value"], terminate_deployments=True
+                crn=service_crn["value"],
+                terminate_deployments=True,
             )
             # Wait for service to be fully disabled
             df_client.wait_for_service_state(
@@ -87,7 +88,7 @@ def df_service_disable(df_client) -> Generator[Optional[str], None, None]:
             )
         except Exception as e:
             pytest.fail(
-                f"Failed to clean up DataFlow service: {service_crn['value']}. {e}"
+                f"Failed to clean up DataFlow service: {service_crn['value']}. {e}",
             )
 
 
@@ -258,7 +259,11 @@ def test_df_service_enable_with_jmespath_filters(
 
 
 def test_df_service_disable(
-    module_args, env_context, df_service_enable, df_service_disable, df_client
+    module_args,
+    env_context,
+    df_service_enable,
+    df_service_disable,
+    df_client,
 ):
     """
     Test disabling DataFlow service with real API calls.
