@@ -54,6 +54,7 @@ def existing_readyflow_name(df_client) -> str:
 
     return response["readyflows"][0]["name"]
 
+
 @pytest.mark.slow
 def test_df_readyflow_info_list_all(module_args):
     """Test listing all ReadyFlows with real API calls."""
@@ -72,7 +73,6 @@ def test_df_readyflow_info_list_all(module_args):
     assert result.value.changed is False
     assert hasattr(result.value, "readyflows")
     assert isinstance(result.value.readyflows, list)
-
 
 
 def test_df_readyflow_info_by_name(module_args, existing_readyflow_name):
@@ -150,6 +150,3 @@ def test_df_readyflow_info_nonexistent(module_args):
     assert result.value.changed is False
     assert hasattr(result.value, "readyflows")
     assert len(result.value.readyflows) == 0
-
-
-

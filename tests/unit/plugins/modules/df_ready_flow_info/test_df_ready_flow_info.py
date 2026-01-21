@@ -27,7 +27,6 @@ from ansible_collections.cloudera.cloud.tests.unit import (
 from ansible_collections.cloudera.cloud.plugins.modules import df_readyflow_info
 
 
-
 BASE_URL = "https://cloudera.internal/api"
 ACCESS_KEY = "test-access-key"
 PRIVATE_KEY = "test-private-key"
