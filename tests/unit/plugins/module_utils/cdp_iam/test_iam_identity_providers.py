@@ -32,18 +32,17 @@ class TestIamUserClientIntegration:
 
     def test_list_saml_providers(self, test_cdp_client):
         """Test listing all SAML providers."""
-        
+
         client = CdpIamClient(api_client=test_cdp_client)
         result = client.list_saml_providers()
-        
+
         assert "samlProviders" in result
         assert isinstance(result["samlProviders"], list)
 
-
     def test_get_default_identity_provider(self, test_cdp_client):
         """Test getting the default identity provider."""
-        
+
         client = CdpIamClient(api_client=test_cdp_client)
         result = client.get_default_identity_provider()
-        
+
         assert "crn" in result
