@@ -31,6 +31,7 @@ dependencies = [
   "molecule-plugins[ec2]",
   "ansible-core<2.17", # For RHEL 8 support
   "cdpy @ git+https://github.com/cloudera-labs/cdpy@main#egg=cdpy",
+  "jmespath",
   "ansible-lint",
   "antsibull-docs >= 2.0.0, < 3.0.0",
 ]
@@ -51,6 +52,7 @@ extra-dependencies = [
   "molecule-plugins[ec2]",
   # "ansible-core<2.17", # For RHEL 8 support
   "cdpy @ git+https://github.com/cloudera-labs/cdpy@main#egg=cdpy",
+  "jmespath",
 ]
 
 # Ansible 2.18 - Python >= 3.11

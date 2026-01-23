@@ -111,7 +111,6 @@ def env_context(request) -> dict[str, str]:
     Validates and provides required environment variables for integration tests.
     Set REQUIRED_ENV_VARS in the test module to specify required variables.
     Returns a dictionary of environment variable names to their values.
-    Always includes CDP credentials (access_key, private_key, endpoint).
     """
 
     required_vars = getattr(request.module, "REQUIRED_ENV_VARS", [])
@@ -123,13 +122,7 @@ def env_context(request) -> dict[str, str]:
             f"Missing required env vars: {', '.join(missing)}",
         )
 
-    context = {var: os.environ[var] for var in required_vars}
-
-    context["access_key"] = os.getenv("CDP_ACCESS_KEY_ID", "test-access-key")
-    context["private_key"] = os.getenv("CDP_PRIVATE_KEY", "test-private-key")
-    context["endpoint"] = os.getenv("CDP_API_ENDPOINT", "https://cloudera.internal/api")
-
-    return context
+    return {var: os.environ[var] for var in required_vars}
 
 
 @pytest.fixture(autouse=True)
