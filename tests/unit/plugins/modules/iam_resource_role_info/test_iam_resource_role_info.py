@@ -78,8 +78,14 @@ def test_iam_resource_role_info_default(module_args, mocker):
 
     assert result.value.changed is False
     assert len(result.value.resource_roles) == 2
-    assert result.value.resource_roles[0]["crn"] == "crn:altus:iam:us-west-1:altus:resourceRole:ODUser"
-    assert result.value.resource_roles[1]["crn"] == "crn:altus:iam:us-west-1:altus:resourceRole:DWAdmin"
+    assert (
+        result.value.resource_roles[0]["crn"]
+        == "crn:altus:iam:us-west-1:altus:resourceRole:ODUser"
+    )
+    assert (
+        result.value.resource_roles[1]["crn"]
+        == "crn:altus:iam:us-west-1:altus:resourceRole:DWAdmin"
+    )
 
     # Verify CdpIamClient was called correctly
     client.list_resource_roles.assert_called_once_with(resource_role_names=None)

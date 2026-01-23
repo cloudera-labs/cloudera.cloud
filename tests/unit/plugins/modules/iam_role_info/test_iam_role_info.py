@@ -88,7 +88,10 @@ def test_iam_role_info_default(module_args, mocker):
 
     assert result.value.changed is False
     assert len(result.value.roles) == 2
-    assert result.value.roles[0]["crn"] == "crn:iam:us-east-1:cm:role:ClassicClustersCreator"
+    assert (
+        result.value.roles[0]["crn"]
+        == "crn:iam:us-east-1:cm:role:ClassicClustersCreator"
+    )
     assert result.value.roles[1]["crn"] == "crn:iam:us-east-1:cm:role:DFCatalogAdmin"
 
     # Verify CdpIamClient was called correctly
