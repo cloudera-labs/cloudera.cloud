@@ -58,7 +58,6 @@ def test_workload_auth_token_de(module_args):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "workload_name": "DE",
-
         },
     )
 
@@ -95,9 +94,8 @@ def test_workload_auth_token_opdb(module_args):
     assert "endpoint_url" not in result.value.workload_auth_token
 
 
-def test_workload_auth_token_df_with_environment(module_args,env_context):
+def test_workload_auth_token_df_with_environment(module_args, env_context):
     """Test generating workload auth token for DF workload with environment."""
-
 
     module_args(
         {
@@ -116,7 +114,7 @@ def test_workload_auth_token_df_with_environment(module_args,env_context):
     assert result.value.workload_auth_token["token"] is not None
     assert isinstance(result.value.workload_auth_token["token"], str)
     assert len(result.value.workload_auth_token["token"]) > 0
-    
+
     # endpoint_url IS returned for DF workload
     assert "endpoint_url" in result.value.workload_auth_token
     assert result.value.workload_auth_token["endpoint_url"] is not None
@@ -140,4 +138,6 @@ def test_workload_auth_token_df_missing_environment(module_args):
         iam_workload_auth_token.main()
 
     # The error should be about missing required parameter when workload_name is DF
-    assert "environment_crn" in result.value.msg or "required" in result.value.msg.lower()
+    assert (
+        "environment_crn" in result.value.msg or "required" in result.value.msg.lower()
+    )
