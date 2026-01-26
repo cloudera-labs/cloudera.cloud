@@ -24,6 +24,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
 
 # ==================== Test Fixtures ====================
 
+
 @pytest.fixture
 def sample_subnets() -> List[Dict[str, Any]]:
     """
@@ -78,9 +79,8 @@ def sample_subnets() -> List[Dict[str, Any]]:
     ]
 
 
-
-
 # ==================== Real-World Scenario Tests ====================
+
 
 class TestRealWorldScenarios:
     """Test real-world filtering scenarios like those in df_service.yml."""
@@ -94,10 +94,10 @@ class TestRealWorldScenarios:
         # Legacy JMESPath filter example
         cluster_filter = "[?contains(subnetName, 'pub')]"
         lb_filter = "[?contains(subnetName, 'pub')]"
-        
+
         cluster_subnets = filter_subnets_by_expression(sample_subnets, cluster_filter)
         lb_subnets = filter_subnets_by_expression(sample_subnets, lb_filter)
-        
+
         # Both should return the 3 public subnets
         assert len(cluster_subnets) == 3
         assert len(lb_subnets) == 3
@@ -107,9 +107,9 @@ class TestRealWorldScenarios:
     def test_df_service_private_cluster_setup(self, sample_subnets):
         """Test filtering for private cluster setup (private subnets only)."""
         cluster_filter = "[?contains(subnetName, 'pvt-0')]"
-        
+
         cluster_subnets = filter_subnets_by_expression(sample_subnets, cluster_filter)
-        
+
         assert len(cluster_subnets) == 3
         assert all("pvt" in subnet_id for subnet_id in cluster_subnets)
 
@@ -117,10 +117,10 @@ class TestRealWorldScenarios:
         """Test mixed setup: private cluster with public load balancer."""
         cluster_filter = "[?contains(subnetName, 'pvt-0')]"
         lb_filter = "[?contains(subnetName, 'pub')]"
-        
+
         cluster_subnets = filter_subnets_by_expression(sample_subnets, cluster_filter)
         lb_subnets = filter_subnets_by_expression(sample_subnets, lb_filter)
-        
+
         assert len(cluster_subnets) == 3  # Private subnets
         assert len(lb_subnets) == 3  # Public subnets
         assert cluster_subnets != lb_subnets
@@ -128,13 +128,13 @@ class TestRealWorldScenarios:
     def test_multi_az_deployment(self, sample_subnets):
         """Test ensuring subnets span multiple availability zones."""
         pub_subnets = filter_subnets_by_expression(sample_subnets, "pub")
-        
+
         # Get the subnets from sample_subnets that match the pub_subnets IDs
         filtered_subnets = [s for s in sample_subnets if s["subnetId"] in pub_subnets]
-        
+
         # Extract unique AZs
         availability_zones = {s["availabilityZone"] for s in filtered_subnets}
-        
+
         # Should have 3 AZs for high availability
         assert len(availability_zones) == 3
         assert "us-east-1a" in availability_zones
@@ -144,8 +144,10 @@ class TestRealWorldScenarios:
     def test_cidr_range_validation(self, sample_subnets):
         """Test validating subnets belong to specific CIDR range."""
         # Get all subnets in 10.0.0.0/16 range
-        filtered = filter_subnets_by_expression(sample_subnets, "startswith(cidr, '10.0.')")
-        
+        filtered = filter_subnets_by_expression(
+            sample_subnets, "startswith(cidr, '10.0.')"
+        )
+
         # All sample subnets should be in 10.0.0.0/16
         assert len(filtered) == 7
 
@@ -153,14 +155,14 @@ class TestRealWorldScenarios:
         """Test combining multiple filters (simulating complex requirements)."""
         # First filter: get public subnets
         pub_subnets = filter_subnets_by_expression(sample_subnets, "pub")
-        
+
         # Second filter: from public subnets, get those in us-east-1a
         pub_subnet_objects = [s for s in sample_subnets if s["subnetId"] in pub_subnets]
         az_filtered = filter_subnets_by_expression(
             pub_subnet_objects,
-            "availabilityZone == 'us-east-1a'"
+            "availabilityZone == 'us-east-1a'",
         )
-        
+
         # Should get exactly 1 subnet: subnet-pub-001
         assert len(az_filtered) == 1
         assert "subnet-pub-001" in az_filtered
