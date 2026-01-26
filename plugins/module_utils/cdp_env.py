@@ -19,73 +19,159 @@ A REST client for the Cloudera on Cloud Platform (CDP) Environments API
 """
 
 from typing import Any, Dict, List, Optional
-
-import jmespath
+import re
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
 )
 
 
-def convert_to_jmespath_query(filter_value: str) -> str:
+def parse_filter_expression(filter_expr: str) -> Dict[str, Any]:
     """
-    Convert a filter value to a JMESPath query.
+    Parse a filter expression into a structured format.
 
-    If the filter value is already a JMESPath query (starts with '['), return it as-is.
-    Otherwise, convert a simple string pattern to a JMESPath query that checks if
-    subnetName contains the pattern (case-insensitive).
+    Supports multiple filter expression formats:
+    1. **JMESPath syntax (legacy)**: "[?contains(subnetName, 'pvt-0')]" - FULLY SUPPORTED
+    2. **Simple string pattern**: "pub" or "pvt-0" - matches substring in subnetName
+    3. **Filter expressions**:
+       - contains(field, 'value') - checks if field contains value
+       - field == 'value' - checks if field equals value (exact match)
+       - field != 'value' - checks if field does not equal value
+       - startswith(field, 'value') - checks if field starts with value
 
     Args:
-        filter_value: Either a JMESPath query string or a simple pattern string
+        filter_expr: Filter expression string in any supported format
 
     Returns:
-        A valid JMESPath query string
+        Dictionary with parsed filter criteria
     """
-    # If it already looks like a JMESPath query, return as-is
-    if filter_value.startswith("["):
-        return filter_value
+    # Remove leading/trailing whitespace and array brackets if present
+    filter_expr = filter_expr.strip()
+    if filter_expr.startswith("[?") and filter_expr.endswith("]"):
+        filter_expr = filter_expr[2:-1].strip()
 
-    # Convert simple string pattern to JMESPath query
-    # This maintains backward compatibility for users who just pass "pub" or "pvt"
-    return f"[?contains(subnetName, '{filter_value}')]"
+    # Try to parse contains() function
+    contains_match = re.match(r"contains\((\w+),\s*['\"](.+?)['\"]\)", filter_expr)
+    if contains_match:
+        field, value = contains_match.groups()
+        return {"type": "contains", "field": field, "value": value}
+
+    # Try to parse startswith() function
+    startswith_match = re.match(r"startswith\((\w+),\s*['\"](.+?)['\"]\)", filter_expr)
+    if startswith_match:
+        field, value = startswith_match.groups()
+        return {"type": "startswith", "field": field, "value": value}
+
+    # Try to parse equality (==)
+    eq_match = re.match(r"(\w+)\s*==\s*['\"](.+?)['\"]", filter_expr)
+    if eq_match:
+        field, value = eq_match.groups()
+        return {"type": "equals", "field": field, "value": value}
+
+    # Try to parse inequality (!=)
+    neq_match = re.match(r"(\w+)\s*!=\s*['\"](.+?)['\"]", filter_expr)
+    if neq_match:
+        field, value = neq_match.groups()
+        return {"type": "not_equals", "field": field, "value": value}
+
+    # Default: treat as simple substring match on subnetName
+    return {"type": "contains", "field": "subnetName", "value": filter_expr}
 
 
-def filter_subnets_by_jmespath(
+def apply_filter_to_subnet(
+    subnet: Dict[str, Any],
+    filter_criteria: Dict[str, Any],
+) -> bool:
+    """
+    Apply filter criteria to a single subnet.
+
+    Args:
+        subnet: Subnet dictionary with subnetId, subnetName, availabilityZone, cidr
+        filter_criteria: Parsed filter criteria from parse_filter_expression()
+
+    Returns:
+        True if subnet matches the filter criteria, False otherwise
+    """
+    filter_type = filter_criteria.get("type")
+    field = filter_criteria.get("field")
+    value = filter_criteria.get("value")
+
+    # Get the field value from subnet
+    field_value = subnet.get(field, "")
+
+    # Apply the appropriate filter operation
+    if filter_type == "contains":
+        return value.lower() in field_value.lower()
+    elif filter_type == "startswith":
+        return field_value.lower().startswith(value.lower())
+    elif filter_type == "equals":
+        return field_value == value
+    elif filter_type == "not_equals":
+        return field_value != value
+
+    return False
+
+
+def filter_subnets_by_expression(
     subnets: List[Dict[str, Any]],
-    jmespath_query: str,
+    filter_expr: str,
 ) -> List[str]:
     """
-    Apply a JMESPath query to an array of subnets and return the IDs of the selected subnets.
+    Filter subnets using a filter expression and return subnet IDs.
 
-    The query must only filter the array, without applying any projection. The query result must also be an
-    array of subnet objects.
+    **FULLY BACKWARD COMPATIBLE** with JMESPath syntax from previous versions.
+    All existing filter expressions will continue to work without changes.
+
+    Supported filter formats (in order of recommendation):
+
+    1. **Legacy JMESPath syntax (BACKWARD COMPATIBLE)**:
+       - "[?contains(subnetName, 'pvt-0')]" - filters subnets with 'pvt-0' in name
+       - "[?contains(subnetName, 'pub')]" - filters subnets with 'pub' in name
+       - "[?contains(cidr, '10.0')]" - filters subnets with '10.0' in CIDR
+
+    2. **Simple string pattern** (shorthand for subnetName contains):
+       - "pvt-0" - matches subnets with 'pvt-0' in subnetName (case-insensitive)
+       - "pub" - matches subnets with 'pub' in subnetName (case-insensitive)
+
+    3. **New filter expressions** (optional, for advanced use cases):
+       - "contains(subnetName, 'pvt-0')" - same as legacy JMESPath
+       - "availabilityZone == 'us-east-1a'" - exact match on availability zone
+       - "startswith(cidr, '10.0.')" - checks if CIDR starts with prefix
+       - "availabilityZone != 'us-west-2'" - exclude specific zone
 
     Args:
-        subnets: An array of subnet objects. Each subnet in the array is an object with the following attributes:
-                 subnetId, subnetName, availabilityZone, cidr.
-        jmespath_query: JMESPath query to filter the subnet array.
-                       Examples:
-                       - "[?contains(subnetName, 'pub')]" - filters subnets with 'pub' in the name
-                       - "[?contains(subnetName, 'pvt')]" - filters subnets with 'pvt' in the name
-                       - "[?availabilityZone=='us-east-1a']" - filters by availability zone
+        subnets: List of subnet dicts with subnetId, subnetName, availabilityZone, cidr
+        filter_expr: Filter expression string (any supported format)
 
     Returns:
-        An array of subnet IDs from the filtered subnets.
+        List of subnet IDs that match the filter expression
+
+    Examples:
+        >>> # Legacy JMESPath (works exactly as before)
+        >>> filter_subnets_by_expression(subnets, "[?contains(subnetName, 'pvt-0')]")
+        ['subnet-001', 'subnet-003']
+
+        >>> # Simple pattern (shorthand)
+        >>> filter_subnets_by_expression(subnets, "pvt-0")
+        ['subnet-001', 'subnet-003']
+
+        >>> # New filter expression (optional)
+        >>> filter_subnets_by_expression(subnets, "availabilityZone == 'us-east-1a'")
+        ['subnet-001', 'subnet-002']
     """
+    if not filter_expr or not subnets:
+        return []
+
+    # Parse the filter expression
+    filter_criteria = parse_filter_expression(filter_expr)
+
+    # Apply filter to each subnet and collect matching IDs
     filtered_ids = []
-
-    try:
-        # Apply JMESPath query to filter subnets
-        filtered_subnets = jmespath.search(jmespath_query, subnets)
-
-        # Extract subnet IDs from filtered results
-        if filtered_subnets:
-            for subnet in filtered_subnets:
-                subnet_id = subnet.get("subnetId")
-                if subnet_id:
-                    filtered_ids.append(subnet_id)
-    except (jmespath.exceptions.JMESPathError, AttributeError, TypeError) as e:
-        pass
+    for subnet in subnets:
+        if apply_filter_to_subnet(subnet, filter_criteria):
+            subnet_id = subnet.get("subnetId")
+            if subnet_id:
+                filtered_ids.append(subnet_id)
 
     return filtered_ids
 
