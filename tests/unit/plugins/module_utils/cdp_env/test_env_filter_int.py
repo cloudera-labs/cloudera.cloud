@@ -145,7 +145,8 @@ class TestRealWorldScenarios:
         """Test validating subnets belong to specific CIDR range."""
         # Get all subnets in 10.0.0.0/16 range
         filtered = filter_subnets_by_expression(
-            sample_subnets, "startswith(cidr, '10.0.')"
+            sample_subnets,
+            "startswith(cidr, '10.0.')",
         )
 
         # All sample subnets should be in 10.0.0.0/16
