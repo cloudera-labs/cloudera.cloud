@@ -33,10 +33,10 @@ from ansible_collections.cloudera.cloud.plugins.modules import df_service
 # Required environment variables for integration tests
 REQUIRED_ENV_VARS = [
     "ENV_CRN",
+    "CDP_API_ENDPOINT",
+    "CDP_ACCESS_KEY_ID",
+    "CDP_PRIVATE_KEY",
 ]
-BASE_URL = os.getenv("CDP_API_ENDPOINT", "not set")
-ACCESS_KEY = os.getenv("CDP_ACCESS_KEY_ID", "not set")
-PRIVATE_KEY = os.getenv("CDP_PRIVATE_KEY", "not set")
 
 # Test configuration constants
 TEST_MIN_NODES = 3
@@ -52,6 +52,27 @@ TEST_TAGS = {
 
 # Mark all tests in this module as integration tests requiring API credentials
 pytestmark = pytest.mark.integration_api
+
+
+@pytest.fixture
+def df_module_args(module_args, env_context) -> Callable[[dict], None]:
+    """Fixture to pre-populate common DataFlow module arguments."""
+
+    def wrapped_args(args=None):
+        if args is None:
+            args = {}
+
+        args.update(
+            {
+                "endpoint": env_context["CDP_API_ENDPOINT"],
+                "access_key": env_context["CDP_ACCESS_KEY_ID"],
+                "private_key": env_context["CDP_PRIVATE_KEY"],
+                "env_crn": env_context["ENV_CRN"],
+            },
+        )
+        return module_args(args)
+
+    return wrapped_args
 
 
 @pytest.fixture
@@ -171,15 +192,11 @@ def df_service_enable(
     return _enable_service
 
 
-def test_df_service_enable(module_args, env_context, df_service_disable):
+def test_df_service_enable(df_module_args, df_service_disable):
     """Test enabling DataFlow service with subnet filters."""
 
-    module_args(
+    df_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "env_crn": env_context["ENV_CRN"],
             "state": "present",
             "nodes_min": TEST_MIN_NODES,
             "nodes_max": TEST_MAX_NODES,
@@ -216,19 +233,14 @@ def test_df_service_enable(module_args, env_context, df_service_disable):
 
 
 def test_df_service_enable_with_jmespath_filters(
-    module_args,
-    env_context,
+    df_module_args,
     df_service_disable,
 ):
     """Test enabling DataFlow service using JMESPath subnet filters."""
 
     # Execute module with JMESPath filters
-    module_args(
+    df_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "env_crn": env_context["ENV_CRN"],
             "state": "present",
             "nodes_min": TEST_MIN_NODES,
             "nodes_max": TEST_MAX_NODES,
@@ -263,8 +275,7 @@ def test_df_service_enable_with_jmespath_filters(
 
 
 def test_df_service_disable(
-    module_args,
-    env_context,
+    df_module_args,
     df_service_enable,
     df_service_disable,
     df_client,
@@ -281,11 +292,8 @@ def test_df_service_disable(
     service_crn = enable_result["service"].get("service", {}).get("crn")
 
     # Execute module to disable the service
-    module_args(
+    df_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
             "df_crn": service_crn,
             "state": "absent",
             "terminate": True,
