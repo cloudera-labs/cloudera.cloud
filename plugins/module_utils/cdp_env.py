@@ -44,6 +44,16 @@ def parse_filter_expression(filter_expr: str) -> Dict[str, Any]:
 
     Returns:
         Dictionary with parsed filter criteria
+
+    Examples:
+        >>> parse_filter_expression("[?contains(subnetName, 'pvt-0')]")
+        {'type': 'contains', 'field': 'subnetName', 'value': 'pvt-0'}
+
+        >>> parse_filter_expression("pvt-0")
+        {'type': 'contains', 'field': 'subnetName', 'value': 'pub'}
+
+        >>> parse_filter_expression("availabilityZone == 'us-east-1a'")
+        {'type': 'equals', 'field': 'availabilityZone', 'value': 'us-east-1a'}
     """
     # Remove leading/trailing whitespace and array brackets if present
     filter_expr = filter_expr.strip()
