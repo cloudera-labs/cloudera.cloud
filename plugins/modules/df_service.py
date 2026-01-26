@@ -93,9 +93,10 @@ options:
   cluster_subnets_filter:
     description:
       - Filter expression to select subnets for the Kubernetes cluster
-      - Can be either a simple string pattern or a JMESPath query
-      - "Simple pattern: Just provide a string (e.g., 'pub', 'pvt') to match subnets containing that text in their name"
-      - "JMESPath query: Provide a full JMESPath expression (e.g., \"[?contains(subnetName, 'pub')]\") for advanced filtering"
+      - "Multiple formats supported:"
+      - "  1. JMESPath syntax (legacy): \"[?contains(subnetName, 'pvt-0')]\""
+      - "  2. Simple pattern: \"pvt-0\" (shorthand for subnetName contains)"
+      - "  3. Filter expressions: \"contains(subnetName, 'value')\", \"field == 'value'\", \"field != 'value'\", \"startswith(field, 'value')\""
       - "The filter operates on subnet objects with attributes: subnetId, subnetName, availabilityZone, cidr"
       - Mutually exclusive with the I(cluster_subnets) option.
     type: str
@@ -109,9 +110,10 @@ options:
   loadbalancer_subnets_filter:
     description:
       - Filter expression to select subnets for the load balancer
-      - Can be either a simple string pattern or a JMESPath query
-      - "Simple pattern: Just provide a string (e.g., 'pub', 'pvt') to match subnets containing that text in their name"
-      - "JMESPath query: Provide a full JMESPath expression (e.g., \"[?contains(subnetName, 'pub')]\") for advanced filtering"
+      - "Multiple formats supported:"
+      - "  1. JMESPath syntax (legacy): \"[?contains(subnetName, 'pub')]\""
+      - "  2. Simple pattern: \"pub\" (shorthand for subnetName contains)"
+      - "  3. Filter expressions: \"contains(subnetName, 'value')\", \"field == 'value'\", \"field != 'value'\", \"startswith(field, 'value')\""
       - "The filter operates on subnet objects with attributes: subnetId, subnetName, availabilityZone, cidr"
       - Mutually exclusive with the I(loadbalancer_subnets) option.
     type: str
@@ -209,27 +211,33 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# Create a Dataflow Service with simple string pattern filters
 - cloudera.cloud.df_service:
     name: my-service
     nodes_min: 3
     nodes_max: 10
     public_loadbalancer: true
-    cluster_subnets_filter: "pvt"  # Simple pattern - matches subnets with 'pvt' in name
-    loadbalancer_subnets_filter: "pub"  # Simple pattern - matches subnets with 'pub' in name
-    k8s_ip_ranges: ['192.168.0.1/24']
+    cluster_subnets_filter: "[?contains(subnetName, 'pvt-0')]"
+    loadbalancer_subnets_filter: "[?contains(subnetName, 'pub')]"
     state: present
     wait: true
 
-# Create a Dataflow Service with JMESPath filter expressions
 - cloudera.cloud.df_service:
     name: my-service
     nodes_min: 3
     nodes_max: 10
     public_loadbalancer: true
-    cluster_subnets_filter: "[?contains(subnetName, 'pvt')]"  # JMESPath query
-    loadbalancer_subnets_filter: "[?contains(subnetName, 'pub')]"  # JMESPath query
-    k8s_ip_ranges: ['192.168.0.1/24']
+    cluster_subnets_filter: "pvt-0"
+    loadbalancer_subnets_filter: "pub"
+    state: present
+    wait: true
+
+- cloudera.cloud.df_service:
+    name: my-service
+    nodes_min: 3
+    nodes_max: 10
+    public_loadbalancer: true
+    cluster_subnets_filter: "availabilityZone == 'us-east-1a'"
+    loadbalancer_subnets_filter: "availabilityZone == 'us-east-1b'"
     state: present
     wait: true
 
@@ -340,8 +348,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
-    filter_subnets_by_jmespath,
-    convert_to_jmespath_query,
+    filter_subnets_by_expression,
 )
 
 
@@ -509,21 +516,15 @@ class DFService(ServicesModule):
                     subnets = self.env_client.get_environment_subnets(self.env_crn)
 
                     if self.cluster_subnets_filter:
-                        query = convert_to_jmespath_query(
-                            self.cluster_subnets_filter,
-                        )
-                        self.cluster_subnets = filter_subnets_by_jmespath(
+                        self.cluster_subnets = filter_subnets_by_expression(
                             subnets,
-                            query,
+                            self.cluster_subnets_filter,
                         )
 
                     if self.loadbalancer_subnets_filter:
-                        query = convert_to_jmespath_query(
-                            self.loadbalancer_subnets_filter,
-                        )
-                        self.loadbalancer_subnets = filter_subnets_by_jmespath(
+                        self.loadbalancer_subnets = filter_subnets_by_expression(
                             subnets,
-                            query,
+                            self.loadbalancer_subnets_filter,
                         )
 
                 if not self.module.check_mode:
