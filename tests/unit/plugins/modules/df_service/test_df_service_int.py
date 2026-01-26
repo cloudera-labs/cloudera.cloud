@@ -18,6 +18,7 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import os
 import pytest
 
 from typing import Callable, Generator, Optional
@@ -33,6 +34,9 @@ from ansible_collections.cloudera.cloud.plugins.modules import df_service
 REQUIRED_ENV_VARS = [
     "ENV_CRN",
 ]
+BASE_URL = os.getenv("CDP_API_ENDPOINT", "not set")
+ACCESS_KEY = os.getenv("CDP_ACCESS_KEY_ID", "not set")
+PRIVATE_KEY = os.getenv("CDP_PRIVATE_KEY", "not set")
 
 # Test configuration constants
 TEST_MIN_NODES = 3
@@ -172,9 +176,9 @@ def test_df_service_enable(module_args, env_context, df_service_disable):
 
     module_args(
         {
-            "endpoint": env_context["endpoint"],
-            "access_key": env_context["access_key"],
-            "private_key": env_context["private_key"],
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
             "env_crn": env_context["ENV_CRN"],
             "state": "present",
             "nodes_min": TEST_MIN_NODES,
@@ -221,9 +225,9 @@ def test_df_service_enable_with_jmespath_filters(
     # Execute module with JMESPath filters
     module_args(
         {
-            "endpoint": env_context["endpoint"],
-            "access_key": env_context["access_key"],
-            "private_key": env_context["private_key"],
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
             "env_crn": env_context["ENV_CRN"],
             "state": "present",
             "nodes_min": TEST_MIN_NODES,
@@ -279,9 +283,9 @@ def test_df_service_disable(
     # Execute module to disable the service
     module_args(
         {
-            "endpoint": env_context["endpoint"],
-            "access_key": env_context["access_key"],
-            "private_key": env_context["private_key"],
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
             "df_crn": service_crn,
             "state": "absent",
             "terminate": True,
