@@ -105,6 +105,26 @@ def module_creds() -> dict[str, str]:
     }
 
 
+@pytest.fixture(scope="module")
+def env_context(request) -> dict[str, str]:
+    """
+    Validates and provides required environment variables for integration tests.
+    Set REQUIRED_ENV_VARS in the test module to specify required variables.
+    Returns a dictionary of environment variable names to their values.
+    """
+
+    required_vars = getattr(request.module, "REQUIRED_ENV_VARS", [])
+
+    missing = [var for var in required_vars if var not in os.environ]
+    if missing:
+        pytest.skip(
+            f"Skipping module {request.module.__name__}: "
+            f"Missing required env vars: {', '.join(missing)}",
+        )
+
+    return {var: os.environ[var] for var in required_vars}
+
+
 @pytest.fixture(autouse=True)
 def patch_module(monkeypatch: MonkeyPatch):
     """Patch AnsibleModule to raise exceptions on success and failure"""
