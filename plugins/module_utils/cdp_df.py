@@ -638,3 +638,66 @@ class CdpDfClient:
             return self.describe_deployment(crn)
         except CdpError:
             return None
+
+    # ========================================================================
+    # ReadyFlow Management Methods
+    # ========================================================================
+
+    @CdpClient.paginated()
+    def list_readyflows(
+        self,
+        search_term: Optional[str] = None,
+        pageToken: Optional[str] = None,
+        pageSize: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        List available ReadyFlows in the catalog.
+
+        Args:
+            search_term: Search term to filter ReadyFlows (searches by name)
+            pageToken: Pagination token for getting the next page
+            pageSize: Number of results per page
+
+        Returns:
+            Dictionary containing:
+                - readyflows: List of ReadyFlow objects
+                - nextToken: Token for next page (if available)
+        """
+        data: Dict[str, Any] = {}
+        if search_term is not None:
+            data["searchTerm"] = search_term
+        if pageToken is not None:
+            data["startingToken"] = pageToken
+        if pageSize is not None:
+            data["pageSize"] = pageSize
+
+        return self.api_client.post("/api/v1/df/listReadyflows", data=data)
+
+    def describe_readyflow(self, readyflow_crn: str) -> Dict[str, Any]:
+        """
+        Get details for a specific ReadyFlow.
+
+        Args:
+            readyflow_crn: The CRN of the ReadyFlow
+
+        Returns:
+            Dictionary containing ReadyFlow details
+        """
+        data = {"readyflowCrn": readyflow_crn}
+        return self.api_client.post("/api/v1/df/describeReadyflow", data=data)
+
+    def describe_added_readyflow(
+        self,
+        readyflow_crn: str,
+    ) -> Dict[str, Any]:
+        """
+        Get details for a ReadyFlow that has been added to the account.
+
+        Args:
+            readyflow_crn: The CRN of the added ReadyFlow
+
+        Returns:
+            Dictionary containing added ReadyFlow details including versions
+        """
+        data = {"readyflowCrn": readyflow_crn}
+        return self.api_client.post("/api/v1/df/describeAddedReadyflow", data=data)
