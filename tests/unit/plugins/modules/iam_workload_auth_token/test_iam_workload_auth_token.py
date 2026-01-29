@@ -166,7 +166,9 @@ def test_workload_auth_token_df_missing_environment(module_args, mocker):
         iam_workload_auth_token.main()
 
     # The error should be about missing required parameter when workload_name is DF
-    assert "environment_crn" in result.value.msg or "required" in result.value.msg.lower()
+    assert (
+        "environment_crn" in result.value.msg or "required" in result.value.msg.lower()
+    )
 
 
 def test_workload_auth_token_opdb_exclude_groups(module_args, mocker):

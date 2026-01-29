@@ -115,6 +115,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
     CdpIamClient,
 )
 
+
 class IAMWorkloadAuthToken(ServicesModule):
     def __init__(self):
         super().__init__(
