@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1418,5 +1418,37 @@ class CdpIamClient:
 
         return self.api_client.post(
             "/api/v1/iam/listMachineUserAssignedResourceRoles",
+            json_data=json_data,
+        )
+
+    def generate_workload_auth_token(
+        self,
+        workload_name: str,
+        environment_crn: Optional[str] = None,
+        exclude_groups: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generate an authentication token for workload APIs.
+
+        Args:
+            workload_name: The workload name (DE, DF, OPDB)
+            environment_crn: The environment CRN, required by DF
+            exclude_groups: Whether to exclude 'groups' claim from the token
+
+        Returns:
+            Response containing token, endpoint URL, and expiration
+        """
+        json_data: Dict[str, Any] = {
+            "workloadName": workload_name,
+        }
+
+        if environment_crn is not None:
+            json_data["environmentCrn"] = environment_crn
+
+        if exclude_groups is not None:
+            json_data["excludeGroups"] = exclude_groups
+
+        return self.api_client.post(
+            "/api/v1/iam/generateWorkloadAuthToken",
             json_data=json_data,
         )
