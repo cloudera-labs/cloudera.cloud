@@ -651,6 +651,7 @@ class CdpIamClient:
         return self.api_client.post(
             "/api/v1/iam/listResourceRoles",
             json_data=json_data,
+            squelch={404: {}},
         )
 
     @CdpClient.paginated()
@@ -684,6 +685,7 @@ class CdpIamClient:
         return self.api_client.post(
             "/api/v1/iam/listRoles",
             json_data=json_data,
+            squelch={404: {}},
         )
 
     @CdpClient.paginated()

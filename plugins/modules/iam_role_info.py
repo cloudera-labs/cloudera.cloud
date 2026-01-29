@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ DOCUMENTATION = r"""
 module: iam_role_info
 short_description: Gather information about CDP Public IAM roles
 description:
-    - Gathers information about  CDP Public IAM role or roles
+    - Gathers information about CDP Public IAM role or roles
 author:
   - "Ronald Suplina (@rsuplina)"
 version_added: "3.0.0"
@@ -33,6 +33,8 @@ options:
     required: False
     aliases:
       - crn
+extends_documentation_fragment:
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
@@ -68,49 +70,72 @@ roles:
       returned: always
       type: list
       elements: dict
+sdk_out:
+  description: Returns the captured API HTTP log.
+  returned: when supported
+  type: str
+sdk_out_lines:
+  description: Returns a list of each line of the captured API HTTP log.
+  returned: when supported
+  type: list
+  elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any, Dict
+
+from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
+    CdpIamClient,
+)
 
 
-class IAMRoleInfo(CdpModule):
-    def __init__(self, module):
-        super(IAMRoleInfo, self).__init__(module)
+class IAMRoleInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(
+                    required=False,
+                    type="list",
+                    elements="str",
+                    aliases=["crn"],
+                ),
+            ),
+            supports_check_mode=True,
+        )
 
-        # Set Variables
-        self.name = self._get_param("name")
+        # Set parameters
+        self.name = self.get_param("name")
 
         # Initialize the return values
-        self.role_info = []
+        self.roles = []
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        self.role_info = self.cdpy.iam.list_roles(self.name)
+        client = CdpIamClient(api_client=self.api_client)
+        result = client.list_roles(role_names=self.name)
+        self.roles = [
+            camel_dict_to_snake_dict(role) for role in result.get("roles", [])
+        ]
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="list", elements="str", aliases=["crn"]),
-        ),
-        supports_check_mode=True,
-    )
+    result = IAMRoleInfo()
 
-    result = IAMRoleInfo(module)
-
-    output = dict(
+    output: Dict[str, Any] = dict(
         changed=False,
-        roles=result.role_info,
+        roles=result.roles,
     )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
