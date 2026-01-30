@@ -1,16 +1,17 @@
 # cloudera.cloud - Cloudera on cloud and Data Services
 
-[![API documentation](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml/badge.svg?branch=main&event=push)](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml)
+[![Collection Docs](https://img.shields.io/badge/collection-documentation-ff550D?logo=ansible&logoColor=white)](https://cloudera-labs.github.io/cloudera.cloud/)
+[![Publishing](https://img.shields.io/badge/Publishing-passing-5555F9?logo=github)](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml)
 
-`cloudera.cloud` is an Ansible collection that lets you manage your **[Cloudera Platform](https://www.cloudera.com/products/cloudera-data-platform.html) on cloud (Public Cloud)** resources. With this collection, you can:
+`cloudera.cloud` is an Ansible collection that lets you manage your **[Cloudera Platform](https://www.cloudera.com/products/cloudera-data-platform.html) on cloud (Public Cloud)** resources. This collection enables you to:
 
 * Create and manage [Datalakes](https://www.cloudera.com/products/open-data-lakehouse.html) and Environments.
 * Manage Users and Groups.
-* Create and manage [Data Hubs](https://www.cloudera.com/products/data-hub.html) and Data Services, such as:
+* Create and manage [Data Hubs](https://www.cloudera.com/products/data-hub.html) and [Data Services](https://www.cloudera.com/products/data-services.html):
   * [Cloudera Data Flow (CDF)](https://www.cloudera.com/products/dataflow.html)
   * [Cloudera Data Engineering (CDE)](https://www.cloudera.com/products/data-engineering.html)
   * [Cloudera Data Warehouse (CDW)](https://www.cloudera.com/products/data-warehouse.html)
-  * [Cloudera Machine Learning (CML)](https://www.cloudera.com/products/machine-learning.html)
+  * [Cloudera AI (CAI)](https://www.cloudera.com/products/machine-learning.html)
   * [Cloudera Operational Database](https://www.cloudera.com/products/operational-db.html)
   * [Cloudera Stream Processing (CSP)](https://www.cloudera.com/products/stream-processing.html)
 
@@ -70,6 +71,7 @@ You can also install the collection directly:
 # From Ansible Galaxy
 ansible-galaxy collection install cloudera.cloud
 ```
+> **Note:** We are actively working to remove the dependency on `cdpy` in upcoming releases. Please stay tuned to our changelog for updates.
 
 ```bash
 # From GitHub
@@ -145,7 +147,7 @@ You can then examine (and update if needed) the resulting `changelog.yaml` and `
 
 ## License and Copyright
 
-Copyright 2025, Cloudera, Inc.
+Copyright 2026, Cloudera, Inc.
 
 ```
 Licensed under the Apache License, Version 2.0 (the "License");
