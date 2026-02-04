@@ -43,7 +43,6 @@ def df_client(test_cdp_client) -> CdpDfClient:
     return CdpDfClient(api_client=test_cdp_client)
 
 
-
 @pytest.fixture
 def existing_flow_name(df_client) -> str:
     """Fixture to provide an existing custom flow name for tests."""
@@ -58,7 +57,6 @@ def existing_flow_name(df_client) -> str:
         pytest.skip("No custom flows available for testing")
 
     return response["flows"][0]["name"]
-
 
 
 @pytest.mark.slow
@@ -100,6 +98,7 @@ def test_df_customflow_info_by_name_with_details(module_args, existing_flow_name
     assert result.value.changed is False
     assert hasattr(result.value, "flows")
     assert isinstance(result.value.flows, list)
+
 
 def test_df_customflow_info_by_name(module_args, existing_flow_name):
     """Test getting information about a specific custom flow by search_term with real API calls."""

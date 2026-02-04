@@ -213,7 +213,7 @@ class DFCustomFlowInfo(ServicesModule):
                 if flow_details.get("artifactType") == "flow":
                     flow_detail = client.describe_flow(flow_details["crn"])
                     if flow_detail:
-                        self.flows.append(flow_detail.get("flow", flow_details))
+                        self.flows.append(flow_detail.get("flowDetail", flow_details))
                 else:
                     self.flows.append(flow_details)
         else:

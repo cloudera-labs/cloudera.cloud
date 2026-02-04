@@ -89,7 +89,7 @@ def test_df_customflow_info_list_all(module_args, mocker):
     assert len(result.value.flows) == 2
     assert result.value.flows[0]["name"] == "Flow One"
     assert result.value.flows[0]["versionCount"] == 2
-    
+
     # With include_details=false (default), should not have detailed fields
     assert "description" not in result.value.flows[0]
     assert "versions" not in result.value.flows[0]
@@ -142,7 +142,7 @@ def test_df_customflow_info_list_all_with_details(module_args, mocker):
             },
         ],
     }
-    
+
     # Mock describe_flow responses
     def describe_flow_side_effect(crn):
         if "flow1" in crn:
@@ -170,7 +170,7 @@ def test_df_customflow_info_list_all_with_details(module_args, mocker):
                 },
             }
         return None
-    
+
     client.describe_flow.side_effect = describe_flow_side_effect
 
     # Test module execution
@@ -179,12 +179,12 @@ def test_df_customflow_info_list_all_with_details(module_args, mocker):
 
     assert result.value.changed is False
     assert len(result.value.flows) == 2
-    
+
     # Verify detailed fields are present
     assert result.value.flows[0]["description"] == "Detailed description of Flow One"
     assert "versions" in result.value.flows[0]
     assert len(result.value.flows[0]["versions"]) == 2
-    
+
     assert result.value.flows[1]["description"] == "Detailed description of Flow Two"
     assert "versions" in result.value.flows[1]
     assert len(result.value.flows[1]["versions"]) == 1
@@ -241,7 +241,7 @@ def test_df_customflow_info_by_name(module_args, mocker):
     assert result.value.flows[0]["name"] == FLOW_NAME
     assert result.value.flows[0]["crn"] == FLOW_CRN
     assert result.value.flows[0]["versionCount"] == 3
-    
+
     # Without include_details, should not have detailed fields
     assert "description" not in result.value.flows[0]
     assert "versions" not in result.value.flows[0]
@@ -288,7 +288,7 @@ def test_df_customflow_info_by_name_with_details(module_args, mocker):
             },
         ],
     }
-    
+
     # Mock describe_flow response
     client.describe_flow.return_value = {
         "flowDetail": {
@@ -446,5 +446,3 @@ def test_df_customflow_info_with_minimal_fields(module_args, mocker):
 
     # Verify CdpDfClient was called correctly
     client.list_flow_definitions.assert_called_once()
-
-
