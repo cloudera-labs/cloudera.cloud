@@ -38,10 +38,13 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
 )
 from ansible_collections.cloudera.cloud.plugins.modules import iam_user
 
-
-BASE_URL = os.getenv("CDP_API_ENDPOINT", "not set")
-ACCESS_KEY = os.getenv("CDP_ACCESS_KEY_ID", "not set")
-PRIVATE_KEY = os.getenv("CDP_PRIVATE_KEY", "not set")
+# Required environment variables for integration tests
+REQUIRED_ENV_VARS = [
+    "CDP_API_ENDPOINT",
+    "CDP_ACCESS_KEY_ID",
+    "CDP_PRIVATE_KEY",
+    "SAML_PROVIDER_NAME",
+]
 
 # Generate unique user identifier for each test run to avoid conflicts
 USER_EMAIL = f"test-user-int-{uuid.uuid4().hex[:8]}@example.com"
@@ -51,6 +54,26 @@ TEST_WORKLOAD_PASSWORD_UPDATE = f"UpdatedPassword{uuid.uuid4().hex[:8]}!"
 
 # Mark all tests in this module as integration tests requiring API credentials
 pytestmark = pytest.mark.integration_api
+
+
+@pytest.fixture
+def iam_module_args(module_args, env_context) -> Callable[[dict], None]:
+    """Fixture to pre-populate common IAM module arguments."""
+
+    def wrapped_args(args=None):
+        if args is None:
+            args = {}
+
+        args.update(
+            {
+                "endpoint": env_context["CDP_API_ENDPOINT"],
+                "access_key": env_context["CDP_ACCESS_KEY_ID"],
+                "private_key": env_context["CDP_PRIVATE_KEY"],
+            },
+        )
+        return module_args(args)
+
+    return wrapped_args
 
 
 @pytest.fixture
@@ -113,15 +136,11 @@ def test_iam_user(test_cdp_client, iam_client):
     assert iam_result
 
 
-def test_iam_user_create(module_args, iam_user_delete):
+def test_iam_user_create(iam_module_args, iam_user_delete):
     """Test creating a new IAM user with real API calls."""
 
-    # Execute function
-    module_args(
+    iam_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
             "email": USER_EMAIL,
             "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
             "state": "present",
@@ -139,11 +158,8 @@ def test_iam_user_create(module_args, iam_user_delete):
     iam_user_delete(result.value.user["user_id"])
 
     # Idempotency check - update module_args with user_id from created user
-    module_args(
+    iam_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
             "email": USER_EMAIL,
             "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
             "state": "present",
@@ -158,12 +174,9 @@ def test_iam_user_create(module_args, iam_user_delete):
     assert "crn" in result.value.user
 
 
-def test_iam_user_delete(module_args, iam_user_create, env_context):
+def test_iam_user_delete(iam_module_args, iam_user_create, env_context):
     """Test deleting an IAM user with real API calls using user_id."""
 
-    # Validate required environment variables
-    if not env_context.get("SAML_PROVIDER_NAME"):
-        pytest.skip("SAML_PROVIDER_NAME environment variable not set")
 
     # Create the user to be deleted
     created_user = iam_user_create(
@@ -173,11 +186,8 @@ def test_iam_user_delete(module_args, iam_user_create, env_context):
     )
 
     # Execute function - use userId from created user (API returns camelCase)
-    module_args(
+    iam_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
             "email": USER_EMAIL,
             "state": "absent",
         },
@@ -195,19 +205,12 @@ def test_iam_user_delete(module_args, iam_user_create, env_context):
     assert result.value.changed is False
 
 
-def test_iam_user_roles_update(module_args, iam_user_delete, env_context):
+def test_iam_user_roles_update(iam_module_args, iam_user_delete, env_context):
     """Test updating IAM user roles with real API calls."""
 
-    # Validate required environment variables
-    if not env_context.get("SAML_PROVIDER_NAME"):
-        pytest.skip("SAML_PROVIDER_NAME environment variable not set")
-
     # Create user with initial roles
-    module_args(
+    iam_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
             "email": USER_EMAIL,
             "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
             "saml_provider_name": env_context["SAML_PROVIDER_NAME"],
@@ -237,11 +240,8 @@ def test_iam_user_roles_update(module_args, iam_user_delete, env_context):
     iam_user_delete(result.value.user["user_id"])
 
     # Update roles - add three new roles (use user_id instead of email)
-    module_args(
+    iam_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
             "email": USER_EMAIL,
             "state": "present",
             "roles": [
@@ -287,15 +287,11 @@ def test_iam_user_roles_update(module_args, iam_user_delete, env_context):
     assert len(result.value.user["roles"]) == 5
 
 
-def test_iam_user_create_with_workload_password(module_args, iam_user_delete):
+def test_iam_user_create_with_workload_password(iam_module_args, iam_user_delete):
     """Test creating a new IAM user with workload password using real API calls."""
 
-    # Execute function
-    module_args(
+    iam_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
             "email": USER_EMAIL,
             "identity_provider_user_id": USER_EMAIL,
             "workload_password": TEST_WORKLOAD_PASSWORD,
@@ -315,25 +311,19 @@ def test_iam_user_create_with_workload_password(module_args, iam_user_delete):
 
 
 def test_iam_user_update_workload_password(
-    module_args,
+    iam_module_args,
     iam_user_delete,
     env_context,
 ):
     """Test updating workload password for an existing IAM user."""
 
-    # Validate required environment variables
-    if not env_context.get("SAML_PROVIDER_NAME"):
-        pytest.skip("SAML_PROVIDER_NAME environment variable not set")
 
-    # Create user without password
-    module_args(
+    iam_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
             "email": USER_EMAIL,
             "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
             "saml_provider_name": env_context["SAML_PROVIDER_NAME"],
+            "workload_password":  TEST_WORKLOAD_PASSWORD,
             "state": "present",
         },
     )
@@ -348,11 +338,8 @@ def test_iam_user_update_workload_password(
     iam_user_delete(user_id)
 
     # Update with workload password
-    module_args(
+    iam_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
             "email": USER_EMAIL,
             "workload_password": TEST_WORKLOAD_PASSWORD_UPDATE,
             "state": "present",
