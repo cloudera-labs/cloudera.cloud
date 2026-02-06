@@ -177,7 +177,6 @@ def test_iam_user_create(iam_module_args, iam_user_delete):
 def test_iam_user_delete(iam_module_args, iam_user_create, env_context):
     """Test deleting an IAM user with real API calls using user_id."""
 
-
     # Create the user to be deleted
     created_user = iam_user_create(
         email=USER_EMAIL,
@@ -317,13 +316,12 @@ def test_iam_user_update_workload_password(
 ):
     """Test updating workload password for an existing IAM user."""
 
-
     iam_module_args(
         {
             "email": USER_EMAIL,
             "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
             "saml_provider_name": env_context["SAML_PROVIDER_NAME"],
-            "workload_password":  TEST_WORKLOAD_PASSWORD,
+            "workload_password": TEST_WORKLOAD_PASSWORD,
             "state": "present",
         },
     )
@@ -351,4 +349,3 @@ def test_iam_user_update_workload_password(
 
     assert result.value.changed is True
     assert result.value.user["email"] == USER_EMAIL
-

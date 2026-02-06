@@ -651,4 +651,3 @@ def test_iam_user_create_with_workload_password(module_args, mocker):
         password="SecurePassword123!",
         actor_crn=user_crn,
     )
-

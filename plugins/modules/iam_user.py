@@ -114,7 +114,6 @@ options:
       - This parameter is optional and only set if provided.
     type: str
     required: False
-    no_log: True
     aliases:
       - password
   state:
@@ -441,7 +440,7 @@ class IAMUser(ServicesModule):
                         self.changed = True
 
                 if self.workload_password is not None:
-                    tt=self.client.set_workload_password(
+                    self.client.set_workload_password(
                         password=self.workload_password,
                         actor_crn=existing_user.get("crn"),
                     )

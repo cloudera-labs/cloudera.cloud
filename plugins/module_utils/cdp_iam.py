@@ -1896,6 +1896,7 @@ class CdpIamClient:
             "/api/v1/iam/generateWorkloadAuthToken",
             json_data=json_data,
         )
+
     @CdpClient.paginated()
     def list_saml_providers(
         self,
