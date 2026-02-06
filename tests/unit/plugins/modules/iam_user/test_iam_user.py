@@ -521,3 +521,134 @@ def test_iam_user_purge_roles(module_args, mocker):
         desired_roles=[],
         purge=True,
     )
+
+
+def test_iam_user_set_workload_password(module_args, mocker):
+    """Test iam_user module setting workload password for a user."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "email": USER_EMAIL,
+            "workload_password": "SecurePassword123!",
+            "state": "present",
+        },
+    )
+
+    # Patch load_cdp_config to avoid reading real config files
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpIamClient to avoid real API calls
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.iam_user.CdpIamClient",
+        autospec=True,
+    ).return_value
+
+    user_crn = f"crn:cdp:iam:us-west-1:altus:user:{USER_ID}"
+
+    client.get_user_details_by_email.side_effect = [
+        {  # Initial state
+            "userId": USER_ID,
+            "email": USER_EMAIL,
+            "crn": user_crn,
+            "roles": [],
+            "resourceAssignments": [],
+        },
+        {  # After password set
+            "userId": USER_ID,
+            "email": USER_EMAIL,
+            "crn": user_crn,
+            "roles": [],
+            "resourceAssignments": [],
+        },
+    ]
+
+    # Test module execution
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+
+    # Verify CdpIamClient was called correctly
+    client.set_workload_password.assert_called_once_with(
+        password="SecurePassword123!",
+        actor_crn=user_crn,
+    )
+
+
+def test_iam_user_create_with_workload_password(module_args, mocker):
+    """Test iam_user module creating a new user with workload password."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDP_USER_ID,
+            "workload_password": "SecurePassword123!",
+            "state": "present",
+        },
+    )
+
+    # Patch load_cdp_config to avoid reading real config files
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpIamClient to avoid real API calls
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.iam_user.CdpIamClient",
+        autospec=True,
+    ).return_value
+
+    user_crn = f"crn:cdp:iam:us-west-1:altus:user:{USER_ID}"
+
+    # User doesn't exist initially (lookup by email)
+    client.get_user_details_by_email.return_value = None
+
+    # After creation, get_user_details returns the created user
+    client.get_user_details.side_effect = [
+        {
+            "userId": USER_ID,
+            "email": USER_EMAIL,
+            "crn": user_crn,
+            "roles": [],
+            "resourceAssignments": [],
+        },
+        {  # After password set
+            "userId": USER_ID,
+            "email": USER_EMAIL,
+            "crn": user_crn,
+            "roles": [],
+            "resourceAssignments": [],
+        },
+    ]
+
+    client.create_user.return_value = {
+        "user": {
+            "userId": USER_ID,
+            "email": USER_EMAIL,
+            "crn": user_crn,
+        },
+    }
+
+    # Test module execution
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+
+    # Verify CdpIamClient was called correctly
+    client.create_user.assert_called_once()
+    client.set_workload_password.assert_called_once_with(
+        password="SecurePassword123!",
+        actor_crn=user_crn,
+    )
+

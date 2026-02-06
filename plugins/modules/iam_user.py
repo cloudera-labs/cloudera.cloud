@@ -105,6 +105,18 @@ options:
     required: False
     aliases:
       - saml_provider
+  workload_password:
+    description:
+      - The workload password for the user.
+      - This will be the user's password in all Environments they have access to.
+      - The password plaintext is not stored.
+      - Only applicable when creating or updating a user (C(state=present)).
+      - This parameter is optional and only set if provided.
+    type: str
+    required: False
+    no_log: True
+    aliases:
+      - password
   state:
     description:
       - The state of the user.
@@ -133,7 +145,7 @@ EXAMPLES = r"""
 
 # Create a user (identity_provider_user_id defaults to email)
 - cloudera.cloud.iam_user:
-    email: user@example.com
+    email: user@example.cCom1
     first_name: John
     last_name: Doe
     saml_provider_name: my-saml-provider
@@ -152,6 +164,14 @@ EXAMPLES = r"""
     groups:
       - developers
       - admins
+
+# Create a user with a workload password
+- cloudera.cloud.iam_user:
+    email: user@example.com
+    first_name: John
+    last_name: Doe
+    workload_password: "MySecurePassword123!"
+    saml_provider_name: my-saml-provider
 
 # Delete a user by user_id
 - cloudera.cloud.iam_user:
@@ -294,6 +314,12 @@ class IAMUser(ServicesModule):
                     type="str",
                     aliases=["saml_provider"],
                 ),
+                workload_password=dict(
+                    required=False,
+                    type="str",
+                    no_log=True,
+                    aliases=["password"],
+                ),
                 groups=dict(required=False, type="list", elements="str"),
                 roles=dict(required=False, type="list", elements="str"),
                 resource_roles=dict(
@@ -332,6 +358,7 @@ class IAMUser(ServicesModule):
         self.first_name = self.get_param("first_name")
         self.last_name = self.get_param("last_name")
         self.saml_provider_name = self.get_param("saml_provider_name")
+        self.workload_password = self.get_param("workload_password")
         self.groups = self.get_param("groups")
         self.roles = self.get_param("roles")
         self.resource_roles = self.get_param("resource_roles")
@@ -412,6 +439,13 @@ class IAMUser(ServicesModule):
                         purge=self.purge,
                     ):
                         self.changed = True
+
+                if self.workload_password is not None:
+                    tt=self.client.set_workload_password(
+                        password=self.workload_password,
+                        actor_crn=existing_user.get("crn"),
+                    )
+                    self.changed = True
 
             if existing_user and self.changed and not self.module.check_mode:
                 existing_user = self.client.get_user_details(

@@ -46,6 +46,8 @@ PRIVATE_KEY = os.getenv("CDP_PRIVATE_KEY", "not set")
 # Generate unique user identifier for each test run to avoid conflicts
 USER_EMAIL = f"test-user-int-{uuid.uuid4().hex[:8]}@example.com"
 IDENTITY_PROVIDER_USER_ID = USER_EMAIL
+TEST_WORKLOAD_PASSWORD = f"SecurePassword{uuid.uuid4().hex[:8]}!"
+TEST_WORKLOAD_PASSWORD_UPDATE = f"UpdatedPassword{uuid.uuid4().hex[:8]}!"
 
 # Mark all tests in this module as integration tests requiring API credentials
 pytestmark = pytest.mark.integration_api
@@ -283,3 +285,83 @@ def test_iam_user_roles_update(module_args, iam_user_delete, env_context):
 
     assert result.value.changed is False
     assert len(result.value.user["roles"]) == 5
+
+
+def test_iam_user_create_with_workload_password(module_args, iam_user_delete):
+    """Test creating a new IAM user with workload password using real API calls."""
+
+    # Execute function
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "email": USER_EMAIL,
+            "identity_provider_user_id": USER_EMAIL,
+            "workload_password": TEST_WORKLOAD_PASSWORD,
+            "state": "present",
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    assert result.value.user["email"] == USER_EMAIL
+    assert "crn" in result.value.user
+
+    # Register for cleanup after the test
+    iam_user_delete(result.value.user["user_id"])
+
+
+def test_iam_user_update_workload_password(
+    module_args,
+    iam_user_delete,
+    env_context,
+):
+    """Test updating workload password for an existing IAM user."""
+
+    # Validate required environment variables
+    if not env_context.get("SAML_PROVIDER_NAME"):
+        pytest.skip("SAML_PROVIDER_NAME environment variable not set")
+
+    # Create user without password
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
+            "saml_provider_name": env_context["SAML_PROVIDER_NAME"],
+            "state": "present",
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    user_id = result.value.user["user_id"]
+
+    # Register for cleanup after the test
+    iam_user_delete(user_id)
+
+    # Update with workload password
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "email": USER_EMAIL,
+            "workload_password": TEST_WORKLOAD_PASSWORD_UPDATE,
+            "state": "present",
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    assert result.value.user["email"] == USER_EMAIL
+

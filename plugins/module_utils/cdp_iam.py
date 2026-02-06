@@ -937,6 +937,38 @@ class CdpIamClient:
             json_data=json_data,
         )
 
+    def set_workload_password(
+        self,
+        password: str,
+        actor_crn: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Set the workload password for an actor.
+
+        This will be the actor's password in all Environments they have access to,
+        including Environments they are given access to after setting the password.
+        The password plaintext is not kept.
+
+        Args:
+            password: The password value to set
+            actor_crn: The CRN of the user or machine user for whom the password will be set.
+                      If not provided, it defaults to the user making the request.
+
+        Returns:
+            Response from the API
+        """
+        json_data: Dict[str, Any] = {
+            "password": password,
+        }
+
+        if actor_crn is not None:
+            json_data["actorCrn"] = actor_crn
+
+        return self.api_client.post(
+            "/api/v1/iam/setWorkloadPassword",
+            json_data=json_data,
+        )
+
     @CdpClient.paginated()
     def list_machine_user_assigned_roles(
         self,
