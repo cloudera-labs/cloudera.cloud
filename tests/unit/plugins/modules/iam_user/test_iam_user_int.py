@@ -83,7 +83,8 @@ def iam_user_delete(
 
 @pytest.fixture
 def iam_user_create(
-    iam_client, iam_user_delete
+    iam_client,
+    iam_user_delete,
 ) -> Callable[[str, str, str], dict]:
     """Fixture to create IAM users for tests."""
 
@@ -110,7 +111,6 @@ def test_iam_user(test_cdp_client, iam_client):
     assert iam_result
 
 
-
 def test_iam_user_create(module_args, iam_user_delete):
     """Test creating a new IAM user with real API calls."""
 
@@ -132,7 +132,7 @@ def test_iam_user_create(module_args, iam_user_delete):
     assert result.value.changed is True
     assert result.value.user["email"] == USER_EMAIL
     assert "crn" in result.value.user
-    
+
     # Register for cleanup after the test
     iam_user_delete(result.value.user["user_id"])
 
@@ -167,7 +167,7 @@ def test_iam_user_delete(module_args, iam_user_create, env_context):
     created_user = iam_user_create(
         email=USER_EMAIL,
         idp_user_id=IDENTITY_PROVIDER_USER_ID,
-        saml_provider_name=env_context["SAML_PROVIDER_NAME"]
+        saml_provider_name=env_context["SAML_PROVIDER_NAME"],
     )
 
     # Execute function - use userId from created user (API returns camelCase)
@@ -191,7 +191,6 @@ def test_iam_user_delete(module_args, iam_user_create, env_context):
         iam_user.main()
 
     assert result.value.changed is False
-
 
 
 def test_iam_user_roles_update(module_args, iam_user_delete, env_context):
@@ -225,14 +224,13 @@ def test_iam_user_roles_update(module_args, iam_user_delete, env_context):
     assert result.value.user["email"] == USER_EMAIL
     assert len(result.value.user["roles"]) == 2
     assert (
-        "crn:altus:iam:us-west-1:altus:role:BillingAdmin"
-        in result.value.user["roles"]
+        "crn:altus:iam:us-west-1:altus:role:BillingAdmin" in result.value.user["roles"]
     )
     assert (
         "crn:altus:iam:us-west-1:altus:role:ClassicClustersCreator"
         in result.value.user["roles"]
     )
-    
+
     # Register for cleanup after the test
     iam_user_delete(result.value.user["user_id"])
 
@@ -260,8 +258,7 @@ def test_iam_user_roles_update(module_args, iam_user_delete, env_context):
     assert len(result.value.user["roles"]) == 5
     # Verify all roles are present
     assert (
-        "crn:altus:iam:us-west-1:altus:role:BillingAdmin"
-        in result.value.user["roles"]
+        "crn:altus:iam:us-west-1:altus:role:BillingAdmin" in result.value.user["roles"]
     )
     assert (
         "crn:altus:iam:us-west-1:altus:role:ClassicClustersCreator"
@@ -286,4 +283,3 @@ def test_iam_user_roles_update(module_args, iam_user_delete, env_context):
 
     assert result.value.changed is False
     assert len(result.value.user["roles"]) == 5
-

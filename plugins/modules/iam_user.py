@@ -354,7 +354,6 @@ class IAMUser(ServicesModule):
         elif self.user_id:
             existing_user = self.client.get_user_details(user_id=self.user_id)
 
-
         if self.state == "absent":
             if existing_user:
                 if not self.module.check_mode:
@@ -366,7 +365,7 @@ class IAMUser(ServicesModule):
             if not existing_user:
                 # Default identity_provider_user_id to email if not provided
                 idp_user_id = self.identity_provider_user_id or self.email
-                
+
                 if not self.module.check_mode:
                     response = self.client.create_user(
                         email=self.email,
@@ -378,10 +377,9 @@ class IAMUser(ServicesModule):
                     )
                     self.user = response.get("user", {})
                     existing_user = self.client.get_user_details(
-                        user_id=self.user.get("userId")
+                        user_id=self.user.get("userId"),
                     )
                 self.changed = True
-
 
             if existing_user and not self.module.check_mode:
 
@@ -417,7 +415,7 @@ class IAMUser(ServicesModule):
 
             if existing_user and self.changed and not self.module.check_mode:
                 existing_user = self.client.get_user_details(
-                    user_id=existing_user.get("userId")
+                    user_id=existing_user.get("userId"),
                 )
 
             if existing_user:

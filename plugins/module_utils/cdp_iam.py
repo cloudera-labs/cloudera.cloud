@@ -839,7 +839,6 @@ class CdpIamClient:
 
         return changed
 
-
     def assign_user_role(self, user_id: str, role: str) -> Dict[str, Any]:
         """
         Assign a role to a user.
