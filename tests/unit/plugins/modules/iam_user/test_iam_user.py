@@ -73,8 +73,8 @@ def test_iam_user_absent_missing_identifiers(module_args):
 
     # Expect the module to fail due to missing required parameter (need either user_id or email)
     with pytest.raises(
-        AnsibleFailJson, 
-        match="one of the following is required: user_id, email"
+        AnsibleFailJson,
+        match="one of the following is required: user_id, email",
     ):
         iam_user.main()
 
@@ -137,7 +137,7 @@ def test_iam_user_create_missing_email(module_args, mocker):
     # Expect the module to fail due to missing email (required_if validation)
     with pytest.raises(
         AnsibleFailJson,
-        match="state is present but all of the following are missing: email"
+        match="state is present but all of the following are missing: email",
     ):
         iam_user.main()
 
@@ -170,10 +170,10 @@ def test_iam_user_create(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.iam_user.CdpIamClient",
         autospec=True,
     ).return_value
-    
+
     # User doesn't exist initially (lookup by email)
     client.get_user_details_by_email.return_value = None
-    
+
     # After creation, get_user_details returns the created user
     client.get_user_details.return_value = {
         "userId": USER_ID,
@@ -184,7 +184,7 @@ def test_iam_user_create(module_args, mocker):
         "roles": [],
         "resourceAssignments": [],
     }
-    
+
     client.create_user.return_value = {
         "user": {
             "userId": USER_ID,
@@ -192,7 +192,7 @@ def test_iam_user_create(module_args, mocker):
             "firstName": "Test",
             "lastName": "User",
             "crn": f"crn:cdp:iam:us-west-1:altus:user:{USER_ID}",
-        }
+        },
     }
 
     # Test module execution
@@ -239,10 +239,10 @@ def test_iam_user_create_with_groups(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.iam_user.CdpIamClient",
         autospec=True,
     ).return_value
-    
+
     # User doesn't exist initially (lookup by email)
     client.get_user_details_by_email.return_value = None
-    
+
     # After creation, get_user_details returns the created user
     client.get_user_details.return_value = {
         "userId": USER_ID,
@@ -251,13 +251,13 @@ def test_iam_user_create_with_groups(module_args, mocker):
         "roles": [],
         "resourceAssignments": [],
     }
-    
+
     client.create_user.return_value = {
         "user": {
             "userId": USER_ID,
             "email": USER_EMAIL,
             "crn": f"crn:cdp:iam:us-west-1:altus:user:{USER_ID}",
-        }
+        },
     }
 
     # Test module execution
@@ -285,7 +285,7 @@ def test_iam_user_present_no_changes(module_args, mocker):
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
-            "email": USER_EMAIL,  
+            "email": USER_EMAIL,
             "state": "present",
         },
     )
@@ -347,7 +347,7 @@ def test_iam_user_assign_roles(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.iam_user.CdpIamClient",
         autospec=True,
     ).return_value
-    
+
     client.get_user_details_by_email.side_effect = [
         {  # Initial state - no roles
             "userId": USER_ID,
@@ -364,7 +364,7 @@ def test_iam_user_assign_roles(module_args, mocker):
             "resourceAssignments": [],
         },
     ]
-    
+
     client.manage_user_roles.return_value = True
 
     # Test module execution
@@ -393,12 +393,12 @@ def test_iam_user_assign_resource_roles(module_args, mocker):
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
-            "email": USER_EMAIL,  
+            "email": USER_EMAIL,
             "resource_roles": [
                 {
                     "resource": resource_crn,
                     "role": resource_role_crn,
-                }
+                },
             ],
             "state": "present",
         },
@@ -415,7 +415,7 @@ def test_iam_user_assign_resource_roles(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.iam_user.CdpIamClient",
         autospec=True,
     ).return_value
-    
+
     client.get_user_details_by_email.side_effect = [
         {  # Initial state - no resource roles
             "userId": USER_ID,
@@ -433,11 +433,11 @@ def test_iam_user_assign_resource_roles(module_args, mocker):
                 {
                     "resourceCrn": resource_crn,
                     "resourceRoleCrn": resource_role_crn,
-                }
+                },
             ],
         },
     ]
-    
+
     client.manage_user_resource_roles.return_value = True
 
     # Test module execution
@@ -454,7 +454,7 @@ def test_iam_user_assign_resource_roles(module_args, mocker):
             {
                 "resource": resource_crn,
                 "role": resource_role_crn,
-            }
+            },
         ],
         purge=False,
     )
@@ -470,7 +470,7 @@ def test_iam_user_purge_roles(module_args, mocker):
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
-            "email": USER_EMAIL,  
+            "email": USER_EMAIL,
             "roles": [],
             "purge": True,
             "state": "present",
@@ -488,7 +488,7 @@ def test_iam_user_purge_roles(module_args, mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.iam_user.CdpIamClient",
         autospec=True,
     ).return_value
-    
+
     client.get_user_details_by_email.side_effect = [
         {  # Initial state - has old role
             "userId": USER_ID,
@@ -505,7 +505,7 @@ def test_iam_user_purge_roles(module_args, mocker):
             "resourceAssignments": [],
         },
     ]
-    
+
     client.manage_user_roles.return_value = True
 
     # Test module execution
