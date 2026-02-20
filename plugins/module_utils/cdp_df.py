@@ -855,6 +855,7 @@ class CdpDfClient:
         flow_crn: str,
         file_content: str,
         comments: Optional[str] = None,
+        tags: Optional[list] = None,
     ) -> Dict[str, Any]:
         """
         Import a new flow definition version to an existing flow.
@@ -863,6 +864,8 @@ class CdpDfClient:
             flow_crn: The CRN of the existing flow
             file_content: The flow definition file content (JSON string)
             comments: Comments for the new version
+            tags: List of tags for the flow definition version.
+                  Each tag should be a dict with 'tagName' (required) and 'tagColor' (optional)
 
         Returns:
             Dictionary containing the new version details
@@ -873,6 +876,8 @@ class CdpDfClient:
         }
         if comments is not None:
             data["comments"] = comments
+        if tags is not None:
+            data["tags"] = tags
 
         return self.api_client.post(
             "/api/v1/df/importFlowDefinitionVersion",
