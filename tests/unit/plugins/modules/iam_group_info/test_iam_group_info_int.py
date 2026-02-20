@@ -148,7 +148,6 @@ def test_iam_group_info_nonexistent_group(iam_module_args):
 def test_iam_group_info_by_crn(iam_module_args, iam_client, existing_group_name):
     """Test getting group details using CRN instead of name."""
 
-
     group_details = iam_client.get_group_details(existing_group_name)
     group_crn = group_details["crn"]
 
