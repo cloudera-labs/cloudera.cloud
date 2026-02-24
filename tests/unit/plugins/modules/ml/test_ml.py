@@ -812,7 +812,7 @@ def test_ml_workspace_wait_timeout(module_args, mocker):
     )
 
     client.wait_for_workspace_state.side_effect = CdpError(
-        "Timeout waiting for workspace to reach ready state"
+        "Timeout waiting for workspace to reach ready state",
     )
 
     # Test module execution - should propagate the timeout exception

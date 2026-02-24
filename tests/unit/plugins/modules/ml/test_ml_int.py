@@ -159,7 +159,8 @@ def ml_workspace_create(
 
 @pytest.fixture
 def ml_workspace_delete(
-    ml_client: CdpMlClient, env_context
+    ml_client: CdpMlClient,
+    env_context,
 ) -> Generator[Optional[dict], None, None]:
     """
     Fixture to track and clean up ML workspace.
