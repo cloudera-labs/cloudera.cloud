@@ -102,7 +102,7 @@ def test_ml_create_workspace_with_k8s_request(module_args, mocker):
             {
                 "instanceType": "m5.2xlarge",
                 "instanceCount": 3,
-            }
+            },
         ],
         "tags": {
             "project": "analytics",
@@ -149,7 +149,7 @@ def test_ml_create_workspace_with_k8s_request(module_args, mocker):
     client.create_workspace.assert_called_once()
     call_args = client.create_workspace.call_args[1]
     assert call_args["provision_k8s_request"] is not None
-    
+
     # Verify tags were converted from dict to list of dicts
     k8s_req = call_args["provision_k8s_request"]
     assert "tags" in k8s_req
@@ -201,7 +201,7 @@ def test_ml_create_workspace_with_wait(module_args, mocker):
             "crn": WORKSPACE_CRN,
             "instanceStatus": "installation:finished",
             "instanceUrl": f"https://{WORKSPACE_NAME}.cloudera.site",
-        }
+        },
     }
 
     # Test module execution
@@ -211,7 +211,9 @@ def test_ml_create_workspace_with_wait(module_args, mocker):
     assert result.value.changed is True
     assert result.value.workspace is not None
     assert "workspace" in result.value.workspace
-    assert result.value.workspace["workspace"]["instanceStatus"] == "installation:finished"
+    assert (
+        result.value.workspace["workspace"]["instanceStatus"] == "installation:finished"
+    )
 
     # Verify wait_for_workspace_state was called with correct parameters
     client.wait_for_workspace_state.assert_called_once()
@@ -331,7 +333,7 @@ def test_ml_workspace_already_created(module_args, mocker):
             "crn": WORKSPACE_CRN,
             "instanceStatus": "installation:finished",
             "instanceUrl": f"https://{WORKSPACE_NAME}.cloudera.site",
-        }
+        },
     }
 
     # Test module execution
@@ -432,7 +434,7 @@ def test_ml_delete_workspace_success(module_args, mocker):
             "crn": WORKSPACE_CRN,
             "instanceStatus": "installation:finished",
             "instanceUrl": f"https://{WORKSPACE_NAME}.cloudera.site",
-        }
+        },
     }
 
     # Mock delete_workspace response
@@ -493,7 +495,7 @@ def test_ml_delete_workspace_with_force(module_args, mocker):
             "environmentName": ENV_NAME,
             "crn": WORKSPACE_CRN,
             "instanceStatus": "installation:finished",
-        }
+        },
     }
 
     client.delete_workspace.return_value = None
@@ -550,7 +552,7 @@ def test_ml_delete_workspace_with_wait(module_args, mocker):
             "environmentName": ENV_NAME,
             "crn": WORKSPACE_CRN,
             "instanceStatus": "installation:finished",
-        }
+        },
     }
 
     client.delete_workspace.return_value = None
@@ -571,6 +573,7 @@ def test_ml_delete_workspace_with_wait(module_args, mocker):
     assert call_args[0] == ENV_NAME
     assert call_args[1] == WORKSPACE_NAME
     assert call_args[2] is None  # Waiting for workspace to be removed
+
 
 def test_ml_delete_workspace_already_absent(module_args, mocker):
     """Test when workspace is already deleted/doesn't exist."""
@@ -691,7 +694,7 @@ def test_ml_delete_workspace_api_failure(module_args, mocker):
             "environmentName": ENV_NAME,
             "crn": WORKSPACE_CRN,
             "instanceStatus": "installation:finished",
-        }
+        },
     }
 
     # Mock delete_workspace to raise an exception
@@ -804,10 +807,14 @@ def test_ml_workspace_wait_timeout(module_args, mocker):
     client.create_workspace.return_value = None
 
     # Mock wait_for_workspace_state to raise a timeout exception
-    from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpError
-    client.wait_for_workspace_state.side_effect = CdpError("Timeout waiting for workspace to reach ready state")
+    from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import (
+        CdpError,
+    )
+
+    client.wait_for_workspace_state.side_effect = CdpError(
+        "Timeout waiting for workspace to reach ready state"
+    )
 
     # Test module execution - should propagate the timeout exception
     with pytest.raises(CdpError, match="Timeout waiting for workspace"):
         ml.main()
-

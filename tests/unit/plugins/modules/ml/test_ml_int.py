@@ -42,6 +42,7 @@ REQUIRED_ENV_VARS = [
 # Mark all tests in this module as integration tests requiring API credentials
 pytestmark = pytest.mark.integration_api
 
+
 @pytest.fixture
 def ml_module_args(module_args, env_context) -> Callable[[dict], None]:
     """Fixture to pre-populate common ML module arguments."""
@@ -62,10 +63,12 @@ def ml_module_args(module_args, env_context) -> Callable[[dict], None]:
 
     return wrapped_args
 
+
 @pytest.fixture
 def ml_client(test_cdp_client) -> CdpMlClient:
     """Fixture to provide a Machine Learning client for tests."""
     return CdpMlClient(api_client=test_cdp_client)
+
 
 @pytest.fixture
 def ml_workspace_create(
@@ -129,14 +132,14 @@ def ml_workspace_create(
                                 "enabled": True,
                             },
                             "rootVolume": {"size": 300},
-                        }
+                        },
                     ],
                 },
             }
             create_params.update(kwargs)
 
             ml_client.create_workspace(**create_params)
-            
+
             # Register for cleanup
             ml_workspace_delete(name=workspace_name, env=environment_name)
 
@@ -153,8 +156,11 @@ def ml_workspace_create(
 
     return _create_workspace
 
+
 @pytest.fixture
-def ml_workspace_delete(ml_client: CdpMlClient, env_context) -> Generator[Optional[dict], None, None]:
+def ml_workspace_delete(
+    ml_client: CdpMlClient, env_context
+) -> Generator[Optional[dict], None, None]:
     """
     Fixture to track and clean up ML workspace.
 
@@ -181,7 +187,7 @@ def ml_workspace_delete(ml_client: CdpMlClient, env_context) -> Generator[Option
     if workspace_info["value"]:
         try:
             ws_info = workspace_info["value"]
-            
+
             # Delete the workspace
             ml_client.delete_workspace(
                 force=True,
@@ -189,7 +195,7 @@ def ml_workspace_delete(ml_client: CdpMlClient, env_context) -> Generator[Option
                 environment_name=ws_info.get("env"),
                 remove_storage=True,
             )
-            
+
             # Wait for workspace to be fully deleted
             if ws_info.get("name") and ws_info.get("env"):
                 ml_client.wait_for_workspace_state(
@@ -205,6 +211,7 @@ def ml_workspace_delete(ml_client: CdpMlClient, env_context) -> Generator[Option
                 f"Failed to clean up ML workspace: {workspace_info['value']}. {e}",
             )
 
+
 def test_ml_create_workspace(ml_module_args, ml_workspace_delete, env_context, request):
     """Integration test for creating a Cloudera AI workspace."""
 
@@ -213,30 +220,30 @@ def test_ml_create_workspace(ml_module_args, ml_workspace_delete, env_context, r
 
     ml_module_args(
         {
-        "state": "present",
-        "name": workspace_name,
-        # "name": "se-sandbox-aws-ml",
-        "wait": True,
-        "k8s_request": {
-            "environmentName": env_context["CDP_ENVIRONMENT_NAME"],
-            "instanceGroups": [
-                {
-                    "name": "cpu_settings",
-                    "instanceCount": 1,
-                    "instanceType": "m5.2xlarge",
-                    "instanceTier": "ON_DEMAND",
-                    "autoscaling": {
-                        "minInstances": 0,
-                        "maxInstances": 1,
-                        "enabled": True
+            "state": "present",
+            "name": workspace_name,
+            # "name": "se-sandbox-aws-ml",
+            "wait": True,
+            "k8s_request": {
+                "environmentName": env_context["CDP_ENVIRONMENT_NAME"],
+                "instanceGroups": [
+                    {
+                        "name": "cpu_settings",
+                        "instanceCount": 1,
+                        "instanceType": "m5.2xlarge",
+                        "instanceTier": "ON_DEMAND",
+                        "autoscaling": {
+                            "minInstances": 0,
+                            "maxInstances": 1,
+                            "enabled": True,
+                        },
+                        "rootVolume": {
+                            "size": 300,
+                        },
                     },
-                    "rootVolume": {
-                        "size": 300
-                    }
-                }
-            ]
+                ],
+            },
         },
-        }
     )
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -280,7 +287,7 @@ def test_ml_delete_workspace(
             "state": "absent",
             "name": workspace_name,
             "wait": True,
-        }
+        },
     )
 
     with pytest.raises(AnsibleExitJson) as result:
