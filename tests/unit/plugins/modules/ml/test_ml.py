@@ -210,10 +210,7 @@ def test_ml_create_workspace_with_wait(module_args, mocker):
 
     assert result.value.changed is True
     assert result.value.workspace is not None
-    assert "workspace" in result.value.workspace
-    assert (
-        result.value.workspace["workspace"]["instanceStatus"] == "installation:finished"
-    )
+    assert result.value.workspace["instanceStatus"] == "installation:finished"
 
     # Verify wait_for_workspace_state was called with correct parameters
     client.wait_for_workspace_state.assert_called_once()

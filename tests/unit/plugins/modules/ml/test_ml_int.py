@@ -32,7 +32,6 @@ from ansible_collections.cloudera.cloud.plugins.modules import ml
 
 # Required environment variables for integration tests
 REQUIRED_ENV_VARS = [
-    # "ENV_CRN",
     "CDP_API_ENDPOINT",
     "CDP_ACCESS_KEY_ID",
     "CDP_PRIVATE_KEY",
@@ -223,7 +222,6 @@ def test_ml_create_workspace(ml_module_args, ml_workspace_delete, env_context, r
         {
             "state": "present",
             "name": workspace_name,
-            # "name": "se-sandbox-aws-ml",
             "wait": True,
             "k8s_request": {
                 "environmentName": env_context["CDP_ENVIRONMENT_NAME"],

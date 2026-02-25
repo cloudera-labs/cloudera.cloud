@@ -930,7 +930,7 @@ class MLWorkspace(ServicesModule):
             # Delete the Workspace
             if self.state == "absent":
                 if self.module.check_mode:
-                    self.workspace = self.target
+                    self.workspace = existing_workspace
                 else:
                     if (
                         existing_workspace["instanceStatus"]
@@ -976,15 +976,17 @@ class MLWorkspace(ServicesModule):
                             self.changed = True
 
                     if self.wait:
-                        client.wait_for_workspace_state(
+                        result = client.wait_for_workspace_state(
                             self.env,
                             self.name,
                             None,
                             self.delay,
                             self.timeout,
                         )
+                        # wait_for_workspace_state returns None when workspace is deleted
+                        self.workspace = result.get("workspace") if result else None
                     else:
-                        self.workspace = self.target
+                        self.workspace = existing_workspace
             elif self.state == "present":
                 # Check the existing configuration
                 self.module.warn(
@@ -992,14 +994,19 @@ class MLWorkspace(ServicesModule):
                     + "to change a ML Workspace, explicitly destroy and recreate the Workspace",
                 )
                 if self.wait:
-                    self.workspace = client.wait_for_workspace_state(
+                    result = client.wait_for_workspace_state(
                         self.env,
                         self.name,
                         CdpMlClient.READY_STATES,
                         self.delay,
                         self.timeout,
                     )
+                    self.workspace = (
+                        result.get("workspace") if result else existing_workspace
+                    )
                     self.changed = False
+                else:
+                    self.workspace = existing_workspace
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state,
@@ -1048,13 +1055,14 @@ class MLWorkspace(ServicesModule):
                     )
                     self.changed = True
                     if self.wait:
-                        self.workspace = client.wait_for_workspace_state(
+                        result = client.wait_for_workspace_state(
                             self.env,
                             self.name,
                             CdpMlClient.READY_STATES,
                             self.delay,
                             self.timeout,
                         )
+                        self.workspace = result.get("workspace") if result else None
                         self.changed = True
             else:
                 self.module.fail_json(
