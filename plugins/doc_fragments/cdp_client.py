@@ -50,6 +50,7 @@ options:
   endpoint:
     description:
       - The Cloudera on cloud API endpoint to use.
+      - If not provided, the API will attempt to use the value from the environment variable E(CDP_ENDPOINT_URL).
       - Mutually exclusive with O(endpoint_region).
     type: str
     required: False
