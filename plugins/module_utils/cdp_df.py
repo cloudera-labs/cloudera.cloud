@@ -701,3 +701,66 @@ class CdpDfClient:
         """
         data = {"readyflowCrn": readyflow_crn}
         return self.api_client.post("/api/v1/df/describeAddedReadyflow", data=data)
+
+    # ========================================================================
+    # Flow Definition Methods
+    # ========================================================================
+
+    @CdpClient.paginated()
+    def list_flow_definitions(
+        self,
+        search_term: Optional[str] = None,
+        collection_crn: Optional[str] = None,
+        pageToken: Optional[str] = None,
+        pageSize: Optional[int] = None,
+        sorts: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        List custom flow definitions in the catalog.
+
+        Args:
+            search_term: Search term to filter by flow name
+            collection_crn: Filter by collection CRN
+            pageToken: Pagination token for getting the next page
+            pageSize: Number of results per page
+            sorts: Sort criteria
+
+        Returns:
+            Dictionary containing:
+                - flows: List of FlowSummary objects
+                - nextToken: Token for next page (if available)
+        """
+        data: Dict[str, Any] = {}
+        if search_term is not None:
+            data["searchTerm"] = search_term
+        if collection_crn is not None:
+            data["collectionCrn"] = collection_crn
+        if pageToken is not None:
+            data["startingToken"] = pageToken
+        if pageSize is not None:
+            data["pageSize"] = pageSize
+        if sorts is not None:
+            data["sorts"] = sorts
+
+        return self.api_client.post(
+            "/api/v1/df/listFlowDefinitions",
+            data=data,
+            squelch={404: {"flows": []}},
+        )
+
+    def describe_flow(self, flow_crn: str) -> Dict[str, Any]:
+        """
+        Get detailed information for a specific flow definition.
+
+        Args:
+            flow_crn: The CRN of the flow
+
+        Returns:
+            Dictionary containing flow details
+        """
+        data = {"flowCrn": flow_crn}
+        return self.api_client.post(
+            "/api/v1/df/describeFlow",
+            data=data,
+            squelch={404: {}},
+        )
