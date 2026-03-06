@@ -28,9 +28,9 @@ options:
   email:
     description:
       - The email address for the user.
-      - Required when creating a new user (C(state=present)).
+      - Required when creating a new user (O(state=present)).
       - Can be used to identify an existing user for updates or deletion.
-      - If both C(email) and C(user_id) are provided, C(email) takes precedence for lookup.
+      - If both O(email) and O(user_id) are provided, O(email) takes precedence for lookup.
     type: str
     required: False
   first_name:
@@ -62,7 +62,7 @@ options:
     required: False
   purge:
     description:
-      - Flag to replace C(roles) and C(resource_roles) with their specified values.
+      - Flag to replace O(roles) and O(resource_roles) with their specified values.
       - If True, any roles or resource roles not specified will be removed.
     type: bool
     required: False
@@ -110,7 +110,7 @@ options:
       - The workload password for the user.
       - This will be the user's password in all Environments they have access to.
       - The password plaintext is not stored.
-      - Only applicable when creating or updating a user (C(state=present)).
+      - Only applicable when creating or updating a user (O(state=present)).
       - This parameter is optional and only set if provided.
     type: str
     required: False
@@ -129,8 +129,8 @@ options:
     description:
       - The user ID or CRN of the user to manage.
       - Can be used to identify an existing user for updates or deletion.
-      - Either C(user_id) or C(email) must be provided.
-      - If both C(email) and C(user_id) are provided, C(email) takes precedence for lookup.
+      - Either O(user_id) or O(email) must be provided.
+      - If both O(email) and O(user_id) are provided, O(email) takes precedence for lookup.
     type: str
     required: False
     aliases:
@@ -144,7 +144,7 @@ EXAMPLES = r"""
 
 # Create a user (identity_provider_user_id defaults to email)
 - cloudera.cloud.iam_user:
-    email: user@example.cCom1
+    email: user@example.com
     first_name: John
     last_name: Doe
     saml_provider_name: my-saml-provider

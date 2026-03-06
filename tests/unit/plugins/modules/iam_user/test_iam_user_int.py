@@ -16,12 +16,9 @@
 
 from __future__ import absolute_import, division, print_function
 
-import pytest
-
 __metaclass__ = type
 
-import os
-
+import pytest
 import uuid
 
 from typing import Callable, Generator
