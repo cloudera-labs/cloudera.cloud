@@ -764,3 +764,135 @@ class CdpDfClient:
             data=data,
             squelch={404: {}},
         )
+
+    def get_flow_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+        """
+        Get flow details by name.
+
+        Args:
+            name: The flow name
+
+        Returns:
+            Flow details dict, or None if not found
+        """
+        flows = self.list_flow_definitions(search_term=name)
+        for flow in flows.get("flows", []):
+            if flow.get("name") == name:
+                result = self.describe_flow(flow.get("crn"))
+                if result:
+                    flow_obj = result.get("flow", result)
+                    return flow_obj.get("flowDetail", flow_obj)
+                return None
+        return None
+
+    def get_flow_by_crn(self, crn: str) -> Optional[Dict[str, Any]]:
+        """
+        Get flow details by CRN.
+
+        Args:
+            crn: The flow CRN
+
+        Returns:
+            Flow details dict, or None if not found
+        """
+        try:
+            result = self.describe_flow(crn)
+            if result:
+                flow_obj = result.get("flow", result)
+                return flow_obj.get("flowDetail", flow_obj)
+            return None
+        except Exception:
+            return None
+
+    def import_flow_definition(
+        self,
+        name: str,
+        file_content: str,
+        description: Optional[str] = None,
+        comments: Optional[str] = None,
+        collection_crn: Optional[str] = None,
+        tags: Optional[list] = None,
+    ) -> Dict[str, Any]:
+        """
+        Import a new flow definition.
+
+        This method uses the DataFlow extension format which sends metadata
+        as custom headers and the flow definition as the raw request body.
+
+        Args:
+            name: The name of the flow
+            file_content: The flow definition file content (JSON string)
+            description: The description of the flow
+            comments: Comments for the initial version
+            collection_crn: The CRN of the collection to assign the flow to
+            tags: List of tags for the initial flow definition version.
+                  Each tag should be a dict with 'tagName' (required) and 'tagColor' (optional)
+
+        Returns:
+            Dictionary containing the imported flow details
+        """
+
+        data: Dict[str, Any] = {
+            "name": name,
+            "file": file_content,
+        }
+        if description is not None:
+            data["description"] = description
+        if comments is not None:
+            data["comments"] = comments
+        if collection_crn is not None:
+            data["collectionCrn"] = collection_crn
+        if tags is not None:
+            data["tags"] = tags
+
+        return self.api_client.post(
+            "/api/v1/df/importFlowDefinition",
+            data=data,
+        )
+
+    def import_flow_definition_version(
+        self,
+        flow_crn: str,
+        file_content: str,
+        comments: Optional[str] = None,
+        tags: Optional[list] = None,
+    ) -> Dict[str, Any]:
+        """
+        Import a new flow definition version to an existing flow.
+
+        Args:
+            flow_crn: The CRN of the existing flow
+            file_content: The flow definition file content (JSON string)
+            comments: Comments for the new version
+            tags: List of tags for the flow definition version.
+                  Each tag should be a dict with 'tagName' (required) and 'tagColor' (optional)
+
+        Returns:
+            Dictionary containing the new version details
+        """
+        data: Dict[str, Any] = {
+            "flowCrn": flow_crn,
+            "file": file_content,
+        }
+        if comments is not None:
+            data["comments"] = comments
+        if tags is not None:
+            data["tags"] = tags
+
+        return self.api_client.post(
+            "/api/v1/df/importFlowDefinitionVersion",
+            data=data,
+        )
+
+    def delete_flow(self, flow_crn: str) -> Dict[str, Any]:
+        """
+        Delete a flow definition.
+
+        Args:
+            flow_crn: The CRN of the flow to delete
+
+        Returns:
+            Dictionary containing the deleted flow details
+        """
+        data = {"flowCrn": flow_crn}
+        return self.api_client.post("/api/v1/df/deleteFlow", data=data)
