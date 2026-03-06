@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,241 +17,293 @@
 
 DOCUMENTATION = r"""
 module: de_info
-short_description: Gather information about CDP DE Workspaces
+short_description: Gather information about CDP Data Engineering Services
 description:
-    - Gather information about CDP DE Workspaces
+    - Gather information about CDP Data Engineering Services
 author:
+  - "Ronald Suplina (@rsuplina)"
   - "Curtis Howard (@curtishoward)"
   - "Alan Silva (@acsjumpi)"
 version_added: "1.5.0"
-requirements:
-  - cdpy
 options:
   name:
     description:
-      - If a name is provided, that DE service will be described (if it exists)
-      - Note that there should be only 1 or 0 (non-deleted) services with a given name
+      - If a name is provided, that Data Engineering Service will be described
+      - Must be the string name of the CDE service
+      - Mutually exclusive with cluster_id and env_name
     type: str
     required: False
-    aliases:
-      - name
-  environment:
+  cluster_id:
     description:
-      - The name of the Environment in which to find and describe the DE service(s).
+      - If a cluster_id is provided, that Data Engineering Service will be described
+      - Mutually exclusive with name and env_name
     type: str
     required: False
     aliases:
-      - env
+      - id
+  env_name:
+    description:
+      - If an env_name is provided, the Data Engineering Service for that Environment will be described
+      - Mutually exclusive with name and cluster_id
+    type: str
+    required: False
+    aliases:
+      - environment
+
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# List basic information about all DE Services
+# List basic information about all Data Engineering Services
 - cloudera.cloud.de_info:
 
-# List basic information about all DE Services within a given environment
+# Gather detailed information about a named Data Engineering Service
 - cloudera.cloud.de_info:
-    environment: example-environment
+    name: example-de-service
 
-# Gather detailed information about a named DE Service
+# Gather detailed information about a Data Engineering Service using a cluster ID
 - cloudera.cloud.de_info:
-    name: example-service
+    cluster_id: cluster-12345
 
-# Gather detailed information about a named DE Service within a particular environment
+# Gather detailed information about a Data Engineering Service using an Environment name
 - cloudera.cloud.de_info:
-    name: example-service
-    environment: example-environment
+    env_name: my-environment
 """
 
 RETURN = r"""
 services:
-  description: List of DE service descriptions
+  description: The information about the named Data Engineering Service or Data Engineering Services
   type: list
   returned: always
   elements: complex
   contains:
     clusterId:
-      description: Cluster Id of the CDE Service.
-      returned: always
-      type: str
-    creatorEmail:
-      description: Email Address of the CDE creator.
-      returned: always
-      type: str
-    enablingTime:
-      description: Timestamp of service enabling.
-      returned: always
-      type: str
-    environmentName:
-      description: CDP Environment Name.
+      description: Cluster Id of the CDE Service
       returned: always
       type: str
     name:
-      description: Name of the CDE Service.
+      description: Name of the CDE Service
       returned: always
       type: str
-    status:
-      description: Status of the CDE Service.
+    environmentName:
+      description: CDP Environment Name
       returned: always
-      type: str
-    chartValueOverrides:
-      description: Status of the CDE Service.
-      returned: if full service description
-      type: list
-      elements: complex
-      contains:
-        ChartValueOverridesResponse:
-          type: list
-          returned: always
-          contains:
-            chartName:
-              description: Name of the chart that has to be overridden.
-              returned: always
-              type: str
-            overrides:
-              description: Space separated key value-pairs for overriding chart values (colon separated)
-              returned: always
-              type: str
-    cloudPlatform:
-      description: The cloud platform where the CDE service is enabled.
-      returned: if full service description
-      type: str
-    clusterFqdn:
-      description: FQDN of the CDE service.
-      returned: if full service description
-      type: str
-    creatorCrn:
-      description: CRN of the creator.
-      returned: if full service description
-      type: str
-    dataLakeAtlasUIEndpoint:
-      description: Endpoint of Data Lake Atlas.E
-      returned: if full service description
-      type: str
-    dataLakeFileSystems:
-      description: The Data lake file system.
-      returned: if full service description
       type: str
     environmentCrn:
-      description: CRN of the environment.
-      returned: if full service description
+      description: CRN of the environment
+      returned: when available
       type: str
-    logLocation:
-      description: Location for the log files of jobs.
-      returned: if full service description
+    status:
+      description: Status of the CDE service
+      returned: always
+      type: str
+    cloudPlatform:
+      description: The cloud platform where the CDE service is enabled
+      returned: when available
+      type: str
+    clusterFqdn:
+      description: FQDN of the CDE service
+      returned: when available
+      type: str
+    creatorEmail:
+      description: Email address of the creator of the CDE service
+      returned: when available
+      type: str
+    creatorCrn:
+      description: CRN of the creator
+      returned: when available
+      type: str
+    enablingTime:
+      description: Timestamp of service enabling
+      returned: when available
       type: str
     resources:
-      description: Resources details of CDE Service.
-      returned: if full service description
-      type: complex
+      description: Resources details of CDE Service
+      returned: when available
+      type: dict
       contains:
-        ServiceResources:
-          description: Object to store resources for a CDE service.
-          returned: always
-          type: complex
-          contains:
-            initial_instances:
-              description: Initial instances for the CDE service.
-              returned: always
-              type: str
-            initial_spot_instances:
-              description: Initial Spot Instances for the CDE Service.
-              returned: always
-              type: str
-            instance_type:
-              description: Instance type of the CDE service.
-              returned: always
-              type: str
-            max_instances:
-              description: Maximum instances for the CDE service.
-              returned: always
-              type: str
-            max_spot_instances:
-              description: Maximum Number of Spot instances.
-              returned: always
-              type: str
-            min_instances:
-              description: Minimum Instances for the CDE service.
-              returned: always
-              type: str
-            min_spot_instances:
-              description: Minimum number of spot instances for the CDE service.
-              returned: always
-              type: str
-            root_vol_size:
-              description: Root Volume Size.
-              returned: always
-              type: str
-    tenantId:
-      description: CDP tenant ID.
-      returned: if full service description
+        instance_type:
+          description: Instance type of the CDE service
+          returned: when available
+          type: str
+        min_instances:
+          description: Minimum Instances for the CDE service
+          returned: when available
+          type: str
+        max_instances:
+          description: Maximum instances for the CDE service
+          returned: when available
+          type: str
+        min_spot_instances:
+          description: Minimum number of spot instances for the CDE service
+          returned: when available
+          type: str
+        max_spot_instances:
+          description: Maximum Number of Spot instances
+          returned: when available
+          type: str
+        initial_instances:
+          description: Initial instances for the CDE service
+          returned: when available
+          type: str
+        initial_spot_instances:
+          description: Initial Spot Instances for the CDE Service
+          returned: when available
+          type: str
+        root_vol_size:
+          description: Root Volume Size
+          returned: when available
+          type: str
+        cpuRequests:
+          description: CPU Requests for the entire CDE service quota
+          returned: when available
+          type: str
+        memoryRequests:
+          description: Memory requests for the entire CDE service quota
+          returned: when available
+          type: str
+        resourcePool:
+          description: Resource Pool for the CDE service
+          returned: when available
+          type: str
+        allPurposeInstanceGroupDetails:
+          description: Resource details for the nodes used in All Purpose Virtual Clusters
+          returned: when available
+          type: dict
+    logLocation:
+      description: Location for the log files of jobs
+      returned: when available
       type: str
+    dataLakeFileSystems:
+      description: The Data lake file system
+      returned: when available
+      type: str
+    dataLakeAtlasUIEndpoint:
+      description: Endpoint of Data Lake Atlas
+      returned: when available
+      type: str
+    whitelistIps:
+      description: List of CIDRs that would be allowed to access kubernetes master API server
+      returned: when available
+      type: str
+    loadbalancerAllowlist:
+      description: Comma-separated CIDRs that would be allowed to access the load balancer
+      returned: when available
+      type: str
+    publicEndpointEnabled:
+      description: If true, the CDE endpoint was created in a publicly accessible subnet
+      returned: when available
+      type: bool
+    workloadAnalyticsEnabled:
+      description: If true, diagnostic information about job and query execution is sent to Cloudera Workload Manager
+      returned: when available
+      type: bool
+    privateClusterEnabled:
+      description: If true, the CDE service was created with fully private Azure services
+      returned: when available
+      type: bool
+    networkOutboundType:
+      description: Network outbound type
+      returned: when available
+      type: str
+    subnets:
+      description: List of Subnet IDs of the CDP subnets used by the kubernetes worker node
+      returned: when available
+      type: str
+    ssdUsed:
+      description: If true, SSD would have been be used for workload filesystem
+      returned: when available
+      type: bool
+    previousVersionDeployed:
+      description: The "true" value indicates that the previous version of the CDE service was requested to be deployed
+      returned: when available
+      type: bool
+    backupLocation:
+      description: Base location for the service backup archives
+      returned: when available
+      type: str
+    tenantId:
+      description: CDP tenant ID
+      returned: when available
+      type: str
+sdk_out:
+  description: Returns the captured CDP SDK log.
+  returned: when supported
+  type: str
+sdk_out_lines:
+  description: Returns a list of each line of the captured CDP SDK log.
+  returned: when supported
+  type: list
+  elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any, Dict
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import CdpDeClient
 
 
-class DEInfo(CdpModule):
-    def __init__(self, module):
-        super(DEInfo, self).__init__(module)
+class DEServiceInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(required=False, type="str"),
+                cluster_id=dict(required=False, type="str", aliases=["id"]),
+                env_name=dict(required=False, type="str", aliases=["environment"]),
+            ),
+            supports_check_mode=True,
+            mutually_exclusive=[["name", "cluster_id", "env_name"]],
+        )
 
-        # Set variables
-        self.name = self._get_param("name")
-        self.env = self._get_param("environment")
+        # Set parameters
+        self.name = self.get_param("name")
+        self.cluster_id = self.get_param("cluster_id")
+        self.env_name = self.get_param("env_name")
 
         # Initialize return values
         self.services = []
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        service_list = self.cdpy.de.list_services(remove_deleted=True)
+        self.de_client = CdpDeClient(self.api_client)
+
         if self.name:
-            name_match = list(filter(lambda s: s["name"] == self.name, service_list))
-            if self.env:
-                env_match = list(
-                    filter(lambda s: s["environmentName"] == self.env, name_match),
-                )
-                if env_match:
-                    self.services.append(
-                        self.cdpy.de.describe_service(env_match[0]["clusterId"]),
-                    )
-            elif name_match:
-                self.services.append(
-                    self.cdpy.de.describe_service(name_match[0]["clusterId"]),
-                )
-        elif self.env:
-            env_match = list(
-                filter(lambda s: s["environmentName"] == self.env, service_list),
-            )
-            self.services.extend(env_match)
+            service = self.de_client.get_service_by_name(self.name)
+            if service:
+                self.services.append(service.get("service", {}))
+        elif self.cluster_id:
+            service = self.de_client.get_service_by_cluster_id(self.cluster_id)
+            if service:
+                self.services.append(service.get("service", {}))
+        elif self.env_name:
+            env_services = self.de_client.get_service_by_env_name(self.env_name)
+            self.services = [s.get("service", {}) for s in env_services]
         else:
-            self.services.extend(service_list)
+            response = self.de_client.list_services()
+            for svc in response.get("services", []):
+                service_details = self.de_client.describe_service(svc["clusterId"])
+                if service_details and service_details.get("service"):
+                    self.services.append(service_details.get("service", {}))
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="str", aliases=["workspace"]),
-            environment=dict(required=False, type="str", aliases=["env"]),
-        ),
-        supports_check_mode=True,
+    result = DEServiceInfo()
+
+    output: Dict[str, Any] = dict(
+        changed=False,
+        services=result.services,
     )
 
-    result = DEInfo(module)
-    output = dict(changed=False, services=result.services)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
-
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
