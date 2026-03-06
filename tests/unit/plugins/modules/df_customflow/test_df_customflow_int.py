@@ -74,14 +74,14 @@ def df_client(test_cdp_client) -> CdpDfClient:
 def create_minimal_flow_definition(flow_name: str) -> dict:
     """
     Factory function to create a minimal NiFi flow definition.
-    
+
     Args:
         flow_name: The name of the flow
-        
+
     Returns:
         A minimal flow definition dictionary with random identifiers
     """
-    
+
     return {
         "snapshotMetadata": {
             "bucketIdentifier": None,
@@ -90,7 +90,7 @@ def create_minimal_flow_definition(flow_name: str) -> dict:
             "timestamp": 1771317050573,
             "author": None,
             "comments": None,
-            "link": None
+            "link": None,
         },
         "flowContents": {
             "identifier": str(uuid.uuid4()),
@@ -120,7 +120,7 @@ def create_minimal_flow_definition(flow_name: str) -> dict:
             "componentType": "PROCESS_GROUP",
             "flowFileConcurrency": "UNBOUNDED",
             "flowFileOutboundPolicy": "STREAM_WHEN_AVAILABLE",
-            "groupIdentifier": None
+            "groupIdentifier": None,
         },
         "externalControllerServices": None,
         "parameterProviders": None,
@@ -138,12 +138,12 @@ def create_minimal_flow_definition(flow_name: str) -> dict:
                 "parameterGroupName": None,
                 "synchronized": None,
                 "componentType": "PARAMETER_CONTEXT",
-                "groupIdentifier": None
-            }
+                "groupIdentifier": None,
+            },
         },
         "flowEncodingVersion": None,
         "flow": None,
-        "bucket": None
+        "bucket": None,
     }
 
 
@@ -151,13 +151,13 @@ def create_minimal_flow_definition(flow_name: str) -> dict:
 def temporary_flow_file(flow_name: str):
     """
     Context manager to create a temporary flow definition file.
-    
+
     Args:
         flow_name: The name of the flow
-        
+
     Yields:
         The path to the temporary flow file
-        
+
     Example:
         with temporary_flow_file("my-flow") as flow_file:
             # Use flow_file path
@@ -165,7 +165,7 @@ def temporary_flow_file(flow_name: str):
     """
     flow_definition = create_minimal_flow_definition(flow_name)
     flow_content = json.dumps(flow_definition)
-    
+
     with tempfile.TemporaryDirectory() as tmpdir:
         temp_file_path = os.path.join(tmpdir, "flow.json")
         with open(temp_file_path, "w") as f:
@@ -196,7 +196,7 @@ def df_flow_delete(df_client) -> Generator[Callable[[str], None], None, None]:
 def df_flow_create(df_client, df_flow_delete) -> Callable[[str, str, str], dict]:
     """
     Fixture to create DataFlow flows and ensure cleanup.
-    
+
     Returns a function that creates a flow and registers it for cleanup.
     """
 
@@ -207,24 +207,24 @@ def df_flow_create(df_client, df_flow_delete) -> Callable[[str, str, str], dict]
     ) -> dict:
         """
         Create a minimal DataFlow flow.
-        
+
         Args:
             flow_name: Name of the flow to create
             description: Optional description for the flow
             comments: Version comments (default: "Test Flow")
-            
+
         Returns:
             The created flow object from the API
         """
-        
+
         # Create flow definition using factory function
         flow_definition = create_minimal_flow_definition(flow_name)
         flow_content = json.dumps(flow_definition)
-        
+
         # Set default description if not provided
         if description is None:
             description = f"Test flow - {flow_name}"
-        
+
         # Import the flow
         result = df_client.import_flow_definition(
             name=flow_name,
@@ -232,11 +232,11 @@ def df_flow_create(df_client, df_flow_delete) -> Callable[[str, str, str], dict]
             description=description,
             comments=comments,
         )
-        
+
         # Register for cleanup
         if result and "crn" in result:
             df_flow_delete(result["crn"])
-        
+
         return result
 
     return _df_flow_create
@@ -244,24 +244,24 @@ def df_flow_create(df_client, df_flow_delete) -> Callable[[str, str, str], dict]
 
 def test_df_flow_create_and_delete(df_flow_create):
     """Test creating and deleting a flow using fixtures."""
-    
+
     random_suffix = random.randint(100000, 999999)
     flow_name = f"test-customflow-{random_suffix}"
-    
+
     # Create flow using fixture
     result = df_flow_create(
         flow_name=flow_name,
         description=f"Integration test custom flow - {flow_name}",
         comments="Initial Version",
     )
-    
+
     # Verify the result
     assert result is not None
     assert "crn" in result
     assert result["name"] == flow_name
     assert result["versionCount"] == 1
     assert len(result["versions"]) == 1
-    
+
     # Verify the version details
     version = result["versions"][0]
     assert version["version"] == 1
@@ -271,10 +271,10 @@ def test_df_flow_create_and_delete(df_flow_create):
 
 def test_df_customflow_import_via_module(df_module_args, env_context, df_flow_delete):
     """Test importing a CustomFlow via the Ansible module with real API calls."""
-    
+
     random_suffix = random.randint(100000, 999999)
     flow_name = f"test-customflow-{random_suffix}"
-    
+
     with temporary_flow_file(flow_name) as flow_file:
         # Execute module
         df_module_args(
@@ -293,7 +293,7 @@ def test_df_customflow_import_via_module(df_module_args, env_context, df_flow_de
         assert result.value.changed is True
         assert result.value.customflow is not None
         assert result.value.customflow["name"] == flow_name
-        
+
         # Register flow for cleanup using fixture
         flow_crn = result.value.customflow.get("crn")
         if flow_crn:
@@ -313,14 +313,14 @@ def test_df_customflow_delete_via_module(df_module_args, env_context, df_flow_cr
 
     random_suffix = random.randint(100000, 999999)
     flow_name = f"test-customflow-{random_suffix}"
-    
+
     # First, create a flow using the fixture
     flow = df_flow_create(
         flow_name=flow_name,
         description=f"Integration test flow - {flow_name}",
         comments="Initial version",
     )
-    
+
     assert flow is not None
     assert "crn" in flow
 
@@ -342,12 +342,16 @@ def test_df_customflow_delete_via_module(df_module_args, env_context, df_flow_cr
     assert result.value.changed is False
 
 
-def test_df_customflow_import_with_tags_via_module(df_module_args, env_context, df_flow_delete):
+def test_df_customflow_import_with_tags_via_module(
+    df_module_args,
+    env_context,
+    df_flow_delete,
+):
     """Test importing a CustomFlow with tags via the Ansible module with real API calls."""
-    
+
     random_suffix = random.randint(100000, 999999)
     flow_name = f"test-customflow-tags-{random_suffix}"
-    
+
     with temporary_flow_file(flow_name) as flow_file:
         # Execute module with tags
         df_module_args(
@@ -371,7 +375,7 @@ def test_df_customflow_import_with_tags_via_module(df_module_args, env_context, 
         assert result.value.changed is True
         assert result.value.customflow is not None
         assert result.value.customflow["name"] == flow_name
-        
+
         # Register flow for cleanup using fixture
         flow_crn = result.value.customflow.get("crn")
         if flow_crn:
