@@ -554,6 +554,16 @@ class AnsibleCdpClient(CdpClient):
                                         "Flow-Definition-Collection-Identifier"
                                     ] = quote(request_data["collectionCrn"])
 
+                                if "tags" in request_data:
+                                    tags_json = (
+                                        '{ "tags": '
+                                        + json.dumps(request_data["tags"])
+                                        + "}"
+                                    )
+                                    redirect_headers["Flow-Definition-Tags"] = quote(
+                                        tags_json,
+                                    )
+
                                 # Body becomes raw flow content (not wrapped in JSON)
                                 redirect_body = request_data.get("file", "")
                             except (json.JSONDecodeError, KeyError):

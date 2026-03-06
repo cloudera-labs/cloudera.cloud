@@ -99,6 +99,9 @@ def build_flow_import_headers(request_data: Dict[str, Any]) -> Dict[str, str]:
         headers["Flow-Definition-Collection-Identifier"] = quote(
             request_data["collectionCrn"],
         )
+    if "tags" in request_data:
+        tags_json = '{ "tags": ' + json.dumps(request_data["tags"]) + "}"
+        headers["Flow-Definition-Tags"] = quote(tags_json)
 
     return headers
 
