@@ -69,6 +69,8 @@ groups:
   description:
     - Returns a list of group records.
     - Each record represents a CDP IAM group and its details.
+    - When specific group names are provided, detailed information including members, roles, and resource assignments is returned.
+    - When no group names are provided (listing all groups), only basic group information is returned.
   type: list
   returned: always
   elements: dict
@@ -94,6 +96,31 @@ groups:
       description: Flag indicating whether group membership is synced when a user logs in. The default is to sync group membership.
       returned: when supported
       type: bool
+    members:
+      description: List of member CRNs (users and machine users) which are members of the group.
+      returned: when specific group names are provided
+      type: list
+      elements: str
+    roles:
+      description: List of Role CRNs assigned to the group.
+      returned: when specific group names are provided
+      type: list
+      elements: str
+    resourceAssignments:
+    # resource_assignments:
+      description: List of Resource-to-Role assignments that are associated with the group.
+      returned: when specific group names are provided
+      type: list
+      elements: dict
+      contains:
+        resourceCrn:
+          description: The CRN of the resource granted the rights of the role.
+          returned: on success
+          type: str
+        resourceRoleCrn:
+          description: The CRN of the resource role.
+          returned: on success
+          type: str
 sdk_out:
   description: Returns the captured API HTTP log.
   returned: when supported
@@ -137,10 +164,22 @@ class IAMGroupInfo(ServicesModule):
         # Initialize the return values
         self.groups = []
 
+        # Initialize client
+        self.client = CdpIamClient(api_client=self.api_client)
+
     def process(self):
-        client = CdpIamClient(api_client=self.api_client)
-        result = client.list_groups(group_names=self.name)
-        self.groups = result.get("groups", [])
+
+        # If specific group names are requested, get detailed info for each
+        if self.name:
+            self.groups = []
+            for group_name in self.name:
+                group_details = self.client.get_group_details(group_name)
+                if group_details:
+                    self.groups.append(group_details)
+        else:
+            # If no specific groups requested, list all groups (basic info only)
+            result = self.client.list_groups(group_names=self.name)
+            self.groups = result.get("groups", [])
 
 
 # NOTE: Snake_case conversion deferred until 4.0 to maintain backward compatibility.
