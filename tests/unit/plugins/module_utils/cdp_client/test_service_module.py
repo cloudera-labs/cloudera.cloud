@@ -264,6 +264,29 @@ class TestConcreteServicesModule:
         assert module.api_client is not None
         assert isinstance(module.api_client, CdpClient)
 
+    def test_services_module_initialization_endpoint_env(
+        self,
+        module_args,
+        monkeypatch,
+    ):
+        """Test ServicesModule environment variable for CDP endpoint URL."""
+
+        module_args(
+            {},
+        )
+
+        monkeypatch.setenv("CDP_ENDPOINT_URL", "https://api.ap-1.cdp.cloudera.com")
+
+        module = ConcreteServicesModule()
+
+        # Verify default (or mock) attributes are set
+        assert module.endpoint == "https://api.ap-1.cdp.cloudera.com"
+        assert module.debug_log is False
+        assert module.access_key == "test-access-key"
+        assert module.private_key == "test-private-key"
+        assert module.api_client is not None
+        assert isinstance(module.api_client, CdpClient)
+
     def test_services_module_initialization_endpoint_region_default(
         self,
         module_args,

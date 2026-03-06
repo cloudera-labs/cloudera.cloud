@@ -140,6 +140,7 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
                     required=False,
                     type="str",
                     aliases=["endpoint_url", "url"],
+                    fallback=(env_fallback, ["CDP_ENDPOINT_URL"]),
                 ),
                 endpoint_region=dict(
                     required=False,
