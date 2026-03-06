@@ -527,6 +527,448 @@ class CdpIamClient:
             json_data=json_data,
         )
 
+    # ========================================================================
+    # User Management Methods
+    # ========================================================================
+
+    def create_user(
+        self,
+        email: str,
+        identity_provider_user_id: str,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        saml_provider_name: Optional[str] = None,
+        groups: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a user in CDP.
+
+        Args:
+            email: The email address for the user (display purposes only)
+            identity_provider_user_id: The identity provider user ID that matches the NameId in SAML response
+            first_name: The user's first name
+            last_name: The user's last name
+            saml_provider_name: The name or CRN of the SAML provider for login.
+                               If not provided, the default identity provider will be used.
+            groups: List of groups the user belongs to (will be created if they don't exist)
+
+        Returns:
+            Response containing the created user information
+        """
+        # If saml_provider_name not provided, use default identity provider
+        if saml_provider_name is None:
+            default_idp = self.get_default_identity_provider()
+            saml_provider_name = default_idp.get("crn", {})
+
+        json_data: Dict[str, Any] = {
+            "email": email,
+            "identityProviderUserId": identity_provider_user_id,
+        }
+
+        if first_name is not None:
+            json_data["firstName"] = first_name
+        if last_name is not None:
+            json_data["lastName"] = last_name
+        if saml_provider_name is not None:
+            json_data["samlProviderName"] = saml_provider_name
+        if groups is not None:
+            json_data["groups"] = groups
+
+        return self.api_client.post(
+            "/api/v1/iam/createUser",
+            json_data=json_data,
+        )
+
+    def delete_user(self, user_id: str) -> Dict[str, Any]:
+        """
+        Delete a user and all associated resources.
+
+        This includes deleting all associated access keys, unassigning all roles and resource roles,
+        and removing the user from all groups.
+
+        Args:
+            user_id: The user ID or CRN to delete
+
+        Returns:
+            Response containing information about deleted resources
+        """
+        json_data: Dict[str, Any] = {
+            "userId": user_id,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/deleteUser",
+            json_data=json_data,
+        )
+
+    def update_user(
+        self,
+        user_id: str,
+        active: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """
+        Update a user.
+
+        Args:
+            user_id: The user ID or CRN to update
+            active: Set user active state (True to activate, False to deactivate)
+
+        Returns:
+            Response containing updated user information
+        """
+        json_data: Dict[str, Any] = {
+            "user": user_id,
+        }
+
+        if active is not None:
+            json_data["active"] = active
+
+        return self.api_client.post(
+            "/api/v1/iam/updateUser",
+            json_data=json_data,
+        )
+
+    def get_user_details(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get complete user information including roles and resource assignments.
+
+        This method makes multiple API calls to assemble a comprehensive user profile:
+        - Basic user information (from get_user)
+        - Assigned roles
+        - Assigned resource roles
+        - Group memberships
+
+        Args:
+            user_id: The user ID or CRN
+
+        Returns:
+            Complete user information dict, or None if user doesn't exist
+        """
+        try:
+            user_info = self.get_user(user_id=user_id)
+            if not user_info:
+                return None
+
+            roles_response = self.list_user_assigned_roles(user=user_id)
+            roles = roles_response.get("roleCrns", [])
+
+            resource_roles_response = self.list_user_assigned_resource_roles(
+                user=user_id,
+            )
+            resource_assignments = resource_roles_response.get(
+                "resourceAssignments",
+                [],
+            )
+
+            groups_response = self.list_groups_for_user(user_id=user_id)
+            groups = groups_response.get("groupCrns", [])
+
+            return {
+                "userId": user_info.get("userId"),
+                "crn": user_info.get("crn"),
+                "email": user_info.get("email"),
+                "firstName": user_info.get("firstName"),
+                "lastName": user_info.get("lastName"),
+                "status": user_info.get("status"),
+                "workloadUsername": user_info.get("workloadUsername"),
+                "creationDate": user_info.get("creationDate"),
+                "roles": roles,
+                "resourceAssignments": resource_assignments,
+                "groups": groups,
+            }
+        except Exception:
+            return None
+
+    def get_user_details_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """
+        Get complete user information by email address.
+
+        This method searches for a user by email and returns complete user details.
+        Useful for idempotency when user_id is not available.
+
+        Args:
+            email: The email address of the user to find
+
+        Returns:
+            Complete user information dict, or None if user doesn't exist
+        """
+        try:
+            users_response = self.list_users()
+            users = users_response.get("users", [])
+
+            for user in users:
+                if user.get("email") == email:
+                    user_id = user.get("userId")
+                    return self.get_user_details(user_id=user_id)
+            return None
+        except Exception:
+            return None
+
+    def manage_user_groups(
+        self,
+        user_id: str,
+        current_groups: List[str],
+        desired_groups: List[str],
+        purge: bool = False,
+    ) -> bool:
+        """
+        Manage user group memberships.
+
+        Args:
+            user_id: The user ID or CRN
+            current_groups: List of current group CRNs (from list_groups_for_user)
+            desired_groups: List of desired group names
+            purge: If True, remove user from groups not in desired list
+
+        Returns:
+            True if changes were made, False otherwise
+        """
+        changed = False
+
+        # Fetch actual group names for current group CRNs
+        current_group_names = set()
+        if current_groups:
+            groups_response = self.list_groups(group_names=current_groups)
+            for group in groups_response.get("groups", []):
+                group_name = group.get("groupName")
+                if group_name:
+                    current_group_names.add(group_name)
+
+        desired_group_names = set(desired_groups)
+
+        if purge:
+            groups_to_remove = current_group_names - desired_group_names
+            for group_name in groups_to_remove:
+                self.remove_user_from_group(user_id=user_id, group_name=group_name)
+                changed = True
+
+        groups_to_add = desired_group_names - current_group_names
+        for group_name in groups_to_add:
+            # Check if group exists, create if it doesn't
+            if not self.get_group_details(group_name):
+                self.create_group(group_name=group_name)
+            self.add_user_to_group(user_id=user_id, group_name=group_name)
+            changed = True
+
+        return changed
+
+    def manage_user_roles(
+        self,
+        user_id: str,
+        current_roles: List[str],
+        desired_roles: List[str],
+        purge: bool = False,
+    ) -> bool:
+        """
+        Manage user role assignments.
+
+        Args:
+            user_id: The user ID or CRN
+            current_roles: List of current role CRNs
+            desired_roles: List of desired role CRNs
+            purge: If True, remove roles not in desired list
+
+        Returns:
+            True if changes were made, False otherwise
+        """
+        changed = False
+
+        if purge:
+            roles_to_remove = [
+                role for role in current_roles if role not in desired_roles
+            ]
+            for role in roles_to_remove:
+                self.unassign_user_role(user_id=user_id, role=role)
+                changed = True
+
+        roles_to_add = [role for role in desired_roles if role not in current_roles]
+        for role in roles_to_add:
+            self.assign_user_role(user_id=user_id, role=role)
+            changed = True
+
+        return changed
+
+    def manage_user_resource_roles(
+        self,
+        user_id: str,
+        current_assignments: List[Dict[str, str]],
+        desired_assignments: List[Dict[str, str]],
+        purge: bool = False,
+    ) -> bool:
+        """
+        Manage user resource role assignments.
+
+        Args:
+            user_id: The user ID or CRN
+            current_assignments: List of current resource role assignments
+            desired_assignments: List of desired resource role assignments
+            purge: If True, remove assignments not in desired list
+
+        Returns:
+            True if changes were made, False otherwise
+        """
+        changed = False
+
+        # Normalize current assignments for comparison
+        def normalize_assignment(assignment: Dict[str, str]) -> tuple:
+            resource = assignment.get("resource") or assignment.get("resourceCrn")
+            role = assignment.get("role") or assignment.get("resourceRoleCrn")
+            return (resource, role)
+
+        current_set = {normalize_assignment(a) for a in current_assignments}
+        desired_set = {normalize_assignment(a) for a in desired_assignments}
+
+        if purge:
+            assignments_to_remove = current_set - desired_set
+            for resource_crn, resource_role_crn in assignments_to_remove:
+                self.unassign_user_resource_role(
+                    user_id=user_id,
+                    resource_crn=resource_crn,
+                    resource_role_crn=resource_role_crn,
+                )
+                changed = True
+
+        assignments_to_add = desired_set - current_set
+        for resource_crn, resource_role_crn in assignments_to_add:
+            self.assign_user_resource_role(
+                user_id=user_id,
+                resource_crn=resource_crn,
+                resource_role_crn=resource_role_crn,
+            )
+            changed = True
+
+        return changed
+
+    def assign_user_role(self, user_id: str, role: str) -> Dict[str, Any]:
+        """
+        Assign a role to a user.
+
+        Args:
+            user_id: The user ID or CRN
+            role: The role CRN to assign
+
+        Returns:
+            Response from the API
+        """
+        json_data: Dict[str, Any] = {
+            "user": user_id,
+            "role": role,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/assignUserRole",
+            json_data=json_data,
+        )
+
+    def assign_user_resource_role(
+        self,
+        user_id: str,
+        resource_crn: str,
+        resource_role_crn: str,
+    ) -> Dict[str, Any]:
+        """
+        Assign a resource role to a user.
+
+        Args:
+            user_id: The user ID or CRN
+            resource_crn: The resource CRN
+            resource_role_crn: The resource role CRN to assign
+
+        Returns:
+            Response from the API
+        """
+        json_data: Dict[str, Any] = {
+            "user": user_id,
+            "resourceCrn": resource_crn,
+            "resourceRoleCrn": resource_role_crn,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/assignUserResourceRole",
+            json_data=json_data,
+        )
+
+    def unassign_user_role(self, user_id: str, role: str) -> Dict[str, Any]:
+        """
+        Unassign a role from a user.
+
+        Args:
+            user_id: The user ID or CRN
+            role: The role CRN to unassign
+
+        Returns:
+            Response from the API
+        """
+        json_data: Dict[str, Any] = {
+            "user": user_id,
+            "role": role,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/unassignUserRole",
+            json_data=json_data,
+        )
+
+    def unassign_user_resource_role(
+        self,
+        user_id: str,
+        resource_crn: str,
+        resource_role_crn: str,
+    ) -> Dict[str, Any]:
+        """
+        Unassign a resource role from a user.
+
+        Args:
+            user_id: The user ID or CRN
+            resource_crn: The resource CRN
+            resource_role_crn: The resource role CRN to unassign
+
+        Returns:
+            Response from the API
+        """
+        json_data: Dict[str, Any] = {
+            "user": user_id,
+            "resourceCrn": resource_crn,
+            "resourceRoleCrn": resource_role_crn,
+        }
+
+        return self.api_client.post(
+            "/api/v1/iam/unassignUserResourceRole",
+            json_data=json_data,
+        )
+
+    def set_workload_password(
+        self,
+        password: str,
+        actor_crn: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Set the workload password for an actor.
+
+        This will be the actor's password in all Environments they have access to,
+        including Environments they are given access to after setting the password.
+        The password plaintext is not kept.
+
+        Args:
+            password: The password value to set
+            actor_crn: The CRN of the user or machine user for whom the password will be set.
+                      If not provided, it defaults to the user making the request.
+
+        Returns:
+            Response from the API
+        """
+        json_data: Dict[str, Any] = {
+            "password": password,
+        }
+
+        if actor_crn is not None:
+            json_data["actorCrn"] = actor_crn
+
+        return self.api_client.post(
+            "/api/v1/iam/setWorkloadPassword",
+            json_data=json_data,
+        )
+
     @CdpClient.paginated()
     def list_machine_user_assigned_roles(
         self,
@@ -1453,4 +1895,49 @@ class CdpIamClient:
         return self.api_client.post(
             "/api/v1/iam/generateWorkloadAuthToken",
             json_data=json_data,
+        )
+
+    @CdpClient.paginated()
+    def list_saml_providers(
+        self,
+        saml_provider_names: Optional[List[str]] = None,
+        pageToken: Optional[str] = None,
+        pageSize: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        List SAML providers with automatic pagination.
+
+        Args:
+            saml_provider_names: Optional list of SAML provider names or CRNs to filter by
+            pageToken: Token for pagination (automatically handled by decorator)
+            pageSize: Page size for pagination (automatically handled by decorator)
+
+        Returns:
+            Response with automatic pagination handling containing SAML providers list
+        """
+        json_data: Dict[str, Any] = {}
+
+        if saml_provider_names is not None:
+            json_data["samlProviderNames"] = saml_provider_names
+
+        if pageToken is not None:
+            json_data["startingToken"] = pageToken
+        if pageSize is not None:
+            json_data["pageSize"] = pageSize
+
+        return self.api_client.post(
+            "/api/v1/iam/listSamlProviders",
+            json_data=json_data,
+        )
+
+    def get_default_identity_provider(self) -> Dict[str, Any]:
+        """
+        Get the default identity provider for the account.
+
+        Returns:
+            Response containing the default identity provider information
+        """
+        return self.api_client.post(
+            "/api/v1/iam/getDefaultIdentityProvider",
+            json_data={},
         )
