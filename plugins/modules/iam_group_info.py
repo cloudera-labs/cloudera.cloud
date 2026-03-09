@@ -36,6 +36,12 @@ options:
     required: False
     aliases:
       - group_name
+  detailed:
+    description:
+      - Whether to return detailed group information including members, roles, and resource assignments.
+    type: bool
+    required: False
+    default: True
 extends_documentation_fragment:
   - cloudera.cloud.cdp_client
 """
@@ -43,25 +49,33 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
- - name: Gather information about all Groups
-   cloudera.cloud.iam_group_info:
+- name: Gather basic information about all Groups
+  cloudera.cloud.iam_group_info:
+    detailed: false
 
- - name: Gather information about a named Group
-   cloudera.cloud.iam_group_info:
-     name: example-01
+- name: Gather detailed information about a named Group
+  cloudera.cloud.iam_group_info:
+    name: example-01
 
- - name: Gather information about several named Groups
-   cloudera.cloud.iam_group_info:
-     name:
-       - example-01
-       - example-02
-       - example-03
+- name: Gather basic information about a named Group
+  cloudera.cloud.iam_group_info:
+    name: example-01
+    detailed: false
 
-- cloudera.cloud.iam_group_info:
+- name: Gather detailed information about several named Groups
+  cloudera.cloud.iam_group_info:
     name:
       - example-01
       - example-02
       - example-03
+
+- name: Gather basic information about several named Groups
+  cloudera.cloud.iam_group_info:
+    name:
+      - example-01
+      - example-02
+      - example-03
+    detailed: false
 """
 
 RETURN = r"""
@@ -69,8 +83,6 @@ groups:
   description:
     - Returns a list of group records.
     - Each record represents a CDP IAM group and its details.
-    - When specific group names are provided, detailed information including members, roles, and resource assignments is returned.
-    - When no group names are provided (listing all groups), only basic group information is returned.
   type: list
   returned: always
   elements: dict
@@ -98,18 +110,18 @@ groups:
       type: bool
     members:
       description: List of member CRNs (users and machine users) which are members of the group.
-      returned: when specific group names are provided
+      returned: when detailed is true
       type: list
       elements: str
     roles:
       description: List of Role CRNs assigned to the group.
-      returned: when specific group names are provided
+      returned: when detailed is true
       type: list
       elements: str
     resourceAssignments:
     # resource_assignments:
       description: List of Resource-to-Role assignments that are associated with the group.
-      returned: when specific group names are provided
+      returned: when detailed is true
       type: list
       elements: dict
       contains:
@@ -154,12 +166,18 @@ class IAMGroupInfo(ServicesModule):
                     elements="str",
                     aliases=["group_name"],
                 ),
+                detailed=dict(
+                    required=False,
+                    type="bool",
+                    default=True,
+                ),
             ),
             supports_check_mode=True,
         )
 
         # Set parameters
         self.name = self.get_param("name")
+        self.detailed = self.get_param("detailed")
 
         # Initialize the return values
         self.groups = []
@@ -169,15 +187,23 @@ class IAMGroupInfo(ServicesModule):
 
     def process(self):
 
-        # If specific group names are requested, get detailed info for each
-        if self.name:
-            self.groups = []
-            for group_name in self.name:
-                group_details = self.client.get_group_details(group_name)
-                if group_details:
-                    self.groups.append(group_details)
+        if self.detailed:
+            if self.name:
+                self.groups = []
+                for group_name in self.name:
+                    group_details = self.client.get_group_details(group_name)
+                    if group_details:
+                        self.groups.append(group_details)
+            else:
+                result = self.client.list_groups()
+                basic_groups = result.get("groups", [])
+                self.groups = []
+                for group in basic_groups:
+                    group_name = group.get("groupName")
+                    group_details = self.client.get_group_details(group_name)
+                    if group_details:
+                        self.groups.append(group_details)
         else:
-            # If no specific groups requested, list all groups (basic info only)
             result = self.client.list_groups(group_names=self.name)
             self.groups = result.get("groups", [])
 

@@ -71,13 +71,72 @@ MOCK_GROUP_DETAILS = {
 
 
 def test_iam_group_info_list_all_groups(module_args, mocker):
-    """Test listing all IAM groups without filters."""
+    """Test listing all IAM groups with detailed information (default)."""
 
     module_args(
         {
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
+        },
+    )
+
+    # Patch load_cdp_config to avoid reading real config files
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpIamClient to avoid real API calls
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.iam_group_info.CdpIamClient",
+        autospec=True,
+    ).return_value
+
+    # Mock list_groups response (basic info)
+    client.list_groups.return_value = {
+        "groups": [MOCK_GROUP_1, MOCK_GROUP_2],
+    }
+
+    # Mock get_group_details responses for detailed mode
+    mock_group_2_details = {
+        **MOCK_GROUP_2,
+        "members": [],
+        "roles": [],
+        "resourceAssignments": [],
+    }
+    client.get_group_details.side_effect = [
+        MOCK_GROUP_DETAILS,
+        mock_group_2_details,
+    ]
+
+    # Test module execution
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group_info.main()
+
+    assert result.value.changed is False
+    assert len(result.value.groups) == 2
+    assert result.value.groups[0]["groupName"] == "test-group-1"
+    assert result.value.groups[1]["groupName"] == "test-group-2"
+    # Detailed mode should include these fields
+    assert "members" in result.value.groups[0]
+    assert "roles" in result.value.groups[0]
+    assert "resourceAssignments" in result.value.groups[0]
+
+    # Verify API calls
+    client.list_groups.assert_called_once()
+    assert client.get_group_details.call_count == 2
+
+
+def test_iam_group_info_list_all_groups_basic(module_args, mocker):
+    """Test listing all IAM groups with basic information only."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "detailed": False,
         },
     )
 
@@ -106,9 +165,15 @@ def test_iam_group_info_list_all_groups(module_args, mocker):
     assert len(result.value.groups) == 2
     assert result.value.groups[0]["groupName"] == "test-group-1"
     assert result.value.groups[1]["groupName"] == "test-group-2"
+    # Basic mode should NOT include detailed fields
+    assert "members" not in result.value.groups[0]
+    assert "roles" not in result.value.groups[0]
+    assert "resourceAssignments" not in result.value.groups[0]
 
     # Verify CdpIamClient was called correctly
     client.list_groups.assert_called_once_with(group_names=None)
+    # Should NOT call get_group_details in basic mode
+    client.get_group_details.assert_not_called()
 
 
 def test_iam_group_info_get_specific_group(module_args, mocker):
@@ -154,6 +219,53 @@ def test_iam_group_info_get_specific_group(module_args, mocker):
 
     # Verify get_group_details was called
     client.get_group_details.assert_called_once_with("test-group-1")
+
+
+def test_iam_group_info_get_specific_group_basic(module_args, mocker):
+    """Test getting basic info for a specific IAM group."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": ["test-group-1"],
+            "detailed": False,
+        },
+    )
+
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpIamClient
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.iam_group_info.CdpIamClient",
+        autospec=True,
+    ).return_value
+
+    # Mock list_groups response (basic info only)
+    client.list_groups.return_value = {
+        "groups": [MOCK_GROUP_1],
+    }
+
+    # Test module execution
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group_info.main()
+
+    assert result.value.changed is False
+    assert len(result.value.groups) == 1
+    assert result.value.groups[0]["groupName"] == "test-group-1"
+    # Basic mode should NOT include detailed fields
+    assert "members" not in result.value.groups[0]
+    assert "roles" not in result.value.groups[0]
+    assert "resourceAssignments" not in result.value.groups[0]
+
+    # Verify list_groups was called, NOT get_group_details
+    client.list_groups.assert_called_once_with(group_names=["test-group-1"])
+    client.get_group_details.assert_not_called()
 
 
 def test_iam_group_info_get_multiple_groups(module_args, mocker):
@@ -270,10 +382,11 @@ def test_iam_group_info_check_mode(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock list_groups response
+    # Mock list_groups response and get_group_details
     client.list_groups.return_value = {
         "groups": [MOCK_GROUP_1],
     }
+    client.get_group_details.return_value = MOCK_GROUP_DETAILS
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:

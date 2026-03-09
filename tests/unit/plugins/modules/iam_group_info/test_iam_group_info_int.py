@@ -19,8 +19,9 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
+import uuid
 
-from typing import Callable
+from typing import Callable, Generator
 
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
@@ -36,6 +37,9 @@ REQUIRED_ENV_VARS = [
     "CDP_ACCESS_KEY_ID",
     "CDP_PRIVATE_KEY",
 ]
+
+# Generate unique group name for each test run to avoid conflicts
+GROUP_NAME = f"test-group-int-{uuid.uuid4().hex[:8]}"
 
 # Mark all tests in this module as integration tests requiring API credentials
 pytestmark = pytest.mark.integration_api
@@ -68,20 +72,40 @@ def iam_client(test_cdp_client) -> CdpIamClient:
 
 
 @pytest.fixture
-def existing_group_name(iam_client) -> str:
-    """Fixture to provide an existing group name for tests."""
-    response = iam_client.list_groups()
+def iam_group_delete(iam_client) -> Generator[Callable[[str], None], None, None]:
+    """Fixture to clean up IAM groups created during tests."""
 
-    if len(response.get("groups", [])) == 0:
-        pytest.skip("No groups available for testing")
+    group_names = []
 
-    return response["groups"][0]["groupName"]
+    def _iam_group_module(name: str):
+        group_names.append(name)
+        return
+
+    yield _iam_group_module
+
+    for name in group_names:
+        try:
+            iam_client.delete_group(group_name=name)
+        except Exception as e:
+            pytest.fail(f"Failed to clean up IAM group: {name}. {e}")
+
+
+@pytest.fixture
+def iam_group_create(iam_client, iam_group_delete) -> Callable[[str], None]:
+    """Fixture to clean up IAM groups created during tests."""
+
+    def _iam_group_module(name: str, sync: bool = False):
+        iam_group_delete(name)
+        iam_client.create_group(group_name=name, sync_membership_on_user_login=sync)
+        return
+
+    return _iam_group_module
 
 
 def test_iam_group_info_list_all(iam_module_args):
-    """Test listing all IAM groups with real API calls."""
+    """Test listing all IAM groups with detailed information (default)."""
 
-    iam_module_args({})
+    iam_module_args({"detailed": False})
 
     with pytest.raises(AnsibleExitJson) as result:
         iam_group_info.main()
@@ -97,12 +121,15 @@ def test_iam_group_info_list_all(iam_module_args):
     assert "creationDate" in first_group
 
 
-def test_iam_group_info_get_specific_group(iam_module_args, existing_group_name):
-    """Test getting details for a specific IAM group."""
+def test_iam_group_info_get_specific_group(iam_module_args, iam_group_create):
+    """Test getting detailed information for a specific IAM group (default)."""
+
+    test_group_name = f"test-group-specific-{uuid.uuid4().hex[:8]}"
+    iam_group_create(test_group_name)
 
     iam_module_args(
         {
-            "name": [existing_group_name],
+            "name": [test_group_name],
         },
     )
 
@@ -114,7 +141,7 @@ def test_iam_group_info_get_specific_group(iam_module_args, existing_group_name)
     assert len(result.value.groups) == 1
 
     group = result.value.groups[0]
-    assert group["groupName"] == existing_group_name
+    assert group["groupName"] == test_group_name
     assert "crn" in group
     assert "creationDate" in group
 
@@ -124,6 +151,37 @@ def test_iam_group_info_get_specific_group(iam_module_args, existing_group_name)
     assert isinstance(group["members"], list)
     assert isinstance(group["roles"], list)
     assert isinstance(group["resourceAssignments"], list)
+
+
+def test_iam_group_info_get_specific_group_basic(iam_module_args, iam_group_create):
+    """Test getting basic information for a specific IAM group."""
+
+    test_group_name = f"test-group-specific-basic-{uuid.uuid4().hex[:8]}"
+    iam_group_create(test_group_name)
+
+    iam_module_args(
+        {
+            "name": [test_group_name],
+            "detailed": False,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_group_info.main()
+
+    assert result.value.changed is False
+    assert result.value.groups is not None
+    assert len(result.value.groups) == 1
+
+    group = result.value.groups[0]
+    assert group["groupName"] == test_group_name
+    assert "crn" in group
+    assert "creationDate" in group
+
+    # Basic mode should NOT include detailed fields
+    assert "members" not in group
+    assert "roles" not in group
+    assert "resourceAssignments" not in group
 
 
 def test_iam_group_info_nonexistent_group(iam_module_args):
@@ -145,10 +203,13 @@ def test_iam_group_info_nonexistent_group(iam_module_args):
     assert len(result.value.groups) == 0
 
 
-def test_iam_group_info_by_crn(iam_module_args, iam_client, existing_group_name):
+def test_iam_group_info_by_crn(iam_module_args, iam_client, iam_group_create):
     """Test getting group details using CRN instead of name."""
 
-    group_details = iam_client.get_group_details(existing_group_name)
+    test_group_name = f"test-group-by-crn-{uuid.uuid4().hex[:8]}"
+    iam_group_create(test_group_name)
+
+    group_details = iam_client.get_group_details(test_group_name)
     group_crn = group_details["crn"]
 
     iam_module_args(
@@ -164,5 +225,5 @@ def test_iam_group_info_by_crn(iam_module_args, iam_client, existing_group_name)
     assert result.value.changed is False
     assert result.value.groups is not None
     assert len(result.value.groups) == 1
-    assert result.value.groups[0]["groupName"] == existing_group_name
+    assert result.value.groups[0]["groupName"] == test_group_name
     assert result.value.groups[0]["crn"] == group_crn
