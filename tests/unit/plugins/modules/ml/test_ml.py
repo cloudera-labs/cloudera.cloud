@@ -767,7 +767,7 @@ def test_ml_workspace_invalid_k8s_request(module_args, mocker):
     )
 
     # Expect the module to fail due to missing required field in k8s_request
-    with pytest.raises(AnsibleFailJson, match="environmentName"):
+    with pytest.raises(AnsibleFailJson, match="environment_name"):
         ml.main()
 
 

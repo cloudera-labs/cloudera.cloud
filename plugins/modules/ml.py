@@ -89,27 +89,27 @@ options:
     type: dict
     required: False
     suboptions:
-      existingDatabaseHost:
+      existing_database_host:
         description:
           - The Postgres hostname
         type: str
         required: False
-      existingDatabaseName:
+      existing_database_name:
         description:
           - The Postgres database name
         type: str
         required: False
-      existingDatabasePort:
+      existing_database_port:
         description:
           - The Postgres port
         type: str
         required: False
-      existingDatabaseUser:
+      existing_database_user:
         description:
           - The Postgres user
         type: str
         required: False
-      existingDatabasePassword:
+      existing_database_password:
         description:
           - The Postgres password
         type: str
@@ -143,17 +143,21 @@ options:
     type: dict
     required: False
     suboptions:
-      environmentName:
+      environment_name:
         description:
           - The Environment for the ML Workspace
         type: str
         required: True
-      instanceGroups:
+        aliases:
+          - environmentName
+      instance_groups:
         description:
           - The instance groups for the ML Workspace provisioning request
         type: list
         elements: dict
         required: True
+        aliases:
+          - instanceGroups
         suboptions:
           autoscaling:
             description:
@@ -418,8 +422,8 @@ EXAMPLES = r"""
     name: ml-k8s-example
     env: cdp-env
     k8s_request:
-      environmentName: cdp-env
-      instanceGroups:
+      environment_name: cdp-env
+      instance_groups:
         - name: default_settings
           autoscaling:
             maxInstances: 10
@@ -697,11 +701,11 @@ class MLWorkspace(ServicesModule):
                     required=False,
                     type="dict",
                     options=dict(
-                        existingDatabaseHost=dict(required=False, type="str"),
-                        existingDatabaseName=dict(required=False, type="str"),
-                        existingDatabasePort=dict(required=False, type="str"),
-                        existingDatabaseUser=dict(required=False, type="str"),
-                        existingDatabasePassword=dict(required=False, type="str"),
+                        existing_database_host=dict(required=False, type="str"),
+                        existing_database_name=dict(required=False, type="str"),
+                        existing_database_port=dict(required=False, type="str"),
+                        existing_database_user=dict(required=False, type="str"),
+                        existing_database_password=dict(required=False, type="str"),
                     ),
                     aliases=["existing_database", "database_config"],
                 ),
@@ -712,11 +716,16 @@ class MLWorkspace(ServicesModule):
                     required=False,
                     type="dict",
                     options=dict(
-                        environmentName=dict(required=True, type="str"),
-                        instanceGroups=dict(
+                        environment_name=dict(
+                            required=True,
+                            type="str",
+                            aliases=["environmentName"],
+                        ),
+                        instance_groups=dict(
                             required=True,
                             type="list",
                             elements="dict",
+                            aliases=["instanceGroups"],
                             options=dict(
                                 autoscaling=dict(
                                     required=False,
@@ -1022,14 +1031,42 @@ class MLWorkspace(ServicesModule):
             # Create the Workspace
             elif self.state == "present":
                 if not self.module.check_mode:
-                    # Process k8s_request tags if present
+                    # Process k8s_request and convert snake_case to camelCase for API
                     k8s_request = self.k8s_request
-                    if k8s_request and k8s_request.get("tags") is not None:
+                    if k8s_request:
                         k8s_request = k8s_request.copy()
-                        tag_items = []
-                        for k, v in k8s_request["tags"].items():
-                            tag_items.append(dict(key=k, value=v))
-                        k8s_request["tags"] = tag_items
+
+                        # Convert snake_case keys to camelCase
+                        key_mapping = {
+                            "environment_name": "environmentName",
+                            "instance_groups": "instanceGroups",
+                        }
+                        for snake_key, camel_key in key_mapping.items():
+                            if snake_key in k8s_request:
+                                k8s_request[camel_key] = k8s_request.pop(snake_key)
+
+                        # Convert tags dict to list of key/value pairs
+                        if k8s_request.get("tags") is not None:
+                            k8s_request["tags"] = [
+                                dict(key=k, value=v)
+                                for k, v in k8s_request["tags"].items()
+                            ]
+
+                    # Convert database parameters from snake_case to camelCase for API
+                    database_config = None
+                    if self.database:
+                        db_key_mapping = {
+                            "existing_database_host": "existingDatabaseHost",
+                            "existing_database_name": "existingDatabaseName",
+                            "existing_database_port": "existingDatabasePort",
+                            "existing_database_user": "existingDatabaseUser",
+                            "existing_database_password": "existingDatabasePassword",
+                        }
+                        database_config = {
+                            camel_key: self.database[snake_key]
+                            for snake_key, camel_key in db_key_mapping.items()
+                            if snake_key in self.database
+                        }
 
                     client.create_workspace(
                         workspace_name=self.name,
@@ -1038,7 +1075,7 @@ class MLWorkspace(ServicesModule):
                         enable_monitoring=self.monitoring,
                         enable_governance=self.governance,
                         enable_model_metrics=self.metrics,
-                        existing_database_config=self.database,
+                        existing_database_config=database_config,
                         namespace=self.namespace,
                         existing_nfs=self.nfs,
                         nfs_version=self.nfs_version,
