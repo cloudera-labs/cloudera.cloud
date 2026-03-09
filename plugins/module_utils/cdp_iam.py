@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
+    CdpError,
 )
 
 
@@ -538,10 +539,13 @@ class CdpIamClient:
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
         saml_provider_name: Optional[str] = None,
-        groups: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Create a user in CDP.
+
+        Note: This method intentionally does not support the 'groups' parameter
+        to avoid the side effect of group creation. Group memberships should be
+        managed separately after user creation using manage_user_groups().
 
         Args:
             email: The email address for the user (display purposes only)
@@ -550,7 +554,6 @@ class CdpIamClient:
             last_name: The user's last name
             saml_provider_name: The name or CRN of the SAML provider for login.
                                If not provided, the default identity provider will be used.
-            groups: List of groups the user belongs to (will be created if they don't exist)
 
         Returns:
             Response containing the created user information
@@ -571,8 +574,6 @@ class CdpIamClient:
             json_data["lastName"] = last_name
         if saml_provider_name is not None:
             json_data["samlProviderName"] = saml_provider_name
-        if groups is not None:
-            json_data["groups"] = groups
 
         return self.api_client.post(
             "/api/v1/iam/createUser",
@@ -714,6 +715,9 @@ class CdpIamClient:
         """
         Manage user group memberships.
 
+        Note: This method will NOT create groups automatically. Groups must exist
+        before adding users to them. Use the iam_group module to create groups.
+
         Args:
             user_id: The user ID or CRN
             current_groups: List of current group CRNs (from list_groups_for_user)
@@ -722,6 +726,9 @@ class CdpIamClient:
 
         Returns:
             True if changes were made, False otherwise
+
+        Raises:
+            CdpError: If a desired group does not exist
         """
         changed = False
 
@@ -744,9 +751,13 @@ class CdpIamClient:
 
         groups_to_add = desired_group_names - current_group_names
         for group_name in groups_to_add:
-            # Check if group exists, create if it doesn't
+            # Check if group exists, raise error if it doesn't
             if not self.get_group_details(group_name):
-                self.create_group(group_name=group_name)
+                raise CdpError(
+                    f"Group '{group_name}' does not exist. "
+                    f"Please create the group using the iam_group module before adding users to it.",
+                    status=404,
+                )
             self.add_user_to_group(user_id=user_id, group_name=group_name)
             changed = True
 

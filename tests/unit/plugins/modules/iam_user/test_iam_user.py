@@ -209,7 +209,6 @@ def test_iam_user_create(module_args, mocker):
         first_name="Test",
         last_name="User",
         saml_provider_name="mtaabich-test",
-        groups=None,
     )
 
 
@@ -250,6 +249,7 @@ def test_iam_user_create_with_groups(module_args, mocker):
         "crn": f"crn:cdp:iam:us-west-1:altus:user:{USER_ID}",
         "roles": [],
         "resourceAssignments": [],
+        "groups": [],
     }
 
     client.create_user.return_value = {
@@ -260,21 +260,98 @@ def test_iam_user_create_with_groups(module_args, mocker):
         },
     }
 
+    # Mock manage_user_groups to return True (changes made)
+    client.manage_user_groups.return_value = True
+
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
         iam_user.main()
 
     assert result.value.changed is True
 
-    # Verify CdpIamClient was called correctly
+    # Verify create_user was called without groups parameter
     client.create_user.assert_called_once_with(
         email=USER_EMAIL,
         identity_provider_user_id=IDP_USER_ID,
         first_name=None,
         last_name=None,
         saml_provider_name=None,
-        groups=["developers", "admins"],
     )
+
+    # Verify manage_user_groups was called to add user to groups
+    client.manage_user_groups.assert_called_once_with(
+        user_id=USER_ID,
+        current_groups=[],
+        desired_groups=["developers", "admins"],
+        purge=False,
+    )
+
+
+def test_iam_user_create_with_nonexistent_group(module_args, mocker):
+    """Test iam_user module fails when trying to add user to non-existent group."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDP_USER_ID,
+            "groups": ["nonexistent-group"],
+            "state": "present",
+        },
+    )
+
+    # Patch load_cdp_config to avoid reading real config files
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpIamClient to avoid real API calls
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.iam_user.CdpIamClient",
+        autospec=True,
+    ).return_value
+
+    # User doesn't exist initially (lookup by email)
+    client.get_user_details_by_email.return_value = None
+
+    # After creation, get_user_details returns the created user
+    client.get_user_details.return_value = {
+        "userId": USER_ID,
+        "email": USER_EMAIL,
+        "crn": f"crn:cdp:iam:us-west-1:altus:user:{USER_ID}",
+        "roles": [],
+        "resourceAssignments": [],
+        "groups": [],
+    }
+
+    client.create_user.return_value = {
+        "user": {
+            "userId": USER_ID,
+            "email": USER_EMAIL,
+            "crn": f"crn:cdp:iam:us-west-1:altus:user:{USER_ID}",
+        },
+    }
+
+    # Mock manage_user_groups to raise CdpError for non-existent group
+    from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
+        CdpError,
+    )
+
+    client.manage_user_groups.side_effect = CdpError(
+        "Group 'nonexistent-group' does not exist. "
+        "Please create the group using the iam_group module before adding users to it.",
+        status=404,
+    )
+
+    # Test module execution - should fail
+    with pytest.raises(CdpError) as exc_info:
+        iam_user.main()
+
+    assert "nonexistent-group" in str(exc_info.value)
+    assert "does not exist" in str(exc_info.value)
 
 
 def test_iam_user_present_no_changes(module_args, mocker):

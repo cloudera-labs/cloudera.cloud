@@ -41,7 +41,8 @@ options:
   groups:
     description:
       - List of groups the user belongs to.
-      - Groups will be created if they don't exist.
+      - Groups must already exist before adding users to them.
+      - Use the M(cloudera.cloud.iam_group) module to create groups first.
     type: list
     elements: str
     required: False
@@ -157,7 +158,7 @@ EXAMPLES = r"""
     last_name: Doe
     saml_provider_name: my-saml-provider
 
-# Create a user and assign to groups
+# Create a user and assign to existing groups (groups must exist first)
 - cloudera.cloud.iam_user:
     email: user@example.com
     groups:
@@ -396,7 +397,6 @@ class IAMUser(ServicesModule):
                     response = self.client.create_user(
                         email=self.email,
                         first_name=self.first_name,
-                        groups=self.groups,
                         identity_provider_user_id=idp_user_id,
                         last_name=self.last_name,
                         saml_provider_name=self.saml_provider_name,
