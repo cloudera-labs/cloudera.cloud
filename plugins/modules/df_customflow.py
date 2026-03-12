@@ -201,10 +201,13 @@ from typing import Any, Dict, Optional
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
 )
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import CdpDfClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
+    CdpDfClient,
+    DataFlowModule,
+)
 
 
-class DFCustomFlow(ServicesModule):
+class DFCustomFlow(DataFlowModule, ServicesModule):
     def __init__(self):
         super().__init__(
             argument_spec=dict(

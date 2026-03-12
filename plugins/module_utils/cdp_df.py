@@ -24,6 +24,25 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
     CdpError,
 )
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df_client import (
+    CdpDfApiClient,
+)
+
+
+class DataFlowModule:
+    """
+    Mixin class for DataFlow modules that need 308 redirect support.
+    
+    This mixin ensures that DataFlow modules use CdpDfApiClient instead of
+    the base AnsibleCdpClient, enabling proper handling of 308 redirects
+    for flow import operations.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        """Initialize with CdpDfApiClient."""
+        # Set client_class to CdpDfApiClient before calling parent __init__
+        kwargs['client_class'] = CdpDfApiClient
+        super().__init__(*args, **kwargs)
 
 
 def check_service_updates(
