@@ -31,7 +31,6 @@ from cryptography.hazmat.primitives.asymmetric import ed25519
 from email.utils import formatdate
 from typing import Any, Dict, Optional, List, Tuple, Union
 from urllib.parse import urlparse
-
 from ansible.module_utils.urls import fetch_url
 
 
@@ -545,19 +544,31 @@ class AnsibleCdpClient(CdpClient):
 
                     # Handle error responses
                     error_message = f"HTTP {status_code} Error"
-                    if resp:
-                        try:
-                            error_data = json.loads(info.get("body"))
-                            error_message = (
-                                f"{error_data.get('errorMessage', 'Unknown error')}"
-                            )
-                        except:
-                            error_message = f"{info.get('msg', 'Unknown error')}"
-                    else:
-                        try:
+
+                    try:
+                        error_body = info.get("body")
+                        if error_body:
+                            error_data = json.loads(error_body)
+
+                            if "message" in error_data:
+                                error_message = error_data["message"]
+                            elif "error" in error_data:
+                                error_message = error_data["error"]
+                            elif "errorMessages" in error_data:
+                                error_messages = error_data["errorMessages"]
+                                if isinstance(error_messages, list):
+                                    error_message = " ".join(error_messages)
+                                else:
+                                    error_message = str(error_messages)
+                            else:
+                                error_message = error_data.get(
+                                    "errorMessage",
+                                    "Unknown error",
+                                )
+                        else:
                             error_message = info.get("msg", "Unknown error")
-                        except:
-                            pass
+                    except:
+                        error_message = info.get("msg", "Unknown error")
 
                     # Retry on server errors (5xx) or specific client errors
                     if status_code >= 500 or status_code in [408, 429]:

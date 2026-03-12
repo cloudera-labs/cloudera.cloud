@@ -96,9 +96,22 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
         supports_check_mode: bool = False,
         required_if: List[List[Any]] = [],
         required_by: Dict[str, List[str]] = {},
+        client_class=None,
     ):
-        """Initializes the base Cloudera on cloud service module"""
+        """
+        Initializes the base Cloudera on cloud service module.
+
+        Args:
+            client_class: Optional API client class to use (defaults to AnsibleCdpClient).
+                          Must be a subclass of CdpClient. Used by service-specific modules
+                          that need specialized client behavior (e.g., DataFlow with 308 redirects).
+        """
         super().__init__()
+
+        # Store client class for later instantiation (defaults to AnsibleCdpClient)
+        self._client_class = (
+            client_class if client_class is not None else AnsibleCdpClient
+        )
 
         # Merge in mixin argument specs
         merged_argument_spec = dict(argument_spec)
@@ -265,8 +278,8 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
 
         self.logger.debug("cloudera.cloud API agent: %s", self.get_param("http_agent"))
 
-        # Create the CDP client
-        self.api_client = AnsibleCdpClient(
+        # Create the CDP client using the configured client class
+        self.api_client = self._client_class(
             module=self.module,
             base_url=self.endpoint,
             access_key=self.access_key,
