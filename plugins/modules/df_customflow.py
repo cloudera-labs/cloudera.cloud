@@ -35,7 +35,7 @@ options:
   file:
     description:
       - The path to the JSON file containing the CustomFlow definition to be imported.
-      - Required when I(state=present).
+      - Required when O(state=present).
     type: path
     default: None
   description:
@@ -60,7 +60,7 @@ options:
   tags:
     description:
       - The list of tags for the initial flow definition version.
-      - Each tag should have a C(tag_name) (required) and optionally a C(tag_color).
+      - Each tag should have a O(tag_name) (required) and optionally a O(tag_color).
     type: list
     elements: dict
     required: False
@@ -132,7 +132,7 @@ customflow:
     crn:
       description:
         - The DataFlow CustomFlow's CRN.
-        - Use this crn to address this object
+        - Use this C(crn) to address this object
       returned: always
       type: str
     name:
