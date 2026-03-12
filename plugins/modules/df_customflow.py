@@ -258,7 +258,11 @@ class DFCustomFlow(DataFlowModule, ServicesModule):
 
         if self.state == "present":
             if existing_flow:
-                self.flow = existing_flow  # Flow already exists, no update operation for CustomFlows (import only)
+                self.flow = existing_flow  # Flow already exists, no update operation for CustomFlows
+                self.module.warn(
+                    "CustomFlow '%s' already exists. Updates are not supported for CustomFlows. "
+                    "To update flow content, delete and re-import with new parameters." % self.name
+                )
             else:
                 self.changed = True
                 if not self.module.check_mode:
