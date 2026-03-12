@@ -35,7 +35,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 class CdpDfApiClient(AnsibleCdpClient):
     """
     DataFlow-specific CDP API client that extends AnsibleCdpClient.
-    
+
     This client handles DataFlow-specific requirements such as:
     - 308 Permanent Redirect handling for flow import operations
     - DataFlow extension format transformation (metadata in headers, content in body)
@@ -48,44 +48,44 @@ class CdpDfApiClient(AnsibleCdpClient):
     ) -> tuple[str, Dict[str, str]]:
         """
         Transform DataFlow flow import payload to extension format.
-        
+
         Moves metadata from JSON body to custom headers and extracts
         the raw flow definition content as the body.
-        
+
         Args:
             body: Original JSON request body
             headers: Request headers dictionary (will be modified in-place)
-            
+
         Returns:
             Tuple of (transformed_body, headers)
-            
+
         Reference:
             cdpcli/extensions/df/__init__.py::_build_upload_flow_headers
         """
         try:
             request_data = json.loads(body)
-            
+
             # Extract metadata and move to custom headers (URI-encoded)
             if "name" in request_data:
                 headers["Flow-Definition-Name"] = quote(request_data["name"])
             if "description" in request_data:
                 headers["Flow-Definition-Description"] = quote(
-                    request_data["description"]
+                    request_data["description"],
                 )
             if "comments" in request_data:
                 headers["Flow-Definition-Comments"] = quote(request_data["comments"])
             if "collectionCrn" in request_data:
                 headers["Flow-Definition-Collection-Identifier"] = quote(
-                    request_data["collectionCrn"]
+                    request_data["collectionCrn"],
                 )
             if "tags" in request_data:
                 tags_json = '{ "tags": ' + json.dumps(request_data["tags"]) + "}"
                 headers["Flow-Definition-Tags"] = quote(tags_json)
-            
+
             # Body becomes raw flow content (not wrapped in JSON)
             transformed_body = request_data.get("file", "")
             return transformed_body, headers
-            
+
         except (json.JSONDecodeError, KeyError):
             # If transformation fails, return original body
             return body, headers
@@ -93,10 +93,10 @@ class CdpDfApiClient(AnsibleCdpClient):
     def _is_df_flow_import_redirect(self, redirect_path: str) -> bool:
         """
         Check if a redirect is for a DataFlow flow import operation.
-        
+
         Args:
             redirect_path: The redirect URL path
-            
+
         Returns:
             True if this is a DataFlow flow import redirect
         """
@@ -111,13 +111,13 @@ class CdpDfApiClient(AnsibleCdpClient):
     ) -> tuple:
         """
         Handle 308 Permanent Redirect for DataFlow operations.
-        
+
         Args:
             redirect_url: Full redirect URL
             method: HTTP method
             body: Request body
             headers: Request headers
-            
+
         Returns:
             Tuple of (resp, info) from fetch_url
         """
@@ -129,16 +129,17 @@ class CdpDfApiClient(AnsibleCdpClient):
 
         # Check if this needs DataFlow extension format transformation
         is_df_flow_import = self._is_df_flow_import_redirect(redirect_path)
-        
+
         redirect_body = body
         redirect_headers = dict(headers)
-        
+
         if is_df_flow_import and body:
             # Transform to DataFlow extension format
             redirect_body, redirect_headers = self._transform_df_flow_payload(
-                body, redirect_headers
+                body,
+                redirect_headers,
             )
-        
+
         # Re-sign for the redirect URL (signature uses path only)
         redirect_headers["x-altus-date"] = formatdate(usegmt=True)
         redirect_headers["x-altus-auth"] = make_signature_header(
@@ -148,7 +149,7 @@ class CdpDfApiClient(AnsibleCdpClient):
             self.access_key,
             self.private_key,
         )
-        
+
         # Follow the redirect
         return fetch_url(
             self.module,
@@ -171,10 +172,10 @@ class CdpDfApiClient(AnsibleCdpClient):
     ) -> Any:
         """
         Make HTTP request with DataFlow-specific 308 redirect handling.
-        
+
         Extends the base _make_request to handle 308 redirects that are
         specific to DataFlow flow import operations.
-        
+
         Args:
             method: HTTP method (GET, POST, PUT, DELETE)
             path: Path on the API endpoint
@@ -248,9 +249,9 @@ class CdpDfApiClient(AnsibleCdpClient):
                         redirect_url = info.get("location")
                         if not redirect_url:
                             raise CdpError(
-                                f"308 redirect received but no location header for {url}"
+                                f"308 redirect received but no location header for {url}",
                             )
-                        
+
                         resp, info = self._handle_308_redirect(
                             redirect_url,
                             method,
@@ -297,9 +298,23 @@ class CdpDfApiClient(AnsibleCdpClient):
                         error_body = info.get("body")
                         if error_body:
                             error_data = json.loads(error_body)
-                            error_message = error_data.get(
-                                "message", error_data.get("error", error_message)
-                            )
+
+                            if "message" in error_data and error_data["message"]:
+                                error_message = error_data["message"]
+                            elif "errorMessages" in error_data:
+                                error_msgs = error_data["errorMessages"]
+                                if isinstance(error_msgs, list):
+                                    error_message = " | ".join(error_msgs)
+                                else:
+                                    error_message = str(error_msgs)
+                            elif "error" in error_data and error_data["error"]:
+                                error_message = error_data["error"]
+                            elif "errors" in error_data:
+                                errors = error_data["errors"]
+                                if isinstance(errors, list):
+                                    error_message = " | ".join(errors)
+                                else:
+                                    error_message = str(errors)
                         else:
                             error_message = info.get("msg", "Unknown error")
                     except:
@@ -311,7 +326,7 @@ class CdpDfApiClient(AnsibleCdpClient):
                             wait_time = min(0.5 * (2**attempt), 5)
                             time.sleep(wait_time)
                             last_error = CdpError(
-                                f"{error_message} for {url} (attempt {attempt + 1}/{max_retries})"
+                                f"{error_message} for {url} (attempt {attempt + 1}/{max_retries})",
                             )
                             continue
 

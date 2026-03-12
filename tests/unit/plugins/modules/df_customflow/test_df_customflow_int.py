@@ -380,3 +380,128 @@ def test_df_customflow_import_with_tags_via_module(
         flow_crn = result.value.customflow.get("crn")
         if flow_crn:
             df_flow_delete(flow_crn)
+
+
+def test_df_customflow_import_with_content_via_module(
+    df_module_args,
+    env_context,
+    df_flow_delete,
+):
+    """Test importing a CustomFlow using content parameter (not file) via the Ansible module with real API calls."""
+
+    random_suffix = random.randint(100000, 999999)
+    flow_name = f"test-customflow-content-{random_suffix}"
+
+    # Create flow definition and convert to JSON string
+    flow_definition = create_minimal_flow_definition(flow_name)
+    flow_content = json.dumps(flow_definition)
+
+    # Execute module with content parameter instead of file
+    df_module_args(
+        {
+            "name": flow_name,
+            "content": flow_content,  # Using content instead of file
+            "description": "Integration test flow from content",
+            "comments": "Initial version from content parameter",
+            "state": "present",
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        df_customflow.main()
+
+    assert result.value.changed is True
+    assert result.value.customflow is not None
+    assert result.value.customflow["name"] == flow_name
+
+    # Register flow for cleanup using fixture
+    flow_crn = result.value.customflow.get("crn")
+    if flow_crn:
+        df_flow_delete(flow_crn)
+
+
+def test_df_customflow_import_simple_content_via_module(
+    df_module_args,
+    env_context,
+    df_flow_delete,
+):
+    """Test importing a CustomFlow with simple content (matching YAML test scenario)."""
+
+    flow_name = "000-test-2"
+
+    # Create the minimum required flow definition using helper
+    flow_definition = create_minimal_flow_definition(flow_name)
+    flow_content = json.dumps(flow_definition)
+
+    # Execute module with proper minimal content
+    df_module_args(
+        {
+            "name": flow_name,
+            "content": flow_content,
+            "description": "Test custom flow from content",
+            "comments": "Initial version",
+            "state": "present",
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        df_customflow.main()
+
+    assert result.value.changed is True
+    assert result.value.customflow is not None
+    assert result.value.customflow["name"] == flow_name
+
+    # Register flow for cleanup using fixture
+    flow_crn = result.value.customflow.get("crn")
+    if flow_crn:
+        df_flow_delete(flow_crn)
+
+    # Test idempotency
+    with pytest.raises(AnsibleExitJson) as result:
+        df_customflow.main()
+
+    assert result.value.changed is False
+    assert result.value.customflow is not None
+    assert result.value.customflow["name"] == flow_name
+
+
+def test_df_customflow_import_content_with_tags_via_module(
+    df_module_args,
+    env_context,
+    df_flow_delete,
+):
+    """Test importing a CustomFlow with content parameter and tags via the Ansible module with real API calls."""
+
+    random_suffix = random.randint(100000, 999999)
+    flow_name = f"test-customflow-content-tags-{random_suffix}"
+
+    # Create flow definition and convert to JSON string
+    flow_definition = create_minimal_flow_definition(flow_name)
+    flow_content = json.dumps(flow_definition)
+
+    # Execute module with content and tags
+    df_module_args(
+        {
+            "name": flow_name,
+            "content": flow_content,  # Using content instead of file
+            "description": "Integration test flow from content with tags",
+            "comments": "Initial version with content and tags",
+            "tags": [
+                {"tag_name": "content-test", "tag_color": "purple"},
+                {"tag_name": "automated", "tag_color": "orange"},
+            ],
+            "state": "present",
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        df_customflow.main()
+
+    assert result.value.changed is True
+    assert result.value.customflow is not None
+    assert result.value.customflow["name"] == flow_name
+
+    # Register flow for cleanup using fixture
+    flow_crn = result.value.customflow.get("crn")
+    if flow_crn:
+        df_flow_delete(flow_crn)

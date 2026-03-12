@@ -32,16 +32,16 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df_client impor
 class DataFlowModule:
     """
     Mixin class for DataFlow modules that need 308 redirect support.
-    
+
     This mixin ensures that DataFlow modules use CdpDfApiClient instead of
     the base AnsibleCdpClient, enabling proper handling of 308 redirects
     for flow import operations.
     """
-    
+
     def __init__(self, *args, **kwargs):
         """Initialize with CdpDfApiClient."""
         # Set client_class to CdpDfApiClient before calling parent __init__
-        kwargs['client_class'] = CdpDfApiClient
+        kwargs["client_class"] = CdpDfApiClient
         super().__init__(*args, **kwargs)
 
 
@@ -119,6 +119,41 @@ def check_service_updates(
         return update_params
     else:
         return {}
+
+
+def format_tags_for_api(
+    tags: Optional[List[Dict[str, Any]]],
+) -> Optional[List[Dict[str, str]]]:
+    """
+    Convert tags from Ansible format to API format.
+
+    Transforms tags from Ansible parameter format (snake_case keys) to
+    API format (camelCase keys), filtering out None values.
+
+    Args:
+        tags: List of tags in Ansible format with keys 'tag_name' and 'tag_color'
+
+    Returns:
+        List of tags in API format with keys 'tagName' and 'tagColor', or None if input is None
+
+    Example:
+        Input:  [{'tag_name': 'production', 'tag_color': 'blue'}, {'tag_name': 'stable'}]
+        Output: [{'tagName': 'production', 'tagColor': 'blue'}, {'tagName': 'stable'}]
+    """
+    if tags is None:
+        return None
+
+    return [
+        {
+            k: v
+            for k, v in {
+                "tagName": tag.get("tag_name"),
+                "tagColor": tag.get("tag_color"),
+            }.items()
+            if v is not None
+        }
+        for tag in tags
+    ]
 
 
 class CdpDfClient:

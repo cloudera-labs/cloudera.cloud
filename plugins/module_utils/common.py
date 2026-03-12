@@ -100,16 +100,18 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
     ):
         """
         Initializes the base Cloudera on cloud service module.
-        
+
         Args:
             client_class: Optional API client class to use (defaults to AnsibleCdpClient).
                           Must be a subclass of CdpClient. Used by service-specific modules
                           that need specialized client behavior (e.g., DataFlow with 308 redirects).
         """
         super().__init__()
-        
+
         # Store client class for later instantiation (defaults to AnsibleCdpClient)
-        self._client_class = client_class if client_class is not None else AnsibleCdpClient
+        self._client_class = (
+            client_class if client_class is not None else AnsibleCdpClient
+        )
 
         # Merge in mixin argument specs
         merged_argument_spec = dict(argument_spec)

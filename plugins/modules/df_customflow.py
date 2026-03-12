@@ -34,9 +34,15 @@ options:
       - flow_name
   file:
     description:
-      - The path to the JSON file containing the CustomFlow definition to be imported.
-      - Required when O(state=present).
+      - The path to the JSON file containing the CustomFlow definition to be imported on the controller.
+      - Mutually exclusive with O(content).
     type: path
+    default: None
+  content:
+    description:
+      - The CustomFlow definition content as a string (JSON format).
+      - Mutually exclusive with O(file).
+    type: str
     default: None
   description:
     description:
@@ -92,10 +98,17 @@ EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
 
-# Import a CustomFlow into the DataFlow Catalog
+# Import a CustomFlow into the DataFlow Catalog from a file
 - cloudera.cloud.df_customflow:
     name: my-customflow-name
     file: /tmp/my-custom-flow.json
+    description: My sample CDF flow
+    comments: Initial version
+
+# Import a CustomFlow with content from a template/lookup
+- cloudera.cloud.df_customflow:
+    name: my-customflow-name
+    content: "{{ lookup('file', 'my-flow.json') }}"
     description: My sample CDF flow
     comments: Initial version
 
@@ -204,6 +217,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
     CdpDfClient,
     DataFlowModule,
+    format_tags_for_api,
 )
 
 
@@ -213,6 +227,7 @@ class DFCustomFlow(DataFlowModule, ServicesModule):
             argument_spec=dict(
                 name=dict(required=True, type="str", aliases=["flow_name"]),
                 file=dict(required=False, type="path"),
+                content=dict(required=False, type="str"),
                 description=dict(required=False, type="str"),
                 comments=dict(required=False, type="str"),
                 collection_crn=dict(required=False, type="str"),
@@ -231,8 +246,11 @@ class DFCustomFlow(DataFlowModule, ServicesModule):
                     default="present",
                 ),
             ),
+            mutually_exclusive=[
+                ("file", "content"),
+            ],
             required_if=[
-                ("state", "present", ("file",)),
+                ("state", "present", ("file", "content"), True),
             ],
             supports_check_mode=True,
         )
@@ -240,6 +258,7 @@ class DFCustomFlow(DataFlowModule, ServicesModule):
         # Initialize parameters
         self.name: str = self.get_param("name")
         self.file: Optional[str] = self.get_param("file")
+        self.content: Optional[str] = self.get_param("content")
         self.description: Optional[str] = self.get_param("description")
         self.comments: Optional[str] = self.get_param("comments")
         self.collection_crn: Optional[str] = self.get_param("collection_crn")
@@ -261,33 +280,27 @@ class DFCustomFlow(DataFlowModule, ServicesModule):
                 self.flow = existing_flow  # Flow already exists, no update operation for CustomFlows
                 self.module.warn(
                     "CustomFlow '%s' already exists. Updates are not supported for CustomFlows. "
-                    "To update flow content, delete and re-import with new parameters." % self.name
+                    "To update flow content, delete and re-import with new parameters."
+                    % self.name,
                 )
             else:
                 self.changed = True
                 if not self.module.check_mode:
-                    try:
-                        with open(self.file, "r") as f:
-                            file_content = f.read()
-                    except Exception as e:
-                        self.module.fail_json(
-                            msg=f"Failed to read file '{self.file}': {str(e)}",
-                        )
+                    # Get flow content from either file (on controller) or content parameter
+                    file_content = None
+                    if self.file:
+                        try:
+                            with open(self.file, "r") as f:
+                                file_content = f.read()
+                        except Exception as e:
+                            self.module.fail_json(
+                                msg=f"Failed to read file '{self.file}': {str(e)}",
+                            )
+                    elif self.content:
+                        file_content = self.content
 
                     # Convert tags format from Ansible to API format
-                    api_tags = None
-                    if self.tags:
-                        api_tags = [
-                            {
-                                k: v
-                                for k, v in {
-                                    "tagName": tag.get("tag_name"),
-                                    "tagColor": tag.get("tag_color"),
-                                }.items()
-                                if v is not None
-                            }
-                            for tag in self.tags
-                        ]
+                    api_tags = format_tags_for_api(self.tags)
 
                     self.flow = self.df_client.import_flow_definition(
                         name=self.name,
