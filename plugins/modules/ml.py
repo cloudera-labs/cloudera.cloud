@@ -405,6 +405,11 @@ options:
 extends_documentation_fragment:
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
+attributes:
+  check_mode:
+    support: full
+  diff_mode:
+    support: full  
 """
 
 EXAMPLES = r"""
@@ -921,6 +926,7 @@ class MLWorkspace(ServicesModule):
         # Initialize return values
         self.workspace = {}
         self.changed = False
+        self.diff = {}
 
         # Initialize internal values
         self.target = None
@@ -938,6 +944,10 @@ class MLWorkspace(ServicesModule):
         if existing_workspace is not None:
             # Delete the Workspace
             if self.state == "absent":
+                
+                if self.module._diff:
+                    self.diff = dict(before=existing_workspace, after=None)
+
                 if self.module.check_mode:
                     self.workspace = existing_workspace
                 else:
@@ -985,17 +995,13 @@ class MLWorkspace(ServicesModule):
                             self.changed = True
 
                     if self.wait:
-                        result = client.wait_for_workspace_state(
+                      client.wait_for_workspace_state(
                             self.env,
                             self.name,
                             None,
                             self.delay,
                             self.timeout,
                         )
-                        # wait_for_workspace_state returns None when workspace is deleted
-                        self.workspace = result.get("workspace") if result else None
-                    else:
-                        self.workspace = existing_workspace
             elif self.state == "present":
                 # Check the existing configuration
                 self.module.warn(
@@ -1090,7 +1096,12 @@ class MLWorkspace(ServicesModule):
                         resource_pool_config=self.resource_pool,
                         outbound_types=self.outbound_type,
                     )
-                    self.changed = True
+
+                    result = client.describe_workspace(
+            name=self.name,
+            env=self.env,
+        )
+
                     if self.wait:
                         result = client.wait_for_workspace_state(
                             self.env,
@@ -1099,8 +1110,11 @@ class MLWorkspace(ServicesModule):
                             self.delay,
                             self.timeout,
                         )
-                        self.workspace = result.get("workspace") if result else None
-                        self.changed = True
+                        
+                    self.workspace = result.get("workspace") if result else {}
+                    self.changed = True                    
+                    if self.module._diff:
+                      self.diff = dict(before=None, after=self.workspace)
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state,
@@ -1110,6 +1124,9 @@ class MLWorkspace(ServicesModule):
 def main():
     result = MLWorkspace()
     output = dict(changed=result.changed, workspace=result.workspace)
+
+    if result.diff:
+        output.update(diff=result.diff)
 
     if result.debug_log:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
