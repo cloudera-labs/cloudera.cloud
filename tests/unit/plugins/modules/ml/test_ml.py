@@ -815,3 +815,129 @@ def test_ml_workspace_wait_timeout(module_args, mocker):
     # Test module execution - should propagate the timeout exception
     with pytest.raises(CdpError, match="Timeout waiting for workspace"):
         ml.main()
+
+
+def test_ml_create_workspace_with_diff(module_args, mocker):
+    """Test creating workspace with diff enabled."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "present",
+            "wait": False,
+            "_ansible_diff": True,
+        },
+    )
+
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpMlClient
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    ).return_value
+
+    # Mock: Workspace doesn't exist yet
+    client.describe_workspace.side_effect = [
+        {},  # First call (initial check)
+        {    # Second call (after create)
+            "workspace": {
+                "instanceName": WORKSPACE_NAME,
+                "environmentName": ENV_NAME,
+                "crn": WORKSPACE_CRN,
+                "instanceStatus": "installation:started",
+                "instanceUrl": f"https://{WORKSPACE_NAME}.cloudera.site",
+            },
+        },
+    ]
+
+    # Mock create_workspace response
+    client.create_workspace.return_value = None
+
+    # Test module execution
+    with pytest.raises(AnsibleExitJson) as result:
+        ml.main()
+
+    assert result.value.changed is True
+    assert result.value.workspace is not None
+
+    # Verify diff is returned and structured correctly
+    assert hasattr(result.value, 'diff')
+    assert result.value.diff is not None
+    assert 'before' in result.value.diff
+    assert 'after' in result.value.diff
+    assert result.value.diff['before'] is None  # Workspace didn't exist before
+    assert result.value.diff['after'] is not None  # Workspace exists after
+    assert result.value.diff['after']['instanceName'] == WORKSPACE_NAME
+
+
+def test_ml_delete_workspace_with_diff(module_args, mocker):
+    """Test deleting workspace with diff enabled."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "absent",
+            "wait": False,
+            "_ansible_diff": True,
+        },
+    )
+
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpMlClient
+    client_class = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    )
+    # Set class attributes to real values
+    client_class.REMOVABLE_STATES = CdpMlClient.REMOVABLE_STATES
+    client = client_class.return_value
+
+    existing_workspace = {
+        "instanceName": WORKSPACE_NAME,
+        "environmentName": ENV_NAME,
+        "crn": WORKSPACE_CRN,
+        "instanceStatus": "installation:finished",
+        "instanceUrl": f"https://{WORKSPACE_NAME}.cloudera.site",
+    }
+
+    # Mock: Workspace exists
+    client.describe_workspace.return_value = {
+        "workspace": existing_workspace,
+    }
+
+    # Mock delete_workspace response
+    client.delete_workspace.return_value = None
+
+    # Test module execution
+    with pytest.raises(AnsibleExitJson) as result:
+        ml.main()
+
+    assert result.value.changed is True
+
+    # Verify diff is returned and structured correctly
+    assert hasattr(result.value, 'diff')
+    assert result.value.diff is not None
+    assert 'before' in result.value.diff
+    assert 'after' in result.value.diff
+    assert result.value.diff['before'] is not None  # Workspace existed before
+    assert result.value.diff['after'] is None  # Workspace doesn't exist after
+    assert result.value.diff['before']['instanceName'] == WORKSPACE_NAME
+    assert result.value.diff['before']['crn'] == WORKSPACE_CRN
