@@ -409,7 +409,9 @@ attributes:
   check_mode:
     support: full
   diff_mode:
-    support: full  
+    support: full
+  platform:
+    platforms: all
 """
 
 EXAMPLES = r"""
@@ -944,7 +946,7 @@ class MLWorkspace(ServicesModule):
         if existing_workspace is not None:
             # Delete the Workspace
             if self.state == "absent":
-                
+
                 if self.module._diff:
                     self.diff = dict(before=existing_workspace, after=None)
 
@@ -995,7 +997,7 @@ class MLWorkspace(ServicesModule):
                             self.changed = True
 
                     if self.wait:
-                      client.wait_for_workspace_state(
+                        client.wait_for_workspace_state(
                             self.env,
                             self.name,
                             None,
@@ -1098,9 +1100,9 @@ class MLWorkspace(ServicesModule):
                     )
 
                     result = client.describe_workspace(
-            name=self.name,
-            env=self.env,
-        )
+                        name=self.name,
+                        env=self.env,
+                    )
 
                     if self.wait:
                         result = client.wait_for_workspace_state(
@@ -1110,11 +1112,11 @@ class MLWorkspace(ServicesModule):
                             self.delay,
                             self.timeout,
                         )
-                        
+
                     self.workspace = result.get("workspace") if result else {}
-                    self.changed = True                    
+                    self.changed = True
                     if self.module._diff:
-                      self.diff = dict(before=None, after=self.workspace)
+                        self.diff = dict(before=None, after=self.workspace)
             else:
                 self.module.fail_json(
                     msg="State %s is not valid for this module" % self.state,

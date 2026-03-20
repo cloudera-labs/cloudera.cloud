@@ -848,7 +848,7 @@ def test_ml_create_workspace_with_diff(module_args, mocker):
     # Mock: Workspace doesn't exist yet
     client.describe_workspace.side_effect = [
         {},  # First call (initial check)
-        {    # Second call (after create)
+        {  # Second call (after create)
             "workspace": {
                 "instanceName": WORKSPACE_NAME,
                 "environmentName": ENV_NAME,
@@ -870,13 +870,13 @@ def test_ml_create_workspace_with_diff(module_args, mocker):
     assert result.value.workspace is not None
 
     # Verify diff is returned and structured correctly
-    assert hasattr(result.value, 'diff')
+    assert hasattr(result.value, "diff")
     assert result.value.diff is not None
-    assert 'before' in result.value.diff
-    assert 'after' in result.value.diff
-    assert result.value.diff['before'] is None  # Workspace didn't exist before
-    assert result.value.diff['after'] is not None  # Workspace exists after
-    assert result.value.diff['after']['instanceName'] == WORKSPACE_NAME
+    assert "before" in result.value.diff
+    assert "after" in result.value.diff
+    assert result.value.diff["before"] is None  # Workspace didn't exist before
+    assert result.value.diff["after"] is not None  # Workspace exists after
+    assert result.value.diff["after"]["instanceName"] == WORKSPACE_NAME
 
 
 def test_ml_delete_workspace_with_diff(module_args, mocker):
@@ -933,11 +933,11 @@ def test_ml_delete_workspace_with_diff(module_args, mocker):
     assert result.value.changed is True
 
     # Verify diff is returned and structured correctly
-    assert hasattr(result.value, 'diff')
+    assert hasattr(result.value, "diff")
     assert result.value.diff is not None
-    assert 'before' in result.value.diff
-    assert 'after' in result.value.diff
-    assert result.value.diff['before'] is not None  # Workspace existed before
-    assert result.value.diff['after'] is None  # Workspace doesn't exist after
-    assert result.value.diff['before']['instanceName'] == WORKSPACE_NAME
-    assert result.value.diff['before']['crn'] == WORKSPACE_CRN
+    assert "before" in result.value.diff
+    assert "after" in result.value.diff
+    assert result.value.diff["before"] is not None  # Workspace existed before
+    assert result.value.diff["after"] is None  # Workspace doesn't exist after
+    assert result.value.diff["before"]["instanceName"] == WORKSPACE_NAME
+    assert result.value.diff["before"]["crn"] == WORKSPACE_CRN
