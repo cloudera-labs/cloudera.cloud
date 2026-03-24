@@ -25,6 +25,35 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpError,
 )
 
+# Read-only/system-managed fields that should be excluded from diffs
+# These fields are not user-controllable and are managed by CDP
+USER_READONLY_FIELDS = [
+    "userId",  # System-generated unique identifier
+    "crn",  # System-generated CDP Resource Name
+    "creationDate",  # Timestamp when user was created
+    "accountAdmin",  # System-managed admin flag
+    "status",  # System-managed status (ACTIVE, CONTROL_PLANE_LOCKED_OUT, etc.)
+    "workloadUsername",  # Auto-generated username for workload clusters
+    "workloadPasswordDetails",  # Read-only password metadata (isPasswordSet, expirationDate, etc.)
+    "lastInteractiveLogin",  # System-tracked login timestamp
+    "identityProviderCrn",  # System-assigned identity provider reference
+]
+
+# Read-only/system-managed fields for groups
+GROUP_READONLY_FIELDS = [
+    "crn",  # System-generated CDP Resource Name
+    "creationDate",  # Timestamp when group was created
+]
+
+# Read-only/system-managed fields for machine users
+MACHINE_USER_READONLY_FIELDS = [
+    "crn",  # System-generated CDP Resource Name
+    "creationDate",  # Timestamp when machine user was created
+    "status",  # System-managed status
+    "workloadUsername",  # Auto-generated username for workload clusters
+    "workloadPasswordDetails",  # Read-only password metadata
+]
+
 
 class CdpIamClient:
     """CDP IAM API client."""
@@ -37,6 +66,58 @@ class CdpIamClient:
             api_client: CdpClient instance for managing HTTP method calls
         """
         self.api_client = api_client
+
+    @staticmethod
+    def get_user_diff_exclude_keys() -> List[str]:
+        """
+        Get list of user fields to exclude from diff calculations.
+
+        These fields are read-only or system-managed and should not appear
+        in Ansible diff output as they cannot be modified by users.
+
+        Returns:
+            List of field names to exclude from diffs (in snake_case format)
+        """
+        return [
+            "user_id",
+            "crn",
+            "creation_date",
+            "account_admin",
+            "status",
+            "workload_username",
+            "workload_password_details",
+            "last_interactive_login",
+            "identity_provider_crn",
+        ]
+
+    @staticmethod
+    def get_group_diff_exclude_keys() -> List[str]:
+        """
+        Get list of group fields to exclude from diff calculations.
+
+        Returns:
+            List of field names to exclude from diffs (in snake_case format)
+        """
+        return [
+            "crn",
+            "creation_date",
+        ]
+
+    @staticmethod
+    def get_machine_user_diff_exclude_keys() -> List[str]:
+        """
+        Get list of machine user fields to exclude from diff calculations.
+
+        Returns:
+            List of field names to exclude from diffs (in snake_case format)
+        """
+        return [
+            "crn",
+            "creation_date",
+            "status",
+            "workload_username",
+            "workload_password_details",
+        ]
 
     def _is_machine_user(self, user_crn: str) -> bool:
         """Check if a user CRN represents a machine user."""

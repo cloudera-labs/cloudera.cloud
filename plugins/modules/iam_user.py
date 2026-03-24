@@ -284,6 +284,7 @@ from ansible.module_utils.common.dict_transformations import camel_dict_to_snake
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
+    diff_dict,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
     CdpIamClient,
@@ -367,6 +368,7 @@ class IAMUser(ServicesModule):
         # Initialize return values
         self.user = {}
         self.changed = False
+        self.diff = {}
 
         # Initialize client
         self.client = CdpIamClient(api_client=self.api_client)
@@ -383,15 +385,42 @@ class IAMUser(ServicesModule):
 
         if self.state == "absent":
             if existing_user:
+                if self.module._diff:
+                    self.diff = {
+                        "before": camel_dict_to_snake_dict(existing_user),
+                        "after": {},
+                    }
+
                 if not self.module.check_mode:
                     self.client.delete_user(user_id=self.user_id)
                 self.changed = True
 
         elif self.state == "present":
+            user_created = False  # Track if we created the user in this execution
 
             if not existing_user:
                 # Default identity_provider_user_id to email if not provided
                 idp_user_id = self.identity_provider_user_id or self.email
+
+                expected_user = {
+                    "email": self.email,
+                }
+                if self.first_name:
+                    expected_user["first_name"] = self.first_name
+                if self.last_name:
+                    expected_user["last_name"] = self.last_name
+                if self.groups:
+                    expected_user["groups"] = self.groups
+                if self.roles:
+                    expected_user["roles"] = self.roles
+                if self.resource_roles:
+                    expected_user["resource_assignments"] = self.resource_roles
+
+                if self.module._diff:
+                    self.diff = {
+                        "before": {},
+                        "after": expected_user,
+                    }
 
                 if not self.module.check_mode:
                     response = self.client.create_user(
@@ -405,9 +434,53 @@ class IAMUser(ServicesModule):
                     existing_user = self.client.get_user_details(
                         user_id=self.user.get("userId"),
                     )
+                    user_created = True  # Mark that we created the user
                 self.changed = True
 
-            if existing_user and not self.module.check_mode:
+            # Handle post-creation role/group management for newly created users
+            if existing_user and not self.module.check_mode and user_created:
+                # Add roles/groups to newly created user without recalculating diff
+                if self.groups is not None or self.purge:
+                    self.client.manage_user_groups(
+                        user_id=existing_user.get("userId"),
+                        current_groups=existing_user.get("groups", []),
+                        desired_groups=self.groups or [],
+                        purge=self.purge,
+                    )
+
+                if self.roles is not None or self.purge:
+                    self.client.manage_user_roles(
+                        user_id=existing_user.get("userId"),
+                        current_roles=existing_user.get("roles", []),
+                        desired_roles=self.roles or [],
+                        purge=self.purge,
+                    )
+
+                if self.resource_roles is not None or self.purge:
+                    self.client.manage_user_resource_roles(
+                        user_id=existing_user.get("userId"),
+                        current_assignments=existing_user.get(
+                            "resourceAssignments",
+                            [],
+                        ),
+                        desired_assignments=(self.resource_roles or []),
+                        purge=self.purge,
+                    )
+
+                if self.workload_password is not None:
+                    self.client.set_workload_password(
+                        password=self.workload_password,
+                        actor_crn=existing_user.get("crn"),
+                    )
+
+                # Fetch final user state for return value
+                existing_user = self.client.get_user_details(
+                    user_id=existing_user.get("userId"),
+                )
+
+            if existing_user and not self.module.check_mode and not user_created:
+                # Store the original state for diff comparison
+                original_user = dict(existing_user)
 
                 if self.groups is not None or self.purge:
                     if self.client.manage_user_groups(
@@ -446,10 +519,78 @@ class IAMUser(ServicesModule):
                     )
                     self.changed = True
 
-            if existing_user and self.changed and not self.module.check_mode:
-                existing_user = self.client.get_user_details(
-                    user_id=existing_user.get("userId"),
+                # Get the updated user state
+                if self.changed:
+                    existing_user = self.client.get_user_details(
+                        user_id=existing_user.get("userId"),
+                    )
+
+                    # Generate diff if requested
+                    if self.module._diff:
+                        # Exclude read-only/system fields from diff
+                        exclude_keys = CdpIamClient.get_user_diff_exclude_keys()
+
+                        prev_diff, next_diff = diff_dict(
+                            camel_dict_to_snake_dict(original_user),
+                            camel_dict_to_snake_dict(existing_user),
+                            exclude_keys=exclude_keys,
+                        )
+
+                        if prev_diff or next_diff:
+                            self.diff = {
+                                "before": prev_diff,
+                                "after": next_diff,
+                            }
+
+            # For check mode with existing user, calculate what would change
+            elif existing_user and self.module.check_mode and not user_created:
+                # Build expected state by applying desired changes
+                expected_user = dict(existing_user)
+
+                if self.groups is not None:
+                    expected_user["groups"] = (
+                        self.groups
+                        if self.purge
+                        else list(set(existing_user.get("groups", []) + self.groups))
+                    )
+                elif self.purge:
+                    expected_user["groups"] = []
+
+                if self.roles is not None:
+                    expected_user["roles"] = (
+                        self.roles
+                        if self.purge
+                        else list(set(existing_user.get("roles", []) + self.roles))
+                    )
+                elif self.purge:
+                    expected_user["roles"] = []
+
+                if self.resource_roles is not None:
+                    expected_user["resourceAssignments"] = (
+                        self.resource_roles
+                        if self.purge
+                        else existing_user.get("resourceAssignments", [])
+                        + self.resource_roles
+                    )
+                elif self.purge:
+                    expected_user["resourceAssignments"] = []
+
+                exclude_keys = CdpIamClient.get_user_diff_exclude_keys()
+
+                prev_diff, next_diff = diff_dict(
+                    camel_dict_to_snake_dict(existing_user),
+                    camel_dict_to_snake_dict(expected_user),
+                    exclude_keys=exclude_keys,
                 )
+
+                if prev_diff or next_diff or self.workload_password is not None:
+                    self.changed = True
+
+                    if self.module._diff and (prev_diff or next_diff):
+                        self.diff = {
+                            "before": prev_diff,
+                            "after": next_diff,
+                        }
 
             if existing_user:
                 self.user = existing_user
@@ -464,6 +605,9 @@ def main():
         changed=result.changed,
         user=result.user,
     )
+
+    if result.diff:
+        output.update(diff=result.diff)
 
     if result.debug_log:
         output.update(

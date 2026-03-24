@@ -346,3 +346,241 @@ def test_iam_user_update_workload_password(
 
     assert result.value.changed is True
     assert result.value.user["email"] == USER_EMAIL
+
+
+def test_iam_user_create_diff_mode_int(iam_module_args, iam_user_delete):
+    """Test creating a new IAM user with diff mode enabled."""
+
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
+            "first_name": "John",
+            "last_name": "Doe",
+            "roles": ["crn:altus:iam:us-west-1:altus:role:BillingAdmin"],
+            "state": "present",
+            "_ansible_diff": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    assert result.value.user["email"] == USER_EMAIL
+    assert result.value.user["first_name"] == "John"
+    assert result.value.user["last_name"] == "Doe"
+
+    # Verify diff structure
+    assert hasattr(result.value, "diff")
+    assert result.value.diff["before"] == {}
+    assert "after" in result.value.diff
+
+    # Verify diff contains the expected fields
+    assert result.value.diff["after"]["email"] == USER_EMAIL
+    assert result.value.diff["after"]["first_name"] == "John"
+    assert result.value.diff["after"]["last_name"] == "Doe"
+    assert result.value.diff["after"]["roles"] == [
+        "crn:altus:iam:us-west-1:altus:role:BillingAdmin",
+    ]
+
+    # Register for cleanup after the test
+    iam_user_delete(result.value.user["user_id"])
+
+
+def test_iam_user_delete_diff_mode_int(iam_module_args, iam_user_create, env_context):
+    """Test deleting an IAM user with diff mode enabled."""
+
+    # Create the user to be deleted
+    created_user = iam_user_create(
+        email=USER_EMAIL,
+        idp_user_id=IDENTITY_PROVIDER_USER_ID,
+        saml_provider_name=env_context["SAML_PROVIDER_NAME"],
+    )
+
+    # Execute delete with diff mode
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "state": "absent",
+            "_ansible_diff": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    assert hasattr(result.value, "diff")
+    assert "before" in result.value.diff
+    assert result.value.diff["before"]["email"] == USER_EMAIL
+    assert result.value.diff["after"] == {}
+
+
+def test_iam_user_update_roles_diff_mode_int(
+    iam_module_args,
+    iam_user_delete,
+    env_context,
+):
+    """Test updating user roles with diff mode enabled."""
+
+    # Create user with initial roles
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
+            "saml_provider_name": env_context["SAML_PROVIDER_NAME"],
+            "state": "present",
+            "roles": [
+                "crn:altus:iam:us-west-1:altus:role:BillingAdmin",
+            ],
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    user_id = result.value.user["user_id"]
+
+    # Register for cleanup after the test
+    iam_user_delete(user_id)
+
+    # Update roles with diff mode
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "state": "present",
+            "roles": [
+                "crn:altus:iam:us-west-1:altus:role:BillingAdmin",
+                "crn:altus:iam:us-west-1:altus:role:DFCatalogAdmin",
+            ],
+            "_ansible_diff": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    assert hasattr(result.value, "diff")
+    assert "before" in result.value.diff
+    assert "after" in result.value.diff
+    assert "roles" in result.value.diff["before"]
+    assert "roles" in result.value.diff["after"]
+    assert len(result.value.diff["after"]["roles"]) == 2
+
+
+def test_iam_user_check_mode_create_int(iam_module_args, iam_client):
+    """Test creating a user in check mode - should not create actual user."""
+
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
+            "first_name": "Check",
+            "last_name": "Mode",
+            "state": "present",
+            "_ansible_check_mode": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+
+    # Verify user was NOT actually created
+    existing_user = iam_client.get_user_details_by_email(email=USER_EMAIL)
+    assert existing_user is None
+
+
+def test_iam_user_check_mode_delete_int(
+    iam_module_args,
+    iam_user_create,
+    iam_client,
+    env_context,
+):
+    """Test deleting a user in check mode - should not delete actual user."""
+
+    # Create the user
+    created_user = iam_user_create(
+        email=USER_EMAIL,
+        idp_user_id=IDENTITY_PROVIDER_USER_ID,
+        saml_provider_name=env_context["SAML_PROVIDER_NAME"],
+    )
+
+    # Try to delete in check mode
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "state": "absent",
+            "_ansible_check_mode": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+
+    # Verify user still exists
+    existing_user = iam_client.get_user_details_by_email(email=USER_EMAIL)
+    assert existing_user is not None
+    assert existing_user["email"] == USER_EMAIL
+
+
+def test_iam_user_check_mode_update_diff_int(
+    iam_module_args,
+    iam_user_delete,
+    env_context,
+):
+    """Test updating user in check mode with diff - should show changes without applying."""
+
+    # Create user with initial roles
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
+            "saml_provider_name": env_context["SAML_PROVIDER_NAME"],
+            "state": "present",
+            "roles": [
+                "crn:altus:iam:us-west-1:altus:role:BillingAdmin",
+            ],
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    user_id = result.value.user["user_id"]
+    original_roles = result.value.user["roles"]
+
+    # Register for cleanup after the test
+    iam_user_delete(user_id)
+
+    # Update roles in check mode with diff
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "state": "present",
+            "roles": [
+                "crn:altus:iam:us-west-1:altus:role:BillingAdmin",
+                "crn:altus:iam:us-west-1:altus:role:DFCatalogAdmin",
+            ],
+            "_ansible_check_mode": True,
+            "_ansible_diff": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    assert hasattr(result.value, "diff")
+    assert "before" in result.value.diff
+    assert "after" in result.value.diff
+
+    # Verify roles were NOT actually changed
+    assert result.value.user["roles"] == original_roles
