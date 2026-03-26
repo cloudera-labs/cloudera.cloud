@@ -4,6 +4,74 @@ cloudera.cloud Release Notes
 
 .. contents:: Topics
 
+v3.2.0
+======
+
+Minor Changes
+-------------
+
+- Add CDP_ENDPOINT_URL environment variable fallback for endpoint (https://github.com/cloudera-labs/cloudera.cloud/pull/255)
+- Add Machine user info Module (https://github.com/cloudera-labs/cloudera.cloud/pull/224)
+- Add Machine user module (https://github.com/cloudera-labs/cloudera.cloud/pull/226)
+- Add cai_workspace lookup plugin to retrieve API URLs for CAI Workspaces (https://github.com/cloudera-labs/cloudera.cloud/pull/213)
+- Add location to datalake backup module (https://github.com/cloudera-labs/cloudera.cloud/pull/211)
+- Add workload_auth_token module (https://github.com/cloudera-labs/cloudera.cloud/pull/240)
+- Implement an Ansible-native API client (https://github.com/cloudera-labs/cloudera.cloud/pull/212)
+- Refactor DataFlow service info module (https://github.com/cloudera-labs/cloudera.cloud/pull/230)
+- Refactor df_customflow_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/245)
+- Refactor df_service module (https://github.com/cloudera-labs/cloudera.cloud/pull/235)
+- Update API client parameters for legacy alignment and CDP control plane region (https://github.com/cloudera-labs/cloudera.cloud/pull/215)
+- Update DataFlow Deployment Info Module (https://github.com/cloudera-labs/cloudera.cloud/pull/231)
+- Update Hatch matrix testing (https://github.com/cloudera-labs/cloudera.cloud/pull/216)
+- Update IAM  Group Module (https://github.com/cloudera-labs/cloudera.cloud/pull/218)
+- Update Info Resource/Roles modules and add tests (https://github.com/cloudera-labs/cloudera.cloud/pull/241)
+- Update Ready Flow Info module (https://github.com/cloudera-labs/cloudera.cloud/pull/239)
+- Update ServiceModule mutually_exclusive  types (https://github.com/cloudera-labs/cloudera.cloud/pull/233)
+- Update cloudera.cloud.ml_info to use direct API calls (https://github.com/cloudera-labs/cloudera.cloud/pull/229)
+- Update compute_usage_info module tests (https://github.com/cloudera-labs/cloudera.cloud/pull/227)
+- Update iam_group_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/217)
+- Update iam_group_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/253)
+
+Bugfixes
+--------
+
+- Produce module error on invalid credentials file (https://github.com/cloudera-labs/cloudera.cloud/pull/232)
+- Remove nested 'service' wrapper from response (https://github.com/cloudera-labs/cloudera.cloud/pull/234)
+- Update ServicesModule defaults and type annotations for broad Python support (https://github.com/cloudera-labs/cloudera.cloud/pull/237)
+- Update df_service_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/236)
+
+New Plugins
+-----------
+
+Lookup
+~~~~~~
+
+- cloudera.cloud.cai_workspace - Get the API URL for Cloudera AI Workspace in Cloudera on cloud.
+
+New Modules
+-----------
+
+- cloudera.cloud.compute_usage_info - Gather information about compute usage records.
+- cloudera.cloud.iam_machine_user - Create, update, or destroy CDP IAM machine users.
+- cloudera.cloud.iam_machine_user_info - Gather information about CDP Public IAM machine users.
+- cloudera.cloud.iam_workload_auth_token - Generate authentication token for CDP workload APIs.
+
+v3.1.0
+======
+
+Minor Changes
+-------------
+
+- Add namespace parameter to ml workbench module (https://github.com/cloudera-labs/cloudera.cloud/pull/187)
+- Add support for on premise parameter to cloudera.cloud.de module (https://github.com/cloudera-labs/cloudera.cloud/pull/189)
+- Add support for on premise parameters to cloudera.cloud.dw_cluster (https://github.com/cloudera-labs/cloudera.cloud/pull/190)
+- Add vc tier parameter to de_virtual_cluster module (https://github.com/cloudera-labs/cloudera.cloud/pull/191)
+
+Bugfixes
+--------
+
+- Remove tls alias for verify_tls (https://github.com/cloudera-labs/cloudera.cloud/pull/188)
+
 v3.0.0
 ======
 
