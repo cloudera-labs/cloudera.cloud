@@ -10,6 +10,10 @@ plugins:
   httpapi: {}
   inventory: {}
   lookup:
+    cai_workspace:
+      description: Get the API URL for Cloudera AI Workspace in Cloudera on cloud.
+      name: cai_workspace
+      version_added: 3.2.0
     datahub_definition:
       description: Get a Datahub definition for a CDP Public Cloud Environment
       name: datahub_definition
@@ -63,6 +67,11 @@ plugins:
       name: account_cred_info
       namespace: ''
       version_added: 1.0.0
+    compute_usage_info:
+      description: Gather information about compute usage records
+      name: compute_usage_info
+      namespace: ''
+      version_added: 3.2.0
     datahub_cluster:
       description: Manage CDP Datahubs
       name: datahub_cluster
@@ -144,7 +153,7 @@ plugins:
       namespace: ''
       version_added: 2.0.0
     df_customflow_info:
-      description: Gather information about CDP DataFlow CustomFlow Definitions
+      description: Gather information about CDP DataFlow Custom Flow Definitions
       name: df_customflow_info
       namespace: ''
       version_added: 1.6.0
@@ -309,6 +318,16 @@ plugins:
       name: iam_group_info
       namespace: ''
       version_added: 1.0.0
+    iam_machine_user:
+      description: Create, update, or destroy CDP IAM machine users
+      name: iam_machine_user
+      namespace: ''
+      version_added: 3.2.0
+    iam_machine_user_info:
+      description: Gather information about CDP Public IAM machine users
+      name: iam_machine_user_info
+      namespace: ''
+      version_added: 3.2.0
     iam_resource_role_info:
       description: Gather information about CDP Public IAM resource roles
       name: iam_resource_role_info
@@ -324,6 +343,11 @@ plugins:
       name: iam_user_info
       namespace: ''
       version_added: 1.0.0
+    iam_workload_auth_token:
+      description: Generate authentication token for CDP workload APIs
+      name: iam_workload_auth_token
+      namespace: ''
+      version_added: 3.2.0
     ml:
       description: Create or Destroy CDP Machine Learning Workspaces
       name: ml
@@ -364,4 +388,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 3.0.0
+version: 3.2.0
