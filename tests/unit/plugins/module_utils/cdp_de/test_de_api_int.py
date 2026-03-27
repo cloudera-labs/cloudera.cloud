@@ -43,7 +43,7 @@ def de_client(test_cdp_client) -> CdpDeClient:
 def valid_de_service(de_client):
     """
     Fixture to find a valid, describable Data Engineering service for testing.
-    
+
     Returns a service summary dict from list_services that can be described.
     Skips test if no valid services are found.
     """
@@ -67,7 +67,7 @@ def valid_de_service(de_client):
 def valid_virtual_cluster(de_client, valid_de_service):
     """
     Fixture to find a valid virtual cluster for testing.
-    
+
     Returns a virtual cluster summary dict from list_virtual_clusters.
     Skips test if no virtual clusters are found.
     """
@@ -229,7 +229,12 @@ class TestCdpDeClientIntegration:
         assert isinstance(response, list)
         assert len(response) == 0
 
-    def test_describe_virtual_cluster(self, de_client, valid_de_service, valid_virtual_cluster):
+    def test_describe_virtual_cluster(
+        self,
+        de_client,
+        valid_de_service,
+        valid_virtual_cluster,
+    ):
         """Test describing a virtual cluster."""
         cluster_id = valid_de_service.get("clusterId")
         vc_id = valid_virtual_cluster.get("vcId")
@@ -247,12 +252,20 @@ class TestCdpDeClientIntegration:
         """Test describing a virtual cluster that doesn't exist."""
         cluster_id = valid_de_service.get("clusterId")
 
-        response = de_client.describe_virtual_cluster(cluster_id, "nonexistent-vc-12345")
+        response = de_client.describe_virtual_cluster(
+            cluster_id,
+            "nonexistent-vc-12345",
+        )
 
         # Should return None for 404 error
         assert response is None
 
-    def test_get_virtual_cluster_by_name(self, de_client, valid_de_service, valid_virtual_cluster):
+    def test_get_virtual_cluster_by_name(
+        self,
+        de_client,
+        valid_de_service,
+        valid_virtual_cluster,
+    ):
         """Test getting virtual cluster details by name."""
         cluster_id = valid_de_service.get("clusterId")
         vc_name = valid_virtual_cluster.get("vcName")
@@ -269,7 +282,10 @@ class TestCdpDeClientIntegration:
         """Test getting virtual cluster by name when it doesn't exist."""
         cluster_id = valid_de_service.get("clusterId")
 
-        response = de_client.get_virtual_cluster_by_name(cluster_id, "nonexistent-vc-12345")
+        response = de_client.get_virtual_cluster_by_name(
+            cluster_id,
+            "nonexistent-vc-12345",
+        )
 
         # Should return None when virtual cluster not found
         assert response is None
@@ -277,7 +293,7 @@ class TestCdpDeClientIntegration:
     def test_multiple_services_same_environment(self, de_client):
         """
         Test that get_service_by_env_name returns multiple services if they exist.
-        
+
         Note: This test may not find multiple services in the same environment,
         but validates that the method can handle multiple services correctly.
         """
@@ -312,7 +328,9 @@ class TestCdpDeClientIntegration:
         # Validate response
         assert isinstance(response, list)
         assert len(response) >= 2  # Should have at least 2 services
-        assert all(s["service"]["environmentName"] == multi_service_env for s in response)
+        assert all(
+            s["service"]["environmentName"] == multi_service_env for s in response
+        )
 
     def test_service_details_completeness(self, de_client, valid_de_service):
         """Test that describe_service returns all expected fields."""
