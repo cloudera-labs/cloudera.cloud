@@ -1,8 +1,20 @@
 ---
 ancestor:
 releases:
+  3.2.1:
+    changes:
+      bugfixes:
+        - Fix CDP_REGION module parameter value default (https://github.com/cloudera-labs/cloudera.cloud/pull/268)
+        - Add builder parameter to Hatch docs environment (https://github.com/cloudera-labs/cloudera.cloud/pull/260)
+    release_date: '2026-04-06'
   3.2.0:
     changes:
+      bugfixes:
+        - Update ServicesModule defaults and type annotations for broad Python support
+          (https://github.com/cloudera-labs/cloudera.cloud/pull/237)
+        - Update df_service_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/236)
+        - Remove nested 'service' wrapper from response (https://github.com/cloudera-labs/cloudera.cloud/pull/234)
+        - Produce module error on invalid credentials file (https://github.com/cloudera-labs/cloudera.cloud/pull/232)
       minor_changes:
         - Add CDP_ENDPOINT_URL environment variable fallback for endpoint (https://github.com/cloudera-labs/cloudera.cloud/pull/255)
         - Update iam_group_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/253)
@@ -27,12 +39,6 @@ releases:
           (https://github.com/cloudera-labs/cloudera.cloud/pull/213)
         - Implement an Ansible-native API client (https://github.com/cloudera-labs/cloudera.cloud/pull/212)
         - Add location to datalake backup module (https://github.com/cloudera-labs/cloudera.cloud/pull/211)
-      bugfixes:
-        - Update ServicesModule defaults and type annotations for broad Python support
-          (https://github.com/cloudera-labs/cloudera.cloud/pull/237)
-        - Update df_service_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/236)
-        - Remove nested 'service' wrapper from response (https://github.com/cloudera-labs/cloudera.cloud/pull/234)
-        - Produce module error on invalid credentials file (https://github.com/cloudera-labs/cloudera.cloud/pull/232)
       trivial:
         - Update README.md documentation (https://github.com/cloudera-labs/cloudera.cloud/pull/244)
     modules:
