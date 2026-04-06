@@ -235,7 +235,7 @@ class TestConcreteServicesModule:
         module = ConcreteServicesModule()
 
         # Verify default (or mock) attributes are set
-        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.endpoint == "https://api.us-west-1.cdp.cloudera.com"
         assert module.debug_log is False
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
@@ -414,7 +414,7 @@ class TestConcreteServicesModule:
         module = ConcreteServicesModule()
 
         # Verify default (or mock) attributes are set
-        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.endpoint == "https://api.us-west-1.cdp.cloudera.com"
         assert module.debug_log is False
         assert module.access_key == "explicit-access-key"
         assert module.private_key == "explicit-private-key"
@@ -438,7 +438,7 @@ class TestConcreteServicesModule:
         module = ConcreteServicesModule()
 
         # Verify default (or mock) attributes are set
-        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.endpoint == "https://api.us-west-1.cdp.cloudera.com"
         assert module.debug_log is False
         assert module.access_key == "env-access-key"
         assert module.private_key == "env-private-key"
@@ -467,7 +467,7 @@ class TestConcreteServicesModule:
             profile="env-profile",
         )
 
-        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.endpoint == "https://api.us-west-1.cdp.cloudera.com"
         assert module.debug_log is False
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"
@@ -496,7 +496,7 @@ class TestConcreteServicesModule:
             profile="default",
         )
 
-        assert module.endpoint == "https://api.test-region.cdp.cloudera.com"
+        assert module.endpoint == "https://api.us-west-1.cdp.cloudera.com"
         assert module.debug_log is False
         assert module.access_key == "test-access-key"
         assert module.private_key == "test-private-key"

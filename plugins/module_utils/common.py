@@ -146,7 +146,7 @@ class ServicesModule(abc.ABC, metaclass=AutoExecuteMeta):
                     required=False,
                     type="str",
                     fallback=(env_fallback, ["CDP_REGION"]),
-                    # default="us-west-1", # NOTE: Handled by load_cdp_region()
+                    default="us-west-1",
                     aliases=["cdp_endpoint_region", "cdp_region", "region"],
                     choices=["default", "us-west-1", "eu-1", "ap-1"],
                 ),
