@@ -4,6 +4,15 @@ cloudera.cloud Release Notes
 
 .. contents:: Topics
 
+v3.2.1
+======
+
+Bugfixes
+--------
+
+- Add builder parameter to Hatch docs environment (https://github.com/cloudera-labs/cloudera.cloud/pull/260)
+- Fix CDP_REGION module parameter value default (https://github.com/cloudera-labs/cloudera.cloud/pull/268)
+
 v3.2.0
 ======
 
