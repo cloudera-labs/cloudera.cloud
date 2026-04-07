@@ -69,8 +69,11 @@ def test_ml_create_workspace_success(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock: Workspace doesn't exist yet
-    client.describe_workspace.return_value = {}
+    # Mock: Workspace doesn't exist yet (first call), then exists after creation (second call)
+    client.describe_workspace.side_effect = [
+        {},  # First call - workspace doesn't exist
+        {"workspace": {"instanceName": WORKSPACE_NAME}},  # Second call - after creation
+    ]
 
     # Mock create_workspace response (returns None, side effect only)
     client.create_workspace.return_value = None
@@ -82,7 +85,7 @@ def test_ml_create_workspace_success(module_args, mocker):
     assert result.value.changed is True
 
     # Verify CdpMlClient methods were called correctly
-    client.describe_workspace.assert_called_once_with(name=WORKSPACE_NAME, env=ENV_NAME)
+    assert client.describe_workspace.call_count == 2
     client.create_workspace.assert_called_once()
     call_args = client.create_workspace.call_args[1]
     assert call_args["workspace_name"] == WORKSPACE_NAME
@@ -135,8 +138,11 @@ def test_ml_create_workspace_with_k8s_request(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock: Workspace doesn't exist yet
-    client.describe_workspace.return_value = {}
+    # Mock: Workspace doesn't exist yet (first call), then exists after creation (second call)
+    client.describe_workspace.side_effect = [
+        {},  # First call - workspace doesn't exist
+        {"workspace": {"instanceName": WORKSPACE_NAME}},  # Second call - after creation
+    ]
     client.create_workspace.return_value = None
 
     # Test module execution
@@ -189,8 +195,11 @@ def test_ml_create_workspace_with_wait(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock: Workspace doesn't exist yet
-    client.describe_workspace.return_value = {}
+    # Mock: Workspace doesn't exist yet (first call), then exists after creation (second call)
+    client.describe_workspace.side_effect = [
+        {},  # First call - workspace doesn't exist
+        {"workspace": {"instanceName": WORKSPACE_NAME}},  # Second call - after creation
+    ]
     client.create_workspace.return_value = None
 
     # Mock wait_for_workspace_state to return a completed workspace
@@ -375,8 +384,11 @@ def test_ml_create_workspace_with_namespace(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock: Workspace doesn't exist yet
-    client.describe_workspace.return_value = {}
+    # Mock: Workspace doesn't exist yet (first call), then exists after creation (second call)
+    client.describe_workspace.side_effect = [
+        {},  # First call - workspace doesn't exist
+        {"workspace": {"instanceName": WORKSPACE_NAME}},  # Second call - after creation
+    ]
     client.create_workspace.return_value = None
 
     # Test module execution
@@ -643,7 +655,7 @@ def test_ml_create_workspace_api_failure(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock: Workspace doesn't exist
+    # Mock: Workspace doesn't exist (only first call before failure)
     client.describe_workspace.return_value = {}
 
     # Mock create_workspace to raise an exception
@@ -799,8 +811,11 @@ def test_ml_workspace_wait_timeout(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock: Workspace doesn't exist
-    client.describe_workspace.return_value = {}
+    # Mock: Workspace doesn't exist (first call), then exists after creation (second call)
+    client.describe_workspace.side_effect = [
+        {},  # First call - workspace doesn't exist
+        {"workspace": {"instanceName": WORKSPACE_NAME}},  # Second call - after creation
+    ]
     client.create_workspace.return_value = None
 
     # Mock wait_for_workspace_state to raise a timeout exception
