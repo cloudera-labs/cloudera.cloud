@@ -662,6 +662,9 @@ sdk_out_lines:
 
 from typing import Any, Dict
 
+from ansible.module_utils.common.dict_transformations import (
+    snake_dict_to_camel_dict,
+)
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
 )
@@ -1040,18 +1043,9 @@ class MLWorkspace(ServicesModule):
             elif self.state == "present":
                 if not self.module.check_mode:
                     # Process k8s_request and convert snake_case to camelCase for API
-                    k8s_request = self.k8s_request
-                    if k8s_request:
-                        k8s_request = k8s_request.copy()
-
-                        # Convert snake_case keys to camelCase
-                        key_mapping = {
-                            "environment_name": "environmentName",
-                            "instance_groups": "instanceGroups",
-                        }
-                        for snake_key, camel_key in key_mapping.items():
-                            if snake_key in k8s_request:
-                                k8s_request[camel_key] = k8s_request.pop(snake_key)
+                    k8s_request = None
+                    if self.k8s_request:
+                        k8s_request = snake_dict_to_camel_dict(self.k8s_request)
 
                         # Convert tags dict to list of key/value pairs
                         if k8s_request.get("tags") is not None:
@@ -1063,18 +1057,7 @@ class MLWorkspace(ServicesModule):
                     # Convert database parameters from snake_case to camelCase for API
                     database_config = None
                     if self.database:
-                        db_key_mapping = {
-                            "existing_database_host": "existingDatabaseHost",
-                            "existing_database_name": "existingDatabaseName",
-                            "existing_database_port": "existingDatabasePort",
-                            "existing_database_user": "existingDatabaseUser",
-                            "existing_database_password": "existingDatabasePassword",
-                        }
-                        database_config = {
-                            camel_key: self.database[snake_key]
-                            for snake_key, camel_key in db_key_mapping.items()
-                            if snake_key in self.database
-                        }
+                        database_config = snake_dict_to_camel_dict(self.database)
 
                     client.create_workspace(
                         workspace_name=self.name,
