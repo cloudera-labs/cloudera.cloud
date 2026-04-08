@@ -440,9 +440,9 @@ class AnsibleCdpClient(CdpClient):
     ) -> Optional[tuple]:
         """
         Hook method for handling special HTTP status codes.
-        
+
         Subclasses can override this to handle specific status codes (e.g., 308 redirects).
-        
+
         Args:
             status_code: HTTP status code received
             info: Response info dictionary from fetch_url
@@ -450,7 +450,7 @@ class AnsibleCdpClient(CdpClient):
             url: Full request URL
             body: Request body (may be None)
             headers: Request headers
-            
+
         Returns:
             None if status code not handled, or tuple of (resp, info) if handled
         """

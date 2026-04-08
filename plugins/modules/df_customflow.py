@@ -66,7 +66,7 @@ options:
   tags:
     description:
       - The list of tags for the initial flow definition version.
-      - Each tag should have a O(tag_name) (required) and optionally a O(tag_color).
+      - Each tag should have a O(tags[].tag_name) (required) and optionally a O(tags[].tag_color).
     type: list
     elements: dict
     required: False
