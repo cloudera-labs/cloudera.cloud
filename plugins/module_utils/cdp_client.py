@@ -429,6 +429,33 @@ class AnsibleCdpClient(CdpClient):
         """Construct full URL from path."""
         return f"{self.base_url}/{path.strip('/')}"
 
+    def _handle_special_status_code(
+        self,
+        status_code: int,
+        info: Dict[str, Any],
+        method: str,
+        url: str,
+        body: Optional[str],
+        headers: Dict[str, str],
+    ) -> Optional[tuple]:
+        """
+        Hook method for handling special HTTP status codes.
+        
+        Subclasses can override this to handle specific status codes (e.g., 308 redirects).
+        
+        Args:
+            status_code: HTTP status code received
+            info: Response info dictionary from fetch_url
+            method: HTTP method used
+            url: Full request URL
+            body: Request body (may be None)
+            headers: Request headers
+            
+        Returns:
+            None if status code not handled, or tuple of (resp, info) if handled
+        """
+        return None
+
     def _make_request(
         self,
         method: str,
@@ -510,6 +537,19 @@ class AnsibleCdpClient(CdpClient):
                     )
 
                     status_code = info["status"]
+
+                    # Allow subclasses to handle special status codes (e.g., 308 redirects)
+                    special_handling = self._handle_special_status_code(
+                        status_code,
+                        info,
+                        method,
+                        url,
+                        body,
+                        self.headers,
+                    )
+                    if special_handling is not None:
+                        resp, info = special_handling
+                        status_code = info["status"]
 
                     # Handle authentication errors
                     if status_code == 401:
