@@ -290,14 +290,14 @@ def test_df_customflow_import_via_module(df_module_args, env_context, df_flow_de
         with pytest.raises(AnsibleExitJson) as result:
             df_customflow.main()
 
-        assert result.value.changed is True
-        assert result.value.customflow is not None
-        assert result.value.customflow["name"] == flow_name
-
-        # Register flow for cleanup using fixture
+        
         flow_crn = result.value.customflow.get("crn")
         if flow_crn:
             df_flow_delete(flow_crn)
+
+        assert result.value.changed is True
+        assert result.value.customflow is not None
+        assert result.value.customflow["name"] == flow_name
 
         # Test idempotency
         with pytest.raises(AnsibleExitJson) as result:
@@ -372,14 +372,14 @@ def test_df_customflow_import_with_tags_via_module(
         with pytest.raises(AnsibleExitJson) as result:
             df_customflow.main()
 
-        assert result.value.changed is True
-        assert result.value.customflow is not None
-        assert result.value.customflow["name"] == flow_name
-
-        # Register flow for cleanup using fixture
+        
         flow_crn = result.value.customflow.get("crn")
         if flow_crn:
             df_flow_delete(flow_crn)
+
+        assert result.value.changed is True
+        assert result.value.customflow is not None
+        assert result.value.customflow["name"] == flow_name
 
 
 def test_df_customflow_import_with_content_via_module(
@@ -410,14 +410,14 @@ def test_df_customflow_import_with_content_via_module(
     with pytest.raises(AnsibleExitJson) as result:
         df_customflow.main()
 
-    assert result.value.changed is True
-    assert result.value.customflow is not None
-    assert result.value.customflow["name"] == flow_name
-
-    # Register flow for cleanup using fixture
+    
     flow_crn = result.value.customflow.get("crn")
     if flow_crn:
         df_flow_delete(flow_crn)
+
+    assert result.value.changed is True
+    assert result.value.customflow is not None
+    assert result.value.customflow["name"] == flow_name
 
 
 def test_df_customflow_import_simple_content_via_module(
@@ -447,14 +447,14 @@ def test_df_customflow_import_simple_content_via_module(
     with pytest.raises(AnsibleExitJson) as result:
         df_customflow.main()
 
-    assert result.value.changed is True
-    assert result.value.customflow is not None
-    assert result.value.customflow["name"] == flow_name
-
-    # Register flow for cleanup using fixture
+    
     flow_crn = result.value.customflow.get("crn")
     if flow_crn:
         df_flow_delete(flow_crn)
+
+    assert result.value.changed is True
+    assert result.value.customflow is not None
+    assert result.value.customflow["name"] == flow_name
 
     # Test idempotency
     with pytest.raises(AnsibleExitJson) as result:
@@ -497,11 +497,11 @@ def test_df_customflow_import_content_with_tags_via_module(
     with pytest.raises(AnsibleExitJson) as result:
         df_customflow.main()
 
-    assert result.value.changed is True
-    assert result.value.customflow is not None
-    assert result.value.customflow["name"] == flow_name
-
-    # Register flow for cleanup using fixture
+    
     flow_crn = result.value.customflow.get("crn")
     if flow_crn:
         df_flow_delete(flow_crn)
+
+    assert result.value.changed is True
+    assert result.value.customflow is not None
+    assert result.value.customflow["name"] == flow_name

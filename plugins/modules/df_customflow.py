@@ -34,7 +34,7 @@ options:
       - flow_name
   file:
     description:
-      - The path to the JSON file containing the CustomFlow definition to be imported on the controller.
+      - The path to the JSON file containing the CustomFlow definition to be imported from the controller.
       - Mutually exclusive with O(content).
     type: path
     default: None
