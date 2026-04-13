@@ -272,21 +272,22 @@ class DEServiceInfo(ServicesModule):
 
         if self.name:
             service = self.de_client.get_service_by_name(self.name)
-            if service:
-                self.services.append(service.get("service", {}))
         elif self.cluster_id:
             service = self.de_client.get_service_by_cluster_id(self.cluster_id)
-            if service:
-                self.services.append(service.get("service", {}))
         elif self.env_name:
             env_services = self.de_client.get_service_by_env_name(self.env_name)
             self.services = [s.get("service", {}) for s in env_services]
+            return
         else:
             response = self.de_client.list_services()
             for svc in response.get("services", []):
                 service_details = self.de_client.describe_service(svc["clusterId"])
-                if service_details and service_details.get("service"):
+                if service_details:
                     self.services.append(service_details.get("service", {}))
+            return
+
+        if service:
+            self.services.append(service.get("service", {}))
 
 
 def main():
