@@ -25,35 +25,6 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpError,
 )
 
-# Read-only/system-managed fields that should be excluded from diffs
-# These fields are not user-controllable and are managed by CDP
-USER_READONLY_FIELDS = [
-    "userId",  # System-generated unique identifier
-    "crn",  # System-generated CDP Resource Name
-    "creationDate",  # Timestamp when user was created
-    "accountAdmin",  # System-managed admin flag
-    "status",  # System-managed status (ACTIVE, CONTROL_PLANE_LOCKED_OUT, etc.)
-    "workloadUsername",  # Auto-generated username for workload clusters
-    "workloadPasswordDetails",  # Read-only password metadata (isPasswordSet, expirationDate, etc.)
-    "lastInteractiveLogin",  # System-tracked login timestamp
-    "identityProviderCrn",  # System-assigned identity provider reference
-]
-
-# Read-only/system-managed fields for groups
-GROUP_READONLY_FIELDS = [
-    "crn",  # System-generated CDP Resource Name
-    "creationDate",  # Timestamp when group was created
-]
-
-# Read-only/system-managed fields for machine users
-MACHINE_USER_READONLY_FIELDS = [
-    "crn",  # System-generated CDP Resource Name
-    "creationDate",  # Timestamp when machine user was created
-    "status",  # System-managed status
-    "workloadUsername",  # Auto-generated username for workload clusters
-    "workloadPasswordDetails",  # Read-only password metadata
-]
-
 
 class CdpIamClient:
     """CDP IAM API client."""
