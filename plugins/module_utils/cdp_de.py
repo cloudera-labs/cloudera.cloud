@@ -41,25 +41,39 @@ class CdpDeClient:
     # Service Management Methods
     # ========================================================================
 
-    def list_services(self, remove_deleted: bool = True) -> Dict[str, Any]:
+    def list_services(
+        self,
+        remove_deleted: bool = True,
+        env_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         List Data Engineering services.
 
         Args:
             remove_deleted: Filter out deleted CDE services from the list.
                 Defaults to True to only show active services.
+            env_name: Optional environment name to filter services by.
 
         Returns:
             Dictionary containing:
-                - services: List of ServiceSummary objects
+                - services: List of service summary objects.
         """
         data: Dict[str, Any] = {"removeDeleted": remove_deleted}
 
-        return self.api_client.post(
+        result = self.api_client.post(
             "/api/v1/de/listServices",
             data=data,
             squelch={404: {"services": []}},
         )
+
+        if env_name:
+            services = result.get("services", [])
+            filtered_services = [
+                s for s in services if s.get("environmentName") == env_name
+            ]
+            result["services"] = filtered_services
+
+        return result
 
     def describe_service(self, cluster_id: str) -> Dict[str, Any]:
         """
@@ -81,7 +95,7 @@ class CdpDeClient:
             squelch={404: {}, 500: {}},
         )
 
-    def get_service_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_service_by_name(self, name: str) -> Dict[str, Any]:
         """
         Get service details by service name.
 
@@ -89,7 +103,7 @@ class CdpDeClient:
             name: The service name
 
         Returns:
-            Service details dict, or None if not found
+            Service details dict, or empty dict if not found
         """
         services = self.list_services()
         for service in services.get("services", []):
@@ -99,9 +113,9 @@ class CdpDeClient:
                     result = self.describe_service(cluster_id)
                     if result and result.get("service"):
                         return result
-        return None
+        return {}
 
-    def get_service_by_cluster_id(self, cluster_id: str) -> Optional[Dict[str, Any]]:
+    def get_service_by_cluster_id(self, cluster_id: str) -> Dict[str, Any]:
         """
         Get service details by cluster ID.
 
@@ -109,37 +123,14 @@ class CdpDeClient:
             cluster_id: The cluster ID
 
         Returns:
-            Service details dict, or None if not found
+            Service details dict, or empty dict if not found
         """
         result = self.describe_service(cluster_id)
 
         if not result or not result.get("service"):
-            return None
+            return {}
 
         return result
-
-    def get_service_by_env_name(self, env_name: str) -> List[Dict[str, Any]]:
-        """
-        Get all active service details for an environment.
-
-        Note: Unlike DataFlow, Data Engineering supports multiple services per environment.
-
-        Args:
-            env_name: The environment name
-
-        Returns:
-            List of active service details dicts (can be empty if none found)
-        """
-        services = self.list_services()
-        results = []
-        for service in services.get("services", []):
-            if service.get("environmentName") == env_name:
-                cluster_id = service.get("clusterId")
-                if cluster_id:
-                    service_details = self.describe_service(cluster_id)
-                    if service_details and service_details.get("service"):
-                        results.append(service_details)
-        return results
 
     def list_virtual_clusters(self, cluster_id: str) -> List[Dict[str, Any]]:
         """

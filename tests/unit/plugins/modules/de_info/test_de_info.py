@@ -228,19 +228,29 @@ def test_de_info_by_env_name(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock get_service_by_env_name response
-    client.get_service_by_env_name.return_value = [
-        {
-            "service": {
+    # Mock list_services response with env_name filter
+    client.list_services.return_value = {
+        "services": [
+            {
                 "clusterId": CLUSTER_ID,
                 "name": SERVICE_NAME,
                 "environmentName": ENV_NAME,
-                "environmentCrn": ENV_CRN,
                 "status": "ClusterCreationCompleted",
-                "cloudPlatform": "AWS",
             },
+        ],
+    }
+
+    # Mock describe_service response
+    client.describe_service.return_value = {
+        "service": {
+            "clusterId": CLUSTER_ID,
+            "name": SERVICE_NAME,
+            "environmentName": ENV_NAME,
+            "environmentCrn": ENV_CRN,
+            "status": "ClusterCreationCompleted",
+            "cloudPlatform": "AWS",
         },
-    ]
+    }
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -251,7 +261,8 @@ def test_de_info_by_env_name(module_args, mocker):
     assert result.value.services[0]["environmentName"] == ENV_NAME
 
     # Verify CdpDeClient was called correctly
-    client.get_service_by_env_name.assert_called_once_with(ENV_NAME)
+    client.list_services.assert_called_once_with(env_name=ENV_NAME)
+    client.describe_service.assert_called_once_with(CLUSTER_ID)
 
 
 def test_de_info_multiple_services_same_env(module_args, mocker):
@@ -278,25 +289,46 @@ def test_de_info_multiple_services_same_env(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock get_service_by_env_name response with multiple services
-    client.get_service_by_env_name.return_value = [
-        {
-            "service": {
+    # Mock list_services response with multiple services in same environment
+    client.list_services.return_value = {
+        "services": [
+            {
                 "clusterId": "cluster-123",
                 "name": "service-1",
                 "environmentName": ENV_NAME,
                 "status": "ClusterCreationCompleted",
             },
-        },
-        {
-            "service": {
+            {
                 "clusterId": "cluster-456",
                 "name": "service-2",
                 "environmentName": ENV_NAME,
                 "status": "ClusterCreationCompleted",
             },
-        },
-    ]
+        ],
+    }
+
+    # Mock describe_service responses for each cluster
+    def describe_service_side_effect(cluster_id):
+        if cluster_id == "cluster-123":
+            return {
+                "service": {
+                    "clusterId": "cluster-123",
+                    "name": "service-1",
+                    "environmentName": ENV_NAME,
+                    "status": "ClusterCreationCompleted",
+                },
+            }
+        elif cluster_id == "cluster-456":
+            return {
+                "service": {
+                    "clusterId": "cluster-456",
+                    "name": "service-2",
+                    "environmentName": ENV_NAME,
+                    "status": "ClusterCreationCompleted",
+                },
+            }
+
+    client.describe_service.side_effect = describe_service_side_effect
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -310,7 +342,8 @@ def test_de_info_multiple_services_same_env(module_args, mocker):
     assert "cluster-456" in cluster_ids
 
     # Verify CdpDeClient was called correctly
-    client.get_service_by_env_name.assert_called_once_with(ENV_NAME)
+    client.list_services.assert_called_once_with(env_name=ENV_NAME)
+    assert client.describe_service.call_count == 2
 
 
 def test_de_info_not_found_by_name(module_args, mocker):
