@@ -288,6 +288,7 @@ class DEServiceInfo(ServicesModule):
                     if service_details.get("service"):
                         self.services.append(service_details["service"])
 
+
 def main():
     result = DEServiceInfo()
 
