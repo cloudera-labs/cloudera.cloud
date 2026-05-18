@@ -74,12 +74,16 @@ def valid_de_service(de_client):
     if not services:
         pytest.skip("No Data Engineering services available for testing")
 
-    # Find a service that can be described successfully
+    # Find a service that can be described successfully (skip failed states)
     for svc in services:
+        # Skip services in deletion/upgrade failed states
+        if svc.get("status") in CdpDeClient.FAILED_STATUSES:
+            continue
+            
         cluster_id = svc.get("clusterId")
         if cluster_id:
             details = de_client.describe_service(cluster_id)
-            if details and details.get("service"):
+            if details.get("service"):
                 return svc
 
     pytest.skip("No describable Data Engineering services available for testing")

@@ -281,10 +281,12 @@ class DEServiceInfo(ServicesModule):
         else:
             response = self.de_client.list_services(env_name=self.env_name)
             for svc in response.get("services", []):
-                service_details = self.de_client.describe_service(svc["clusterId"])
-                if service_details and service_details.get("service"):
-                    self.services.append(service_details.get("service", {}))
-
+                if svc.get("status") in CdpDeClient.FAILED_STATUSES:
+                    self.services.append(svc)
+                else:
+                    service_details = self.de_client.describe_service(svc["clusterId"])
+                    if service_details.get("service"):
+                        self.services.append(service_details["service"])
 
 def main():
     result = DEServiceInfo()

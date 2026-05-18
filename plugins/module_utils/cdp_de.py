@@ -28,6 +28,21 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 class CdpDeClient:
     """CDP Data Engineering API client."""
 
+    # Service statuses that cannot be described (deletion/upgrade failures)
+    FAILED_STATUSES = {
+        "ClusterDNSDeletionFailed",
+        "ClusterChartDeletionFailed",
+        "ClusterServiceMeshDeletionFailed",
+        "ClusterTLSCertDeletionFailed",
+        "DBDeletionFailed",
+        "FSMountTargetsDeletionFailed",
+        "FSDeletionFailed",
+        "ClusterNamespaceDeletionFailed",
+        "ClusterAccessGroupDeletionFailed",
+        "ClusterDeletionFailed",
+        "ClusterUpgradeFailed",
+    }
+
     def __init__(self, api_client: CdpClient):
         """
         Initialize CDP Data Engineering client.
@@ -92,7 +107,7 @@ class CdpDeClient:
         return self.api_client.post(
             "/api/v1/de/describeService",
             data=data,
-            squelch={404: {}, 500: {}},
+            squelch={404: {}},
         )
 
     def get_service_by_name(self, name: str) -> Dict[str, Any]:
