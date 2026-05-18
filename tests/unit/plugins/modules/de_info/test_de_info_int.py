@@ -79,7 +79,7 @@ def valid_de_service(de_client):
         # Skip services in deletion/upgrade failed states
         if svc.get("status") in CdpDeClient.FAILED_STATUSES:
             continue
-            
+
         cluster_id = svc.get("clusterId")
         if cluster_id:
             details = de_client.describe_service(cluster_id)
