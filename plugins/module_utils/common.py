@@ -87,8 +87,8 @@ def diff_dict(
 
         # If both are dictionaries, compare key by key
         if isinstance(prev_val, dict) and isinstance(new_val, dict):
-            prev_diff = {}
-            new_diff = {}
+            old_dict = {}
+            new_dict = {}
             has_diff = False
 
             # Get all unique keys from both dictionaries
@@ -99,42 +99,51 @@ def diff_dict(
                 if key in exclude_keys:
                     continue
 
-                prev_item = prev_val.get(key)
+                old_item = prev_val.get(key)
                 new_item = new_val.get(key)
 
-                prev_item_diff, new_item_diff, item_has_diff = _diff_recursive(
-                    prev_item,
+                old_result, new_result, item_has_diff = _diff_recursive(
+                    old_item,
                     new_item,
                 )
 
                 if item_has_diff:
-                    prev_diff[key] = prev_item_diff
-                    new_diff[key] = new_item_diff
+                    old_dict[key] = old_result
+                    new_dict[key] = new_result
                     has_diff = True
 
-            return prev_diff, new_diff, has_diff
+            if has_diff:
+                return old_dict, new_dict, True
+            return {}, {}, False
 
-        # If both are lists, compare element by element
+        # If both are lists, compare element by element recursively
         if isinstance(prev_val, list) and isinstance(new_val, list):
-            # For lists, we'll do a simple equality check
-            # More sophisticated list comparison can be added if needed
             if len(prev_val) != len(new_val):
                 return prev_val, new_val, True
 
-            # Check if lists have different elements (order-independent for simplicity)
-            prev_set = set(str(x) for x in prev_val)
-            new_set = set(str(x) for x in new_val)
+            old_list = []
+            new_list = []
+            has_diff = False
 
-            if prev_set != new_set:
-                return prev_val, new_val, True
+            for old_item, new_item in zip(prev_val, new_val):
+                old_result, new_result, item_diff = _diff_recursive(old_item, new_item)
+                if item_diff:
+                    old_list.append(old_result)
+                    new_list.append(new_result)
+                    has_diff = True
+                else:
+                    old_list.append(old_item)
+                    new_list.append(new_item)
 
-            return None, None, False
+            if has_diff:
+                return old_list, new_list, True
+            return [], [], False
 
         # For primitives and other types, direct comparison
         if prev_val != new_val:
             return prev_val, new_val, True
 
-        return None, None, False
+        return prev_val, new_val, False
 
     # Handle None inputs
     if prev is None and next is None:
