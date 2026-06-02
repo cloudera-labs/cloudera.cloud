@@ -510,3 +510,234 @@ class TestCdpMlClient:
             json_data={},
             squelch={404: []},
         )
+
+    def test_create_workspace_minimal(self, mocker):
+        """Test creating a workspace with minimal required parameters."""
+
+        # Mock response data
+        mock_response = {
+            "workspace": {
+                "instanceName": "new-workspace",
+                "environmentName": "test-env",
+                "crn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:new123",
+                "instanceStatus": "provision:started",
+            },
+        }
+
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        # Create the CdpMlClient instance
+        client = CdpMlClient(api_client=api_client)
+
+        response = client.create_workspace(
+            workspace_name="new-workspace",
+            environment_name="test-env",
+        )
+
+        assert "workspace" in response
+        assert response["workspace"]["instanceName"] == "new-workspace"
+        assert response["workspace"]["environmentName"] == "test-env"
+
+        # Verify that the post method was called with correct parameters
+        api_client.post.assert_called_once_with(
+            "/api/v1/ml/createWorkspace",
+            json_data={
+                "workspaceName": "new-workspace",
+                "environmentName": "test-env",
+            },
+            squelch={},
+        )
+
+    def test_create_workspace_with_optional_params(self, mocker):
+        """Test creating a workspace with optional parameters."""
+
+        # Mock response data
+        mock_response = {
+            "workspace": {
+                "instanceName": "advanced-workspace",
+                "environmentName": "prod-env",
+                "crn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:adv123",
+                "instanceStatus": "provision:started",
+            },
+        }
+
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        # Create the CdpMlClient instance
+        client = CdpMlClient(api_client=api_client)
+
+        response = client.create_workspace(
+            workspace_name="advanced-workspace",
+            environment_name="prod-env",
+            enable_monitoring=True,
+            enable_governance=True,
+            enable_model_metrics=True,
+            use_public_loadbalancer=False,
+            private_cluster=True,
+            authorized_ip_ranges=["10.0.0.0/8", "192.168.1.0/24"],
+            enable_yunikorn=True,
+            skip_validation=False,
+        )
+
+        assert "workspace" in response
+        assert response["workspace"]["instanceName"] == "advanced-workspace"
+
+        # Verify that the post method was called with correct parameters
+        api_client.post.assert_called_once_with(
+            "/api/v1/ml/createWorkspace",
+            json_data={
+                "workspaceName": "advanced-workspace",
+                "environmentName": "prod-env",
+                "enableMonitoring": True,
+                "enableGovernance": True,
+                "enableModelMetrics": True,
+                "usePublicLoadBalancer": False,
+                "privateCluster": True,
+                "authorizedIPRanges": ["10.0.0.0/8", "192.168.1.0/24"],
+                "enableYunikorn": True,
+                "skipValidation": False,
+            },
+            squelch={},
+        )
+
+    def test_create_workspace_with_namespace_and_nfs(self, mocker):
+        """Test creating a workspace with namespace and NFS configuration."""
+
+        # Mock response data
+        mock_response = {
+            "workspace": {
+                "instanceName": "nfs-workspace",
+                "environmentName": "test-env",
+                "crn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:nfs123",
+                "instanceStatus": "provision:started",
+            },
+        }
+
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        # Create the CdpMlClient instance
+        client = CdpMlClient(api_client=api_client)
+
+        response = client.create_workspace(
+            workspace_name="nfs-workspace",
+            environment_name="test-env",
+            namespace="ml-namespace",
+            existing_nfs="nfs.example.com:/exports/ml",
+            nfs_version="NFSv4",
+        )
+
+        assert "workspace" in response
+        assert response["workspace"]["instanceName"] == "nfs-workspace"
+
+        # Verify that the post method was called with correct parameters
+        api_client.post.assert_called_once_with(
+            "/api/v1/ml/createWorkspace",
+            json_data={
+                "workspaceName": "nfs-workspace",
+                "environmentName": "test-env",
+                "namespace": "ml-namespace",
+                "existingNFS": "nfs.example.com:/exports/ml",
+                "nfsVersion": "NFSv4",
+            },
+            squelch={},
+        )
+
+    def test_delete_workspace_by_crn(self, mocker):
+        """Test deleting a workspace by CRN."""
+
+        # Mock response data
+        mock_response = {}
+
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        # Create the CdpMlClient instance
+        client = CdpMlClient(api_client=api_client)
+
+        response = client.delete_workspace(
+            workspace_crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:del123",
+            force=True,
+        )
+
+        assert isinstance(response, dict)
+
+        # Verify that the post method was called with correct parameters
+        api_client.post.assert_called_once_with(
+            "/api/v1/ml/deleteWorkspace",
+            json_data={
+                "force": True,
+                "workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:del123",
+            },
+            squelch={},
+        )
+
+    def test_delete_workspace_by_name_and_env(self, mocker):
+        """Test deleting a workspace by name and environment."""
+
+        # Mock response data
+        mock_response = {}
+
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        # Create the CdpMlClient instance
+        client = CdpMlClient(api_client=api_client)
+
+        response = client.delete_workspace(
+            workspace_name="old-workspace",
+            environment_name="test-env",
+            force=False,
+        )
+
+        assert isinstance(response, dict)
+
+        # Verify that the post method was called with correct parameters
+        api_client.post.assert_called_once_with(
+            "/api/v1/ml/deleteWorkspace",
+            json_data={
+                "force": False,
+                "workspaceName": "old-workspace",
+                "environmentName": "test-env",
+            },
+            squelch={},
+        )
+
+    def test_delete_workspace_with_remove_storage(self, mocker):
+        """Test deleting a workspace with storage removal."""
+
+        # Mock response data
+        mock_response = {}
+
+        # Mock the CdpClient instance
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        # Create the CdpMlClient instance
+        client = CdpMlClient(api_client=api_client)
+
+        response = client.delete_workspace(
+            workspace_crn="crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:del456",
+            force=True,
+            remove_storage=True,
+        )
+
+        assert isinstance(response, dict)
+
+        # Verify that the post method was called with correct parameters
+        api_client.post.assert_called_once_with(
+            "/api/v1/ml/deleteWorkspace",
+            json_data={
+                "force": True,
+                "workspaceCrn": "crn:cdp:ml:us-west-1:558bc1d2-8867-4357-8524-311d51259233:workspace:del456",
+                "removeStorage": True,
+            },
+            squelch={},
+        )
