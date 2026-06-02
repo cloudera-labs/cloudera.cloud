@@ -101,7 +101,7 @@ class CdpDeClient:
             Dictionary containing service details, or empty dict if not found or in invalid state
 
         Note:
-            Returns empty dict for both 404 (not found) and 500 (invalid state) errors.
+            Returns empty dict for 404 errors.
         """
         data = {"clusterId": cluster_id}
         return self.api_client.post(
