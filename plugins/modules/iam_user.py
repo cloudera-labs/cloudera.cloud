@@ -23,7 +23,7 @@ description:
     - Manage user role and resource role assignments.
 author:
   - "Ronald Suplina (@rsuplina)"
-version_added: "3.2.0"
+version_added: "3.3.0"
 options:
   email:
     description:
