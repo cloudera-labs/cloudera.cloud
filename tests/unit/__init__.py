@@ -19,10 +19,9 @@ import json
 from email.utils import formatdate
 from functools import wraps
 from typing import Any, Dict, Optional
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.error import HTTPError
 from http.client import HTTPResponse
-
 from ansible.module_utils.urls import Request
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
@@ -85,6 +84,28 @@ def handle_response(func):
     return wrapper
 
 
+def build_flow_import_headers(request_data: Dict[str, Any]) -> Dict[str, str]:
+    """Build headers for DataFlow flow import (following cdpcli extension pattern)."""
+    from urllib.parse import quote
+
+    headers = {}
+    if "name" in request_data:
+        headers["Flow-Definition-Name"] = quote(request_data["name"])
+    if "description" in request_data:
+        headers["Flow-Definition-Description"] = quote(request_data["description"])
+    if "comments" in request_data:
+        headers["Flow-Definition-Comments"] = quote(request_data["comments"])
+    if "collectionCrn" in request_data:
+        headers["Flow-Definition-Collection-Identifier"] = quote(
+            request_data["collectionCrn"],
+        )
+    if "tags" in request_data:
+        tags_json = '{ "tags": ' + json.dumps(request_data["tags"]) + "}"
+        headers["Flow-Definition-Tags"] = quote(tags_json)
+
+    return headers
+
+
 def set_credential_headers(
     method: str,
     url: str,
@@ -132,8 +153,8 @@ class TestCdpClient(CdpClient):
         self.endpoint = endpoint.rstrip("/")
         self.access_key = access_key
         self.private_key = private_key
+        self.cookies = {}  # Cookie storage for XSRF tokens (needed for /dfx endpoints)
 
-    @handle_response
     def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         # Prepare query parameters
         if params:
@@ -151,7 +172,6 @@ class TestCdpClient(CdpClient):
             ),
         )
 
-    @handle_response
     def post(
         self,
         path: str,
@@ -160,17 +180,75 @@ class TestCdpClient(CdpClient):
         squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
+        body = prepare_body(data, json_data)
 
-        return Request().post(
-            url=url,
-            headers=set_credential_headers(
-                method="POST",
+        try:
+            response = Request().post(
                 url=url,
-                access_key=self.access_key,
-                private_key=self.private_key,
-            ),
-            data=prepare_body(data, json_data),
-        )
+                headers=set_credential_headers(
+                    method="POST",
+                    url=url,
+                    access_key=self.access_key,
+                    private_key=self.private_key,
+                ),
+                data=body,
+            )
+            # Parse successful response
+            response_text = response.read().decode("utf-8")
+            return json.loads(response_text) if response_text else {}
+
+        except HTTPError as e:
+            # Handle 308 Permanent Redirect for DataFlow flow imports
+            if e.code == 308:
+                redirect_url = e.headers.get("Location") or e.headers.get("location")
+                if not redirect_url:
+                    raise
+
+                # Parse redirect URL to get path for signature
+
+                parsed = urlparse(redirect_url)
+                redirect_path = parsed.path
+                if parsed.query:
+                    redirect_path += "?" + parsed.query
+
+                # Check if this is a DataFlow flow import (needs header transformation)
+                is_df_flow_import = "/catalog/flows" in redirect_path
+
+                redirect_body = body
+                redirect_headers = set_credential_headers(
+                    method="POST",
+                    url=redirect_path,
+                    access_key=self.access_key,
+                    private_key=self.private_key,
+                )
+
+                # Transform body to DataFlow format if needed
+                if is_df_flow_import and body:
+                    try:
+                        request_data = json.loads(body)
+                        # Build custom headers (following cdpcli extension pattern)
+                        redirect_headers.update(build_flow_import_headers(request_data))
+                        # Body becomes raw flow content
+                        redirect_body = request_data.get("file", "")
+                    except (json.JSONDecodeError, KeyError):
+                        pass
+
+                # Follow redirect
+                redirect_response = Request().open(
+                    method="POST",
+                    url=redirect_url,
+                    headers=redirect_headers,
+                    data=redirect_body.encode("utf-8") if redirect_body else None,
+                )
+
+                # Parse redirect response
+                response_text = redirect_response.read().decode("utf-8")
+                return json.loads(response_text) if response_text else {}
+
+            elif e.code in squelch:
+                return squelch[e.code]
+            else:
+                raise
 
     def put(
         self,

@@ -31,7 +31,6 @@ from cryptography.hazmat.primitives.asymmetric import ed25519
 from email.utils import formatdate
 from typing import Any, Dict, Optional, List, Tuple, Union
 from urllib.parse import urlparse
-
 from ansible.module_utils.urls import fetch_url
 
 
@@ -430,6 +429,33 @@ class AnsibleCdpClient(CdpClient):
         """Construct full URL from path."""
         return f"{self.base_url}/{path.strip('/')}"
 
+    def _handle_special_status_code(
+        self,
+        status_code: int,
+        info: Dict[str, Any],
+        method: str,
+        url: str,
+        body: Optional[str],
+        headers: Dict[str, str],
+    ) -> Optional[tuple]:
+        """
+        Hook method for handling special HTTP status codes.
+
+        Subclasses can override this to handle specific status codes (e.g., 308 redirects).
+
+        Args:
+            status_code: HTTP status code received
+            info: Response info dictionary from fetch_url
+            method: HTTP method used
+            url: Full request URL
+            body: Request body (may be None)
+            headers: Request headers
+
+        Returns:
+            None if status code not handled, or tuple of (resp, info) if handled
+        """
+        return None
+
     def _make_request(
         self,
         method: str,
@@ -512,6 +538,19 @@ class AnsibleCdpClient(CdpClient):
 
                     status_code = info["status"]
 
+                    # Allow subclasses to handle special status codes (e.g., 308 redirects)
+                    special_handling = self._handle_special_status_code(
+                        status_code,
+                        info,
+                        method,
+                        url,
+                        body,
+                        self.headers,
+                    )
+                    if special_handling is not None:
+                        resp, info = special_handling
+                        status_code = info["status"]
+
                     # Handle authentication errors
                     if status_code == 401:
                         raise CdpError(f"Unauthorized access to {path}", status=401)
@@ -545,19 +584,31 @@ class AnsibleCdpClient(CdpClient):
 
                     # Handle error responses
                     error_message = f"HTTP {status_code} Error"
-                    if resp:
-                        try:
-                            error_data = json.loads(info.get("body"))
-                            error_message = (
-                                f"{error_data.get('errorMessage', 'Unknown error')}"
-                            )
-                        except:
-                            error_message = f"{info.get('msg', 'Unknown error')}"
-                    else:
-                        try:
+
+                    try:
+                        error_body = info.get("body")
+                        if error_body:
+                            error_data = json.loads(error_body)
+
+                            if "message" in error_data:
+                                error_message = error_data["message"]
+                            elif "error" in error_data:
+                                error_message = error_data["error"]
+                            elif "errorMessages" in error_data:
+                                error_messages = error_data["errorMessages"]
+                                if isinstance(error_messages, list):
+                                    error_message = " ".join(error_messages)
+                                else:
+                                    error_message = str(error_messages)
+                            else:
+                                error_message = error_data.get(
+                                    "errorMessage",
+                                    "Unknown error",
+                                )
+                        else:
                             error_message = info.get("msg", "Unknown error")
-                        except:
-                            pass
+                    except:
+                        error_message = info.get("msg", "Unknown error")
 
                     # Retry on server errors (5xx) or specific client errors
                     if status_code >= 500 or status_code in [408, 429]:
