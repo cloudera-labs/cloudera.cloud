@@ -22,7 +22,7 @@ import abc
 import io
 import logging
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.parameters import env_fallback
@@ -35,6 +35,132 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 
 
 LOG_FORMAT = "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
+
+
+def diff_dict(
+    prev: Optional[Dict[str, Any]],
+    next: Optional[Dict[str, Any]],
+    exclude_keys: Optional[List[str]] = None,
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """
+    Compare two dictionaries and return their differences.
+
+    Recursively compares two dictionaries field by field and returns
+    a tuple of dictionaries containing the old and new values for fields that differ.
+    Supports nested dictionaries, lists, and primitive types.
+
+    Args:
+        prev: The previous dictionary to compare from (can be None).
+        next: The next dictionary to compare to (can be None).
+        exclude_keys: Optional list of keys to exclude from comparison (e.g., read-only fields).
+
+    Returns:
+        A tuple of two dictionaries (old_values, new_values) containing only the fields
+        that differ between the dictionaries. Nested differences are represented as nested
+        dictionaries. Empty dictionaries are returned if dictionaries are identical.
+
+    Example:
+        >>> old = {"name": "Alice", "age": 30, "city": "NYC"}
+        >>> new = {"name": "Alice", "age": 31, "city": "NYC"}
+        >>> old_diff, new_diff = diff_dict(old, new)
+        >>> print(old_diff)
+        {'age': 30}
+        >>> print(new_diff)
+        {'age': 31}
+    """
+    exclude_keys = exclude_keys or []
+
+    def _diff_recursive(prev_val: Any, new_val: Any) -> Tuple[Any, Any, bool]:
+        """
+        Recursively compare values and return (prev_val, new_val, has_diff).
+
+        Returns:
+            Tuple of (prev_value, new_value, has_difference)
+        """
+        # If both are None, no difference
+        if prev_val is None and new_val is None:
+            return None, None, False
+
+        # If one is None and the other isn't, there's a difference
+        if prev_val is None or new_val is None:
+            return prev_val, new_val, True
+
+        # If both are dictionaries, compare key by key
+        if isinstance(prev_val, dict) and isinstance(new_val, dict):
+            old_dict = {}
+            new_dict = {}
+            has_diff = False
+
+            # Get all unique keys from both dictionaries
+            all_keys = set(prev_val.keys()) | set(new_val.keys())
+
+            for key in all_keys:
+                # Skip excluded keys
+                if key in exclude_keys:
+                    continue
+
+                old_item = prev_val.get(key)
+                new_item = new_val.get(key)
+
+                old_result, new_result, item_has_diff = _diff_recursive(
+                    old_item,
+                    new_item,
+                )
+
+                if item_has_diff:
+                    old_dict[key] = old_result
+                    new_dict[key] = new_result
+                    has_diff = True
+
+            if has_diff:
+                return old_dict, new_dict, True
+            return {}, {}, False
+
+        # If both are lists, compare element by element recursively
+        if isinstance(prev_val, list) and isinstance(new_val, list):
+            if len(prev_val) != len(new_val):
+                return prev_val, new_val, True
+
+            old_list = []
+            new_list = []
+            has_diff = False
+
+            for old_item, new_item in zip(prev_val, new_val):
+                old_result, new_result, item_diff = _diff_recursive(old_item, new_item)
+                if item_diff:
+                    old_list.append(old_result)
+                    new_list.append(new_result)
+                    has_diff = True
+                else:
+                    old_list.append(old_item)
+                    new_list.append(new_item)
+
+            if has_diff:
+                return old_list, new_list, True
+            return [], [], False
+
+        # For primitives and other types, direct comparison
+        if prev_val != new_val:
+            return prev_val, new_val, True
+
+        return prev_val, new_val, False
+
+    # Handle None inputs
+    if prev is None and next is None:
+        return {}, {}
+
+    if prev is None:
+        return {}, next
+
+    if next is None:
+        return prev, {}
+
+    prev_diff, next_diff, _ = _diff_recursive(prev, next)
+
+    return (
+        prev_diff if isinstance(prev_diff, dict) else {},
+        next_diff if isinstance(next_diff, dict) else {},
+    )
 
 
 class ParametersMixin(abc.ABC):
