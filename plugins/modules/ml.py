@@ -403,6 +403,7 @@ options:
     aliases:
       - polling_timeout
 extends_documentation_fragment:
+  - ansible.builtin.action_common_attributes
   - cloudera.cloud.cdp_sdk_options
   - cloudera.cloud.cdp_auth_options
 attributes:
