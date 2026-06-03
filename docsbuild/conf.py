@@ -17,7 +17,7 @@
 # http://www.sphinx-doc.org/en/master/config
 
 project = "cloudera.cloud"
-copyright = "2024 Cloudera, Inc."
+copyright = "2026 Cloudera, Inc."
 
 title = "Cloudera Labs"
 html_short_title = "Cloudera Labs"
