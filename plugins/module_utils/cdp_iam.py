@@ -18,8 +18,8 @@
 A REST client for the Cloudera on Cloud Platform (CDP) IAM API
 """
 
+import re
 from typing import Any, Dict, List, Optional
-
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
     CdpError,
@@ -393,7 +393,6 @@ class CdpIamClient:
         Returns:
             List of matching basic User dicts from the listUsers response.
         """
-        import re
 
         compiled = {k: re.compile(v) for k, v in filters.items()}
         result = self.list_users()
