@@ -71,7 +71,7 @@ MOCK_USER_2_DETAILS = {
         {
             "resourceCrn": "crn:cdp:environments:us-west-1:account:environment:env1",
             "resourceRoleCrn": "crn:cdp:iam:us-west-1:account:resourceRole:EnvironmentUser",
-        }
+        },
     ],
     "groups": ["crn:cdp:iam:us-west-1:account:group:test-group"],
 }
@@ -103,7 +103,7 @@ def test_iam_user_info_list_all_users(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "view": "summary",
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -136,7 +136,7 @@ def test_iam_user_info_current_user(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "current_user": True,
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -166,7 +166,7 @@ def test_iam_user_info_current_user_not_found(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "current_user": True,
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -191,7 +191,7 @@ def test_iam_user_info_get_by_name(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "name": "u_user1",
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -221,7 +221,7 @@ def test_iam_user_info_get_by_multiple_names(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "name": ["u_user1", "u_user2"],
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -247,7 +247,7 @@ def test_iam_user_info_get_by_user_id(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "user_id": ["user-id-1"],
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -277,7 +277,7 @@ def test_iam_user_info_get_by_multiple_user_ids(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "user_id": ["user-id-1", "user-id-2"],
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -304,7 +304,7 @@ def test_iam_user_info_user_id_not_found(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "user_id": ["nonexistent-user-id"],
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -330,7 +330,7 @@ def test_iam_user_info_name_not_found(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "name": ["u_nonexistent"],
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -355,7 +355,7 @@ def test_iam_user_info_filter(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "filter": {"workloadUsername": "u_user[0-9]+"},
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -369,7 +369,9 @@ def test_iam_user_info_filter(module_args, mocker):
 
     assert result.value.changed is False
     assert len(result.value.users) == 2
-    client.list_users_filtered.assert_called_once_with({"workloadUsername": "u_user[0-9]+"})
+    client.list_users_filtered.assert_called_once_with(
+        {"workloadUsername": "u_user[0-9]+"},
+    )
     assert client.get_user_details.call_count == 2
 
 
@@ -382,7 +384,7 @@ def test_iam_user_info_filter_no_match(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "filter": {"workloadUsername": "^admin_.*"},
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -395,7 +397,9 @@ def test_iam_user_info_filter_no_match(module_args, mocker):
 
     assert result.value.changed is False
     assert result.value.users == []
-    client.list_users_filtered.assert_called_once_with({"workloadUsername": "^admin_.*"})
+    client.list_users_filtered.assert_called_once_with(
+        {"workloadUsername": "^admin_.*"},
+    )
     client.get_user_details.assert_not_called()
 
 
@@ -408,7 +412,7 @@ def test_iam_user_info_filter_partial_match(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "filter": {"workloadUsername": "u_user1"},
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -435,7 +439,7 @@ def test_iam_user_info_check_mode(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "_ansible_check_mode": True,
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -460,7 +464,7 @@ def test_iam_user_info_view_summary(module_args, mocker):
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
             "view": "summary",
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -491,7 +495,7 @@ def test_iam_user_info_view_summary_by_name(module_args, mocker):
             "private_key": PRIVATE_KEY,
             "name": ["u_user1"],
             "view": "summary",
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -519,7 +523,7 @@ def test_iam_user_info_view_summary_by_user_id(module_args, mocker):
             "private_key": PRIVATE_KEY,
             "user_id": ["user-id-1"],
             "view": "summary",
-        }
+        },
     )
 
     _patch_common(mocker)
@@ -548,7 +552,7 @@ def test_iam_user_info_view_summary_current_user(module_args, mocker):
             "private_key": PRIVATE_KEY,
             "current_user": True,
             "view": "summary",
-        }
+        },
     )
 
     _patch_common(mocker)

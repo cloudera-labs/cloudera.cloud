@@ -53,7 +53,7 @@ def iam_module_args(module_args, env_context) -> Callable[[dict], None]:
                 "endpoint": env_context["CDP_API_ENDPOINT"],
                 "access_key": env_context["CDP_ACCESS_KEY_ID"],
                 "private_key": env_context["CDP_PRIVATE_KEY"],
-            }
+            },
         )
         return module_args(args)
 
@@ -76,9 +76,11 @@ def current_user(iam_client) -> dict:
 def test_iam_user_info_list_all(iam_module_args):
     """Test listing all IAM users returns at least one user with expected fields."""
 
-    iam_module_args({
-        "view": "summary",
-    })
+    iam_module_args(
+        {
+            "view": "summary",
+        },
+    )
 
     with pytest.raises(AnsibleExitJson) as result:
         iam_user_info.main()
@@ -133,7 +135,9 @@ def test_iam_user_info_get_by_name(iam_module_args, current_user):
         (u for u in result.value.users if u["workloadUsername"] == workload_username),
         None,
     )
-    assert found is not None, f"User with workloadUsername '{workload_username}' not found"
+    assert (
+        found is not None
+    ), f"User with workloadUsername '{workload_username}' not found"
     assert "roles" in found
     assert "resource_roles" in found
     assert "groups" in found
@@ -179,7 +183,9 @@ def test_iam_user_info_filter_by_workload_username(iam_module_args, current_user
         (u for u in result.value.users if u["workloadUsername"] == workload_username),
         None,
     )
-    assert found is not None, f"Filtered result did not include user '{workload_username}'"
+    assert (
+        found is not None
+    ), f"Filtered result did not include user '{workload_username}'"
 
 
 def test_iam_user_info_nonexistent_user(iam_module_args):
