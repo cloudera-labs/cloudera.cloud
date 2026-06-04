@@ -376,6 +376,37 @@ class CdpIamClient:
             json_data=json_data,
         )
 
+    def list_users_filtered(
+        self,
+        filters: Dict[str, str],
+    ) -> List[Dict[str, Any]]:
+        """
+        List IAM users filtered by regex patterns on user fields.
+
+        Fetches all users and returns only those where every filter key's value
+        matches the corresponding regex pattern.
+
+        Args:
+            filters: Dict mapping a User field name to a regex pattern string.
+                     A user is included only when all patterns match.
+
+        Returns:
+            List of matching basic User dicts from the listUsers response.
+        """
+        import re
+
+        compiled = {k: re.compile(v) for k, v in filters.items()}
+        result = self.list_users()
+        matched = []
+        for user in result.get("users", []):
+            for field, pattern in compiled.items():
+                value = user.get(field)
+                if not (value and re.search(pattern, str(value))):
+                    break
+            else:
+                matched.append(user)
+        return matched
+
     def get_user(self, user_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Get information about a user.
@@ -716,19 +747,15 @@ class CdpIamClient:
             groups_response = self.list_groups_for_user(user_id=user_id)
             groups = groups_response.get("groupCrns", [])
 
-            return {
-                "userId": user_info.get("userId"),
-                "crn": user_info.get("crn"),
-                "email": user_info.get("email"),
-                "firstName": user_info.get("firstName"),
-                "lastName": user_info.get("lastName"),
-                "status": user_info.get("status"),
-                "workloadUsername": user_info.get("workloadUsername"),
-                "creationDate": user_info.get("creationDate"),
-                "roles": roles,
-                "resourceAssignments": resource_assignments,
-                "groups": groups,
-            }
+            result = dict(user_info)
+            result.update(
+                {
+                    "roles": roles,
+                    "resourceAssignments": resource_assignments,
+                    "groups": groups,
+                },
+            )
+            return result
         except Exception:
             return None
 
