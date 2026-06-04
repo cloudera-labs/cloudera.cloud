@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ options:
     description:
       - A list of user names or a single user name.
       - If no user name is provided, all users are returned.
-      - Mutually exclusive with C(current_user) and C(user_id).
+      - Mutually exclusive with O(current_user) and O(user_id).
     type: list
     elements: str
     required: False
@@ -38,27 +38,37 @@ options:
       - user_name
   current_user:
     description:
-      - Flag to use the current user login.
-      - Mutually exclusive with C(name) and C(user_id).
+      - Flag to retrieve the current authenticated user.
+      - Mutually exclusive with O(name) and O(user_id).
     type: bool
     required: False
     default: False
   user_id:
     description:
       - A list of user Ids or a single user Id name/CRN.
-      - Mutually exclusive with C(current_user) and C(name).
+      - Mutually exclusive with O(current_user) and O(name).
     type: list
     elements: str
     required: False
   filter:
     description:
       - Key value pair where the key is the field to compare and the value is a regex statement. If there is a match in the regex statment, the user will return.
-      - Mutually exclusive with current user and name
+      - Mutually exclusive with O(current_user) and O(name).
     type: dict
     required: False
+  view:
+    description:
+      - The level of detail returned for each user.
+      - V(summary) returns the basic C(User) object fields from the list API.
+      - V(full) additionally fetches each user's assigned roles, resource roles, and group memberships.
+    type: str
+    required: False
+    default: full
+    choices:
+      - summary
+      - full
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
@@ -78,10 +88,6 @@ EXAMPLES = r"""
 
 # Gather detailed information about more users
 - cloudera.cloud.iam_user_info:
-    name: ["user1", "user2"]
-
-# Gather detailed information about a named User
-- cloudera.cdp.iam_user_info:
     filter:
       workloadUsername: my[0-9]{2}_admin.*?'
 
@@ -145,145 +151,157 @@ users:
       description: List of groups that user is assigned.
       returned: when supported
       type: list
+      elements: str
     roles:
       description: List of user assigned roles.
       returned: when supported
       type: list
+      elements: str
     resource_roles:
-      description: List of user assigned resource roles.
+      description: List of resource role assignments associated with the user.
       returned: when supported
       type: list
+      elements: dict
+      contains:
+        resourceCrn:
+          description: The CRN of the resource granted the rights of the role.
+          returned: when supported
+          type: str
+        resourceRoleCrn:
+          description: The CRN of the resource role.
+          returned: when supported
+          type: str
+    status:
+      description: The current status of the user.
+      returned: when supported
+      type: str
 sdk_out:
-  description: Returns the captured CDP SDK log.
+  description: Returns the captured API HTTP log.
   returned: when supported
   type: str
 sdk_out_lines:
-  description: Returns a list of each line of the captured CDP SDK log.
+  description: Returns a list of each line of the captured API HTTP log.
   returned: when supported
   type: list
   elements: str
 """
 
-import re
+from typing import Any, Dict
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
+    CdpIamClient,
+)
 
 
-class IAMUserInfo(CdpModule):
-    def __init__(self, module):
-        super(IAMUserInfo, self).__init__(module)
+class IAMUserInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(
+                    required=False,
+                    type="list",
+                    elements="str",
+                    aliases=["user_name"],
+                ),
+                current_user=dict(
+                    required=False,
+                    type="bool",
+                    default=False,
+                ),
+                user_id=dict(
+                    required=False,
+                    type="list",
+                    elements="str",
+                ),
+                filter=dict(
+                    required=False,
+                    type="dict",
+                ),
+                view=dict(
+                    required=False,
+                    type="str",
+                    choices=["summary", "full"],
+                    default="full",
+                ),
+            ),
+            mutually_exclusive=[
+                ["name", "current_user"],
+                ["filter", "current_user"],
+                ["filter", "name"],
+                ["user_id", "name"],
+                ["user_id", "current_user"],
+            ],
+            supports_check_mode=True,
+        )
 
-        # Set Variables
-        self.name = self._get_param("name")
-        self.current = self._get_param("current_user", False)
-        self.filter = self._get_param("filter")
-        self.user_id = self._get_param("user_id")
-        self.view = self._get_param("view")
-
-        # Initialize filter if set
-        self.compiled_filter = self.compile_filters()
+        # Set parameters
+        self.name = self.get_param("name")
+        self.current_user = self.get_param("current_user")
+        self.user_id = self.get_param("user_id")
+        self.filter = self.get_param("filter")
+        self.view = self.get_param("view")
 
         # Initialize the return values
-        self.info = []
+        self.users = []
 
-        # Execute logic process
-        self.process()
-
-    def compile_filters(self):
-        compiled_filters = {}
-
-        # Check if filter set
-        if self.filter is None:
-            return None
-
-        # Compile all regex
-        for key in self.filter.keys():
-            compiled_filters[key] = re.compile(self.filter[key])
-
-        return compiled_filters
-
-    def get_detailed_user_info(self, user):
-        user["groups"] = self.cdpy.iam.list_groups_for_user(user["userId"])
-        user["roles"] = self.cdpy.iam.list_user_assigned_roles(user["userId"])
-        user["resource_roles"] = self.cdpy.iam.list_user_assigned_resource_roles(
-            user["userId"],
-        )
-        return user
-
-    def apply_filters(self):
-        filtered_users = []
-        # Iterate users
-        for userData in self.cdpy.iam.list_users():
-            # Iterate Filters. Must match all
-            for filter_key, regx_expr in self.compiled_filter.items():
-                key_val = userData.get(filter_key)
-                if key_val and re.search(regx_expr, key_val):
-                    continue  # Filter matches, continue to next filter
-                else:
-                    break  # No match, skip to next user
-            else:
-                # All filters matched, add user to filtered_users
-                filtered_users.append(userData)
-        return filtered_users
+        # Initialize client
+        self.client = CdpIamClient(api_client=self.api_client)
 
     def process(self):
-
-        if self.current:
-            self.info = [self.cdpy.iam.get_user()]
+        if self.current_user:
+            user = self.client.get_user()
+            if user:
+                self.users.append(user)
 
         elif self.user_id:
-            self.info = self.cdpy.iam.list_users(self.user_id)
+            result = self.client.list_users(user_ids=self.user_id)
+            self.users = result.get("users", [])
 
         elif self.name:
-            user_list = self.cdpy.iam.list_users()
+            result = self.client.list_users()
+            user_list = result.get("users", [])
             for user in user_list:
-                if user["workloadUsername"] in self.name:
-                    self.info.append(user)
+                if user.get("workloadUsername") in self.name:
+                    self.users.append(user)
 
         elif self.filter is not None:
-            self.info = self.apply_filters()
+            self.users = self.client.list_users_filtered(self.filter)
+
+        else:
+            result = self.client.list_users()
+            self.users = result.get("users", [])
 
         if self.view == "full":
-            for user in self.info:
-                self.get_detailed_user_info(user)
+            details = []
+            for user in self.users:
+                uid = user.get("userId")
+                detail = self.client.get_user_details(uid)
+                if detail:
+                    # Rename resourceAssignments to resource_roles for backward compatibility
+                    if "resourceAssignments" in detail:
+                        detail["resource_roles"] = detail.pop("resourceAssignments")
+                    details.append(detail)
+            self.users = details
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="list", aliases=["user_name"]),
-            user_id=dict(required=False, type="list", aliases=["id"]),
-            current_user=dict(required=False, type="bool"),
-            filter=dict(required=False, type="dict"),
-            view=dict(
-                required=False,
-                type="str",
-                choices=["summary", "full"],
-                default="full",
-            ),
-        ),
-        mutually_exclusive=[
-            ["name", "current_user"],
-            ["filter", "current_user"],
-            ["filter", "name"],
-            ["user_id", "name"],
-            ["user_id", "current_user"],
-        ],
-        supports_check_mode=True,
-    )
+    result = IAMUserInfo()
 
-    result = IAMUserInfo(module)
-
-    output = dict(
+    output: Dict[str, Any] = dict(
         changed=False,
-        users=result.info,
+        users=result.users,
     )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
