@@ -746,7 +746,7 @@ class CdpIamClient:
             groups_response = self.list_groups_for_user(user_id=user_id)
             groups = groups_response.get("groupCrns", [])
 
-            result = dict(user_info)
+            result = user_info
             result.update(
                 {
                     "roles": roles,
