@@ -121,6 +121,11 @@ markers = [
   "integration_api: marks tests as integration tests using CDP API credentials",
   "integration_token: marks tests as integration tests using CDP token credentials",
   "slow: marks tests as slow tests",
+  "data_service: marks tests that require a CDP Data Service environment",
+  "all: marks all tests to run (slow, data_service, and regular)",
+]
+addopts = [
+  "-m not slow and not data_service",
 ]
 
 [build-system]
