@@ -110,7 +110,7 @@ class CdpDeClient:
             squelch={404: {}},
         )
 
-    def get_service_by_name(self, name: str) -> Dict[str, Any]:
+    def get_service_by_name(self, name: str) -> Optional[Dict[str, Any]]:
         """
         Get service details by service name.
 
@@ -118,7 +118,7 @@ class CdpDeClient:
             name: The service name
 
         Returns:
-            Service details dict, or empty dict if not found
+            Service details dict, or None if not found
         """
         services = self.list_services()
         for service in services.get("services", []):
@@ -128,9 +128,9 @@ class CdpDeClient:
                     result = self.describe_service(cluster_id)
                     if result and result.get("service"):
                         return result
-        return {}
+        return None
 
-    def get_service_by_cluster_id(self, cluster_id: str) -> Dict[str, Any]:
+    def get_service_by_cluster_id(self, cluster_id: str) -> Optional[Dict[str, Any]]:
         """
         Get service details by cluster ID.
 
@@ -138,12 +138,12 @@ class CdpDeClient:
             cluster_id: The cluster ID
 
         Returns:
-            Service details dict, or empty dict if not found
+            Service details dict, or None if not found
         """
         result = self.describe_service(cluster_id)
 
         if not result or not result.get("service"):
-            return {}
+            return None
 
         return result
 
