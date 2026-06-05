@@ -20,22 +20,34 @@ Integration tests are decorated with `integration_api` and `integration_token` a
 
 `hatch` is configured to run tests via a matrix of Python vs. Ansible versions.
 
-**Run all tests in the first (default) test environment.**
+**Run all regular tests in the first (default) test environment.**
 
 ```bash
 hatch test
 ```
 
-**Run selected tests in the default test environment.**
+**Run selected, regular tests in the default test environment.**
 
 ```bash
 hatch test -k iam_machine_user
 ```
 
+**Run selected, _marked_ tests in the default test environment.**
+
+```bash
+hatch test -k iam_machine_user -m slow
+```
+
+**Run _all_ selected tests in the default test environment.**
+
+```bash
+hatch test -k iam_machine_user -m all
+```
+
 **Run all tests in all test environments, i.e. matrix of testing environments.**
 
 ```bash
-hatch test --all
+hatch test --all -m all
 ```
 
 > [!WARNING] Testing Python 3.9
@@ -54,3 +66,39 @@ pip install pytest pytest-mock ansible-core==2.15 "cdpy @ git+https://github.com
 Then run `pytest` directly instead of `hatch test`.
 
 All other requirements, like `PYTHONPATH`, are still valid.
+
+## Custom Pytest Markers
+
+| Marker | Enabled | Description |
+| --- | --- | --- |
+| `integration_api` | `True` | Marks tests as integration tests using CDP API credentials |
+| `integration_token`  | `True` | Marks tests as integration tests using CDP token credentials |
+| `slow` | `False` | Marks tests as slow tests |
+| `data_service` | `False` | Marks tests that require a CDP Data Service environment |
+| `all` | `False` | Marks all tests to run (slow, data_service, and regular) |
+
+By default, only tests _not_ marked with `slow` or `data_service` are executed.
+
+**Run only the slow tests**
+
+```bash
+hatch test -m slow
+```
+
+**Run only the tests requiring a Data Service fixture**
+
+```bash
+hatch test -m data_service
+```
+
+**Run only slow and Data Service fixture tests**
+
+```bash
+hatch test -m "slow or data_service"
+```
+
+**Run all tests**
+
+```bash
+hatch test -m all
+```

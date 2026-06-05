@@ -73,6 +73,7 @@ def current_user(iam_client) -> dict:
     return user
 
 
+@pytest.mark.slow
 def test_iam_user_info_list_all(iam_module_args):
     """Test listing all IAM users returns at least one user with expected fields."""
 
@@ -117,6 +118,7 @@ def test_iam_user_info_current_user(iam_module_args):
     assert "groups" in user
 
 
+@pytest.mark.slow
 def test_iam_user_info_get_by_name(iam_module_args, current_user):
     """Test retrieving a user by workload username."""
 
@@ -164,6 +166,7 @@ def test_iam_user_info_get_by_user_id(iam_module_args, current_user):
     assert "groups" in user
 
 
+@pytest.mark.slow
 def test_iam_user_info_filter_by_workload_username(iam_module_args, current_user):
     """Test filtering users by workload username regex."""
 
@@ -188,6 +191,7 @@ def test_iam_user_info_filter_by_workload_username(iam_module_args, current_user
     ), f"Filtered result did not include user '{workload_username}'"
 
 
+@pytest.mark.slow
 def test_iam_user_info_nonexistent_user(iam_module_args):
     """Test that querying a non-existent user returns an empty list."""
 

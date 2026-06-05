@@ -42,21 +42,26 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 )
 
 
-def pytest_collection_modifyitems(items):
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config, items):
     """
+    Adds an 'all' alias to run all tests.
     Skips all tests if not running Python 3.6 or higher.
     Skips tests marked 'integration_api' if CDP_ACCESS_KEY_ID and CDP_PRIVATE_KEY
-    and skips tests marked 'integration_token' if CDP_TOKEN environment variable is not set.
+    are missing, and skips 'integration_token' if CDP_TOKEN is missing.
     """
-    # Skip all tests if Python version is less than 3.8
+
     if sys.version_info < (3, 6):
-        skip_python = pytest.skip(
-            "Skipping on Python %s. cloudera.cloud supports Python 3.6 and higher."
-            % sys.version,
+        skip_python = pytest.mark.skip(
+            reason=f"Skipping on Python {sys.version}. cloudera.cloud supports Python 3.6 and higher.",
         )
         for item in items:
             item.add_marker(skip_python)
         return
+
+    marker_expr = config.getoption("-m")
+    if marker_expr == "all":
+        config.option.markexpr = ""
 
     # Initialize skip markers
     skip_api = None
@@ -64,7 +69,6 @@ def pytest_collection_modifyitems(items):
 
     # Check if the environment variables are *not* set
     if "CDP_ACCESS_KEY_ID" not in os.environ or "CDP_PRIVATE_KEY" not in os.environ:
-        # Create a skip marker for API credentials
         skip_api = pytest.mark.skip(
             reason="CDP API credentials not set in env vars. Skipping integration tests.",
         )
@@ -74,11 +78,10 @@ def pytest_collection_modifyitems(items):
             reason="CDP token not set in env vars. Skipping integration tests.",
         )
 
-    # Apply the marker to all tests with the 'integration' mark
     for item in items:
-        if "integration_api" in item.keywords and skip_api:
+        if skip_api and item.get_closest_marker("integration_api"):
             item.add_marker(skip_api)
-        elif "integration_token" in item.keywords and skip_token:
+        if skip_token and item.get_closest_marker("integration_token"):
             item.add_marker(skip_token)
 
 
