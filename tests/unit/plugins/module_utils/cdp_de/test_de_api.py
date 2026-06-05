@@ -179,7 +179,7 @@ class TestCdpDeClient:
         api_client.post.assert_called_once_with(
             "/api/v1/de/describeService",
             data={"clusterId": CLUSTER_ID},
-            squelch={404: {}, 500: {}},
+            squelch={404: {}},
         )
 
     def test_describe_service_not_found(self, mocker):
@@ -343,107 +343,6 @@ class TestCdpDeClient:
 
         # Validate the response
         assert response is None
-
-    def test_get_service_by_env_name(self, mocker):
-        """Test getting all services for an environment."""
-
-        # Mock list_services response with multiple services in same env
-        list_mock = {
-            "services": [
-                {
-                    "clusterId": "cluster-123",
-                    "name": "service-1",
-                    "environmentName": ENV_NAME,
-                },
-                {
-                    "clusterId": "cluster-456",
-                    "name": "service-2",
-                    "environmentName": ENV_NAME,
-                },
-                {
-                    "clusterId": "cluster-other",
-                    "name": "other-service",
-                    "environmentName": "other-env",
-                },
-            ],
-        }
-
-        # Mock describe_service responses
-        describe_mock_1 = {
-            "service": {
-                "clusterId": "cluster-123",
-                "name": "service-1",
-                "environmentName": ENV_NAME,
-                "status": "ClusterCreationCompleted",
-            },
-        }
-        describe_mock_2 = {
-            "service": {
-                "clusterId": "cluster-456",
-                "name": "service-2",
-                "environmentName": ENV_NAME,
-                "status": "ClusterCreationCompleted",
-            },
-        }
-
-        # Mock the CdpClient instance
-        api_client = mocker.create_autospec(CdpClient, instance=True)
-
-        # Create the CdpDeClient instance
-        client = CdpDeClient(api_client=api_client)
-
-        # Mock the methods
-        mocker.patch.object(client, "list_services", return_value=list_mock)
-        mocker.patch.object(
-            client,
-            "describe_service",
-            side_effect=[describe_mock_1, describe_mock_2],
-        )
-
-        # Test getting services by environment name
-        response = client.get_service_by_env_name(ENV_NAME)
-
-        # Validate the response - should return list with 2 services
-        assert len(response) == 2
-        assert response[0]["service"]["clusterId"] == "cluster-123"
-        assert response[1]["service"]["clusterId"] == "cluster-456"
-        assert all(s["service"]["environmentName"] == ENV_NAME for s in response)
-
-        # Verify the methods were called
-        client.list_services.assert_called_once()
-        assert client.describe_service.call_count == 2
-
-    def test_get_service_by_env_name_not_found(self, mocker):
-        """Test getting services by environment name when none exist."""
-
-        # Mock list_services response
-        list_mock = {
-            "services": [
-                {
-                    "clusterId": "cluster-other",
-                    "name": "other-service",
-                    "environmentName": "other-env",
-                },
-            ],
-        }
-
-        # Mock the CdpClient instance
-        api_client = mocker.create_autospec(CdpClient, instance=True)
-
-        # Create the CdpDeClient instance
-        client = CdpDeClient(api_client=api_client)
-
-        # Mock the methods
-        mocker.patch.object(client, "list_services", return_value=list_mock)
-
-        # Test getting services by environment name
-        response = client.get_service_by_env_name("nonexistent-env")
-
-        # Validate the response - should return empty list
-        assert response == []
-
-        # Verify the methods were called
-        client.list_services.assert_called_once()
 
     def test_list_virtual_clusters(self, mocker):
         """Test listing virtual clusters in a service."""

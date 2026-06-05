@@ -107,8 +107,13 @@ def test_workload_auth_token_df_with_environment(module_args, env_context):
         },
     )
 
-    with pytest.raises(AnsibleExitJson) as result:
-        iam_workload_auth_token.main()
+    try:
+        with pytest.raises(AnsibleExitJson) as result:
+            iam_workload_auth_token.main()
+    except AnsibleFailJson as e:
+        if "Unable to locate enabled service" in e.msg:
+            pytest.skip(f"No enabled DF service in environment: {e.msg}")
+        raise
 
     assert result.value.changed is True
     assert result.value.workload_auth_token["token"] is not None

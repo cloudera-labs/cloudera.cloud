@@ -100,6 +100,8 @@ def iam_user_delete(
             if e.status == 404:
                 continue
         except Exception as e:
+            if hasattr(e, "code") and e.code == 404:
+                continue
             pytest.fail(f"Failed to clean up IAM user: {user_id}. {e}")
 
 

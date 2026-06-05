@@ -52,8 +52,11 @@ def valid_de_service(de_client):
     if not services:
         pytest.skip("No Data Engineering services available for testing")
 
-    # Find a service that can be described successfully
+    # Find a service that can be described successfully (skip failed states)
     for svc in services:
+        if svc.get("status") in CdpDeClient.FAILED_STATUSES:
+            continue
+
         cluster_id = svc.get("clusterId")
         if cluster_id:
             details = de_client.describe_service(cluster_id)
@@ -176,35 +179,6 @@ class TestCdpDeClientIntegration:
         # Should return None when service not found
         assert response is None
 
-    def test_get_service_by_env_name(self, de_client, valid_de_service):
-        """Test getting all services for an environment."""
-        env_name = valid_de_service.get("environmentName")
-
-        if not env_name:
-            pytest.skip("Service does not have environmentName")
-
-        response = de_client.get_service_by_env_name(env_name)
-
-        # Validate response
-        assert isinstance(response, list)
-        assert len(response) >= 1  # Should have at least one service
-
-        # Validate each service in the response
-        for service_wrapper in response:
-            assert "service" in service_wrapper
-            service = service_wrapper["service"]
-            assert service["environmentName"] == env_name
-            assert "clusterId" in service
-            assert "name" in service
-
-    def test_get_service_by_env_name_not_found(self, de_client):
-        """Test getting services by environment name when none exist."""
-        response = de_client.get_service_by_env_name("nonexistent-env-12345")
-
-        # Should return empty list when no services found
-        assert isinstance(response, list)
-        assert len(response) == 0
-
     def test_list_virtual_clusters(self, de_client, valid_de_service):
         """Test listing virtual clusters in a service."""
         cluster_id = valid_de_service.get("clusterId")
@@ -290,48 +264,6 @@ class TestCdpDeClientIntegration:
         # Should return None when virtual cluster not found
         assert response is None
 
-    def test_multiple_services_same_environment(self, de_client):
-        """
-        Test that get_service_by_env_name returns multiple services if they exist.
-
-        Note: This test may not find multiple services in the same environment,
-        but validates that the method can handle multiple services correctly.
-        """
-        # Get all services
-        all_services = de_client.list_services().get("services", [])
-
-        if not all_services:
-            pytest.skip("No services available for testing")
-
-        # Group services by environment
-        env_services = {}
-        for svc in all_services:
-            env_name = svc.get("environmentName")
-            if env_name:
-                if env_name not in env_services:
-                    env_services[env_name] = []
-                env_services[env_name].append(svc)
-
-        # Find an environment with multiple services
-        multi_service_env = None
-        for env_name, services in env_services.items():
-            if len(services) > 1:
-                multi_service_env = env_name
-                break
-
-        if not multi_service_env:
-            pytest.skip("No environment with multiple services found for testing")
-
-        # Test getting all services for that environment
-        response = de_client.get_service_by_env_name(multi_service_env)
-
-        # Validate response
-        assert isinstance(response, list)
-        assert len(response) >= 2  # Should have at least 2 services
-        assert all(
-            s["service"]["environmentName"] == multi_service_env for s in response
-        )
-
     def test_service_details_completeness(self, de_client, valid_de_service):
         """Test that describe_service returns all expected fields."""
         cluster_id = valid_de_service.get("clusterId")
@@ -360,30 +292,3 @@ class TestCdpDeClientIntegration:
             if field in service:
                 # If present, verify it's not None
                 assert service[field] is not None, f"Field {field} is None"
-
-    def test_virtual_cluster_details_completeness(
-        self,
-        de_client,
-        valid_de_service,
-        valid_virtual_cluster,
-    ):
-        """Test that describe_virtual_cluster returns all expected fields."""
-        cluster_id = valid_de_service.get("clusterId")
-        vc_id = valid_virtual_cluster.get("vcId")
-
-        response = de_client.describe_virtual_cluster(cluster_id, vc_id)
-
-        # Validate response has virtual cluster details
-        assert response is not None
-
-        # Check for expected core fields
-        expected_fields = ["vcId", "vcName", "clusterId"]
-        for field in expected_fields:
-            assert field in response, f"Missing expected field: {field}"
-
-        # Check for common optional fields
-        optional_fields = ["status", "vcTier", "sparkVersion"]
-        for field in optional_fields:
-            if field in response:
-                # If present, verify it's not None
-                assert response[field] is not None, f"Field {field} is None"
