@@ -419,6 +419,7 @@ def test_iam_user_delete_diff_mode_int(iam_module_args, iam_user_create, env_con
     assert result.value.diff["after"] == {}
 
 
+@pytest.mark.slow
 def test_iam_user_update_roles_diff_mode_int(
     iam_module_args,
     iam_user_delete,

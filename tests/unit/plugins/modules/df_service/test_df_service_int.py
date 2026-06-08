@@ -192,6 +192,7 @@ def df_service_enable(
     return _enable_service
 
 
+@pytest.mark.data_service
 def test_df_service_enable(df_module_args, df_service_disable):
     """Test enabling DataFlow service with subnet filters."""
 
@@ -232,6 +233,7 @@ def test_df_service_enable(df_module_args, df_service_disable):
     assert result.value.service.get("crn") == service_crn
 
 
+@pytest.mark.data_service
 def test_df_service_enable_with_jmespath_filters(
     df_module_args,
     df_service_disable,
@@ -274,6 +276,7 @@ def test_df_service_enable_with_jmespath_filters(
     assert len(result.value.service.get("loadBalancerSubnets", [])) > 0
 
 
+@pytest.mark.data_service
 def test_df_service_disable(
     df_module_args,
     df_service_enable,
