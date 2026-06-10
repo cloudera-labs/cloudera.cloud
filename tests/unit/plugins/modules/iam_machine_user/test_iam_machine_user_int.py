@@ -342,3 +342,70 @@ def test_iam_machine_user_roles_purge(
 
     assert result.value.changed is False
     assert len(result.value.machine_user["roles"]) == 1
+
+
+def test_iam_machine_user_create_check_mode(
+    module_args,
+    iam_machine_user_delete,
+    unique_machine_user_name,
+):
+    """Test creating a new IAM machine user in check mode."""
+
+    iam_machine_user_delete(unique_machine_user_name)
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": unique_machine_user_name,
+            "state": "present",
+            "_ansible_check_mode": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_machine_user.main()
+
+    assert result.value.changed is True
+    assert result.value.machine_user == {}
+
+
+def test_iam_machine_user_delete_check_mode(
+    module_args,
+    iam_machine_user_create,
+    unique_machine_user_name,
+):
+    """Test deleting an IAM machine user in check mode."""
+
+    iam_machine_user_create(name=unique_machine_user_name)
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": unique_machine_user_name,
+            "state": "absent",
+            "_ansible_check_mode": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_machine_user.main()
+
+    assert result.value.changed is True
+    assert result.value.machine_user["machine_user_name"] == unique_machine_user_name
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": unique_machine_user_name,
+            "state": "absent",
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson):
+        iam_machine_user.main()

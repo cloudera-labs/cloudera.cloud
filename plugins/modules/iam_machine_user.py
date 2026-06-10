@@ -243,7 +243,12 @@ class IAMMachineUser(ServicesModule):
             if current_machine_user:
                 if not self.module.check_mode:
                     self.client.delete_machine_user(machine_user_name=self.name)
+                    self.machine_user = {}
+                else:
+                    self.machine_user = current_machine_user
                 self.changed = True
+            else:
+                self.machine_user = {}
 
         if self.state == "present":
             if not current_machine_user:
@@ -287,7 +292,10 @@ class IAMMachineUser(ServicesModule):
             else:
                 self.machine_user = current_machine_user
 
-        self.machine_user = camel_dict_to_snake_dict(self.machine_user)
+        if self.machine_user:
+            self.machine_user = camel_dict_to_snake_dict(self.machine_user)
+        else:
+            self.machine_user = {}
 
 
 def main():
