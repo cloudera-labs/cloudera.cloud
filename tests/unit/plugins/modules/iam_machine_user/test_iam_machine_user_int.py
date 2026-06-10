@@ -71,6 +71,8 @@ def iam_machine_user_delete(
         try:
             iam_client.delete_machine_user(machine_user_name=name)
         except Exception as e:
+            if hasattr(e, "code") and e.code == 404:
+                continue
             pytest.fail(f"Failed to clean up IAM machine user: {name}. {e}")
 
 
