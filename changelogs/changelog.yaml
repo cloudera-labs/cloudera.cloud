@@ -1,6 +1,31 @@
 ---
 ancestor:
 releases:
+  3.3.0:
+    changes:
+      minor_changes:
+        - Update iam machine user (https://github.com/cloudera-labs/cloudera.cloud/pull/284)
+        - Add installed packages header for pytest execution and add Python 3.14 to
+          matrix (https://github.com/cloudera-labs/cloudera.cloud/pull/283)
+        - Add basic integration test for legacy (cdpy-based) env_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/281)
+        - Add pytest markers for data_service and slow tests in df_service and iam_user
+          test files (https://github.com/cloudera-labs/cloudera.cloud/pull/279)
+        - Update publish-ansible-docs workflow to update deprecated action (https://github.com/cloudera-labs/cloudera.cloud/pull/278)
+        - Add 'all' and 'data_service' pytest markers (https://github.com/cloudera-labs/cloudera.cloud/pull/277)
+        - Resolve test failures (https://github.com/cloudera-labs/cloudera.cloud/pull/276)
+        - Refactor cloudera.cloud.iam_user_info (https://github.com/cloudera-labs/cloudera.cloud/pull/275)
+        - Refactor de_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/256)
+        - Update cloudera.cloud.ml to use direct API calls (https://github.com/cloudera-labs/cloudera.cloud/pull/254)
+        - Update df_customflow module  (https://github.com/cloudera-labs/cloudera.cloud/pull/251)
+        - Add iam_user module for CDP IAM user management (https://github.com/cloudera-labs/cloudera.cloud/pull/238)
+      trivial:
+        - Add missing doc_fragment for cloudera.cloud.ml (https://github.com/cloudera-labs/cloudera.cloud/pull/274)
+        - Bump version_added to 3.3.0 in iam_user module (https://github.com/cloudera-labs/cloudera.cloud/pull/272)
+    modules:
+      - description: Create, update, or remove CDP IAM Users.
+        name: iam_user
+        namespace: ''
+    release_date: '2026-06-10'
   3.2.1:
     changes:
       bugfixes:

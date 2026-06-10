@@ -4,6 +4,30 @@ cloudera.cloud Release Notes
 
 .. contents:: Topics
 
+v3.3.0
+======
+
+Minor Changes
+-------------
+
+- Add 'all' and 'data_service' pytest markers (https://github.com/cloudera-labs/cloudera.cloud/pull/277)
+- Add basic integration test for legacy (cdpy-based) env_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/281)
+- Add iam_user module for CDP IAM user management (https://github.com/cloudera-labs/cloudera.cloud/pull/238)
+- Add installed packages header for pytest execution and add Python 3.14 to matrix (https://github.com/cloudera-labs/cloudera.cloud/pull/283)
+- Add pytest markers for data_service and slow tests in df_service and iam_user test files (https://github.com/cloudera-labs/cloudera.cloud/pull/279)
+- Refactor cloudera.cloud.iam_user_info (https://github.com/cloudera-labs/cloudera.cloud/pull/275)
+- Refactor de_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/256)
+- Resolve test failures (https://github.com/cloudera-labs/cloudera.cloud/pull/276)
+- Update cloudera.cloud.ml to use direct API calls (https://github.com/cloudera-labs/cloudera.cloud/pull/254)
+- Update df_customflow module  (https://github.com/cloudera-labs/cloudera.cloud/pull/251)
+- Update iam machine user (https://github.com/cloudera-labs/cloudera.cloud/pull/284)
+- Update publish-ansible-docs workflow to update deprecated action (https://github.com/cloudera-labs/cloudera.cloud/pull/278)
+
+New Modules
+-----------
+
+- cloudera.cloud.iam_user - Create, update, or remove CDP IAM Users.
+
 v3.2.1
 ======
 
