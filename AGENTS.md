@@ -1,6 +1,10 @@
-# cloudera.cloud Collection - Development Guidelines
+# cloudera.cloud Collection - Agent Guidelines
 
-This is an Ansible collection for Cloudera Data Platform (CDP) Public and Private Cloud control plane. See [README.md](README.md) for overview and [CONTRIBUTING.md](CONTRIBUTING.md) for contribution workflow.
+# Agent Directives
+- **Persona**: You are an expert Ansible developer specializing in the CDP collection.
+- **Priority**: Maintain idempotency at all costs. 
+- **Validation**: Never assume an API structure; always verify against `plugins/module_utils` models before writing code.
+- **Workflow**: If creating a new module, always start by defining the `dataclass` model, then the `client`, then the `module`.
 
 ## Quick Start Commands
 
@@ -24,6 +28,42 @@ hatch run lint  # Lint and format
 ansible-galaxy collection build
 hatch run docs:build  # Generate API docs
 ```
+
+## Repository Map
+- `plugins/modules/`: Entry points. (Do not change `__init__.py` boilerplate)
+- `plugins/module_utils/`: Shared logic. **High importance for cross-module consistency.**
+- `tests/unit/`: Test suite. (Always add a test before a feature).
+
+## Common Gotchas
+1. **`AutoExecuteMeta` metaclass**: Modules with `ServicesModule` base auto-execute `process()` after `__init__` — no explicit `main()` call needed
+2. **NULLABLE vs None**: Use `NULLABLE` for unset optional fields, `None` for explicitly null values
+3. **Immutable fields**: Validate immutable fields don't change; fail with clear message if they do
+4. **RST docs are generated**: Never edit `docsbuild/rst/*.rst` files directly — they're auto-generated from module DOCUMENTATION strings
+5. **Collection path**: For `ansible-doc` and doc building, collection must be in `ANSIBLE_COLLECTIONS_PATHS`
+6. **Integration tests**: Need environment variables for service endpoints — tests will be skipped if not set via the `env_context` fixture
+7. **Pre-commit hooks**: Run automatically on commit — use `hatch run lint` to run manually on all files
+
+## Development Workflow
+1. Write unit tests in `tests/unit/plugins/<plugin_type>/<plugin_family>/<plugin_name>/`
+2. Create/modify plugin in `plugins/<plugin_type>/<plugin_family>/<plugin_name>/`
+3. Write integration tests in `tests/unit/plugins/<plugin_type>/<plugin_family>/<plugin_name>/` with `_int.py` suffix and use `env_context` for env var checks
+4. Update DOCUMENTATION/EXAMPLES/RETURN strings
+5. Validate: `ansible-doc -t <plugin_type> cloudera.cloud.<plugin_name>`
+6. Run final tests: `hatch test <plugin name filter>`
+7. Run linter: `hatch run lint`
+8. Build collection: `ansible-galaxy collection build`
+9. Regenerate docs: `hatch run docs:build`
+
+## Constraints
+- Do not modify `pyproject.toml` or other Hatch configurations without direct, human approval.
+- Do not edit `docsbuild/rst/*.rst` files. Use `hatch run docs:build`.
+- Do not run `tests/unit/` files with `pytest`. Use `hatch test` as the `pytest` wrapper.
+- Never hardcode API credentials in tests or code; always use `env_context` or environment variables.
+
+## Resources
+- **API docs**: Run `hatch run docs:build` then open `docsbuild/build/html/index.html`
+- **Testing guide**: See `tests/unit/conftest.py` for test fixtures and utilities
+- **Hatch commands**: Run `hatch env show` to see available environments and scripts
 
 ## Architecture Patterns
 
@@ -72,7 +112,7 @@ class ExampleModule(ServicesModule):
     def process(self):
         client = ExampleClient(self.api_client)
         # Use client for operations
-        
+
 class ExampleClient:
     def create_resource(self, resource: ExampleResource) -> ExampleResource:
         # API calls here
@@ -132,7 +172,7 @@ class ServiceEntityModule(ServicesModule):
             argument_spec=dict(**Model.argument_spec(), state=...),
             supports_check_mode=True,
         )
-        
+
     def process(self):
         # Implement logic
         # Set self.changed and self.diff
@@ -140,20 +180,21 @@ class ServiceEntityModule(ServicesModule):
 
 ## Testing Patterns
 
-### Unit Tests
+### Unit and Integration Tests
 
 Use pytest with fixtures from `tests/unit/conftest.py`:
 
+**Unit tests:**
 ```python
 def test_create_resource(module_args, mocker):
     # Setup
     mock_method = mocker.patch("module_utils.client.Client.create", return_value=...)
     module_args({"endpoint": "https://example.com", "name": "test"})
-    
+
     # Execute
     with pytest.raises(AnsibleExitJson) as e:
         module.main()
-    
+
     # Assert
     result = e.value.args[0]
     assert result["changed"] is True
@@ -167,6 +208,79 @@ def test_create_resource(module_args, mocker):
 
 Fixtures should be defined in `tests/unit/conftest.py` or before the test functions in the same file.
 
+```python
+# Required environment variables for integration tests
+REQUIRED_ENV_VARS = [
+    "ENV_CRN",
+    "CDP_API_ENDPOINT",
+    "CDP_ACCESS_KEY_ID",
+    "CDP_PRIVATE_KEY",
+]
+
+# Test configuration constants
+TEST_MIN_NODES = 3
+TEST_MAX_NODES = 10
+
+# Mark all tests in this module as integration tests requiring API credentials
+pytestmark = pytest.mark.integration_api
+
+
+@pytest.fixture
+def example_module_args(module_args, env_context) -> Callable[[dict], None]:
+    """Fixture to pre-populate common Example module arguments."""
+
+    def wrapped_args(args=None):
+        if args is None:
+            args = {}
+
+        args.update(
+            {
+                "endpoint": env_context["CDP_API_ENDPOINT"],
+                "access_key": env_context["CDP_ACCESS_KEY_ID"],
+                "private_key": env_context["CDP_PRIVATE_KEY"],
+                "env_crn": env_context["ENV_CRN"],
+            },
+        )
+        return module_args(args)
+
+    return wrapped_args
+
+
+@pytest.fixture
+def example_client(test_cdp_client) -> CdpExampleClient:
+    """Fixture to provide an Example client for tests."""
+    return CdpExampleClient(api_client=test_cdp_client)
+
+def test_example_service_enable(example_module_args):
+    """Test Example service."""
+
+    example_module_args(
+        {
+            "state": "present",
+            "nodes_min": TEST_MIN_NODES,
+            "nodes_max": TEST_MAX_NODES,
+            "wait": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        example_service.main()
+
+    # Verify the result
+    assert result.value.changed is True
+    assert result.value.service is not None
+    assert result.value.service.get("crn") == service_crn
+    assert "environmentCrn" in result.value.service
+
+    # Idempotency check - running again should not change anything
+    with pytest.raises(AnsibleExitJson) as result:
+        example_service.main()
+
+    assert result.value.changed is False
+    assert result.value.service is not None
+    assert result.value.service.get("crn") == service_crn
+```
+
 ### Test Organization
 
 ```
@@ -176,6 +290,15 @@ tests/unit/plugins/<plugin_type>/
       test_<plugin_name>_<plugin_type>.py
       test_<plugin_name>_<plugin_type>_int.py
 ```
+
+### Test Verification
+
+Use Hatch `test` subcommand to manage `pytest` executions.
+
+. `hatch test -q tests/unit/plugins/module_utils/<service client>`
+. `hatch test -q tests/unit/plugins/modules/<module>`
+. `hatch test -q -m integration_api tests/unit/plugins/module_utils/<service client>`
+. `hatch test -q -m integration_api tests/unit/plugins/modules/<module>`
 
 ## Documentation Standards
 
@@ -229,31 +352,3 @@ hatch run docs:build  # Regenerate RST docs
 
 - Parameters: `url`/`endpoint`, `url_username`, `url_password`
 - Optional: `client_cert`, `client_key`, `validate_certs`
-
-## Common Gotchas
-
-1. **`AutoExecuteMeta` metaclass**: Modules with `ServicesModule` base auto-execute `process()` after `__init__` — no explicit `main()` call needed
-2. **NULLABLE vs None**: Use `NULLABLE` for unset optional fields, `None` for explicitly null values
-3. **Immutable fields**: Validate immutable fields don't change; fail with clear message if they do
-4. **RST docs are generated**: Never edit `docsbuild/rst/*.rst` files directly — they're auto-generated from module DOCUMENTATION strings
-5. **Collection path**: For `ansible-doc` and doc building, collection must be in `ANSIBLE_COLLECTIONS_PATHS`
-6. **Integration tests**: Need environment variables for service endpoints — tests will be skipped if not set via the `env_context` fixture
-7. **Pre-commit hooks**: Run automatically on commit — use `hatch run lint` to run manually on all files
-
-## Development Workflow
-
-1. Create/modify plugin in `plugins/<plugin_type>/<plugin_family>/<plugin_name>/`
-2. Update DOCUMENTATION/EXAMPLES/RETURN strings
-3. Validate: `ansible-doc -t <plugin_type> cloudera.cloud.<plugin_name>`
-4. Write unit tests in `tests/unit/plugins/<plugin_type>/<plugin_family>/<plugin_name>/`
-5. Write integration tests in `tests/unit/plugins/<plugin_type>/<plugin_family>/<plugin_name>/` with `_int.py` suffix and use `env_context` for env var checks
-5. Run tests: `pytest tests/unit/ <plugin name filter>`
-6. Run linter: `hatch run lint`
-7. Build collection: `ansible-galaxy collection build`
-8. Regenerate docs: `hatch run docs:build`
-
-## Resources
-
-- **API docs**: Run `hatch run docs:build` then open `docsbuild/build/html/index.html`
-- **Testing guide**: See `tests/unit/conftest.py` for test fixtures and utilities
-- **Hatch commands**: Run `hatch env show` to see available environments and scripts
