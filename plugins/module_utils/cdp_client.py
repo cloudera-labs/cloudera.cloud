@@ -31,6 +31,8 @@ from cryptography.hazmat.primitives.asymmetric import ed25519
 from email.utils import formatdate
 from typing import Any, Dict, Optional, List, Tuple, Union
 from urllib.parse import urlparse
+
+from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.urls import fetch_url
 
 
@@ -388,7 +390,7 @@ class AnsibleCdpClient(CdpClient):
 
     def __init__(
         self,
-        module,
+        module: AnsibleModule,
         base_url: str,
         access_key: str,
         private_key: str,

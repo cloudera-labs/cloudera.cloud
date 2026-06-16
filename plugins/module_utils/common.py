@@ -22,7 +22,20 @@ import abc
 import io
 import logging
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from dataclasses import asdict, is_dataclass
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.parameters import env_fallback
@@ -37,38 +50,131 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 LOG_FORMAT = "%(asctime)s - %(threadName)s - %(name)s - %(levelname)s - %(message)s"
 
 
-def diff_dict(
-    prev: Optional[Dict[str, Any]],
-    next: Optional[Dict[str, Any]],
-    exclude_keys: Optional[List[str]] = None,
-) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    """
-    Compare two dictionaries and return their differences.
+T = TypeVar("T")
 
-    Recursively compares two dictionaries field by field and returns
-    a tuple of dictionaries containing the old and new values for fields that differ.
-    Supports nested dictionaries, lists, and primitive types.
+
+NULLABLE = object  # Sentinel value to allow explicit None values in to_dict()
+
+
+def from_dict(cls: Type[T], data: Any) -> T:
+    """
+    Recursively loads a dict into a dataclass
+    """
+
+    def _from_dict_recursive(current_cls: Type[Any], current_data: Any) -> Any:
+        if current_data is None:
+            return None
+
+        origin = get_origin(current_cls)
+
+        if origin is Union:
+            # If a Union, check each type in the Union
+            for union_arg in get_args(current_cls):
+                # Ignore NoneType
+                if union_arg is type(None):
+                    continue
+
+                # Process only dataclasses (not instances) and Lists
+                if isinstance(union_arg, type) and (
+                    is_dataclass(union_arg) or get_origin(union_arg) in (list, List)
+                ):
+                    # If Union contains a dataclass or List, parse accordingly
+                    return _from_dict_recursive(union_arg, current_data)
+            # If a Union of primitives, return data as-is
+            return current_data
+
+        if origin is list or origin is List:
+            # If a list, get the item type and parse each item
+            item_type = get_args(current_cls)[0]
+            if isinstance(current_data, list):
+                return [_from_dict_recursive(item_type, item) for item in current_data]
+            return []  # or raise error if data isn't a list
+
+        if is_dataclass(current_cls) and isinstance(current_data, dict):
+            # Get type hints for all fields in this specific dataclass
+            type_hints = get_type_hints(current_cls)
+
+            return current_cls(
+                **{
+                    field: _from_dict_recursive(
+                        type_hints[field],
+                        current_data.get(field),
+                    )
+                    for field in current_data
+                    if field in type_hints
+                },
+            )
+
+        if isinstance(current_data, dict):
+            # If a dict, parse each value, assuming keys are strings
+            value_cls = get_args(current_cls)[1]
+            return {
+                k: _from_dict_recursive(value_cls, v) for k, v in current_data.items()
+            }
+
+        # Return primitives (int, str, bool)
+        return current_data
+
+    return _from_dict_recursive(cls, data)
+
+
+def to_dict(instance: Any) -> Dict[str, Any]:
+    """
+    Recursively convert a dataclass instance to a dictionary, skipping default NULLABLE values.
+    NoneType values are included in the dictionary.
 
     Args:
-        prev: The previous dictionary to compare from (can be None).
-        next: The next dictionary to compare to (can be None).
-        exclude_keys: Optional list of keys to exclude from comparison (e.g., read-only fields).
+        instance: The dataclass instance to convert.
+    """
+
+    def _skip_none_factory(data):
+        return {k: v for k, v in data if v is not NULLABLE}
+
+    if is_dataclass(instance) and not isinstance(instance, type):
+        return asdict(instance, dict_factory=_skip_none_factory)
+
+    raise TypeError(f"Expected dataclass type, got {type(instance)}")
+
+
+def diff_dict(
+    prev: Any,
+    next: Any,
+    filter_nullable: bool = True,
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """
+    Compare two dataclass instances and return their differences.
+
+    Recursively compares two dataclass instances field by field and returns
+    a tuple of dictionaries containing the old and new values for fields that differ.
+    Supports nested dataclasses, lists, and primitive types.
+
+    Args:
+        prev: The previous dataclass instance to compare from.
+        next: The next dataclass instance to compare to.
+        filter_nullable: If True, exclude fields with NULLABLE sentinel values from comparison.
+            Defaults to True.
 
     Returns:
         A tuple of two dictionaries (old_values, new_values) containing only the fields
-        that differ between the dictionaries. Nested differences are represented as nested
-        dictionaries. Empty dictionaries are returned if dictionaries are identical.
+        that differ between the instances. Nested differences are represented as nested
+        dictionaries. Empty dictionaries are returned if instances are identical.
+
+    Raises:
+        TypeError: If instances are not dataclasses or are of different types.
 
     Example:
-        >>> old = {"name": "Alice", "age": 30, "city": "NYC"}
-        >>> new = {"name": "Alice", "age": 31, "city": "NYC"}
+        >>> @dataclass
+        ... class Person:
+        ...     name: str
+        ...     age: int
+        >>> old = Person(name="Alice", age=30)
+        >>> new = Person(name="Alice", age=31)
         >>> old_diff, new_diff = diff_dict(old, new)
         >>> print(old_diff)
         {'age': 30}
         >>> print(new_diff)
         {'age': 31}
     """
-    exclude_keys = exclude_keys or []
 
     def _diff_recursive(prev_val: Any, new_val: Any) -> Tuple[Any, Any, bool]:
         """
@@ -77,37 +183,141 @@ def diff_dict(
         Returns:
             Tuple of (prev_value, new_value, has_difference)
         """
+        # Handle NULLABLE filtering
+        if filter_nullable:
+            if prev_val is NULLABLE and new_val is NULLABLE:
+                return None, None, False
+            if prev_val is NULLABLE:
+                prev_val = None
+            if new_val is NULLABLE:
+                new_val = None
+
         # If both are None, no difference
         if prev_val is None and new_val is None:
             return None, None, False
 
         # If one is None and the other isn't, there's a difference
         if prev_val is None or new_val is None:
-            return prev_val, new_val, True
+            # Convert dataclass instances to dicts for consistency
+            prev_result = (
+                to_dict(prev_val)
+                if is_dataclass(prev_val) and not isinstance(prev_val, type)
+                else prev_val
+            )
+            new_result = (
+                to_dict(new_val)
+                if is_dataclass(new_val) and not isinstance(new_val, type)
+                else new_val
+            )
+            return prev_result, new_result, True
 
-        # If both are dictionaries, compare key by key
+        # If both are dataclasses, recursively compare fields
+        if is_dataclass(prev_val) and is_dataclass(new_val):
+            if type(prev_val) != type(new_val):
+                # Different types, convert both to dicts
+                prev_result = (
+                    to_dict(prev_val) if not isinstance(prev_val, type) else prev_val
+                )
+                new_result = (
+                    to_dict(new_val) if not isinstance(new_val, type) else new_val
+                )
+                return prev_result, new_result, True
+
+            old_dict = {}
+            new_dict = {}
+            has_diff = False
+
+            type_hints = get_type_hints(type(prev_val))
+            for field_name in type_hints:
+                old_field = getattr(prev_val, field_name, NULLABLE)
+                new_field = getattr(new_val, field_name, NULLABLE)
+
+                old_result, new_result, field_diff = _diff_recursive(
+                    old_field,
+                    new_field,
+                )
+
+                if field_diff:
+                    old_dict[field_name] = old_result
+                    new_dict[field_name] = new_result
+                    has_diff = True
+
+            if has_diff:
+                return old_dict, new_dict, True
+            return {}, {}, False
+
+        # If both are lists, compare element by element
+        if isinstance(prev_val, list) and isinstance(new_val, list):
+            if len(prev_val) != len(new_val):
+                # Convert any dataclass instances in the lists to dicts
+                prev_result = [
+                    (
+                        to_dict(item)
+                        if is_dataclass(item) and not isinstance(item, type)
+                        else item
+                    )
+                    for item in prev_val
+                ]
+                new_result = [
+                    (
+                        to_dict(item)
+                        if is_dataclass(item) and not isinstance(item, type)
+                        else item
+                    )
+                    for item in new_val
+                ]
+                return prev_result, new_result, True
+
+            old_list = []
+            new_list = []
+            has_diff = False
+
+            for old_item, new_item in zip(prev_val, new_val):
+                old_result, new_result, item_diff = _diff_recursive(
+                    old_item,
+                    new_item,
+                )
+                if item_diff:
+                    old_list.append(old_result)
+                    new_list.append(new_result)
+                    has_diff = True
+                else:
+                    # Include unchanged items to maintain list structure
+                    # Convert dataclass instances to dicts for consistency
+                    old_item_result = (
+                        to_dict(old_item)
+                        if is_dataclass(old_item) and not isinstance(old_item, type)
+                        else old_item
+                    )
+                    new_item_result = (
+                        to_dict(new_item)
+                        if is_dataclass(new_item) and not isinstance(new_item, type)
+                        else new_item
+                    )
+                    old_list.append(old_item_result)
+                    new_list.append(new_item_result)
+
+            if has_diff:
+                return old_list, new_list, True
+            return [], [], False
+
+        # If both are dicts, compare key by key
         if isinstance(prev_val, dict) and isinstance(new_val, dict):
             old_dict = {}
             new_dict = {}
             has_diff = False
 
-            # Get all unique keys from both dictionaries
             all_keys = set(prev_val.keys()) | set(new_val.keys())
-
             for key in all_keys:
-                # Skip excluded keys
-                if key in exclude_keys:
-                    continue
+                old_item = prev_val.get(key, None)
+                new_item = new_val.get(key, None)
 
-                old_item = prev_val.get(key)
-                new_item = new_val.get(key)
-
-                old_result, new_result, item_has_diff = _diff_recursive(
+                old_result, new_result, item_diff = _diff_recursive(
                     old_item,
                     new_item,
                 )
 
-                if item_has_diff:
+                if item_diff:
                     old_dict[key] = old_result
                     new_dict[key] = new_result
                     has_diff = True
@@ -116,50 +326,37 @@ def diff_dict(
                 return old_dict, new_dict, True
             return {}, {}, False
 
-        # If both are lists, compare element by element recursively
-        if isinstance(prev_val, list) and isinstance(new_val, list):
-            if len(prev_val) != len(new_val):
-                return prev_val, new_val, True
-
-            old_list = []
-            new_list = []
-            has_diff = False
-
-            for old_item, new_item in zip(prev_val, new_val):
-                old_result, new_result, item_diff = _diff_recursive(old_item, new_item)
-                if item_diff:
-                    old_list.append(old_result)
-                    new_list.append(new_result)
-                    has_diff = True
-                else:
-                    old_list.append(old_item)
-                    new_list.append(new_item)
-
-            if has_diff:
-                return old_list, new_list, True
-            return [], [], False
-
         # For primitives and other types, direct comparison
         if prev_val != new_val:
             return prev_val, new_val, True
 
         return prev_val, new_val, False
 
-    # Handle None inputs
-    if prev is None and next is None:
-        return {}, {}
+    # Validate inputs
+    if not is_dataclass(prev) or isinstance(prev, type):
+        raise TypeError(
+            f"Expected dataclass instance for prev, got {type(prev)}",
+        )
 
-    if prev is None:
-        return {}, next
+    if not is_dataclass(next) or isinstance(next, type):
+        raise TypeError(
+            f"Expected dataclass instance for next, got {type(next)}",
+        )
 
-    if next is None:
-        return prev, {}
+    if type(prev) != type(next):
+        raise TypeError(
+            f"Cannot compare different dataclass types: {type(prev)} vs {type(next)}",
+        )
 
     prev_diff, next_diff, _ = _diff_recursive(prev, next)
 
-    return (
-        prev_diff if isinstance(prev_diff, dict) else {},
-        next_diff if isinstance(next_diff, dict) else {},
+    return prev_diff if isinstance(prev_diff, dict) else {}, (
+        next_diff
+        if isinstance(
+            next_diff,
+            dict,
+        )
+        else {}
     )
 
 
