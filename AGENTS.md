@@ -68,40 +68,44 @@ hatch run docs:build  ## Generate API docs
 ## Step-by-Step Module Creation Checklist
 When tasked with creating a new Ansible module (e.g., service_entity), execute these steps strictly in order. Do not skip validation steps.
 
+### Phase 0: Context Set Up
+- [ ] Invoke the /caveman skill, if available.
+- [ ] Invoke the /tdd skill, if available.
+
 ### Phase 1: File Setup & Naming
-[ ] Verify Names: Ensure the module file follows {service}_{entity}.py (or {service}_{entity}_info.py for read-only).
-[ ] Create Module File: Path must be plugins/modules/{service}_{entity}.py.
-[ ] Create Utils File (if needed): If this service doesn't have an existing client, create plugins/module_utils/{service}.py.
-[ ] Create Test Directories: Scaffold tests/unit/plugins/modules/{service}/{entity}/.
+- [ ] Verify Names: Ensure the module file follows {service}_{entity}.py (or {service}_{entity}_info.py for read-only).
+- [ ] Create Module File: Path must be plugins/modules/{service}_{entity}.py.
+- [ ] Create Utils File (if needed): If this service doesn't have an existing client, create plugins/module_utils/{service}.py.
+- [ ] Create Test Directories: Scaffold tests/unit/plugins/modules/{service}/{entity}/.
 
 ### Phase 2: Data Modeling (plugins/module_utils/)
-[ ] Implement Dataclass: Define the resource structure using @dataclass.
-[ ] Apply Sentinels: Use Union[type, None, NULLABLE] = NULLABLE for all optional fields to correctly isolate unset values from explicit None values.
-[ ] Serialization Check: Ensure the model supports or maps cleanly to from_dict() and to_dict().
+- [ ] Implement Dataclass: Define the resource structure using @dataclass.
+- [ ] Apply Sentinels: Use Union[type, None, NULLABLE] = NULLABLE for all optional fields to correctly isolate unset values from explicit None values.
+- [ ] Serialization Check: Ensure the model supports or maps cleanly to from_dict() and to_dict().
 
 ### Phase 3: Client Layer (plugins/module_utils/)
-[ ] Isolate Logic: Create the ServiceEntityClient class. It must only handle REST operations using AnsibleCdpClient; it must contain no Ansible orchestration logic.
-[ ] Type Hinting: Strictly type hint all method arguments and return types using the phase 2 dataclasses.
-[ ] Unit Tests: Write unit tests in test_{module_utility_name}.py leveraging mocker to mock the REST API.
-[ ] Integration Tests: Write integration tests in test_{module_utility_name}_int.py. Apply the pytestmark = pytest.mark.integration_api decorator and utilize the env_context fixture.
+- [ ] Isolate Logic: Create the ServiceEntityClient class. It must only handle REST operations using AnsibleCdpClient; it must contain no Ansible orchestration logic.
+- [ ] Type Hinting: Strictly type hint all method arguments and return types using the phase 2 dataclasses.
+- [ ] Unit Tests: Write unit tests in test_{module_utility_name}.py leveraging mocker to mock the REST API. Follow the _vertical_ style testing approach (one test, one implementation, repeat). Do not follow a _horizontal_ style testing approach (all tests, all implementation). Write each test, run the test. Write the implementation, run the test. Repeat.
+- [ ] Integration Tests: Write integration tests in test_{module_utility_name}_int.py. Apply the pytestmark = pytest.mark.integration_api decorator and utilize the env_context fixture. Follow the _vertical_ style testing approach (one test, one implementation, repeat). Do not follow a _horizontal_ style testing approach (all tests, all implementation). Write each test, run the test. Write the implementation, run the test. Repeat.
 
 ### Phase 4: Ansible Module Layer (plugins/modules/)
-[ ] Base Class Inheritance: Make your module class inherit from ServicesModule.
-[ ] Argument Spec: Populate argument_spec=dict(Model.argument_spec(), state=...) inside __init__.
-[ ] Implement process(): Place all business logic, state transitions (present/absent), and idempotency checks inside the process(self) method.
-[ ] No main() Call: CRITICAL: Do not append an explicit if __name__ == '__main__': main() invocation block at the bottom of the file. The AutoExecuteMeta metaclass handles execution automatically after instantiation.
-[ ] Unit Tests: Write unit tests in test_{module_name}_module.py leveraging module_args and mocker to mock the Client layer.
-[ ] Integration Tests: Write integration tests in test_{module_name}_module_int.py. Apply the pytestmark = pytest.mark.integration_api decorator and utilize the env_context fixture.
+- [ ] Base Class Inheritance: Make your module class inherit from ServicesModule.
+- [ ] Argument Spec: Populate argument_spec=dict(Model.argument_spec(), state=...) inside __init__.
+- [ ] Implement process(): Place all business logic, state transitions (present/absent), and idempotency checks inside the process(self) method.
+- [ ] No main() Call: CRITICAL: Do not append an explicit if __name__ == '__main__': main() invocation block at the bottom of the file. The AutoExecuteMeta metaclass handles execution automatically after instantiation.
+- [ ] Unit Tests: Write unit tests in test_{module_name}.py leveraging module_args and mocker to mock the Client layer. Follow the _vertical_ style testing approach (one test, one implementation, repeat). Do not follow a _horizontal_ style testing approach (all tests, all implementation). Write each test, run the test. Write the implementation, run the test. Repeat.
+- [ ] Integration Tests: Write integration tests in test_{module_name}_int.py. Apply the pytestmark = pytest.mark.integration_api decorator and utilize the env_context fixture. Follow the _vertical_ style testing approach (one test, one implementation, repeat). Do not follow a _horizontal_ style testing approach (all tests, all implementation). Write each test, run the test. Write the implementation, run the test. Repeat.
 
 ### Phase 5: Ansible Documentation Blocks
-[ ] Doc Fragment: Ensure extends_documentation_fragment: cloudera.cloud.services_client is included.
-[ ] Parameter Sync: Double-check that every field in your Python argument_spec is documented with explicit types and required fields.
-[ ] Examples & Returns: Provide 2–4 credential-masked playbook examples and document all keys returned in the RETURN block.
+- [ ] Doc Fragment: Ensure extends_documentation_fragment: cloudera.cloud.services_client is included.
+- [ ] Parameter Sync: Double-check that every field in your Python argument_spec is documented with explicit types and required fields.
+- [ ] Examples & Returns: Provide 2–4 credential-masked playbook examples and document all keys returned in the RETURN block.
 
 ### Phase 6: Testing & Validation
-[ ] Unit Tests: Confirm all unit tests for the new and updated modules.
-[ ] Integration Tests: Confirm all integration tests for the new and updated modules.
-[ ] Execution Suite: Run the following commands via terminal tool and do not proceed if any fail:
+- [ ] Unit Tests: Confirm all unit tests for the new and updated modules.
+- [ ] Integration Tests: Confirm all integration tests for the new and updated modules.
+- [ ] Execution Suite: Run the following commands via terminal tool and do not proceed if any fail:
 
 
 ```bash
@@ -383,7 +387,7 @@ Create new fragments in `plugins/doc_fragments/` for shared parameter groups for
 
 - Use variables for credentials: `{{ endpoint }}`, `{{ username }}`
 - Show 2-4 common use cases (not exhaustive)
-- Include task names that explain purpose
+- Include task `name:` to explain each example's purpose
 - Show state transitions (present/absent) where applicable
 
 ### RETURN Block
