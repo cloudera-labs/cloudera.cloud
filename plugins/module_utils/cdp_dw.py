@@ -27,6 +27,7 @@ from typing import (
     Union,
 )
 
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
 )
@@ -62,6 +63,25 @@ class ConnectorTestJob:
     jobFinishTime: Union[str, None, NULLABLE] = NULLABLE
     labels: Union[Dict[str, str], None, NULLABLE] = NULLABLE
     outputLog: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class DwSecretProperties:
+    """Properties of a CDW secret."""
+
+    azureVaultName: Union[str, None, type] = NULLABLE
+    cloudProvider: Union[str, None, type] = NULLABLE
+    version: Union[str, None, type] = NULLABLE
+
+
+@dataclass
+class DwSecret:
+    """Details of a single CDW secret."""
+
+    secretName: Union[str, None, type] = NULLABLE
+    secretProviderKey: Union[str, None, type] = NULLABLE
+    createdBy: Union[str, None, type] = NULLABLE
+    properties: Union[DwSecretProperties, None, type] = NULLABLE
 
 
 class CdpDwClient:
@@ -288,3 +308,19 @@ class CdpDwClient:
             squelch={404: {"results": []}},
         )
         return [from_dict(ConnectorTestJob, j) for j in response.get("results", [])]
+
+    def list_secrets(self, cluster_id: str) -> List[DwSecret]:
+        """
+        List all secrets in a CDW cluster.
+
+        Args:
+            cluster_id: The ID of the cluster
+
+        Returns:
+            List of DwSecret dataclass instances
+        """
+        response = self.api_client.post(
+            "/api/v1/dw/listSecrets",
+            json_data={"clusterId": cluster_id},
+        )
+        return [from_dict(DwSecret, item) for item in response.get("result", [])]
