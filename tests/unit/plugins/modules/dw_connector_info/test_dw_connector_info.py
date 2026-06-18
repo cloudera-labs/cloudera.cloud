@@ -76,7 +76,7 @@ class TestDwConnectorInfoModule:
                 "access_key": ACCESS_KEY,
                 "private_key": PRIVATE_KEY,
                 "cluster_id": CLUSTER_ID,
-            }
+            },
         )
 
         # Patch load_cdp_config to avoid reading real config files
@@ -110,7 +110,7 @@ class TestDwConnectorInfoModule:
                 "access_key": ACCESS_KEY,
                 "private_key": PRIVATE_KEY,
                 "cluster_id": CLUSTER_ID,
-            }
+            },
         )
 
         # Patch load_cdp_config
@@ -142,7 +142,7 @@ class TestDwConnectorInfoModule:
                 "private_key": PRIVATE_KEY,
                 "cluster_id": CLUSTER_ID,
                 "connector_id": "connector-1",
-            }
+            },
         )
 
         # Patch load_cdp_config
@@ -175,7 +175,7 @@ class TestDwConnectorInfoModule:
                 "private_key": PRIVATE_KEY,
                 "cluster_id": CLUSTER_ID,
                 "connector_id": "nonexistent-id",
-            }
+            },
         )
 
         # Patch load_cdp_config
@@ -207,7 +207,7 @@ class TestDwConnectorInfoModule:
                 "private_key": PRIVATE_KEY,
                 "cluster_id": CLUSTER_ID,
                 "name": "connector-2",
-            }
+            },
         )
 
         # Patch load_cdp_config
@@ -240,7 +240,7 @@ class TestDwConnectorInfoModule:
                 "private_key": PRIVATE_KEY,
                 "cluster_id": CLUSTER_ID,
                 "name": "nonexistent-name",
-            }
+            },
         )
 
         # Patch load_cdp_config
@@ -273,7 +273,7 @@ class TestDwConnectorInfoModule:
                 "cluster_id": CLUSTER_ID,
                 "connector_id": "connector-1",
                 "name": "connector-1",
-            }
+            },
         )
 
         # Patch load_cdp_config

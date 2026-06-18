@@ -23,7 +23,7 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union
+    Union,
 )
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
@@ -80,9 +80,7 @@ class CdpDwClient:
             data=data,
             squelch={404: {"connectors": []}},
         )
-        return [
-            from_dict(Connector, c) for c in response.get("connectors", [])
-        ]
+        return [from_dict(Connector, c) for c in response.get("connectors", [])]
 
     def get_connector_by_id(
         self,

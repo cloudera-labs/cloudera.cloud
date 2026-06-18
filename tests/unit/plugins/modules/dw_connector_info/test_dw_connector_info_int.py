@@ -55,7 +55,7 @@ def dw_connector_info_module_args(module_args, env_context) -> dict:
                 "access_key": env_context.get("CDP_ACCESS_KEY_ID"),
                 "private_key": env_context.get("CDP_PRIVATE_KEY"),
                 "cluster_id": env_context.get("CDW_CLUSTER_ID"),
-            }
+            },
         )
         return module_args(args)
 
@@ -136,7 +136,7 @@ class TestDwConnectorInfoIntegration:
     def test_get_nonexistent_connector(self, dw_connector_info_module_args):
         """Test getting a connector that doesn't exist."""
         dw_connector_info_module_args(
-            {"connector_id": "nonexistent-connector-99999"}
+            {"connector_id": "nonexistent-connector-99999"},
         )
 
         with pytest.raises(AnsibleExitJson) as exc:
