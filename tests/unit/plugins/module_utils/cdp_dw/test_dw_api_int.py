@@ -18,8 +18,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import re
 import pytest
+import re
 import warnings
 
 from typing import Generator
@@ -28,6 +28,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
     CdpDwClient,
     Connector,
     ConnectorTestJob,
+    DwSecret,
 )
 from ansible_collections.cloudera.cloud.tests.unit import (
     CdpTestClient,
@@ -283,3 +284,30 @@ def test_list_connector_test_jobs(
 
     assert isinstance(jobs, list)
     assert all(isinstance(j, ConnectorTestJob) for j in jobs)
+
+
+class TestCdpDwClientListSecretsIntegration:
+    """Integration tests for CdpDwClient.list_secrets using real CDP API."""
+
+    def test_list_secrets_returns_list(self, dw_client, existing_cluster_id):
+        """Test that list_secrets returns a list of DwSecret instances."""
+        secrets = dw_client.list_secrets(existing_cluster_id)
+
+        assert isinstance(secrets, list)
+        assert all(isinstance(s, DwSecret) for s in secrets)
+
+    # TODO Add existing_secret fixture to test that at least one secret is returned, and that its fields are populated
+    def test_list_secrets_fields_populated(self, dw_client, existing_cluster_id):
+        """Test that returned secrets have expected fields populated."""
+        secrets = dw_client.list_secrets(existing_cluster_id)
+
+        if not secrets:
+            pytest.skip("No secrets available in the cluster")
+
+        first = secrets[0]
+        assert first.secretName is not None
+
+    def test_list_secrets_invalid_cluster(self, dw_client):
+        """Test that an invalid cluster ID propagates an API error."""
+        with pytest.raises(Exception):
+            dw_client.list_secrets("nonexistent-cluster-99999")

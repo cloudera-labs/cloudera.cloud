@@ -36,9 +36,6 @@ REQUIRED_ENV_VARS = [
     "CDW_CLUSTER_ID",
 ]
 
-# Mark all tests in this module as integration tests requiring API credentials
-pytestmark = pytest.mark.integration_api
-
 
 @pytest.fixture
 def dw_secret_info_module_args(module_args, env_context):

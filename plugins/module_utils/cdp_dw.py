@@ -69,19 +69,19 @@ class ConnectorTestJob:
 class DwSecretProperties:
     """Properties of a CDW secret."""
 
-    azureVaultName: Union[str, None, type] = NULLABLE
-    cloudProvider: Union[str, None, type] = NULLABLE
-    version: Union[str, None, type] = NULLABLE
+    azureVaultName: Union[str, None, NULLABLE] = NULLABLE
+    cloudProvider: Union[str, None, NULLABLE] = NULLABLE
+    version: Union[str, None, NULLABLE] = NULLABLE
 
 
 @dataclass
 class DwSecret:
     """Details of a single CDW secret."""
 
-    secretName: Union[str, None, type] = NULLABLE
-    secretProviderKey: Union[str, None, type] = NULLABLE
-    createdBy: Union[str, None, type] = NULLABLE
-    properties: Union[DwSecretProperties, None, type] = NULLABLE
+    secretName: Union[str, None, NULLABLE] = NULLABLE
+    secretProviderKey: Union[str, None, NULLABLE] = NULLABLE
+    createdBy: Union[str, None, NULLABLE] = NULLABLE
+    properties: Union[DwSecretProperties, None, NULLABLE] = NULLABLE
 
 
 class CdpDwClient:

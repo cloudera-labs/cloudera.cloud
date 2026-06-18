@@ -24,10 +24,11 @@ description:
   - Optionally filter by secret name (exact match).
   - The module supports check_mode.
 author:
-  - "Webster Mudge (wmudge@cloudera.com)"
+  - "Webster Mudge (@wmudge)"
 version_added: "3.4.0"
 extends_documentation_fragment:
-  - cloudera.cloud.services_client
+  - ansible.builtin.action_common_attributes
+  - cloudera.cloud.cdp_client
 options:
   cluster_id:
     description:
@@ -44,6 +45,13 @@ options:
     required: false
     aliases:
       - secret_name
+attributes:
+  check_mode:
+    support: full
+  diff_mode:
+    support: N/A
+  platform:
+    platforms: all
 """
 
 EXAMPLES = r"""
@@ -98,10 +106,22 @@ secrets:
           description: The version of the secret.
           type: str
           returned: when available
+sdk_out:
+  description: Returns the captured CDP SDK log.
+  returned: when debug is true
+  type: str
+sdk_out_lines:
+  description: Returns a list of each line of the captured CDP SDK log.
+  returned: when debug is true
+  type: list
+  elements: str
 """
+
+from typing import Any, Dict, List
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
     CdpDwClient,
+    DwSecret,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
@@ -121,6 +141,8 @@ class DwSecretInfo(ServicesModule):
         self.cluster_id = self.get_param("cluster_id")
         self.name = self.get_param("name")
 
+        self.secrets: List[DwSecret] = []
+
     def process(self):
         client = CdpDwClient(api_client=self.api_client)
         secrets = client.list_secrets(self.cluster_id)
@@ -128,14 +150,24 @@ class DwSecretInfo(ServicesModule):
         if self.name is not None:
             secrets = [s for s in secrets if s.secretName == self.name]
 
-        self.module.exit_json(
-            changed=False,
-            secrets=[to_dict(s) for s in secrets],
-        )
+        self.secrets = secrets
 
 
 def main():
-    DwSecretInfo()
+    result = DwSecretInfo()
+
+    output: Dict[str, Any] = dict(
+        changed=False,
+        secrets=[to_dict(s) for s in result.secrets],
+    )
+
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
+
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
