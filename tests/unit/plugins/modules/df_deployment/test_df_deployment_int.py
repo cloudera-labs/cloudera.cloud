@@ -98,7 +98,7 @@ def df_deployment_delete(
                     or deployment_data.get("environmentCrn")
                 )
                 if env_crn:
-                    dataservice_client = df_client.create_dataservice_client(
+                    dataservice_client = df_client.create_workload_client(
                         iam_client=iam_client,
                         module=df_client.api_client.module,
                         environment_crn=env_crn,
@@ -149,7 +149,7 @@ def df_deployment_create(
         )
         deployment_request_crn = initiate_result.get("deploymentRequestCrn")
 
-        dataservice_client = df_client.create_dataservice_client(
+        dataservice_client = df_client.create_workload_client(
             iam_client=iam_client,
             module=df_client.api_client.module,
             environment_crn=resolved_env_crn,

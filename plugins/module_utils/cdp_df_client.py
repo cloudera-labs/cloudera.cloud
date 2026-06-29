@@ -462,15 +462,14 @@ class WorkloadTransport(CdpClient):
         return self._make_request("DELETE", path, squelch=squelch)
 
 
-class DataServiceClient(WorkloadTransport):
+class CdpDfWorkloadClient(WorkloadTransport):
     """
-    CDP Data Service workload client using Bearer token authentication.
+    CDP DataFlow Workload Service client using Bearer token authentication.
 
-    The token and base URL are discovered through the control plane (e.g. IAM
-    ``generateWorkloadAuthToken`` or ``initiateDeployment``) and supplied here.
-    It is currently used for the DataFlow workload APIs (``/dfx/api/...``) but
-    is service-agnostic. All transport behaviour comes from WorkloadTransport;
-    this class only declares the Bearer auth headers.
+    Communicates with the DataFlow Workload Service (``/dfx/api/rpc-v1/...``).
+    The token and base URL are obtained from the control plane via IAM
+    ``generateWorkloadAuthToken``. All transport behaviour comes from
+    WorkloadTransport; this class only declares the Bearer auth headers.
     """
 
     def __init__(
@@ -482,11 +481,11 @@ class DataServiceClient(WorkloadTransport):
         default_page_size: int = 100,
     ):
         """
-        Initialize the workload client.
+        Initialize the DataFlow workload client.
 
         Args:
             module: AnsibleModule instance (used for ``fetch_url`` and TLS config)
-            base_url: Base URL of the workload API
+            base_url: Base URL of the DataFlow Workload Service
             access_token: JWT Bearer token from generateWorkloadAuthToken
             timeout_seconds: Per-request HTTP timeout in seconds
             default_page_size: Default page size for paginated requests

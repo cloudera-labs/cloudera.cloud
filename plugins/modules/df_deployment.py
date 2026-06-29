@@ -614,7 +614,7 @@ class DFDeployment(DataFlowModule, ServicesModule):
                     self.deployment = deployment_data
 
                     if not self.module.check_mode:
-                        dataservice_client = self.df_client.create_dataservice_client(
+                        dataservice_client = self.df_client.create_workload_client(
                             iam_client=self.iam_client,
                             module=self.module,
                             environment_crn=self.env_crn,
@@ -654,7 +654,7 @@ class DFDeployment(DataFlowModule, ServicesModule):
                     )
                     # dfx_local_url = initiate_result.get("dfxLocalUrl")
 
-                    dataservice_client = self.df_client.create_dataservice_client(
+                    dataservice_client = self.df_client.create_workload_client(
                         iam_client=self.iam_client,
                         module=self.module,
                         environment_crn=self.env_crn,
@@ -701,7 +701,7 @@ class DFDeployment(DataFlowModule, ServicesModule):
         elif self.state == "absent":
             if existing_deployment:
                 if not self.module.check_mode:
-                    dataservice_client = self.df_client.create_dataservice_client(
+                    dataservice_client = self.df_client.create_workload_client(
                         iam_client=self.iam_client,
                         module=self.module,
                         environment_crn=self.env_crn,

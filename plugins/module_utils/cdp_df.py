@@ -27,7 +27,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df_client import (
     CdpDfApiClient,
-    DataServiceClient,
+    CdpDfWorkloadClient,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import CdpIamClient
 
@@ -348,14 +348,14 @@ class CdpDfClient:
         """
         self.api_client = api_client
 
-    def create_dataservice_client(
+    def create_workload_client(
         self,
         iam_client: CdpIamClient,
         module: Any,
         environment_crn: str,
-    ) -> DataServiceClient:
+    ) -> CdpDfWorkloadClient:
         """
-        Create a DataServiceClient with workload authentication for DataFlow operations.
+        Create a CdpDfWorkloadClient with workload authentication for DataFlow operations.
 
         Args:
             iam_client: CdpIamClient instance for generating workload auth tokens
@@ -363,7 +363,7 @@ class CdpDfClient:
             environment_crn: The CRN of the environment
 
         Returns:
-            DataServiceClient configured with Bearer token authentication
+            CdpDfWorkloadClient configured with Bearer token authentication
         """
         token_response = iam_client.generate_workload_auth_token(
             workload_name="DF",
@@ -372,7 +372,7 @@ class CdpDfClient:
         access_token = token_response.get("token")
         endpoint_url = token_response.get("endpointUrl")
 
-        return DataServiceClient(
+        return CdpDfWorkloadClient(
             module=module,
             base_url=endpoint_url,
             access_token=access_token,
@@ -912,7 +912,7 @@ class CdpDfClient:
 
     def get_deployment_request_details(
         self,
-        dataservice_client: DataServiceClient,
+        dataservice_client: CdpDfWorkloadClient,
         deployment_request_crn: str,
     ) -> Dict[str, Any]:
         """
@@ -934,7 +934,7 @@ class CdpDfClient:
 
     def create_deployment(
         self,
-        dataservice_client: DataServiceClient,
+        dataservice_client: CdpDfWorkloadClient,
         environment_crn: str,
         deployment_request_crn: str,
         name: str,
@@ -963,7 +963,7 @@ class CdpDfClient:
         NOTE: This is a WORKLOAD API endpoint that requires Bearer token authentication.
 
         Args:
-            dataservice_client: DataServiceClient with Bearer token auth
+            dataservice_client: CdpDfWorkloadClient with Bearer token auth
             environment_crn: The CRN of the environment
             deployment_request_crn: The CRN of the deployment request (from initiateDeployment)
             name: The name of the deployment
@@ -1052,7 +1052,7 @@ class CdpDfClient:
 
     def terminate_deployment(
         self,
-        dataservice_client: DataServiceClient,
+        dataservice_client: CdpDfWorkloadClient,
         deployment_crn: str,
         environment_crn: str,
     ) -> Dict[str, Any]:
@@ -1062,7 +1062,7 @@ class CdpDfClient:
         NOTE: This is a WORKLOAD API endpoint that requires Bearer token authentication.
 
         Args:
-            dataservice_client: DataServiceClient with Bearer token auth
+            dataservice_client: CdpDfWorkloadClient with Bearer token auth
             deployment_crn: The CRN of the deployment to terminate
             environment_crn: The CRN of the environment
 
@@ -1080,7 +1080,7 @@ class CdpDfClient:
 
     def update_deployment(
         self,
-        dataservice_client: DataServiceClient,
+        dataservice_client: CdpDfWorkloadClient,
         deployment_crn: str,
         environment_crn: str,
         configuration_version: int,
@@ -1100,7 +1100,7 @@ class CdpDfClient:
         NOTE: This is a WORKLOAD API endpoint that requires Bearer token authentication.
 
         Args:
-            dataservice_client: DataServiceClient with Bearer token auth
+            dataservice_client: CdpDfWorkloadClient with Bearer token auth
             deployment_crn: The CRN of the deployment to update
             environment_crn: The CRN of the environment
             configuration_version: The version of the configuration

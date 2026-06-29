@@ -85,7 +85,7 @@ def mock_clients(mocker):
     df_client.get_service_by_env_crn.return_value = {
         "service": {"crn": SERVICE_CRN}
     }
-    df_client.create_dataservice_client.return_value = mocker.MagicMock()
+    df_client.create_workload_client.return_value = mocker.MagicMock()
 
     return df_client, env_client, iam_client
 
