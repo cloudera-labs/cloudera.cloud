@@ -912,7 +912,7 @@ class CdpDfClient:
 
     def get_deployment_request_details(
         self,
-        dataservice_client: CdpDfWorkloadClient,
+        workload_client: CdpDfWorkloadClient,
         deployment_request_crn: str,
     ) -> Dict[str, Any]:
         """
@@ -920,21 +920,21 @@ class CdpDfClient:
         as it establishes the XSRF token cookie needed for subsequent workload API calls.
 
         Args:
-            dataservice_client: Workload API client
+            workload_client: Workload API client
             deployment_request_crn: CRN of the deployment request
 
         Returns:
             Deployment request details
         """
         params = {"deploymentRequestCrn": deployment_request_crn}
-        return dataservice_client.post(
+        return workload_client.post(
             "/dfx/api/rpc-v1/deployments/get-deployment-request-details",
             json_data=params,
         )
 
     def create_deployment(
         self,
-        dataservice_client: CdpDfWorkloadClient,
+        workload_client: CdpDfWorkloadClient,
         environment_crn: str,
         deployment_request_crn: str,
         name: str,
@@ -963,7 +963,7 @@ class CdpDfClient:
         NOTE: This is a WORKLOAD API endpoint that requires Bearer token authentication.
 
         Args:
-            dataservice_client: CdpDfWorkloadClient with Bearer token auth
+            workload_client: CdpDfWorkloadClient with Bearer token auth
             environment_crn: The CRN of the environment
             deployment_request_crn: The CRN of the deployment request (from initiateDeployment)
             name: The name of the deployment
@@ -1043,16 +1043,16 @@ class CdpDfClient:
             data["customPythonConfigurationCrn"] = custom_python_configuration_crn
 
         # Required: establish XSRF token cookie before creating deployment
-        self.get_deployment_request_details(dataservice_client, deployment_request_crn)
+        self.get_deployment_request_details(workload_client, deployment_request_crn)
 
-        return dataservice_client.post(
+        return workload_client.post(
             "/dfx/api/rpc-v1/deployments/create-deployment",
             data=data,
         )
 
     def terminate_deployment(
         self,
-        dataservice_client: CdpDfWorkloadClient,
+        workload_client: CdpDfWorkloadClient,
         deployment_crn: str,
         environment_crn: str,
     ) -> Dict[str, Any]:
@@ -1062,7 +1062,7 @@ class CdpDfClient:
         NOTE: This is a WORKLOAD API endpoint that requires Bearer token authentication.
 
         Args:
-            dataservice_client: CdpDfWorkloadClient with Bearer token auth
+            workload_client: CdpDfWorkloadClient with Bearer token auth
             deployment_crn: The CRN of the deployment to terminate
             environment_crn: The CRN of the environment
 
@@ -1073,14 +1073,14 @@ class CdpDfClient:
             "deploymentCrn": deployment_crn,
             "environmentCrn": environment_crn,
         }
-        return dataservice_client.post(
+        return workload_client.post(
             "/dfx/api/rpc-v1/deployments/terminate-deployment",
             data=data,
         )
 
     def update_deployment(
         self,
-        dataservice_client: CdpDfWorkloadClient,
+        workload_client: CdpDfWorkloadClient,
         deployment_crn: str,
         environment_crn: str,
         configuration_version: int,
@@ -1100,7 +1100,7 @@ class CdpDfClient:
         NOTE: This is a WORKLOAD API endpoint that requires Bearer token authentication.
 
         Args:
-            dataservice_client: CdpDfWorkloadClient with Bearer token auth
+            workload_client: CdpDfWorkloadClient with Bearer token auth
             deployment_crn: The CRN of the deployment to update
             environment_crn: The CRN of the environment
             configuration_version: The version of the configuration
@@ -1147,7 +1147,7 @@ class CdpDfClient:
         if asset_update_request_crn is not None:
             data["assetUpdateRequestCrn"] = asset_update_request_crn
 
-        return dataservice_client.post(
+        return workload_client.post(
             "/dfx/api/rpc-v1/deployments/update-deployment",
             data=data,
         )

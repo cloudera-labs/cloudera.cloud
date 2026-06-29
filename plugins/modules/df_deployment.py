@@ -614,14 +614,14 @@ class DFDeployment(DataFlowModule, ServicesModule):
                     self.deployment = deployment_data
 
                     if not self.module.check_mode:
-                        dataservice_client = self.df_client.create_workload_client(
+                        workload_client = self.df_client.create_workload_client(
                             iam_client=self.iam_client,
                             module=self.module,
                             environment_crn=self.env_crn,
                         )
 
                         result = self.df_client.update_deployment(
-                            dataservice_client=dataservice_client,
+                            workload_client=workload_client,
                             **update_params,
                         )
 
@@ -652,16 +652,15 @@ class DFDeployment(DataFlowModule, ServicesModule):
                     self.deployment_request_crn = initiate_result.get(
                         "deploymentRequestCrn",
                     )
-                    # dfx_local_url = initiate_result.get("dfxLocalUrl")
 
-                    dataservice_client = self.df_client.create_workload_client(
+                    workload_client = self.df_client.create_workload_client(
                         iam_client=self.iam_client,
                         module=self.module,
                         environment_crn=self.env_crn,
                     )
 
                     result = self.df_client.create_deployment(
-                        dataservice_client=dataservice_client,
+                        workload_client=workload_client,
                         environment_crn=self.env_crn,
                         deployment_request_crn=self.deployment_request_crn,
                         name=self.name,
@@ -701,14 +700,14 @@ class DFDeployment(DataFlowModule, ServicesModule):
         elif self.state == "absent":
             if existing_deployment:
                 if not self.module.check_mode:
-                    dataservice_client = self.df_client.create_workload_client(
+                    workload_client = self.df_client.create_workload_client(
                         iam_client=self.iam_client,
                         module=self.module,
                         environment_crn=self.env_crn,
                     )
 
                     self.df_client.terminate_deployment(
-                        dataservice_client=dataservice_client,
+                        workload_client=workload_client,
                         deployment_crn=self.deployment_crn,
                         environment_crn=self.env_crn,
                     )
