@@ -37,9 +37,20 @@ class DataServiceClient(CdpClient):
     """
     CDP Data Service Workload client using Bearer token authentication.
 
-    Used for DataFlow workload APIs (dfx/api/...) which require JWT Bearer
-    token auth and XSRF cookie handling, unlike the control plane which uses
-    Ed25519 signatures.
+    Unlike the control plane (which authenticates with Ed25519 signatures),
+    data service workload APIs authenticate with a JWT Bearer token and rely
+    on an XSRF cookie for mutating requests. The token and base URL are
+    discovered through the control plane (e.g. IAM ``generateWorkloadAuthToken``
+    or ``initiateDeployment``) and supplied to this client.
+
+    It is currently used for the DataFlow workload APIs (``/dfx/api/...``) but
+    is service-agnostic and can back other data services that share the same
+    auth scheme.
+
+    Responsibilities:
+        - Bearer token authentication
+        - XSRF/CSRF token handling via automatic cookie capture
+        - Retry with exponential backoff on transient failures
     """
 
     def __init__(
@@ -50,6 +61,16 @@ class DataServiceClient(CdpClient):
         timeout_seconds: int = 60,
         default_page_size: int = 100,
     ):
+        """
+        Initialize the workload client.
+
+        Args:
+            module: AnsibleModule instance (used for ``fetch_url`` and TLS config)
+            base_url: Base URL of the workload API
+            access_token: JWT Bearer token from generateWorkloadAuthToken
+            timeout_seconds: Per-request HTTP timeout in seconds
+            default_page_size: Default page size for paginated requests
+        """
         super().__init__(default_page_size=default_page_size)
         self.module = module
         self.base_url = base_url.rstrip("/")
@@ -63,6 +84,7 @@ class DataServiceClient(CdpClient):
         }
 
     def _url(self, path: str) -> str:
+        """Construct the full request URL from the base URL and a path."""
         return f"{self.base_url}/{path.lstrip('/')}"
 
     def _make_request(
@@ -75,8 +97,35 @@ class DataServiceClient(CdpClient):
         max_retries: int = 3,
         squelch: Dict[int, Any] = {},
     ) -> Any:
+        """
+        Make a workload API request with cookie handling and retry logic.
+
+        Args:
+            method: HTTP method (GET, POST, PUT, DELETE)
+            path: API path relative to the base URL
+            params: Query parameters appended to the URL
+            data: Request body serialized as JSON
+            json_data: Request body serialized as JSON (takes precedence over data)
+            max_retries: Maximum number of attempts before failing
+            squelch: Map of status codes to values returned instead of raising
+
+        Returns:
+            Parsed JSON response, or None for 204 responses
+
+        Raises:
+            CdpError: On non-squelched HTTP errors or exhausted retries
+        """
         url = self._url(path)
         headers = self.headers.copy()
+
+        if params:
+            query_params = []
+            for key, value in params.items():
+                if isinstance(value, list):
+                    query_params.extend(f"{key}={item}" for item in value)
+                else:
+                    query_params.append(f"{key}={value}")
+            url = f"{url}?{'&'.join(query_params)}"
 
         if self.cookies:
             headers["Cookie"] = "; ".join(
@@ -220,9 +269,11 @@ class DataServiceClient(CdpClient):
         json_data: Optional[Dict[str, Any]] = None,
         squelch: Dict[int, Any] = {},
     ) -> Dict[str, Any]:
+        """Execute an HTTP PUT request."""
         return self._make_request("PUT", path, data=data, json_data=json_data, squelch=squelch)
 
     def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
+        """Execute an HTTP DELETE request."""
         return self._make_request("DELETE", path, squelch=squelch)
 
 
