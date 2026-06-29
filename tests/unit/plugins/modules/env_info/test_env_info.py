@@ -266,7 +266,8 @@ def test_env_info_with_descendants(module_args, mocker):
     # Verify correct client calls
     ml_client.describe_all_workspaces.assert_called_once_with(env=ENV_NAME)
     de_client.list_services.assert_called_once_with(
-        remove_deleted=True, env_name=ENV_NAME
+        remove_deleted=True,
+        env_name=ENV_NAME,
     )
     df_client.list_services.assert_called_once()
 
