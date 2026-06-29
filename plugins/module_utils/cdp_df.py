@@ -18,8 +18,11 @@
 A REST client for the Cloudera on Cloud Platform (CDP) DataFlow API
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+import json
 import time
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+from ansible.module_utils.urls import fetch_url
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
     CdpError,
@@ -27,6 +30,200 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df_client import (
     CdpDfApiClient,
 )
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import CdpIamClient
+
+
+class DataServiceClient(CdpClient):
+    """
+    CDP Data Service Workload client using Bearer token authentication.
+
+    Used for DataFlow workload APIs (dfx/api/...) which require JWT Bearer
+    token auth and XSRF cookie handling, unlike the control plane which uses
+    Ed25519 signatures.
+    """
+
+    def __init__(
+        self,
+        module,
+        base_url: str,
+        access_token: str,
+        timeout_seconds: int = 60,
+        default_page_size: int = 100,
+    ):
+        super().__init__(default_page_size=default_page_size)
+        self.module = module
+        self.base_url = base_url.rstrip("/")
+        self.access_token = access_token
+        self.timeout_seconds = timeout_seconds
+        self.cookies: Dict[str, str] = {}
+        self.headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
+        }
+
+    def _url(self, path: str) -> str:
+        return f"{self.base_url}/{path.lstrip('/')}"
+
+    def _make_request(
+        self,
+        method: str,
+        path: str,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Union[Dict[str, Any], List[Any]]] = None,
+        json_data: Optional[Union[Dict[str, Any], List[Any]]] = None,
+        max_retries: int = 3,
+        squelch: Dict[int, Any] = {},
+    ) -> Any:
+        url = self._url(path)
+        headers = self.headers.copy()
+
+        if self.cookies:
+            headers["Cookie"] = "; ".join(
+                [f"{k}={v}" for k, v in self.cookies.items()]
+            )
+            if "XSRF-TOKEN" in self.cookies:
+                headers["X-XSRF-TOKEN"] = self.cookies["XSRF-TOKEN"]
+
+        body = None
+        if json_data is not None:
+            body = json.dumps(json_data)
+        elif data is not None:
+            body = json.dumps(data)
+
+        original_validate_certs = self.module.params.get("validate_certs")
+        self.module.params["validate_certs"] = self.module.params.get(
+            "endpoint_tls", True
+        )
+
+        last_error = None
+        try:
+            for attempt in range(max_retries):
+                try:
+                    resp, info = fetch_url(
+                        self.module,
+                        url,
+                        data=body,
+                        headers=headers,
+                        method=method,
+                        timeout=self.timeout_seconds,
+                    )
+
+                    status_code = info.get("status", -1)
+
+                    set_cookie = info.get("set-cookie")
+                    if set_cookie:
+                        cookie_headers = (
+                            [set_cookie]
+                            if isinstance(set_cookie, str)
+                            else set_cookie
+                        )
+                        for cookie_header in cookie_headers:
+                            if "=" in cookie_header:
+                                cookie_part = cookie_header.split(";")[0]
+                                name, value = cookie_part.split("=", 1)
+                                self.cookies[name.strip()] = value.strip()
+
+                    if status_code in squelch:
+                        return squelch[status_code]
+
+                    if status_code == -1:
+                        error_msg = info.get("msg", "Connection error")
+                        if attempt < max_retries - 1:
+                            time.sleep(min(0.5 * (2**attempt), 5))
+                            last_error = CdpError(
+                                f"{error_msg} for {url}", status=status_code
+                            )
+                            continue
+                        raise CdpError(f"{error_msg} for {url}", status=status_code)
+
+                    if 200 <= status_code < 300:
+                        if status_code == 204:
+                            return None
+                        if resp:
+                            response_text = resp.read().decode("utf-8")
+                            if response_text:
+                                try:
+                                    return json.loads(response_text)
+                                except json.JSONDecodeError:
+                                    return {"response": response_text}
+                            return {}
+                        return {}
+
+                    error_message = f"HTTP {status_code} Error"
+                    try:
+                        error_body = info.get("body")
+                        if error_body:
+                            error_data = json.loads(error_body)
+                            if "message" in error_data:
+                                error_message = error_data["message"]
+                            elif "error" in error_data:
+                                error_message = error_data["error"]
+                            elif "errorMessages" in error_data:
+                                msgs = error_data["errorMessages"]
+                                error_message = (
+                                    " ".join(msgs) if isinstance(msgs, list) else str(msgs)
+                                )
+                            else:
+                                error_message = error_data.get(
+                                    "errorMessage", "Unknown error"
+                                )
+                        else:
+                            error_message = info.get("msg", "Unknown error")
+                    except Exception:
+                        error_message = info.get("msg", "Unknown error")
+
+                    if status_code >= 500 or status_code in [408, 429]:
+                        if attempt < max_retries - 1:
+                            time.sleep(min(0.5 * (2**attempt), 5))
+                            last_error = CdpError(
+                                f"{error_message} for {url}", status=status_code
+                            )
+                            continue
+
+                    raise CdpError(f"{error_message} [{status_code}] for {url}")
+
+                except CdpError:
+                    raise
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(min(0.5 * (2**attempt), 5))
+                        last_error = CdpError(f"Connection error for {url}: {str(e)}")
+                        continue
+                    raise CdpError(
+                        f"Request failed after {max_retries} attempts for {url}: {str(e)}"
+                    )
+
+            if last_error:
+                raise last_error
+            raise CdpError(f"Request failed for {url}")
+        finally:
+            if original_validate_certs is not None:
+                self.module.params["validate_certs"] = original_validate_certs
+
+    def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        return self._make_request("GET", path, params=params)
+
+    def post(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+        squelch: Dict[int, Any] = {},
+    ) -> Dict[str, Any]:
+        return self._make_request("POST", path, data=data, json_data=json_data, squelch=squelch)
+
+    def put(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+        squelch: Dict[int, Any] = {},
+    ) -> Dict[str, Any]:
+        return self._make_request("PUT", path, data=data, json_data=json_data, squelch=squelch)
+
+    def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
+        return self._make_request("DELETE", path, squelch=squelch)
 
 
 class DataFlowModule:
@@ -156,6 +353,165 @@ def format_tags_for_api(
     ]
 
 
+def build_deployment_update_params(
+    module: Any,
+    deployment_crn: str,
+    environment_crn: str,
+    deployment_details: Dict[str, Any],
+    configuration_version: int,
+) -> Dict[str, Any]:
+    """
+    Build update check parameters from user-provided module input.
+
+    Only includes parameters that were explicitly provided by the user,
+    ignoring default values to ensure idempotent behavior.
+
+    Args:
+        module: AnsibleModule instance
+        deployment_crn: The CRN of the deployment
+        environment_crn: The CRN of the environment
+        deployment_details: Current deployment details from API
+        configuration_version: Configuration version for the update
+
+    Returns:
+        Dictionary with parameters ready for check_deployment_updates()
+    """
+    # Get user-provided parameters (before defaults applied)
+    user_params = module._load_params()
+
+    # Safety check: if _load_params() returns None (e.g., in test environments),
+    # fall back to checking module.params directly
+    if user_params is None:
+        user_params = module.params or {}
+
+    check_params = {
+        "deployment_crn": deployment_crn,
+        "environment_crn": environment_crn,
+        "deployment_details": deployment_details,
+        "configuration_version": configuration_version,
+    }
+
+    # Map of parameter names to their values from module.params
+    # Include both primary names and aliases
+    param_mapping = {
+        "cluster_size": ["cluster_size", "size"],
+        "static_node_count": ["static_node_count"],
+        "autoscaling_enabled": ["autoscaling_enabled", "autoscale"],
+        "autoscale_min_nodes": ["autoscale_min_nodes", "autoscale_nodes_min"],
+        "autoscale_max_nodes": ["autoscale_max_nodes", "autoscale_nodes_max"],
+        "flow_metrics_scaling_enabled": ["flow_metrics_scaling_enabled"],
+        "parameter_groups": ["parameter_groups"],
+        "kpis": ["kpis"],
+    }
+
+    # Only include parameters that were explicitly provided by the user
+    for param_key, param_names in param_mapping.items():
+        if any(name in user_params for name in param_names):
+            check_params[param_key] = module.params.get(param_key)
+
+    return check_params
+
+
+def check_deployment_updates(
+    deployment_crn: str,
+    environment_crn: str,
+    deployment_details: Dict[str, Any],
+    configuration_version: int,
+    cluster_size: Optional[str] = None,
+    static_node_count: Optional[int] = None,
+    autoscaling_enabled: Optional[bool] = None,
+    autoscale_min_nodes: Optional[int] = None,
+    autoscale_max_nodes: Optional[int] = None,
+    flow_metrics_scaling_enabled: Optional[bool] = None,
+    parameter_groups: Optional[List[Dict[str, Any]]] = None,
+    kpis: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """
+    Check if deployment updates are needed and build update parameters.
+
+    Args:
+        deployment_crn: The CRN of the deployment to update
+        environment_crn: The CRN of the environment
+        deployment_details: Current deployment details from API
+        configuration_version: The version of the configuration
+        cluster_size: Desired cluster size
+        static_node_count: Desired static node count
+        autoscaling_enabled: Desired autoscaling enabled state
+        autoscale_min_nodes: Desired minimum autoscale nodes
+        autoscale_max_nodes: Desired maximum autoscale nodes
+        flow_metrics_scaling_enabled: Desired flow metrics scaling state
+        parameter_groups: Desired parameter groups
+        kpis: Desired KPIs
+
+    Returns:
+        Dictionary of update parameters if changes are needed, empty dict otherwise
+    """
+    update_params = {
+        "deployment_crn": deployment_crn,
+        "environment_crn": environment_crn,
+        "configuration_version": configuration_version,
+    }
+    changes = []
+
+    # Extract current values from nested deployment structure
+    current_cluster_size = (
+        deployment_details.get("clusterSize", {}).get("name")
+        if isinstance(deployment_details.get("clusterSize"), dict)
+        else deployment_details.get("clusterSize")
+    )
+    current_static_node_count = deployment_details.get("staticNodeCount")
+    current_autoscaling_enabled = deployment_details.get("autoScalingEnabled", False)
+    current_autoscale_min = deployment_details.get("autoScaleMinNodes")
+    current_autoscale_max = deployment_details.get("autoScaleMaxNodes")
+    current_flow_metrics = deployment_details.get("flowMetricsScalingEnabled", False)
+
+    if cluster_size is not None and cluster_size != current_cluster_size:
+        update_params["cluster_size"] = cluster_size
+        changes.append("cluster_size")
+
+    if static_node_count is not None and static_node_count != current_static_node_count:
+        update_params["static_node_count"] = static_node_count
+        changes.append("static_node_count")
+
+    if (
+        autoscaling_enabled is not None
+        and autoscaling_enabled != current_autoscaling_enabled
+    ):
+        update_params["auto_scaling_enabled"] = autoscaling_enabled
+        changes.append("auto_scaling_enabled")
+
+    if autoscale_min_nodes is not None and autoscale_min_nodes != current_autoscale_min:
+        update_params["auto_scale_min_nodes"] = autoscale_min_nodes
+        changes.append("auto_scale_min_nodes")
+
+    if autoscale_max_nodes is not None and autoscale_max_nodes != current_autoscale_max:
+        update_params["auto_scale_max_nodes"] = autoscale_max_nodes
+        changes.append("auto_scale_max_nodes")
+
+    if (
+        flow_metrics_scaling_enabled is not None
+        and flow_metrics_scaling_enabled != current_flow_metrics
+    ):
+        update_params["flow_metrics_scaling_enabled"] = flow_metrics_scaling_enabled
+        changes.append("flow_metrics_scaling_enabled")
+
+    # parameter_groups and kpis are not returned by describeDeployment API,
+    # so we cannot compare current vs desired. If user explicitly provides these,
+    # include them and let the API handle them.
+    if parameter_groups is not None:
+        update_params["parameter_groups"] = parameter_groups
+        changes.append("parameter_groups")
+
+    if kpis is not None:
+        update_params["kpis"] = kpis
+        changes.append("kpis")
+
+    if changes:
+        return update_params
+    else:
+        return {}
+
+
 class CdpDfClient:
     """CDP DataFlow API client."""
 
@@ -170,6 +526,13 @@ class CdpDfClient:
     TERMINATION_STATES = ["DISABLING"]
     DISABLED_STATES = ["NOT_ENABLED"]
 
+    # Deployment state constants
+    DEPLOYMENT_FAILED_STATES = ["FAILED", "TERMINATING_FAILED"]
+    DEPLOYMENT_HEALTHY_STATES = ["GOOD_HEALTH"]
+    DEPLOYMENT_DEPLOYING_STATES = ["DEPLOYING"]
+    DEPLOYMENT_TERMINATING_STATES = ["TERMINATING"]
+    DEPLOYMENT_DELETED_STATES = ["DELETED", "NOT_FOUND"]
+
     def __init__(self, api_client: CdpClient):
         """
         Initialize CDP DataFlow client.
@@ -179,16 +542,35 @@ class CdpDfClient:
         """
         self.api_client = api_client
 
-    # Service state constants
-    FAILED_STATES = ["BAD_HEALTH", "UNKNOWN"]
-    REMOVABLE_STATES = [
-        "GOOD_HEALTH",
-        "CONCERNING_HEALTH",
-        "BAD_HEALTH",
-        "UNKNOWN",
-    ]
-    TERMINATION_STATES = ["DISABLING"]
-    DISABLED_STATES = ["NOT_ENABLED"]
+    def create_dataservice_client(
+        self,
+        iam_client: CdpIamClient,
+        module: Any,
+        environment_crn: str,
+    ) -> DataServiceClient:
+        """
+        Create a DataServiceClient with workload authentication for DataFlow operations.
+
+        Args:
+            iam_client: CdpIamClient instance for generating workload auth tokens
+            module: AnsibleModule instance
+            environment_crn: The CRN of the environment
+
+        Returns:
+            DataServiceClient configured with Bearer token authentication
+        """
+        token_response = iam_client.generate_workload_auth_token(
+            workload_name="DF",
+            environment_crn=environment_crn,
+        )
+        access_token = token_response.get("token")
+        endpoint_url = token_response.get("endpointUrl")
+
+        return DataServiceClient(
+            module=module,
+            base_url=endpoint_url,
+            access_token=access_token,
+        )
 
     # ========================================================================
     # Service Management Methods
@@ -692,6 +1074,361 @@ class CdpDfClient:
             return self.describe_deployment(crn)
         except CdpError:
             return None
+
+    def initiate_deployment(
+        self,
+        service_crn: str,
+        flow_version_crn: str,
+        deployment_crn: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Initiate a deployment creation request.
+
+        Args:
+            service_crn: The DataFlow service CRN
+            flow_version_crn: The flow version CRN to deploy
+            deployment_crn: Optional deployment CRN for change flow version operations
+
+        Returns:
+            Dictionary containing:
+                - deploymentRequestCrn: The deployment request CRN for create_deployment
+                - dfxLocalUrl: The base URL where deployment will be created
+        """
+        data: Dict[str, Any] = {
+            "serviceCrn": service_crn,
+            "flowVersionCrn": flow_version_crn,
+        }
+
+        if deployment_crn is not None:
+            data["deploymentCrn"] = deployment_crn
+
+        return self.api_client.post("/api/v1/df/initiateDeployment", data=data)
+
+    def get_deployment_request_details(
+        self,
+        dataservice_client: DataServiceClient,
+        deployment_request_crn: str,
+    ) -> Dict[str, Any]:
+        """
+        Get deployment request details. Required before creating a deployment
+        as it establishes the XSRF token cookie needed for subsequent workload API calls.
+
+        Args:
+            dataservice_client: Workload API client
+            deployment_request_crn: CRN of the deployment request
+
+        Returns:
+            Deployment request details
+        """
+        params = {"deploymentRequestCrn": deployment_request_crn}
+        return dataservice_client.post(
+            "/dfx/api/rpc-v1/deployments/get-deployment-request-details",
+            json_data=params,
+        )
+
+    def create_deployment(
+        self,
+        dataservice_client: DataServiceClient,
+        environment_crn: str,
+        deployment_request_crn: str,
+        name: str,
+        configuration_version: int,
+        cluster_size: Optional[str] = None,
+        static_node_count: Optional[int] = None,
+        auto_scaling_enabled: Optional[bool] = None,
+        auto_scale_min_nodes: Optional[int] = None,
+        auto_scale_max_nodes: Optional[int] = None,
+        flow_metrics_scaling_enabled: Optional[bool] = None,
+        cfm_nifi_version: Optional[str] = None,
+        auto_start_flow: Optional[bool] = None,
+        parameter_groups: Optional[List[Dict[str, Any]]] = None,
+        kpis: Optional[List[Dict[str, Any]]] = None,
+        inbound_hostname: Optional[str] = None,
+        listen_components: Optional[List[Dict[str, Any]]] = None,
+        inbound_connection_authorized_ip_ranges: Optional[List[str]] = None,
+        node_storage_profile_name: Optional[str] = None,
+        project_crn: Optional[str] = None,
+        custom_nar_configuration_crn: Optional[str] = None,
+        custom_python_configuration_crn: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a DataFlow deployment using workload API.
+
+        NOTE: This is a WORKLOAD API endpoint that requires Bearer token authentication.
+
+        Args:
+            dataservice_client: DataServiceClient with Bearer token auth
+            environment_crn: The CRN of the environment
+            deployment_request_crn: The CRN of the deployment request (from initiateDeployment)
+            name: The name of the deployment
+            configuration_version: The version of the configuration
+            cluster_size: The size of the cluster (EXTRA_SMALL, SMALL, MEDIUM, LARGE)
+            static_node_count: Static number of nodes (when autoscaling disabled)
+            auto_scaling_enabled: Whether to enable autoscaling
+            auto_scale_min_nodes: Minimum nodes for autoscaling
+            auto_scale_max_nodes: Maximum nodes for autoscaling
+            flow_metrics_scaling_enabled: Whether to enable flow metrics for scaling
+            cfm_nifi_version: The CFM NiFi version
+            auto_start_flow: Whether to start the flow automatically
+            parameter_groups: Flow parameter groups (send empty array if none)
+            kpis: Configured KPIs
+            inbound_hostname: FQDN for inbound connections
+            listen_components: Listen components port and protocol data
+            inbound_connection_authorized_ip_ranges: Authorized IP ranges for inbound
+            node_storage_profile_name: Node storage profile name
+            project_crn: The CRN of the project
+            custom_nar_configuration_crn: Custom NAR configuration CRN
+            custom_python_configuration_crn: Custom Python configuration CRN
+
+        Returns:
+            Dictionary containing deployment details
+        """
+        data: Dict[str, Any] = {
+            "environmentCrn": environment_crn,
+            "deploymentRequestCrn": deployment_request_crn,
+            "name": name,
+            "configurationVersion": configuration_version,
+        }
+
+        if cluster_size is not None:
+            data["clusterSize"] = {"name": cluster_size}
+        if static_node_count is not None:
+            data["staticNodeCount"] = static_node_count
+        if auto_scaling_enabled is not None:
+            data["autoScalingEnabled"] = auto_scaling_enabled
+
+        if auto_scaling_enabled:
+            if auto_scale_min_nodes is not None:
+                data["autoScaleMinNodes"] = auto_scale_min_nodes
+            if auto_scale_max_nodes is not None:
+                data["autoScaleMaxNodes"] = auto_scale_max_nodes
+            if flow_metrics_scaling_enabled is not None:
+                data["flowMetricsScalingEnabled"] = flow_metrics_scaling_enabled
+        elif flow_metrics_scaling_enabled is not None:
+            data["flowMetricsScalingEnabled"] = flow_metrics_scaling_enabled
+
+        if cfm_nifi_version is not None:
+            data["cfmNifiVersion"] = cfm_nifi_version
+        if auto_start_flow is not None:
+            data["autoStartFlow"] = auto_start_flow
+
+        # parameterGroups is required by the API - always send it
+        data["parameterGroups"] = (
+            parameter_groups if parameter_groups is not None else []
+        )
+
+        if kpis is not None:
+            data["kpis"] = kpis
+        if inbound_hostname is not None:
+            data["inboundHostname"] = inbound_hostname
+        if listen_components is not None:
+            data["listenComponents"] = listen_components
+        if inbound_connection_authorized_ip_ranges is not None:
+            data["inboundConnectionAuthorizedIpRanges"] = (
+                inbound_connection_authorized_ip_ranges
+            )
+        if node_storage_profile_name is not None:
+            data["nodeStorageProfileName"] = node_storage_profile_name
+        if project_crn is not None:
+            data["projectCrn"] = project_crn
+        if custom_nar_configuration_crn is not None:
+            data["customNarConfigurationCrn"] = custom_nar_configuration_crn
+        if custom_python_configuration_crn is not None:
+            data["customPythonConfigurationCrn"] = custom_python_configuration_crn
+
+        # Required: establish XSRF token cookie before creating deployment
+        self.get_deployment_request_details(dataservice_client, deployment_request_crn)
+
+        return dataservice_client.post(
+            "/dfx/api/rpc-v1/deployments/create-deployment",
+            data=data,
+        )
+
+    def terminate_deployment(
+        self,
+        dataservice_client: DataServiceClient,
+        deployment_crn: str,
+        environment_crn: str,
+    ) -> Dict[str, Any]:
+        """
+        Terminate a DataFlow deployment using workload API.
+
+        NOTE: This is a WORKLOAD API endpoint that requires Bearer token authentication.
+
+        Args:
+            dataservice_client: DataServiceClient with Bearer token auth
+            deployment_crn: The CRN of the deployment to terminate
+            environment_crn: The CRN of the environment
+
+        Returns:
+            Dictionary containing deployment details
+        """
+        data = {
+            "deploymentCrn": deployment_crn,
+            "environmentCrn": environment_crn,
+        }
+        return dataservice_client.post(
+            "/dfx/api/rpc-v1/deployments/terminate-deployment",
+            data=data,
+        )
+
+    def update_deployment(
+        self,
+        dataservice_client: DataServiceClient,
+        deployment_crn: str,
+        environment_crn: str,
+        configuration_version: int,
+        cluster_size: Optional[str] = None,
+        static_node_count: Optional[int] = None,
+        auto_scaling_enabled: Optional[bool] = None,
+        auto_scale_min_nodes: Optional[int] = None,
+        auto_scale_max_nodes: Optional[int] = None,
+        flow_metrics_scaling_enabled: Optional[bool] = None,
+        parameter_groups: Optional[List[Dict[str, Any]]] = None,
+        kpis: Optional[List[Dict[str, Any]]] = None,
+        asset_update_request_crn: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Update a DataFlow deployment configuration using workload API.
+
+        NOTE: This is a WORKLOAD API endpoint that requires Bearer token authentication.
+
+        Args:
+            dataservice_client: DataServiceClient with Bearer token auth
+            deployment_crn: The CRN of the deployment to update
+            environment_crn: The CRN of the environment
+            configuration_version: The version of the configuration
+            cluster_size: The deployment t-shirt size
+            static_node_count: Static number of nodes (when autoscaling disabled)
+            auto_scaling_enabled: Whether to enable autoscaling
+            auto_scale_min_nodes: Minimum nodes for autoscaling
+            auto_scale_max_nodes: Maximum nodes for autoscaling
+            flow_metrics_scaling_enabled: Whether to enable flow metrics for scaling
+            parameter_groups: Flow parameter groups
+            kpis: Configured KPIs (replaces current list)
+            asset_update_request_crn: CRN of asset update request
+
+        Returns:
+            Dictionary containing updated deployment configuration
+        """
+        data: Dict[str, Any] = {
+            "deploymentCrn": deployment_crn,
+            "environmentCrn": environment_crn,
+            "configurationVersion": configuration_version,
+        }
+
+        if cluster_size is not None:
+            data["clusterSize"] = {"name": cluster_size}
+        if static_node_count is not None:
+            data["staticNodeCount"] = static_node_count
+        if auto_scaling_enabled is not None:
+            data["autoScalingEnabled"] = auto_scaling_enabled
+
+        if auto_scaling_enabled:
+            if auto_scale_min_nodes is not None:
+                data["autoScaleMinNodes"] = auto_scale_min_nodes
+            if auto_scale_max_nodes is not None:
+                data["autoScaleMaxNodes"] = auto_scale_max_nodes
+            if flow_metrics_scaling_enabled is not None:
+                data["flowMetricsScalingEnabled"] = flow_metrics_scaling_enabled
+        elif flow_metrics_scaling_enabled is not None:
+            data["flowMetricsScalingEnabled"] = flow_metrics_scaling_enabled
+
+        if parameter_groups is not None:
+            data["parameterGroups"] = parameter_groups
+        if kpis is not None:
+            data["kpis"] = kpis
+        if asset_update_request_crn is not None:
+            data["assetUpdateRequestCrn"] = asset_update_request_crn
+
+        return dataservice_client.post(
+            "/dfx/api/rpc-v1/deployments/update-deployment",
+            data=data,
+        )
+
+    def wait_for_deployment_state(
+        self,
+        target_states: List[str],
+        deployment_crn: Optional[str] = None,
+        deployment_name: Optional[str] = None,
+        timeout: int = 500,
+        delay: int = 5,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Wait for a deployment to reach a target state.
+
+        Args:
+            target_states: List of acceptable target states
+            deployment_crn: The CRN of the deployment (takes precedence over name)
+            deployment_name: The name of the deployment (used if CRN not provided)
+            timeout: Maximum time to wait in seconds
+            delay: Polling interval in seconds
+
+        Returns:
+            Deployment details dict when target state is reached, or None if deleted
+
+        Raises:
+            CdpError: If timeout is reached, an error occurs, or neither CRN nor name provided
+        """
+        if not deployment_crn and not deployment_name:
+            raise CdpError("Either deployment_crn or deployment_name must be provided")
+
+        identifier = deployment_crn if deployment_crn else deployment_name
+        lookup_by_name = deployment_crn is None
+
+        start_time = time.time()
+
+        if lookup_by_name:
+            time.sleep(5)
+
+        while True:
+            elapsed = time.time() - start_time
+            if elapsed >= timeout:
+                raise CdpError(
+                    f"Timeout waiting for deployment '{identifier}' "
+                    f"to reach state {target_states}",
+                )
+
+            try:
+                if lookup_by_name:
+                    deployment = self.get_deployment_by_name(deployment_name)
+                else:
+                    deployment = self.describe_deployment(deployment_crn)
+
+                if not deployment:
+                    if any(
+                        state in target_states
+                        for state in self.DEPLOYMENT_DELETED_STATES
+                    ):
+                        return None
+                    if not lookup_by_name:
+                        raise CdpError(
+                            f"Deployment {deployment_crn} was deleted unexpectedly",
+                        )
+
+                if deployment:
+                    current_state = (
+                        deployment.get("deployment", {}).get("status", {}).get("state")
+                    )
+                    if current_state in target_states:
+                        return deployment
+
+                    if current_state in self.DEPLOYMENT_FAILED_STATES:
+                        message = (
+                            deployment.get("deployment", {})
+                            .get("status", {})
+                            .get("message", "No message")
+                        )
+                        raise CdpError(
+                            f"Deployment '{identifier}' entered error state {current_state}: {message}",
+                        )
+
+            except CdpError:
+                raise
+            except Exception as e:
+                raise CdpError(f"Error checking deployment state: {str(e)}")
+
+            time.sleep(delay)
 
     # ========================================================================
     # ReadyFlow Management Methods
