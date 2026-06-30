@@ -229,7 +229,9 @@ class TestCdpDfClientFlowDefinitions:
         result = client.get_flow_by_name("nonexistent-flow")
 
         assert result is None
-        client.list_flow_definitions.assert_called_once_with(search_term="nonexistent-flow")
+        client.list_flow_definitions.assert_called_once_with(
+            search_term="nonexistent-flow",
+        )
 
     def test_get_flow_by_crn(self, mocker):
         """Test resolving a flow by CRN via describe."""
@@ -375,7 +377,11 @@ class TestCdpDfClientServices:
         """Test listing all DataFlow services with no filters."""
         mock_response = {
             "services": [
-                {"crn": SERVICE_CRN, "name": SERVICE_NAME, "status": {"state": "GOOD_HEALTH"}},
+                {
+                    "crn": SERVICE_CRN,
+                    "name": SERVICE_NAME,
+                    "status": {"state": "GOOD_HEALTH"},
+                },
             ],
         }
 
@@ -457,8 +463,16 @@ class TestCdpDfClientServices:
         """Test resolving a service by name via list + describe."""
         list_mock = {
             "services": [
-                {"crn": SERVICE_CRN, "name": SERVICE_NAME, "status": {"state": "GOOD_HEALTH"}},
-                {"crn": "crn:other", "name": "other-service", "status": {"state": "GOOD_HEALTH"}},
+                {
+                    "crn": SERVICE_CRN,
+                    "name": SERVICE_NAME,
+                    "status": {"state": "GOOD_HEALTH"},
+                },
+                {
+                    "crn": "crn:other",
+                    "name": "other-service",
+                    "status": {"state": "GOOD_HEALTH"},
+                },
             ],
         }
         describe_mock = {
@@ -482,7 +496,15 @@ class TestCdpDfClientServices:
 
     def test_get_service_by_name_not_found(self, mocker):
         """Test get_service_by_name when no service matches."""
-        list_mock = {"services": [{"crn": "crn:other", "name": "other-service", "status": {"state": "GOOD_HEALTH"}}]}
+        list_mock = {
+            "services": [
+                {
+                    "crn": "crn:other",
+                    "name": "other-service",
+                    "status": {"state": "GOOD_HEALTH"},
+                },
+            ],
+        }
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpDfClient(api_client=api_client)
@@ -496,7 +518,11 @@ class TestCdpDfClientServices:
         """Test that get_service_by_name skips NOT_ENABLED services."""
         list_mock = {
             "services": [
-                {"crn": SERVICE_CRN, "name": SERVICE_NAME, "status": {"state": "NOT_ENABLED"}},
+                {
+                    "crn": SERVICE_CRN,
+                    "name": SERVICE_NAME,
+                    "status": {"state": "NOT_ENABLED"},
+                },
             ],
         }
 

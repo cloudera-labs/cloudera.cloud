@@ -149,7 +149,10 @@ def valid_df_service(df_client):
 
     for svc in services:
         state = svc.get("status", {}).get("state", "")
-        if state not in CdpDfClient.DISABLED_STATES and state not in CdpDfClient.FAILED_STATES:
+        if (
+            state not in CdpDfClient.DISABLED_STATES
+            and state not in CdpDfClient.FAILED_STATES
+        ):
             details = df_client.describe_service(svc.get("crn"))
             if details:
                 return svc
@@ -201,7 +204,6 @@ class TestCdpDfClientIntegration:
         assert result["name"] == flow_name
         assert "crn" in result
         assert "versionCount" in result
-
 
     def test_get_flow_by_crn(self, df_client, valid_df_flow):
         """Test resolving a flow by CRN."""
@@ -305,7 +307,13 @@ class TestCdpDfClientIntegration:
 
         assert result is not None
 
-        expected_fields = ["crn", "name", "versionCount", "createdTimestamp", "modifiedTimestamp"]
+        expected_fields = [
+            "crn",
+            "name",
+            "versionCount",
+            "createdTimestamp",
+            "modifiedTimestamp",
+        ]
         for field in expected_fields:
             assert field in result, f"Missing expected field: {field}"
 
