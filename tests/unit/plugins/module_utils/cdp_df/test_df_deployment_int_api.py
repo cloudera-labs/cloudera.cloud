@@ -208,7 +208,7 @@ class TestCdpDfClientDeploymentIntegration:
     def test_describe_deployment_not_found(self, df_client):
         """Test that describing a nonexistent deployment returns empty dict."""
         response = df_client.describe_deployment(
-            "crn:cdp:df:us-west-1:fake:deployment:nonexistent-12345"
+            "crn:cdp:df:us-west-1:fake:deployment:nonexistent-12345",
         )
 
         assert response == {}
@@ -242,7 +242,7 @@ class TestCdpDfClientDeploymentIntegration:
     def test_get_deployment_by_crn_not_found(self, df_client):
         """Test get_deployment_by_crn returns empty dict for an unknown CRN (squelched 404)."""
         response = df_client.get_deployment_by_crn(
-            "crn:cdp:df:us-west-1:fake:deployment:nonexistent-12345"
+            "crn:cdp:df:us-west-1:fake:deployment:nonexistent-12345",
         )
 
         assert response == {}
@@ -261,7 +261,11 @@ class TestCdpDfClientDeploymentIntegration:
         assert "state" in dep["status"], "Missing state in deployment status"
 
     def test_create_deployment_via_client(
-        self, df_client, iam_client, df_deployment_delete, env_context
+        self,
+        df_client,
+        iam_client,
+        df_deployment_delete,
+        env_context,
     ):
         """Test creating a deployment directly via CdpDfClient."""
         random_suffix = random.randint(100000, 999999)
@@ -303,7 +307,9 @@ class TestCdpDfClientDeploymentIntegration:
         assert deployment.get("name") == deployment_name
 
     def test_wait_for_deployment_state_already_healthy(
-        self, df_client, valid_df_deployment
+        self,
+        df_client,
+        valid_df_deployment,
     ):
         """Test wait_for_deployment_state returns immediately for a healthy deployment."""
         crn = valid_df_deployment.get("crn")
@@ -317,9 +323,17 @@ class TestCdpDfClientDeploymentIntegration:
 
         assert result is not None
         dep = result.get("deployment", {})
-        assert dep.get("status", {}).get("state") in CdpDfClient.DEPLOYMENT_HEALTHY_STATES
+        assert (
+            dep.get("status", {}).get("state") in CdpDfClient.DEPLOYMENT_HEALTHY_STATES
+        )
 
-    def test_terminate_and_wait(self, df_client, iam_client, df_deployment_create, env_context):
+    def test_terminate_and_wait(
+        self,
+        df_client,
+        iam_client,
+        df_deployment_create,
+        env_context,
+    ):
         """Test terminating a deployment and waiting for it to be deleted."""
         random_suffix = random.randint(100000, 999999)
         deployment_name = f"test-api-term-{random_suffix}"
@@ -350,7 +364,11 @@ class TestCdpDfClientDeploymentIntegration:
         assert result is None or result == {}
 
     def test_update_deployment_static_node_count(
-        self, df_client, iam_client, df_deployment_create, env_context
+        self,
+        df_client,
+        iam_client,
+        df_deployment_create,
+        env_context,
     ):
         """Test updating a deployment's static node count via CdpDfClient."""
         random_suffix = random.randint(100000, 999999)
@@ -362,9 +380,9 @@ class TestCdpDfClientDeploymentIntegration:
         assert deployment_crn is not None
 
         describe = df_client.describe_deployment(deployment_crn)
-        configuration_version = (
-            describe.get("deployment", {})
-            .get("configurationVersion", 0)
+        configuration_version = describe.get("deployment", {}).get(
+            "configurationVersion",
+            0,
         )
 
         workload_client = df_client.create_workload_client(

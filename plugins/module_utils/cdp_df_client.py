@@ -317,7 +317,7 @@ class WorkloadTransport(CdpClient):
         headers = self.headers.copy()
         if self.cookies:
             headers["Cookie"] = "; ".join(
-                [f"{k}={v}" for k, v in self.cookies.items()]
+                [f"{k}={v}" for k, v in self.cookies.items()],
             )
             if "XSRF-TOKEN" in self.cookies:
                 headers["X-XSRF-TOKEN"] = self.cookies["XSRF-TOKEN"]
@@ -406,7 +406,8 @@ class WorkloadTransport(CdpClient):
                 if is_retryable_status(status_code) and attempt < max_retries - 1:
                     time.sleep(compute_backoff(attempt))
                     last_error = CdpError(
-                        f"{error_message} for {url}", status=status_code
+                        f"{error_message} for {url}",
+                        status=status_code,
                     )
                     continue
 
@@ -420,7 +421,7 @@ class WorkloadTransport(CdpClient):
                     last_error = CdpError(f"Connection error for {url}: {str(e)}")
                     continue
                 raise CdpError(
-                    f"Request failed after {max_retries} attempts for {url}: {str(e)}"
+                    f"Request failed after {max_retries} attempts for {url}: {str(e)}",
                 )
 
         if last_error:
@@ -440,7 +441,11 @@ class WorkloadTransport(CdpClient):
     ) -> Dict[str, Any]:
         """Execute an HTTP POST request."""
         return self._make_request(
-            "POST", path, data=data, json_data=json_data, squelch=squelch
+            "POST",
+            path,
+            data=data,
+            json_data=json_data,
+            squelch=squelch,
         )
 
     def put(
@@ -452,7 +457,11 @@ class WorkloadTransport(CdpClient):
     ) -> Dict[str, Any]:
         """Execute an HTTP PUT request."""
         return self._make_request(
-            "PUT", path, data=data, json_data=json_data, squelch=squelch
+            "PUT",
+            path,
+            data=data,
+            json_data=json_data,
+            squelch=squelch,
         )
 
     def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:

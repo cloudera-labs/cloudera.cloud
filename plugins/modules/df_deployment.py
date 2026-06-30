@@ -805,7 +805,6 @@ class DFDeployment(DataFlowModule, ServicesModule):
                 self.changed = True
 
 
-
 def main():
     result = DFDeployment()
     output = dict(changed=result.changed, deployment=result.deployment)

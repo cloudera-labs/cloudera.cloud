@@ -53,7 +53,7 @@ EXISTING_DEPLOYMENT = {
         "autoScaleMinNodes": 1,
         "autoScaleMaxNodes": 3,
         "flowMetricsScalingEnabled": False,
-    }
+    },
 }
 
 
@@ -83,7 +83,7 @@ def mock_clients(mocker):
     # Sensible defaults
     env_client.describe_environment.return_value = {"crn": ENV_CRN}
     df_client.get_service_by_env_crn.return_value = {
-        "service": {"crn": SERVICE_CRN}
+        "service": {"crn": SERVICE_CRN},
     }
     df_client.create_workload_client.return_value = mocker.MagicMock()
 
@@ -111,7 +111,7 @@ def test_df_deployment_create_success(module_args, mock_clients):
             "static_node_count": 1,
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = None
@@ -123,7 +123,7 @@ def test_df_deployment_create_success(module_args, mock_clients):
             "crn": DEPLOYMENT_CRN,
             "name": DEPLOYMENT_NAME,
             "status": {"state": "DEPLOYING"},
-        }
+        },
     }
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -158,7 +158,7 @@ def test_df_deployment_create_with_autoscaling(module_args, mock_clients):
             "flow_metrics_scaling_enabled": True,
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = None
@@ -166,7 +166,7 @@ def test_df_deployment_create_with_autoscaling(module_args, mock_clients):
         "deploymentRequestCrn": DEPLOYMENT_REQUEST_CRN,
     }
     df_client.create_deployment.return_value = {
-        "deployment": {"crn": DEPLOYMENT_CRN, "name": DEPLOYMENT_NAME}
+        "deployment": {"crn": DEPLOYMENT_CRN, "name": DEPLOYMENT_NAME},
     }
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -195,7 +195,7 @@ def test_df_deployment_create_with_df_name(module_args, mock_clients):
             "cluster_size": "SMALL",
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = None
@@ -204,7 +204,7 @@ def test_df_deployment_create_with_df_name(module_args, mock_clients):
         "deploymentRequestCrn": DEPLOYMENT_REQUEST_CRN,
     }
     df_client.create_deployment.return_value = {
-        "deployment": {"crn": DEPLOYMENT_CRN, "name": DEPLOYMENT_NAME}
+        "deployment": {"crn": DEPLOYMENT_CRN, "name": DEPLOYMENT_NAME},
     }
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -228,7 +228,7 @@ def test_df_deployment_create_idempotent_no_changes(module_args, mock_clients):
             "flow_version_crn": FLOW_VERSION_CRN,
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = EXISTING_DEPLOYMENT
@@ -262,7 +262,7 @@ def test_df_deployment_update_cluster_size(module_args, mock_clients):
             "configuration_version": 1,
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = EXISTING_DEPLOYMENT
@@ -272,8 +272,8 @@ def test_df_deployment_update_cluster_size(module_args, mock_clients):
                 "crn": DEPLOYMENT_CRN,
                 "name": DEPLOYMENT_NAME,
                 "clusterSize": {"name": "LARGE"},
-            }
-        }
+            },
+        },
     }
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -300,14 +300,14 @@ def test_df_deployment_update_static_node_count(module_args, mock_clients):
             "configuration_version": 1,
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = EXISTING_DEPLOYMENT
     df_client.update_deployment.return_value = {
         "deploymentConfiguration": {
-            "deployment": {"crn": DEPLOYMENT_CRN, "name": DEPLOYMENT_NAME}
-        }
+            "deployment": {"crn": DEPLOYMENT_CRN, "name": DEPLOYMENT_NAME},
+        },
     }
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -326,7 +326,7 @@ def test_df_deployment_update_parameter_groups(module_args, mock_clients):
         {
             "name": "parameters",
             "parameters": [{"name": "broker", "value": "new-host:9092"}],
-        }
+        },
     ]
 
     module_args(
@@ -340,14 +340,14 @@ def test_df_deployment_update_parameter_groups(module_args, mock_clients):
             "configuration_version": 2,
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = EXISTING_DEPLOYMENT
     df_client.update_deployment.return_value = {
         "deploymentConfiguration": {
-            "deployment": {"crn": DEPLOYMENT_CRN, "name": DEPLOYMENT_NAME}
-        }
+            "deployment": {"crn": DEPLOYMENT_CRN, "name": DEPLOYMENT_NAME},
+        },
     }
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -376,7 +376,7 @@ def test_df_deployment_delete_success(module_args, mock_clients):
             "env_crn": ENV_CRN,
             "state": "absent",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_crn.return_value = EXISTING_DEPLOYMENT
@@ -403,7 +403,7 @@ def test_df_deployment_delete_idempotent(module_args, mock_clients):
             "env_crn": ENV_CRN,
             "state": "absent",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_crn.return_value = None
@@ -428,7 +428,7 @@ def test_df_deployment_delete_by_name(module_args, mock_clients):
             "env_crn": ENV_CRN,
             "state": "absent",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = EXISTING_DEPLOYMENT
@@ -462,7 +462,7 @@ def test_df_deployment_check_mode_create(module_args, mock_clients):
             "state": "present",
             "wait": False,
             "_ansible_check_mode": True,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = None
@@ -489,7 +489,7 @@ def test_df_deployment_check_mode_delete(module_args, mock_clients):
             "state": "absent",
             "wait": False,
             "_ansible_check_mode": True,
-        }
+        },
     )
 
     df_client.get_deployment_by_crn.return_value = EXISTING_DEPLOYMENT
@@ -520,7 +520,7 @@ def test_df_deployment_fail_service_not_found(module_args, mock_clients):
             "flow_version_crn": FLOW_VERSION_CRN,
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = None
@@ -547,7 +547,7 @@ def test_df_deployment_fail_environment_not_found(module_args, mock_clients):
             "flow_version_crn": FLOW_VERSION_CRN,
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = None
@@ -574,7 +574,7 @@ def test_df_deployment_fail_df_name_not_found(module_args, mock_clients):
             "flow_version_crn": FLOW_VERSION_CRN,
             "state": "present",
             "wait": False,
-        }
+        },
     )
 
     df_client.get_deployment_by_name.return_value = None

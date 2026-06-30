@@ -203,7 +203,9 @@ class TestCdpDfClientDeploymentMethods:
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpDfClient(api_client=api_client)
         mocker.patch.object(
-            client, "describe_deployment", side_effect=CdpError("not found")
+            client,
+            "describe_deployment",
+            side_effect=CdpError("not found"),
         )
 
         response = client.get_deployment_by_crn("nonexistent-crn")
@@ -273,7 +275,9 @@ class TestCdpDfClientDeploymentMethods:
 
         client = CdpDfClient(api_client=api_client)
         get_details = mocker.patch.object(
-            client, "get_deployment_request_details", return_value={}
+            client,
+            "get_deployment_request_details",
+            return_value={},
         )
 
         response = client.create_deployment(
@@ -415,7 +419,9 @@ class TestCdpDfClientDeploymentMethods:
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpDfClient(api_client=api_client)
         mocker.patch.object(
-            client, "describe_deployment", return_value=mock_deployment
+            client,
+            "describe_deployment",
+            return_value=mock_deployment,
         )
         mocker.patch("time.sleep")
 
@@ -440,13 +446,15 @@ class TestCdpDfClientDeploymentMethods:
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpDfClient(api_client=api_client)
         mocker.patch.object(
-            client, "describe_deployment", return_value=mock_deployment
+            client,
+            "describe_deployment",
+            return_value=mock_deployment,
         )
         mocker.patch("time.sleep")
 
         # Mock time to force immediate timeout
         mock_time = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df.time"
+            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df.time",
         )
         mock_time.time.side_effect = [0, 999]
         mock_time.sleep = mocker.Mock()
@@ -471,11 +479,13 @@ class TestCdpDfClientDeploymentMethods:
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpDfClient(api_client=api_client)
         mocker.patch.object(
-            client, "describe_deployment", return_value=mock_deployment
+            client,
+            "describe_deployment",
+            return_value=mock_deployment,
         )
 
         mock_time = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df.time"
+            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df.time",
         )
         mock_time.time.side_effect = [0, 5]
         mock_time.sleep = mocker.Mock()
@@ -495,7 +505,7 @@ class TestCdpDfClientDeploymentMethods:
         mocker.patch.object(client, "describe_deployment", return_value={})
 
         mock_time = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df.time"
+            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df.time",
         )
         mock_time.time.side_effect = [0, 5]
         mock_time.sleep = mocker.Mock()

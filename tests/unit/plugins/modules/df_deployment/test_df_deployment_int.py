@@ -57,7 +57,7 @@ def df_module_args(module_args, env_context) -> Callable[[dict], None]:
                 "endpoint": env_context["CDP_API_ENDPOINT"],
                 "access_key": env_context["CDP_ACCESS_KEY_ID"],
                 "private_key": env_context["CDP_PRIVATE_KEY"],
-            }
+            },
         )
         return module_args(args)
 
@@ -112,6 +112,7 @@ def df_deployment_delete(
             )
         except Exception as e:
             import warnings
+
             warnings.warn(f"Failed to clean up deployment {deployment_crn}: {e}")
 
 
@@ -162,8 +163,8 @@ def df_deployment_create(
             parameter_groups = [
                 {
                     "name": "test-customflow-141072",
-                    "parameters": []
-                }
+                    "parameters": [],
+                },
             ]
 
         result = df_client.create_deployment(
@@ -216,13 +217,13 @@ def test_df_deployment_create_via_module(
             "parameter_groups": [
                 {
                     "name": "test-customflow-141072",
-                    "parameters": []
-                }
+                    "parameters": [],
+                },
             ],
             "state": "present",
             "wait": True,
             "timeout": 600,
-        }
+        },
     )
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -257,7 +258,7 @@ def test_df_deployment_create_idempotent(
             "state": "present",
             "wait": True,
             "timeout": 600,
-        }
+        },
     )
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -289,7 +290,7 @@ def test_df_deployment_update_via_module(
             "state": "present",
             "wait": True,
             "timeout": 600,
-        }
+        },
     )
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -324,7 +325,7 @@ def test_df_deployment_update_idempotent_via_module(
             "state": "present",
             "wait": True,
             "timeout": 600,
-        }
+        },
     )
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -356,7 +357,7 @@ def test_df_deployment_delete_via_module(
             "state": "absent",
             "wait": True,
             "timeout": 600,
-        }
+        },
     )
 
     with pytest.raises(AnsibleExitJson) as result:
@@ -391,7 +392,7 @@ def test_df_deployment_delete_by_name_via_module(
             "state": "absent",
             "wait": True,
             "timeout": 600,
-        }
+        },
     )
 
     with pytest.raises(AnsibleExitJson) as result:
