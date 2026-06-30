@@ -351,7 +351,6 @@ class CdpDfClient:
     def create_workload_client(
         self,
         iam_client: CdpIamClient,
-        module: Any,
         environment_crn: str,
     ) -> CdpDfWorkloadClient:
         """
@@ -359,7 +358,6 @@ class CdpDfClient:
 
         Args:
             iam_client: CdpIamClient instance for generating workload auth tokens
-            module: AnsibleModule instance
             environment_crn: The CRN of the environment
 
         Returns:
@@ -373,9 +371,9 @@ class CdpDfClient:
         endpoint_url = token_response.get("endpointUrl")
 
         return CdpDfWorkloadClient(
-            module=module,
             base_url=endpoint_url,
             access_token=access_token,
+            validate_certs=getattr(self.api_client, "endpoint_tls", True),
         )
 
     # ========================================================================

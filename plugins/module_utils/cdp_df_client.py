@@ -22,8 +22,9 @@ import json
 import time
 from typing import Any, Dict, Optional, Union, List
 from urllib.parse import urlparse, quote
+from urllib.error import HTTPError
 from email.utils import formatdate
-from ansible.module_utils.urls import fetch_url
+from ansible.module_utils.urls import open_url
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     AnsibleCdpClient,
@@ -101,7 +102,7 @@ def parse_success_response(resp: Any, status_code: int) -> Any:
 
 def parse_error_message(info: Dict[str, Any], status_code: int) -> str:
     """
-    Extract a human-readable error message from a fetch_url ``info`` dict.
+    Extract a human-readable error message from an HTTP error info dict.
 
     Looks in the response body for ``message`` / ``error`` / ``errorMessages``
     / ``errorMessage`` keys, falling back to ``info['msg']``.
@@ -145,6 +146,16 @@ class CdpDfApiClient(AnsibleCdpClient):
     - 308 Permanent Redirect handling for flow import operations
     - DataFlow extension format transformation (metadata in headers, content in body)
     """
+
+    def __init__(self, module, base_url, access_key, private_key, **kwargs):
+        super().__init__(
+            module=module,
+            base_url=base_url,
+            access_key=access_key,
+            private_key=private_key,
+            **kwargs,
+        )
+        self.endpoint_tls = module.params.get("endpoint_tls", True)
 
     def _transform_df_flow_payload(
         self,
@@ -293,7 +304,7 @@ class WorkloadTransport(CdpClient):
         - Retry with exponential backoff on transient failures
         - Raises CdpError on failure (it does not call ``module.fail_json``)
 
-    Subclasses must set ``self.module``, ``self.base_url``, ``self.timeout``,
+    Subclasses must set ``self.validate_certs``, ``self.base_url``, ``self.timeout``,
     ``self.cookies`` and ``self.headers`` in their ``__init__``.
     """
 
@@ -312,18 +323,14 @@ class WorkloadTransport(CdpClient):
                 headers["X-XSRF-TOKEN"] = self.cookies["XSRF-TOKEN"]
         return headers
 
-    def _capture_cookies(self, info: Dict[str, Any]) -> None:
+    def _capture_cookies(self, response) -> None:
         """
         Capture cookies from a response into ``self.cookies``.
 
         Workload APIs hand back an XSRF token via ``Set-Cookie`` on the first
         request; subsequent mutating requests must echo it back.
         """
-        set_cookie = info.get("set-cookie")
-        if not set_cookie:
-            return
-
-        cookie_headers = [set_cookie] if isinstance(set_cookie, str) else set_cookie
+        cookie_headers = response.info().get_all("set-cookie") or []
         for cookie_header in cookie_headers:
             if "=" in cookie_header:
                 cookie_part = cookie_header.split(";")[0]
@@ -362,72 +369,63 @@ class WorkloadTransport(CdpClient):
         headers = self._request_headers()
         body = serialize_request_body(data=data, json_data=json_data)
 
-        original_validate_certs = self.module.params.get("validate_certs")
-        self.module.params["validate_certs"] = self.module.params.get(
-            "endpoint_tls", True
-        )
-
         last_error = None
-        try:
-            for attempt in range(max_retries):
+        for attempt in range(max_retries):
+            try:
+                resp = open_url(
+                    url,
+                    data=body,
+                    headers=headers,
+                    method=method,
+                    timeout=self.timeout,
+                    validate_certs=self.validate_certs,
+                )
+
+                self._capture_cookies(resp)
+                status_code = resp.getcode()
+
+                if status_code in squelch:
+                    return squelch[status_code]
+
+                return parse_success_response(resp, status_code)
+
+            except HTTPError as e:
+                status_code = e.code
+
+                if status_code in squelch:
+                    return squelch[status_code]
+
                 try:
-                    resp, info = fetch_url(
-                        self.module,
-                        url,
-                        data=body,
-                        headers=headers,
-                        method=method,
-                        timeout=self.timeout,
+                    error_body = e.read().decode("utf-8")
+                except Exception:
+                    error_body = ""
+
+                info = {"body": error_body, "msg": str(e), "status": status_code}
+                error_message = parse_error_message(info, status_code)
+
+                if is_retryable_status(status_code) and attempt < max_retries - 1:
+                    time.sleep(compute_backoff(attempt))
+                    last_error = CdpError(
+                        f"{error_message} for {url}", status=status_code
                     )
+                    continue
 
-                    status_code = info.get("status", -1)
+                raise CdpError(f"{error_message} [{status_code}] for {url}")
 
-                    self._capture_cookies(info)
+            except CdpError:
+                raise
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    time.sleep(compute_backoff(attempt))
+                    last_error = CdpError(f"Connection error for {url}: {str(e)}")
+                    continue
+                raise CdpError(
+                    f"Request failed after {max_retries} attempts for {url}: {str(e)}"
+                )
 
-                    if status_code in squelch:
-                        return squelch[status_code]
-
-                    if status_code == -1:
-                        error_msg = info.get("msg", "Connection error")
-                        if attempt < max_retries - 1:
-                            time.sleep(compute_backoff(attempt))
-                            last_error = CdpError(
-                                f"{error_msg} for {url}", status=status_code
-                            )
-                            continue
-                        raise CdpError(f"{error_msg} for {url}", status=status_code)
-
-                    if 200 <= status_code < 300:
-                        return parse_success_response(resp, status_code)
-
-                    error_message = parse_error_message(info, status_code)
-
-                    if is_retryable_status(status_code) and attempt < max_retries - 1:
-                        time.sleep(compute_backoff(attempt))
-                        last_error = CdpError(
-                            f"{error_message} for {url}", status=status_code
-                        )
-                        continue
-
-                    raise CdpError(f"{error_message} [{status_code}] for {url}")
-
-                except CdpError:
-                    raise
-                except Exception as e:
-                    if attempt < max_retries - 1:
-                        time.sleep(compute_backoff(attempt))
-                        last_error = CdpError(f"Connection error for {url}: {str(e)}")
-                        continue
-                    raise CdpError(
-                        f"Request failed after {max_retries} attempts for {url}: {str(e)}"
-                    )
-
-            if last_error:
-                raise last_error
-            raise CdpError(f"Request failed for {url}")
-        finally:
-            if original_validate_certs is not None:
-                self.module.params["validate_certs"] = original_validate_certs
+        if last_error:
+            raise last_error
+        raise CdpError(f"Request failed for {url}")
 
     def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Execute an HTTP GET request."""
@@ -474,9 +472,9 @@ class CdpDfWorkloadClient(WorkloadTransport):
 
     def __init__(
         self,
-        module,
         base_url: str,
         access_token: str,
+        validate_certs: bool = True,
         timeout_seconds: int = 60,
         default_page_size: int = 100,
     ):
@@ -484,14 +482,14 @@ class CdpDfWorkloadClient(WorkloadTransport):
         Initialize the DataFlow workload client.
 
         Args:
-            module: AnsibleModule instance (used for ``fetch_url`` and TLS config)
             base_url: Base URL of the DataFlow Workload Service
             access_token: JWT Bearer token from generateWorkloadAuthToken
+            validate_certs: Whether to validate TLS certificates for the workload endpoint
             timeout_seconds: Per-request HTTP timeout in seconds
             default_page_size: Default page size for paginated requests
         """
         super().__init__(default_page_size=default_page_size)
-        self.module = module
+        self.validate_certs = validate_certs
         self.base_url = base_url.rstrip("/")
         self.access_token = access_token
         self.timeout = timeout_seconds
