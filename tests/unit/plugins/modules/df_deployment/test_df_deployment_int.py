@@ -22,7 +22,6 @@ import pytest
 import random
 import time
 from typing import Callable, Generator
-from unittest.mock import Mock
 
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
@@ -43,33 +42,6 @@ REQUIRED_ENV_VARS = [
 
 # Mark all tests in this module as integration tests requiring API credentials
 pytestmark = pytest.mark.integration_api
-
-
-@pytest.fixture(autouse=True)
-def _extend_http_timeout(monkeypatch):
-    """Patch Ansible's Request.open to use a 60s timeout instead of the 10s default.
-
-    TestCdpClient calls Request().get/post/put/delete without an explicit timeout,
-    so Ansible's Request.open() falls back to its default of 10 seconds. During
-    integration tests the API is polled repeatedly while deployments start up or
-    shut down (which can take several minutes). Individual describe_deployment calls
-    can exceed 10 seconds under load, causing an ssl.SSLSocket read to time out and
-    raising a CdpError that aborts the entire wait loop before the deployment has
-    had a chance to reach the target state.
-
-    Patching Request.open with kwargs.setdefault("timeout", 60) raises the per-request
-    ceiling to 60 seconds for every HTTP call made in this test module, without
-    affecting unit tests elsewhere or callers that already supply their own timeout.
-    """
-    import ansible.module_utils.urls as _urls
-
-    _orig = _urls.Request.open
-
-    def _patched_open(self, *args, **kwargs):
-        kwargs.setdefault("timeout", 60)
-        return _orig(self, *args, **kwargs)
-
-    monkeypatch.setattr(_urls.Request, "open", _patched_open)
 
 
 @pytest.fixture
@@ -123,12 +95,8 @@ def df_deployment_delete(
 
     for deployment_crn, env_crn in deployments_to_delete:
         try:
-            fake_module = Mock()
-            fake_module.params = {"validate_certs": True, "endpoint_tls": True}
-            fake_module.tmpdir = None
             workload_client = df_client.create_workload_client(
                 iam_client=iam_client,
-                module=fake_module,
                 environment_crn=env_crn,
             )
             df_client.terminate_deployment(
@@ -186,7 +154,6 @@ def df_deployment_create(
 
         workload_client = df_client.create_workload_client(
             iam_client=iam_client,
-            module=Mock(params={"validate_certs": True, "endpoint_tls": True, "tmpdir": None}, tmpdir=None),
             environment_crn=resolved_env_crn,
         )
 
