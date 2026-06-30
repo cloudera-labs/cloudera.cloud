@@ -215,7 +215,7 @@ options:
       - If set to FALSE, the module will return immediately
     type: bool
     required: False
-    default: False
+    default: True
   delay:
     description:
       - The internal polling interval (in seconds) while waiting for state changes
@@ -356,51 +356,135 @@ deployment:
   returned: always
   contains:
     crn:
-      description: The deployment CRN
+      description: The CRN of the deployment
       returned: always
       type: str
     name:
-      description: The deployment name
+      description: The name of the deployment
       returned: always
       type: str
     status:
-      description: The deployment status
+      description: The workflow status of the deployment
       returned: always
       type: dict
       contains:
         state:
-          description: The deployment state
+          description: The state that the deployment is currently in
           returned: always
           type: str
         detailedState:
           description: The detailed deployment state
           returned: always
           type: str
+        message:
+          description: Detail message relating to the current status of the deployment
+          returned: when available
+          type: str
     service:
-      description: DataFlow service metadata
+      description: Simple information about the DataFlow service of the deployment
       returned: always
       type: dict
       contains:
         crn:
-          description: The DataFlow service CRN
+          description: The CRN of the DataFlow service
           returned: always
           type: str
         name:
-          description: The environment name
+          description: The name of the DataFlow service
           returned: always
           type: str
+        cloudProvider:
+          description: The cloud platform of the DataFlow service
+          returned: always
+          type: str
+        region:
+          description: The region of the DataFlow service
+          returned: always
+          type: str
+        environmentCrn:
+          description: CRN of the associated CDP environment
+          returned: always
+          type: str
+    updated:
+      description: Timestamp of the last time the deployment was modified
+      returned: when available
+      type: int
+    clusterSize:
+      description: The size of the cluster for the deployment
+      returned: when available
+      type: str
     flowVersionCrn:
-      description: The flow version CRN
+      description: The deployment's current flow version CRN
       returned: when available
       type: str
     flowCrn:
-      description: The flow CRN
+      description: The deployment's current flow CRN
       returned: when available
       type: str
+    flowName:
+      description: The name of the flow
+      returned: when available
+      type: str
+    flowVersion:
+      description: The version of the flow
+      returned: when available
+      type: int
     nifiUrl:
-      description: The NiFi UI URL
+      description: The URL to open the deployed flow in NiFi
       returned: when available
       type: str
+    dfxLocalUrl:
+      description: Base URL to the CDF Local instance running this deployment
+      returned: when available
+      type: str
+    currentNodeCount:
+      description: The current node count
+      returned: when available
+      type: int
+    staticNodeCount:
+      description: The static number of nodes of the deployment
+      returned: when available
+      type: int
+    autoscalingEnabled:
+      description: Whether or not autoscaling is enabled for this deployment
+      returned: always
+      type: bool
+    autoscaleMinNodes:
+      description: The minimum number of nodes that the deployment will allocate when autoscaling is enabled
+      returned: when available
+      type: int
+    autoscaleMaxNodes:
+      description: The maximum number of nodes that the deployment can scale up to when autoscaling is enabled
+      returned: when available
+      type: int
+    flowMetricsScalingEnabled:
+      description: Whether or not flow metrics scaling is enabled for this deployment
+      returned: always
+      type: bool
+    configurationVersion:
+      description: The current version of the deployment's configuration
+      returned: always
+      type: int
+    cfmNifiVersion:
+      description: The CFM NiFi version associated with the deployment
+      returned: when available
+      type: str
+    deployedByName:
+      description: The name of the person who deployed the first flow
+      returned: when available
+      type: str
+    activeInfoAlertCount:
+      description: Current count of active alerts classified as an info
+      returned: always
+      type: int
+    activeWarningAlertCount:
+      description: Current count of active alerts classified as a warning
+      returned: always
+      type: int
+    activeErrorAlertCount:
+      description: Current count of active alerts classified as an error
+      returned: always
+      type: int
 sdk_out:
   description: Returns the captured CDP SDK log
   returned: when supported
@@ -616,7 +700,6 @@ class DFDeployment(DataFlowModule, ServicesModule):
                     if not self.module.check_mode:
                         workload_client = self.df_client.create_workload_client(
                             iam_client=self.iam_client,
-                            module=self.module,
                             environment_crn=self.env_crn,
                         )
 
@@ -655,7 +738,6 @@ class DFDeployment(DataFlowModule, ServicesModule):
 
                     workload_client = self.df_client.create_workload_client(
                         iam_client=self.iam_client,
-                        module=self.module,
                         environment_crn=self.env_crn,
                     )
 
@@ -702,7 +784,6 @@ class DFDeployment(DataFlowModule, ServicesModule):
                 if not self.module.check_mode:
                     workload_client = self.df_client.create_workload_client(
                         iam_client=self.iam_client,
-                        module=self.module,
                         environment_crn=self.env_crn,
                     )
 
@@ -722,10 +803,7 @@ class DFDeployment(DataFlowModule, ServicesModule):
                         )
 
                 self.changed = True
-                self.deployment = {}
-            else:
-                self.deployment = {}
-                self.changed = False
+
 
 
 def main():
