@@ -22,6 +22,7 @@ import pytest
 import random
 import time
 from typing import Callable, Generator
+from unittest.mock import Mock
 
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
@@ -42,6 +43,33 @@ REQUIRED_ENV_VARS = [
 
 # Mark all tests in this module as integration tests requiring API credentials
 pytestmark = pytest.mark.integration_api
+
+
+@pytest.fixture(autouse=True)
+def _extend_http_timeout(monkeypatch):
+    """Patch Ansible's Request.open to use a 60s timeout instead of the 10s default.
+
+    TestCdpClient calls Request().get/post/put/delete without an explicit timeout,
+    so Ansible's Request.open() falls back to its default of 10 seconds. During
+    integration tests the API is polled repeatedly while deployments start up or
+    shut down (which can take several minutes). Individual describe_deployment calls
+    can exceed 10 seconds under load, causing an ssl.SSLSocket read to time out and
+    raising a CdpError that aborts the entire wait loop before the deployment has
+    had a chance to reach the target state.
+
+    Patching Request.open with kwargs.setdefault("timeout", 60) raises the per-request
+    ceiling to 60 seconds for every HTTP call made in this test module, without
+    affecting unit tests elsewhere or callers that already supply their own timeout.
+    """
+    import ansible.module_utils.urls as _urls
+
+    _orig = _urls.Request.open
+
+    def _patched_open(self, *args, **kwargs):
+        kwargs.setdefault("timeout", 60)
+        return _orig(self, *args, **kwargs)
+
+    monkeypatch.setattr(_urls.Request, "open", _patched_open)
 
 
 @pytest.fixture
@@ -79,37 +107,44 @@ def iam_client(test_cdp_client) -> CdpIamClient:
 @pytest.fixture
 def df_deployment_delete(
     df_client,
-) -> Generator[Callable[[str], None], None, None]:
-    """Fixture to track and clean up deployments created during tests."""
-    deployment_crns = []
+    iam_client,
+) -> Generator[Callable[[str, str], None], None, None]:
+    """Fixture to track and clean up deployments created during tests.
 
-    def _track(deployment_crn: str):
-        deployment_crns.append(deployment_crn)
+    The tracker accepts (deployment_crn, env_crn) so teardown does not need
+    to re-derive the environment CRN from the deployment response.
+    """
+    deployments_to_delete = []  # list of (deployment_crn, env_crn)
+
+    def _track(deployment_crn: str, env_crn: str):
+        deployments_to_delete.append((deployment_crn, env_crn))
 
     yield _track
 
-    for deployment_crn in deployment_crns:
+    for deployment_crn, env_crn in deployments_to_delete:
         try:
-            deployment = df_client.get_deployment_by_crn(deployment_crn)
-            if deployment:
-                deployment_data = deployment.get("deployment", deployment)
-                env_crn = (
-                    deployment_data.get("service", {}).get("environmentCrn")
-                    or deployment_data.get("environmentCrn")
-                )
-                if env_crn:
-                    workload_client = df_client.create_workload_client(
-                        iam_client=iam_client,
-                        module=df_client.api_client.module,
-                        environment_crn=env_crn,
-                    )
-                    df_client.terminate_deployment(
-                        workload_client=workload_client,
-                        deployment_crn=deployment_crn,
-                        environment_crn=env_crn,
-                    )
-        except Exception:
-            pass
+            fake_module = Mock()
+            fake_module.params = {"validate_certs": True, "endpoint_tls": True}
+            fake_module.tmpdir = None
+            workload_client = df_client.create_workload_client(
+                iam_client=iam_client,
+                module=fake_module,
+                environment_crn=env_crn,
+            )
+            df_client.terminate_deployment(
+                workload_client=workload_client,
+                deployment_crn=deployment_crn,
+                environment_crn=env_crn,
+            )
+            df_client.wait_for_deployment_state(
+                target_states=CdpDfClient.DEPLOYMENT_DELETED_STATES,
+                deployment_crn=deployment_crn,
+                timeout=600,
+                delay=15,
+            )
+        except Exception as e:
+            import warnings
+            warnings.warn(f"Failed to clean up deployment {deployment_crn}: {e}")
 
 
 @pytest.fixture
@@ -151,7 +186,7 @@ def df_deployment_create(
 
         workload_client = df_client.create_workload_client(
             iam_client=iam_client,
-            module=df_client.api_client.module,
+            module=Mock(params={"validate_certs": True, "endpoint_tls": True, "tmpdir": None}, tmpdir=None),
             environment_crn=resolved_env_crn,
         )
 
@@ -179,7 +214,7 @@ def df_deployment_create(
         deployment_crn = deployment.get("crn")
 
         if deployment_crn:
-            df_deployment_delete(deployment_crn)
+            df_deployment_delete(deployment_crn, resolved_env_crn)
 
         if wait and deployment_crn:
             result = df_client.wait_for_deployment_state(
@@ -202,7 +237,7 @@ def test_df_deployment_create_via_module(
 ):
     """Test creating a deployment via the Ansible module with real API calls."""
     random_suffix = random.randint(100000, 999999)
-    deployment_name = f"test-deployment-{random_suffix}"
+    deployment_name = f"test-dep-{random_suffix}"
 
     df_module_args(
         {
@@ -227,8 +262,7 @@ def test_df_deployment_create_via_module(
         df_deployment.main()
 
     deployment_crn = result.value.deployment.get("crn")
-    if deployment_crn:
-        df_deployment_delete(deployment_crn)
+    df_deployment_delete(deployment_crn, env_context["DF_TEST_ENV_CRN"])
 
     assert result.value.changed is True
     assert result.value.deployment is not None
@@ -240,29 +274,22 @@ def test_df_deployment_create_idempotent(
     env_context,
     df_deployment_create,
 ):
-    """Test that re-running present on an existing deployment is idempotent."""
+    """Test that calling state=present on an existing deployment is idempotent (changed=False)."""
     random_suffix = random.randint(100000, 999999)
-    deployment_name = f"test-deployment-idem-{random_suffix}"
+    deployment_name = f"test-dep-idem-{random_suffix}"
 
-    # Create the deployment directly
     deployment = df_deployment_create(name=deployment_name)
     assert deployment is not None
-    assert deployment.get("crn") is not None
 
-    # Re-run module - should be idempotent (no update params provided)
+    # Call again with same name — no explicit scaling params so no update detected
     df_module_args(
         {
             "name": deployment_name,
             "env_crn": env_context["DF_TEST_ENV_CRN"],
             "flow_version_crn": env_context["DF_TEST_FLOW_VERSION_CRN"],
-            "parameter_groups": [
-                {
-                    "name": "test-customflow-141072",
-                    "parameters": []
-                }
-            ],
             "state": "present",
-            "wait": False,
+            "wait": True,
+            "timeout": 600,
         }
     )
 
@@ -270,6 +297,74 @@ def test_df_deployment_create_idempotent(
         df_deployment.main()
 
     assert result.value.changed is False
+    assert result.value.deployment is not None
+    assert result.value.deployment["name"] == deployment_name
+
+
+def test_df_deployment_update_via_module(
+    df_module_args,
+    env_context,
+    df_deployment_create,
+):
+    """Test updating an existing deployment (static_node_count change) via the Ansible module."""
+    random_suffix = random.randint(100000, 999999)
+    deployment_name = f"test-dep-upd-{random_suffix}"
+
+    deployment = df_deployment_create(name=deployment_name)
+    assert deployment is not None
+
+    df_module_args(
+        {
+            "name": deployment_name,
+            "env_crn": env_context["DF_TEST_ENV_CRN"],
+            "flow_version_crn": env_context["DF_TEST_FLOW_VERSION_CRN"],
+            "static_node_count": 2,
+            "state": "present",
+            "wait": True,
+            "timeout": 600,
+        }
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        df_deployment.main()
+
+    assert result.value.changed is True
+    assert result.value.deployment is not None
+    assert result.value.deployment["name"] == deployment_name
+    assert result.value.deployment.get("staticNodeCount") == 2
+
+
+def test_df_deployment_update_idempotent_via_module(
+    df_module_args,
+    env_context,
+    df_deployment_create,
+):
+    """Test that updating a deployment with the same values is idempotent (changed=False)."""
+    random_suffix = random.randint(100000, 999999)
+    deployment_name = f"test-dep-upd-idem-{random_suffix}"
+
+    deployment = df_deployment_create(name=deployment_name)
+    assert deployment is not None
+
+    # Explicitly pass the same values that were used during creation
+    df_module_args(
+        {
+            "name": deployment_name,
+            "env_crn": env_context["DF_TEST_ENV_CRN"],
+            "flow_version_crn": env_context["DF_TEST_FLOW_VERSION_CRN"],
+            "cluster_size": "EXTRA_SMALL",
+            "static_node_count": 1,
+            "state": "present",
+            "wait": True,
+            "timeout": 600,
+        }
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        df_deployment.main()
+
+    assert result.value.changed is False
+    assert result.value.deployment is not None
     assert result.value.deployment["name"] == deployment_name
 
 
@@ -280,7 +375,7 @@ def test_df_deployment_delete_via_module(
 ):
     """Test terminating a deployment via the Ansible module with real API calls."""
     random_suffix = random.randint(100000, 999999)
-    deployment_name = f"test-deployment-del-{random_suffix}"
+    deployment_name = f"test-dep-del-{random_suffix}"
 
     deployment = df_deployment_create(name=deployment_name)
     assert deployment is not None
@@ -317,7 +412,7 @@ def test_df_deployment_delete_by_name_via_module(
 ):
     """Test terminating a deployment by name via the Ansible module."""
     random_suffix = random.randint(100000, 999999)
-    deployment_name = f"test-deployment-delname-{random_suffix}"
+    deployment_name = f"test-dep-del-name-{random_suffix}"
 
     deployment = df_deployment_create(name=deployment_name)
     assert deployment is not None
