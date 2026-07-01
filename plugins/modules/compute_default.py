@@ -115,6 +115,8 @@ extends_documentation_fragment:
 attributes:
   check_mode:
     support: full
+  diff_mode:
+    support: none
   platform:
     platforms: all
 """
