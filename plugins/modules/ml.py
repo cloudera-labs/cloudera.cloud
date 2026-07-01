@@ -348,27 +348,32 @@ options:
     type: dict
     required: False
     suboptions:
-      cpu:
+      parent_pool_name:
         description:
-          - The CPU resource pool configuration.
-        type: str
-        required: True
-        aliases:
-          - cpu_quota
-      gpu:
-        description:
-          - The GPU resource pool configuration.
+          - The name of the parent resource pool.
         type: str
         required: False
-        aliases:
-          - gpu_quota
-      memory:
+      workspace_quota:
         description:
-          - The memory resource pool configuration.
-        type: str
-        required: True
-        aliases:
-          - memory_quota
+          - The resource quota for the workspace.
+        type: dict
+        required: False
+        suboptions:
+          cpu_quota:
+            description:
+              - The quota for the CPU resource.
+            type: str
+            required: True
+          gpu_quota:
+            description:
+              - The quota for the GPU resource.
+            type: str
+            required: False
+          memory_quota:
+            description:
+              - The quota for the memory resource.
+            type: str
+            required: True
   outbound_type:
     description:
       - Outbound type for the ML Workspace.
@@ -863,12 +868,15 @@ class MLWorkspace(ServicesModule):
                     required=False,
                     type="dict",
                     options=dict(
-                        cpu=dict(required=True, type="str", aliases=["cpu_quota"]),
-                        gpu=dict(required=False, type="str", aliases=["gpu_quota"]),
-                        memory=dict(
-                            required=True,
-                            type="str",
-                            aliases=["memory_quota"],
+                        parent_pool_name=dict(required=False, type="str"),
+                        workspace_quota=dict(
+                            required=False,
+                            type="dict",
+                            options=dict(
+                                cpu_quota=dict(required=True, type="str"),
+                                gpu_quota=dict(required=False, type="str"),
+                                memory_quota=dict(required=True, type="str"),
+                            ),
                         ),
                     ),
                 ),
@@ -1060,6 +1068,14 @@ class MLWorkspace(ServicesModule):
                     if self.database:
                         database_config = snake_dict_to_camel_dict(self.database)
 
+                    # Convert resource_pool from snake_case to camelCase for API
+                    # New structure: {parentPoolName?, workspaceQuota?: {cpuQuota, gpuQuota?, memoryQuota}}
+                    resource_pool_config = (
+                        snake_dict_to_camel_dict(self.resource_pool)
+                        if self.resource_pool
+                        else None
+                    )
+
                     client.create_workspace(
                         workspace_name=self.name,
                         environment_name=self.env,
@@ -1079,7 +1095,7 @@ class MLWorkspace(ServicesModule):
                         enable_enhanced_performance=self.enhanced_volume_performance,
                         enable_global_access_loadbalancer=self.global_access_loadbalancer,
                         static_subdomain=self.subdomain,
-                        resource_pool_config=self.resource_pool,
+                        resource_pool_config=resource_pool_config,
                         outbound_types=self.outbound_type,
                     )
 
