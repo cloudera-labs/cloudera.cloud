@@ -194,8 +194,8 @@ class CdpComputeClient:
                 - clusterCrn, clusterId, clusterStatus, uri, validationResponse
         """
         data: Dict[str, Any] = {
-            "clusterName": name,
-            "environmentCrn": environment,
+            "name": name,
+            "environment": environment,
         }
         if description is not None:
             data["description"] = description

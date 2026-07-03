@@ -78,11 +78,6 @@ options:
     required: false
 extends_documentation_fragment:
   - cloudera.cloud.cdp_client
-attributes:
-  check_mode:
-    support: full
-  platform:
-    platforms: all
 """
 
 EXAMPLES = r"""

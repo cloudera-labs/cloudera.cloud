@@ -278,7 +278,7 @@ def test_create_cluster(mocker):
 
     api_client.post.assert_called_once_with(
         "/api/v1/compute/createCluster",
-        data={"clusterName": "my-cluster", "environmentCrn": ENV_CRN},
+        data={"name": "my-cluster", "environment": ENV_CRN},
     )
     assert result == expected
     assert result["clusterCrn"] == CLUSTER_CRN
