@@ -30,7 +30,7 @@ options:
     description:
       - If a name is provided, that Data Engineering Service will be described
       - Must be the string name of the CDE service
-      - Mutually exclusive with cluster_id and env_name
+      - Mutually exclusive with cluster_id
     type: str
     required: False
   cluster_id:
@@ -44,7 +44,7 @@ options:
   env_name:
     description:
       - If an env_name is provided, the Data Engineering Service for that Environment will be described
-      - Mutually exclusive with name and cluster_id
+      - Mutually exclusive with cluster_id
     type: str
     required: False
     aliases:
@@ -256,7 +256,7 @@ class DEServiceInfo(ServicesModule):
                 env_name=dict(required=False, type="str", aliases=["environment"]),
             ),
             supports_check_mode=True,
-            mutually_exclusive=[["name", "cluster_id", "env_name"]],
+            mutually_exclusive=[["name", "cluster_id"], ["cluster_id", "env_name"]],
         )
 
         # Set parameters
@@ -271,7 +271,10 @@ class DEServiceInfo(ServicesModule):
         self.de_client = CdpDeClient(self.api_client)
 
         if self.name:
-            service = self.de_client.get_service_by_name(self.name)
+            service = self.de_client.get_service_by_name(
+                self.name,
+                env_name=self.env_name,
+            )
             if service:
                 self.services.append(service.get("service", {}))
         elif self.cluster_id:
