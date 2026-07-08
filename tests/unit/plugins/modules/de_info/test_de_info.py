@@ -153,7 +153,7 @@ def test_de_info_by_name(module_args, mocker):
     assert result.value.services[0]["clusterId"] == CLUSTER_ID
 
     # Verify CdpDeClient was called correctly
-    client.get_service_by_name.assert_called_once_with(SERVICE_NAME)
+    client.get_service_by_name.assert_called_once_with(SERVICE_NAME, env_name=None)
 
 
 def test_de_info_by_cluster_id(module_args, mocker):
@@ -381,7 +381,10 @@ def test_de_info_not_found_by_name(module_args, mocker):
     assert len(result.value.services) == 0
 
     # Verify CdpDeClient was called correctly
-    client.get_service_by_name.assert_called_once_with("nonexistent-service")
+    client.get_service_by_name.assert_called_once_with(
+        "nonexistent-service",
+        env_name=None,
+    )
 
 
 def test_de_info_not_found_by_cluster_id(module_args, mocker):

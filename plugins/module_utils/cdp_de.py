@@ -110,17 +110,22 @@ class CdpDeClient:
             squelch={404: {}},
         )
 
-    def get_service_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_service_by_name(
+        self,
+        name: str,
+        env_name: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
         """
-        Get service details by service name.
+        Get service details by service name, optionally filtered by environment.
 
         Args:
             name: The service name
+            env_name: Optional environment name to narrow the search
 
         Returns:
             Service details dict, or None if not found
         """
-        services = self.list_services()
+        services = self.list_services(env_name=env_name)
         for service in services.get("services", []):
             if service.get("name") == name:
                 cluster_id = service.get("clusterId")
