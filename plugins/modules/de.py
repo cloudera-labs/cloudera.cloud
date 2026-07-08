@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,78 +17,106 @@
 
 DOCUMENTATION = r"""
 module: de
-short_description: Enable and Disable CDP Data Engineering Services
+short_description: Enable, disable or update CDP Data Engineering Services
 description:
-    - Enable or Disable CDP Data Engineering Service
+  - Enable, disable or update CDP Data Engineering Services.
 author:
   - "Curtis Howard (@curtishoward)"
   - "Alan Silva (@acsjumpi)"
+  - "Ronald Suplina (@rsuplina)"
 version_added: "1.5.0"
-requirements:
-  - cdpy
 options:
   name:
     description:
-      - The name of the CDE Service
+      - The name of the CDE Service.
     type: str
     required: True
-    aliases:
-      - name
   environment:
     description:
-      - CDP environment where CDE service should be enabled
+      - The CDP environment name where the CDE service should be enabled.
     type: str
     required: True
     aliases:
       - env
   instance_type:
     description:
-      - Instance type of the cluster for CDE Service
-      - For example, (AWS) C(m5.2xlarge)
+      - Instance type of the cluster for the CDE Service.
+      - For example, C(m5.2xlarge) for AWS or C(Standard_D8s_v3) for Azure.
+      - Required when O(state=present) and the service does not yet exist.
     type: str
     required: False
   minimum_instances:
     description:
-    - Minimum Instances for the CDE Service
+      - Minimum number of instances for the CDE Service.
     type: int
     required: False
+    default: 1
   maximum_instances:
     description:
-      - Maximum Instances for the CDE Service
+      - Maximum number of instances for the CDE Service.
     type: int
     required: False
+    default: 4
   minimum_spot_instances:
     description:
-      - Minimum Spot Instances for the CDE Service
+      - Minimum number of spot instances for the CDE Service.
     type: int
     required: False
+    default: 0
   maximum_spot_instances:
     description:
-      - Maximum Spot Instances for the CDE Service
+      - Maximum number of spot instances for the CDE Service.
+    type: int
+    required: False
+    default: 0
+  all_purpose_minimum_instances:
+    description:
+      - Minimum number of instances for the All Purpose Instance Group.
+      - Applicable to services with the All Purpose (ALLP) virtual cluster tier.
+    type: int
+    required: False
+  all_purpose_maximum_instances:
+    description:
+      - Maximum number of instances for the All Purpose Instance Group.
+      - Applicable to services with the All Purpose (ALLP) virtual cluster tier.
+    type: int
+    required: False
+  all_purpose_minimum_spot_instances:
+    description:
+      - Minimum number of spot instances for the All Purpose Instance Group.
+      - Applicable to services with the All Purpose (ALLP) virtual cluster tier.
+    type: int
+    required: False
+  all_purpose_maximum_spot_instances:
+    description:
+      - Maximum number of spot instances for the All Purpose Instance Group.
+      - Applicable to services with the All Purpose (ALLP) virtual cluster tier.
     type: int
     required: False
   chart_value_overrides:
     description:
-      - Chart overrides for enabling a service
+      - Chart overrides for enabling a service.
     type: list
     elements: dict
     required: False
     suboptions:
       chart_name:
         description:
-          - The key-value pair for the chart_name-override
+          - The key-value pair for the chart override.
         type: str
         required: False
   enable_public_endpoint:
     description:
-      - Creates a CDE endpoint (Load Balancer) in a publicly accessible subnet
+      - Creates a CDE endpoint (Load Balancer) in a publicly accessible subnet.
     type: bool
     required: False
+    default: True
   enable_private_network:
     description:
-      - Create a fully private CDE instance
+      - Create a fully private CDE instance.
     type: bool
     required: False
+    default: False
   loadbalancer_ips:
     description:
       - List of CIDRs allowed to access the load balancer.
@@ -97,24 +125,29 @@ options:
     required: False
   enable_workload_analytics:
     description:
-      - If set false, diagnostic information about job and query execution is sent to Cloudera Workload Manager
+      - If set to False, diagnostic information about job and query execution
+        is not sent to Cloudera Workload Manager.
     type: bool
     required: False
+    default: True
   initial_instances:
     description:
-      - Initial Instances when the service is enabled
+      - Initial number of instances when the service is enabled.
     type: int
     required: False
+    default: 1
   initial_spot_instances:
     description:
-      - Initial spot Instances when the service is enabled
+      - Initial number of spot instances when the service is enabled.
     type: int
     required: False
+    default: 0
   root_volume_size:
     description:
-      - EBS volume size in GB
+      - EBS volume size in GB.
     type: int
     required: False
+    default: 100
   resource_pool:
     description:
       - Resource Pool for the CDE service.
@@ -141,28 +174,25 @@ options:
     required: False
   skip_validation:
     description:
-      - Skip Validation check.
+      - Skip validation check.
     type: bool
     required: False
+    default: False
   tags:
     description:
-      - User defined labels that tag all provisioned cloud resources
+      - User defined labels that tag all provisioned cloud resources.
+      - Specified as a dictionary of key-value string pairs.
     type: dict
     required: False
-    suboptions:
-      key:
-        description:
-          - The key/value pair for the tag
-        type: str
-        required: False
   use_ssd:
     description:
-      - Instance local storage (SSD) would be used for the workload filesystem (Example - spark local directory). Currently supported only for aws services
+      - Instance local storage (SSD) would be used for the workload filesystem.
+      - Currently supported only for AWS services.
     type: bool
     required: False
   whitelist_ips:
     description:
-      - List of CIDRs that would be allowed to access Kubernetes master API server
+      - List of CIDRs that would be allowed to access the Kubernetes master API server.
     type: list
     elements: str
     required: False
@@ -176,7 +206,7 @@ options:
       - force_delete
   state:
     description:
-      - The declarative state of the CDE service
+      - The declarative state of the CDE service.
     type: str
     required: False
     default: present
@@ -186,14 +216,14 @@ options:
   wait:
     description:
       - Flag to enable internal polling to wait for the DE Service to achieve the declared state.
-      - If set to FALSE, the module will return immediately.
+      - If set to False, the module will return immediately after initiating the operation.
     type: bool
     required: False
     default: True
   delay:
     description:
-      - The internal polling interval (in seconds) while the module waits for the DE Service to achieve the declared
-        state.
+      - The internal polling interval (in seconds) while the module waits for the
+        DE Service to achieve the declared state.
     type: int
     required: False
     default: 60
@@ -201,52 +231,77 @@ options:
       - polling_delay
   timeout:
     description:
-      - The internal polling timeout (in seconds) while the module waits for the DE Service to achieve the declared
-        state.
+      - The internal polling timeout (in seconds) while the module waits for the
+        DE Service to achieve the declared state.
     type: int
     required: False
     default: 7200
     aliases:
       - polling_timeout
+notes:
+  - "When updating an existing service, only the following parameters can be changed:
+    minimum_instances, maximum_instances, minimum_spot_instances, maximum_spot_instances,
+    all_purpose_minimum_instances, all_purpose_maximum_instances,
+    all_purpose_minimum_spot_instances, all_purpose_maximum_spot_instances,
+    whitelist_ips, loadbalancer_ips."
+  - Immutable parameters (instance_type, network settings, etc.) cannot be changed after creation.
+    To change them, disable and recreate the service.
+extends_documentation_fragment:
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
-# Create a DE service using defaults for optional parameters and wait for completion
+# Note: These examples do not set authentication details.
+
+# Enable a CDE service and wait for it to become active
 - cloudera.cloud.de:
-    name: cde-cloudera-deploy-example
-    env: cdp-environment-name
-    instance_type: "m5.2xlarge"
+    name: my-cde-service
+    environment: my-cdp-environment
+    instance_type: m5.2xlarge
+    minimum_instances: 1
+    maximum_instances: 4
     state: present
     wait: true
 
-# Remove a DE service without waiting
+# Enable a CDE service with additional options
 - cloudera.cloud.de:
-    name: cde-cloudera-deploy-example+
-    env: cdp-environment-name
+    name: my-cde-service
+    environment: my-cdp-environment
+    instance_type: m5.2xlarge
+    minimum_instances: 2
+    maximum_instances: 8
+    enable_public_endpoint: true
+    enable_workload_analytics: false
+    tags:
+      team: data-engineering
+      cost-center: "12345"
+    state: present
+    wait: true
+
+# Disable a CDE service without waiting
+- cloudera.cloud.de:
+    name: my-cde-service
+    environment: my-cdp-environment
     state: absent
     wait: false
+
+# Force disable a CDE service
+- cloudera.cloud.de:
+    name: my-cde-service
+    environment: my-cdp-environment
+    force: true
+    state: absent
+    wait: true
 """
 
 RETURN = r"""
 service:
-  description: DE service description
-  type: complex
+  description: Description of the CDE Service.
+  type: dict
   returned: always
   contains:
     clusterId:
-      description: Cluster Id of the CDE Service.
-      returned: always
-      type: str
-    creatorEmail:
-      description: Email Address of the CDE creator.
-      returned: always
-      type: str
-    enablingTime:
-      description: Timestamp of service enabling.
-      returned: always
-      type: str
-    environmentName:
-      description: CDP Environment Name.
+      description: Cluster ID of the CDE Service.
       returned: always
       type: str
     name:
@@ -257,25 +312,14 @@ service:
       description: Status of the CDE Service.
       returned: always
       type: str
-    chartValueOverrides:
-      description: Status of the CDE Service.
+    environmentName:
+      description: CDP Environment Name.
       returned: always
-      type: list
-      elements: complex
-      contains:
-        ChartValueOverridesResponse:
-          description: Response object containing chart value overrides.
-          type: list
-          returned: always
-          contains:
-            chartName:
-              description: Name of the chart that has to be overridden.
-              returned: always
-              type: str
-            overrides:
-              description: Space separated key value-pairs for overriding chart values (colon separated)
-              returned: always
-              type: str
+      type: str
+    environmentCrn:
+      description: CRN of the environment.
+      returned: always
+      type: str
     cloudPlatform:
       description: The cloud platform where the CDE service is enabled.
       returned: always
@@ -284,347 +328,353 @@ service:
       description: FQDN of the CDE service.
       returned: always
       type: str
+    creatorEmail:
+      description: Email address of the CDE creator.
+      returned: always
+      type: str
     creatorCrn:
       description: CRN of the creator.
       returned: always
       type: str
-    dataLakeAtlasUIEndpoint:
-      description: Endpoint of Data Lake Atlas.E
+    enablingTime:
+      description: Timestamp of service enabling.
       returned: always
       type: str
-    dataLakeFileSystems:
-      description: The Data lake file system.
+    resources:
+      description: Resource details of the CDE Service.
       returned: always
-      type: str
-    environmentCrn:
-      description: CRN of the environment.
+      type: dict
+      contains:
+        instance_type:
+          description: Instance type of the CDE service.
+          type: str
+        min_instances:
+          description: Minimum instances for the CDE service.
+          type: str
+        max_instances:
+          description: Maximum instances for the CDE service.
+          type: str
+        min_spot_instances:
+          description: Minimum number of spot instances.
+          type: str
+        max_spot_instances:
+          description: Maximum number of spot instances.
+          type: str
+        initial_instances:
+          description: Initial instances for the CDE service.
+          type: str
+        initial_spot_instances:
+          description: Initial spot instances for the CDE service.
+          type: str
+        root_vol_size:
+          description: Root volume size in GB.
+          type: str
+    tenantId:
+      description: CDP tenant ID.
       returned: always
       type: str
     logLocation:
       description: Location for the log files of jobs.
       returned: always
       type: str
-    resources:
-      description: Resources details of CDE Service.
-      returned: always
-      type: complex
-      contains:
-        ServiceResources:
-          description: Object to store resources for a CDE service.
-          returned: always
-          type: complex
-          contains:
-            initial_instances:
-              description: Initial instances for the CDE service.
-              returned: always
-              type: str
-            initial_spot_instances:
-              description: Initial Spot Instances for the CDE Service.
-              returned: always
-              type: str
-            instance_type:
-              description: Instance type of the CDE service.
-              returned: always
-              type: str
-            max_instances:
-              description: Maximum instances for the CDE service.
-              returned: always
-              type: str
-            max_spot_instances:
-              description: Maximum Number of Spot instances.
-              returned: always
-              type: str
-            min_instances:
-              description: Minimum Instances for the CDE service.
-              returned: always
-              type: str
-            min_spot_instances:
-              description: Minimum number of spot instances for the CDE service.
-              returned: always
-              type: str
-            root_vol_size:
-              description: Root Volume Size.
-              returned: always
-              type: str
-    tenantId:
-      description: CDP tenant ID.
-      returned: always
-      type: str
+sdk_out:
+  description: Returns the captured CDP SDK log.
+  returned: when supported
+  type: str
+sdk_out_lines:
+  description: Returns a list of each line of the captured CDP SDK log.
+  returned: when supported
+  type: list
+  elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Optional
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CdpDeClient,
+    check_service_updates,
+)
 
 
-class DEService(CdpModule):
-    def __init__(self, module):
-        super(DEService, self).__init__(module)
+class DEService(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(required=True, type="str"),
+                environment=dict(required=True, type="str", aliases=["env"]),
+                instance_type=dict(required=False, type="str"),
+                minimum_instances=dict(required=False, type="int", default=1),
+                maximum_instances=dict(required=False, type="int", default=4),
+                minimum_spot_instances=dict(required=False, type="int", default=0),
+                maximum_spot_instances=dict(required=False, type="int", default=0),
+                all_purpose_minimum_instances=dict(
+                    required=False,
+                    type="int",
+                    default=None,
+                ),
+                all_purpose_maximum_instances=dict(
+                    required=False,
+                    type="int",
+                    default=None,
+                ),
+                all_purpose_minimum_spot_instances=dict(
+                    required=False,
+                    type="int",
+                    default=None,
+                ),
+                all_purpose_maximum_spot_instances=dict(
+                    required=False,
+                    type="int",
+                    default=None,
+                ),
+                chart_value_overrides=dict(
+                    required=False,
+                    type="list",
+                    elements="dict",
+                    default=None,
+                    options=dict(
+                        chart_name=dict(required=False, type="str"),
+                    ),
+                ),
+                enable_public_endpoint=dict(
+                    required=False,
+                    type="bool",
+                    default=True,
+                ),
+                enable_private_network=dict(
+                    required=False,
+                    type="bool",
+                    default=False,
+                ),
+                loadbalancer_ips=dict(
+                    required=False,
+                    type="list",
+                    elements="str",
+                    default=None,
+                ),
+                enable_workload_analytics=dict(
+                    required=False,
+                    type="bool",
+                    default=True,
+                ),
+                initial_instances=dict(required=False, type="int", default=1),
+                initial_spot_instances=dict(required=False, type="int", default=0),
+                root_volume_size=dict(required=False, type="int", default=100),
+                resource_pool=dict(required=False, type="str"),
+                cpu_requests=dict(required=False, type="str"),
+                memory_requests=dict(required=False, type="str"),
+                gpu_requests=dict(required=False, type="str"),
+                skip_validation=dict(required=False, type="bool", default=False),
+                tags=dict(required=False, type="dict", default=None),
+                use_ssd=dict(required=False, type="bool", default=None),
+                whitelist_ips=dict(
+                    required=False,
+                    type="list",
+                    elements="str",
+                    default=None,
+                ),
+                force=dict(
+                    required=False,
+                    type="bool",
+                    default=False,
+                    aliases=["force_delete"],
+                ),
+                state=dict(
+                    type="str",
+                    choices=["present", "absent"],
+                    default="present",
+                ),
+                wait=dict(required=False, type="bool", default=True),
+                delay=dict(
+                    required=False,
+                    type="int",
+                    aliases=["polling_delay"],
+                    default=60,
+                ),
+                timeout=dict(
+                    required=False,
+                    type="int",
+                    aliases=["polling_timeout"],
+                    default=7200,
+                ),
+            ),
+            supports_check_mode=True,
+        )
 
-        # Set variables
-        self.name = self._get_param("name")
-        self.env = self._get_param("environment")
+        # Set parameters
+        self.name: str = self.get_param("name")
+        self.environment: str = self.get_param("environment")
+        self.instance_type: Optional[str] = self.get_param("instance_type")
+        self.minimum_instances: int = self.get_param("minimum_instances")
+        self.maximum_instances: int = self.get_param("maximum_instances")
+        self.minimum_spot_instances: int = self.get_param("minimum_spot_instances")
+        self.maximum_spot_instances: int = self.get_param("maximum_spot_instances")
+        self.all_purpose_minimum_instances: Optional[int] = self.get_param(
+            "all_purpose_minimum_instances",
+        )
+        self.all_purpose_maximum_instances: Optional[int] = self.get_param(
+            "all_purpose_maximum_instances",
+        )
+        self.all_purpose_minimum_spot_instances: Optional[int] = self.get_param(
+            "all_purpose_minimum_spot_instances",
+        )
+        self.all_purpose_maximum_spot_instances: Optional[int] = self.get_param(
+            "all_purpose_maximum_spot_instances",
+        )
+        self.chart_value_overrides: Optional[list] = self.get_param(
+            "chart_value_overrides",
+        )
+        self.enable_public_endpoint: bool = self.get_param("enable_public_endpoint")
+        self.enable_private_network: bool = self.get_param("enable_private_network")
+        self.loadbalancer_ips: Optional[list] = self.get_param("loadbalancer_ips")
+        self.enable_workload_analytics: bool = self.get_param(
+            "enable_workload_analytics",
+        )
+        self.initial_instances: int = self.get_param("initial_instances")
+        self.initial_spot_instances: int = self.get_param("initial_spot_instances")
+        self.root_volume_size: int = self.get_param("root_volume_size")
+        self.resource_pool: Optional[str] = self.get_param("resource_pool")
+        self.cpu_requests: Optional[str] = self.get_param("cpu_requests")
+        self.memory_requests: Optional[str] = self.get_param("memory_requests")
+        self.gpu_requests: Optional[str] = self.get_param("gpu_requests")
+        self.skip_validation: bool = self.get_param("skip_validation")
+        self.tags: Optional[dict] = self.get_param("tags")
+        self.use_ssd: Optional[bool] = self.get_param("use_ssd")
+        self.whitelist_ips: Optional[list] = self.get_param("whitelist_ips")
+        self.force: bool = self.get_param("force")
+        self.state: str = self.get_param("state")
+        self.wait: bool = self.get_param("wait")
+        self.delay: int = self.get_param("delay")
+        self.timeout: int = self.get_param("timeout")
 
-        self.instance_type = self._get_param("instance_type")
-
-        self.minimum_instances = self._get_param("minimum_instances")
-        self.maximum_instances = self._get_param("maximum_instances")
-        self.minimum_spot_instances = self._get_param("minimum_spot_instances")
-        self.maximum_spot_instances = self._get_param("maximum_spot_instances")
-        self.chart_value_overrides = self._get_param("chart_value_overrides")
-        self.enable_public_endpoint = self._get_param("enable_public_endpoint")
-        self.enable_private_network = self._get_param("enable_private_network")
-        self.enable_workload_analytics = self._get_param("enable_workload_analytics")
-        self.initial_instances = self._get_param("initial_instances")
-        self.initial_spot_instances = self._get_param("initial_spot_instances")
-        self.root_volume_size = self._get_param("root_volume_size")
-        self.resource_pool = self._get_param("resource_pool")
-        self.cpu_requests = self._get_param("cpu_requests")
-        self.memory_requests = self._get_param("memory_requests")
-        self.gpu_requests = self._get_param("gpu_requests")
-        self.skip_validation = self._get_param("skip_validation")
-        self.tags = self._get_param("tags")
-        self.use_ssd = self._get_param("use_ssd")
-        self.whitelist_ips = self._get_param("whitelist_ips")
-        self.loadbalancer_ips = self._get_param("loadbalancer_ips")
-
-        self.state = self._get_param("state")
-        self.force = self._get_param("force")
-        self.wait = self._get_param("wait")
-        self.delay = self._get_param("delay")
-        self.timeout = self._get_param("timeout")
+        # Initialize DE client
+        self.de_client = CdpDeClient(self.api_client)
 
         # Initialize return values
-        self.service = None
+        self.service = {}
+        self.changed = False
 
-        # Initialize cluster (service) ID
-        self.cluster_id = None
-
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        self.cluster_id = self.cdpy.de.get_service_id_by_name(
-            name=self.name,
-            env=self.env,
-        )
-        initial_desc = (
-            self.cdpy.de.describe_service(self.cluster_id) if self.cluster_id else None
+        existing_result = self.de_client.get_service_by_name(
+            self.name,
+            env_name=self.environment,
         )
 
-        # If a service under the name/env pair was found (excluding disabled services)
-        if initial_desc and initial_desc["status"]:
-            # Disable the Service if expected state is 'absent'
-            if self.state == "absent":
-                if self.module.check_mode:
-                    self.service = initial_desc
-                else:
-                    # Service is available - disable it
-                    if initial_desc["status"] in self.cdpy.sdk.REMOVABLE_STATES:
-                        self.service = self._disable_service()
-                    # Service exists but is not in a disable-able state (could be in the process of
-                    # provisioning, disabling, or may be in a failed state)
-                    else:
-                        self.module.warn(
-                            "DE Service is not in a removable state: %s"
-                            % initial_desc["status"],
-                        )
-                        if self.wait:
-                            self.module.warn(
-                                "Waiting for DE Service to reach Active or Disabled state",
-                            )
-                            current_desc = self._wait_for_state(
-                                self.cdpy.sdk.REMOVABLE_STATES
-                                + self.cdpy.sdk.STOPPED_STATES,
-                            )
-                            # If we just waited fo the service to be provisioned, then dis-abled it
-                            if current_desc["status"] in self.cdpy.sdk.REMOVABLE_STATES:
-                                self.service = self._disable_service()
-                            else:
-                                self.service = current_desc
-                                if (
-                                    current_desc["status"]
-                                    not in self.cdpy.sdk.STOPPED_STATES
-                                ):
-                                    self.module.warn(
-                                        "DE service did not disable successfully",
-                                    )
-            elif self.state == "present":
-                # Check the existing configuration and state
-                self.module.warn(
-                    "DE Service already present and configuration validation"
-                    + "and reconciliation is not supported",
-                )
-                self.service = initial_desc
-                if self.wait:
-                    current_desc = self._wait_for_state(
-                        self.cdpy.sdk.REMOVABLE_STATES + self.cdpy.sdk.STOPPED_STATES,
-                    )
-                    # If we just waited for the service to be disabled, then enable it
-                    if current_desc["status"] in self.cdpy.sdk.STOPPED_STATES:
-                        self.service = self._enable_service()
-                    else:
-                        self.service = current_desc
-                        if current_desc["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
-                            self.module.warn("DE service did not enable successfully")
-            else:
-                self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state,
-                )
+        if existing_result:
+            existing_service = existing_result.get("service", existing_result)
+            cluster_id = existing_service.get("clusterId")
 
-        # Else if the Service does not exist
-        else:
             if self.state == "absent":
-                self.module.log(
-                    "DE service %s already absent or terminated in Environment %s"
-                    % (self.name, self.env),
-                )
-            # Create the Service
-            elif self.state == "present":
+                self.changed = True
+                self.service = existing_service
+
                 if not self.module.check_mode:
-                    self.service = self._enable_service()
-            else:
-                self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state,
+                    if self.wait:
+                        result = self.de_client.wait_for_service_state(
+                            cluster_id=cluster_id,
+                            target_statuses=CdpDeClient.STOPPED_STATUSES,
+                            timeout=self.timeout,
+                            delay=self.delay,
+                            force=self.force,
+                        )
+                        self.service = result if result else {}
+                    else:
+                        self.de_client.disable_service(cluster_id, force=self.force)
+
+            elif self.state == "present":
+                update_params = check_service_updates(
+                    cluster_id=cluster_id,
+                    service_details=existing_service,
+                    minimum_instances=self.minimum_instances,
+                    maximum_instances=self.maximum_instances,
+                    minimum_spot_instances=self.minimum_spot_instances,
+                    maximum_spot_instances=self.maximum_spot_instances,
+                    whitelist_ips=self.whitelist_ips,
+                    loadbalancer_allowlist=self.loadbalancer_ips,
+                    all_purpose_minimum_instances=self.all_purpose_minimum_instances,
+                    all_purpose_maximum_instances=self.all_purpose_maximum_instances,
+                    all_purpose_minimum_spot_instances=self.all_purpose_minimum_spot_instances,
+                    all_purpose_maximum_spot_instances=self.all_purpose_maximum_spot_instances,
                 )
 
-    def _enable_service(self):
-        result = self.cdpy.de.enable_service(
-            name=self.name,
-            env=self.env,
-            instance_type=self.instance_type,
-            minimum_instances=self.minimum_instances,
-            maximum_instances=self.maximum_instances,
-            minimum_spot_instances=self.minimum_spot_instances,
-            maximum_spot_instances=self.maximum_spot_instances,
-            chart_value_overrides=self.chart_value_overrides,
-            enable_public_endpoint=self.enable_public_endpoint,
-            enable_private_network=self.enable_private_network,
-            loadbalancer_allowlist=self.loadbalancer_ips,
-            enable_workload_analytics=self.enable_workload_analytics,
-            initial_instances=self.initial_instances,
-            initial_spot_instances=self.initial_spot_instances,
-            root_volume_size=self.root_volume_size,
-            resource_pool=self.resource_pool,
-            cpu_requests=self.cpu_requests,
-            memory_requests=self.memory_requests,
-            gpu_requests=self.gpu_requests,
-            skip_validation=self.skip_validation,
-            tags=self.tags,
-            use_ssd=self.use_ssd,
-            whitelist_ips=self.whitelist_ips,
-        )
-        return_desc = None
-        if result and result["clusterId"]:
-            self.cluster_id = result["clusterId"]
-            if self.wait:
-                return_desc = self._wait_for_state(self.cdpy.sdk.REMOVABLE_STATES)
-                if return_desc["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
-                    self.module.warn("DE service did not enable successfully")
-            else:
-                return_desc = result
-        else:
-            self.module.warn("DE service did not enable successfully")
-        return return_desc
+                if update_params:
+                    self.changed = True
+                    self.service = existing_service
 
-    def _disable_service(self):
-        self.cdpy.de.disable_service(self.cluster_id)
-        if self.wait:
-            current_desc = self._wait_for_state(self.cdpy.sdk.STOPPED_STATES)
-            if current_desc["status"] not in self.cdpy.sdk.STOPPED_STATES:
-                self.module.warn("DE service did not disable successfully")
-            return current_desc
-        else:
-            current_desc = self.cdpy.de.describe_service(self.cluster_id)
-            return (
-                current_desc
-                if current_desc not in self.cdpy.sdk.STOPPED_STATES
-                else None
-            )
+                    if not self.module.check_mode:
+                        self.de_client.update_service(**update_params)
 
-    def _wait_for_state(self, state):
-        return self.cdpy.sdk.wait_for_state(
-            describe_func=self.cdpy.de.describe_service,
-            params=dict(cluster_id=self.cluster_id),
-            field="status",
-            state=state,
-            delay=self.delay,
-            timeout=self.timeout,
-        )
+                        if self.wait:
+                            result = self.de_client.wait_for_service_state(
+                                cluster_id=cluster_id,
+                                target_statuses=CdpDeClient.REMOVABLE_STATUSES,
+                                timeout=self.timeout,
+                                delay=self.delay,
+                            )
+                            if result:
+                                self.service = result
+                else:
+                    self.service = existing_service
+
+        else:
+
+            if self.state == "present":
+                self.changed = True
+
+                if not self.module.check_mode:
+                    result = self.de_client.enable_service(
+                        name=self.name,
+                        env=self.environment,
+                        instance_type=self.instance_type,
+                        minimum_instances=self.minimum_instances,
+                        maximum_instances=self.maximum_instances,
+                        minimum_spot_instances=self.minimum_spot_instances,
+                        maximum_spot_instances=self.maximum_spot_instances,
+                        enable_public_endpoint=self.enable_public_endpoint,
+                        enable_private_network=self.enable_private_network,
+                        enable_workload_analytics=self.enable_workload_analytics,
+                        initial_instances=self.initial_instances,
+                        initial_spot_instances=self.initial_spot_instances,
+                        root_volume_size=self.root_volume_size,
+                        chart_value_overrides=self.chart_value_overrides,
+                        loadbalancer_allowlist=self.loadbalancer_ips,
+                        whitelist_ips=self.whitelist_ips,
+                        skip_validation=self.skip_validation,
+                        use_ssd=self.use_ssd,
+                        tags=self.tags,
+                        resource_pool=self.resource_pool,
+                        cpu_requests=self.cpu_requests,
+                        memory_requests=self.memory_requests,
+                        gpu_requests=self.gpu_requests,
+                    )
+
+                    service = result.get("service") if result else None
+                    if service:
+                        self.service = service
+                        cluster_id = service.get("clusterId")
+
+                        if self.wait and cluster_id:
+                            wait_result = self.de_client.wait_for_service_state(
+                                cluster_id=cluster_id,
+                                target_statuses=CdpDeClient.REMOVABLE_STATUSES,
+                                timeout=self.timeout,
+                                delay=self.delay,
+                            )
+                            if wait_result:
+                                self.service = wait_result
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=True, type="str"),
-            environment=dict(required=True, type="str", aliases=["env"]),
-            instance_type=dict(required=False, type="str"),
-            minimum_instances=dict(required=False, type="int", default=1),
-            maximum_instances=dict(required=False, type="int", default=4),
-            minimum_spot_instances=dict(required=False, type="int", default=0),
-            maximum_spot_instances=dict(required=False, type="int", default=0),
-            chart_value_overrides=dict(required=False, type="list", default=None),
-            enable_public_endpoint=dict(required=False, type="bool", default=True),
-            enable_private_network=dict(required=False, type="bool", default=False),
-            loadbalancer_ips=dict(
-                required=False,
-                type="list",
-                elements="str",
-                default=None,
-            ),
-            enable_workload_analytics=dict(required=False, type="bool", default=True),
-            initial_instances=dict(required=False, type="int", default=1),
-            initial_spot_instances=dict(required=False, type="int", default=0),
-            root_volume_size=dict(required=False, type="int", default=100),
-            resource_pool=dict(required=False, type="str", default=None),
-            cpu_requests=dict(required=False, type="str", default=None),
-            memory_requests=dict(required=False, type="str", default=None),
-            gpu_requests=dict(required=False, type="str", default=None),
-            skip_validation=dict(required=False, type="bool", default=False),
-            tags=dict(required=False, type="dict", default=None),
-            use_ssd=dict(required=False, type="bool", default=None),
-            whitelist_ips=dict(
-                required=False,
-                type="list",
-                elements="str",
-                default=None,
-            ),
-            force=dict(
-                required=False,
-                type="bool",
-                default=False,
-                aliases=["force_delete"],
-            ),
-            state=dict(
-                required=False,
-                type="str",
-                choices=["present", "absent"],
-                default="present",
-            ),
-            wait=dict(required=False, type="bool", default=True),
-            delay=dict(
-                required=False,
-                type="int",
-                aliases=["polling_delay"],
-                default=60,
-            ),
-            timeout=dict(
-                required=False,
-                type="int",
-                aliases=["polling_timeout"],
-                default=7200,
-            ),
-        ),
-        supports_check_mode=True,
-    )
+    result = DEService()
+    output = dict(changed=result.changed, service=result.service)
 
-    result = DEService(module)
-    output = dict(changed=False, service=(result.service if result.service else {}))
-
-    if result.debug:
+    if result.debug_log:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
