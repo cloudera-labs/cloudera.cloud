@@ -362,7 +362,6 @@ def test_de_service_enable_check_mode(de_module_args, env_context, de_service_di
     env_name = env_context["DE_ENV_NAME"]
     instance_type = env_context.get("DE_INSTANCE_TYPE", DEFAULT_INSTANCE_TYPE)
 
-
     de_module_args(
         {
             "name": service_name,
