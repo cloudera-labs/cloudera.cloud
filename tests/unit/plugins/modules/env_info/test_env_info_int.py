@@ -49,9 +49,9 @@ def env_module_args(module_args, env_context) -> Callable[[dict], None]:
             args = {}
         args.update(
             {
-                # "endpoint": env_context["CDP_API_ENDPOINT"],
-                # "access_key": env_context["CDP_ACCESS_KEY_ID"],
-                # "private_key": env_context["CDP_PRIVATE_KEY"],
+                "endpoint": env_context["CDP_API_ENDPOINT"],
+                "access_key": env_context["CDP_ACCESS_KEY_ID"],
+                "private_key": env_context["CDP_PRIVATE_KEY"],
             },
         )
         return module_args(args)
@@ -59,7 +59,7 @@ def env_module_args(module_args, env_context) -> Callable[[dict], None]:
     return wrapped_args
 
 
-@pytest.mark.slow
+@pytest.mark.integration_api
 def test_env_info_list_all(env_module_args):
     """Test listing all Environments"""
 

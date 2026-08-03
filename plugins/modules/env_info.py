@@ -24,9 +24,8 @@ author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
   - "Christian Leroy (cleroy@cloudera.com)"
+  - "Jim Enright (@jimright)"
 version_added: "1.0.0"
-requirements:
-  - cdpy
 options:
   name:
     description:
@@ -34,14 +33,16 @@ options:
       - If no name is provided, all environments will be listed
     type: str
     required: False
+    aliases:
+      - environment
   descendants:
-    description: Gather information about descendant deployments such as Datahubs and Experiences
+    description:
+      - Gather information about descendant deployments such as Datahubs and Experiences.
     type: bool
     required: False
     default: False
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
@@ -402,74 +403,112 @@ sdk_out_lines:
 """
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
+    CdpEnvClient,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_ml import (
+    CdpMlClient,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CdpDeClient,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
+    CdpDfClient,
+)
 
 
-class EnvironmentInfo(CdpModule):
-    def __init__(self, module):
-        super(EnvironmentInfo, self).__init__(module)
+class EnvironmentInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(required=False, type="str", aliases=["environment"]),
+                descendants=dict(required=False, type="bool", default=False),
+            ),
+            supports_check_mode=True,
+        )
 
-        # Set variables
-        self.name = self._get_param("name")
-        self.descendants = self._get_param("descendants")
+        # Set parameters
+        self.name = self.get_param("name")
+        self.descendants = self.get_param("descendants")
 
         # Initialize return values
         self.environments = []
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
+        env_client = CdpEnvClient(self.api_client)
+
         if self.name:
-            env_single = self.cdpy.environments.describe_environment(self.name)
-            if env_single is not None:
-                self.environments.append(env_single)
+            env = env_client.describe_environment(self.name)
+            if env is not None:
+                self.environments.append(env)
         else:
-            self.environments = self.cdpy.environments.describe_all_environments()
+            # listEnvironments returns full Environment objects from the CDP API
+            self.environments = env_client.list_environments()
+
         if self.descendants and self.environments:
+            ml_client = CdpMlClient(self.api_client)
+            de_client = CdpDeClient(self.api_client)
+            df_client = CdpDfClient(self.api_client)
+
             updated_envs = []
             for this_env in self.environments:
-                df = None
-                # Removing until DF is GA so we are not dependent on Beta functionality
-                df = self.cdpy.df.list_services(env_crn=this_env["crn"])
+                env_name = this_env["environmentName"]
+                env_crn = this_env["crn"]
+
+                # ML workspaces — migrated to CdpMlClient
+                ml_workspaces = ml_client.describe_all_workspaces(env=env_name)
+
+                # DE services — migrated to CdpDeClient; returns service summaries filtered
+                # by environment name
+                de_response = de_client.list_services(
+                    remove_deleted=True,
+                    env_name=env_name,
+                )
+                de_services = de_response.get("services", [])
+
+                # DF services — migrated to CdpDfClient; list_services returns all DF services
+                # so we filter client-side by environmentCrn
+                all_df_services = df_client.list_services().get("services", [])
+                df_services = [
+                    s for s in all_df_services if s.get("environmentCrn") == env_crn
+                ]
+
+                # TODO: Datahub descendants — no CdpDatahubClient exists yet.
+                # cdpy migration pending; returns empty list until client is implemented.
+                datahub = []
+
+                # TODO: Data Warehouse (dw) descendants — no CdpDwClient exists yet.
+                # cdpy migration pending; returns empty list until client is implemented.
+                dw = []
+
+                # TODO: Operational Database (opdb) descendants — no CdpOpdbClient exists yet.
+                # cdpy migration pending; returns empty list until client is implemented.
+                opdb = []
+
                 this_env["descendants"] = {
-                    "datahub": self.cdpy.datahub.describe_all_clusters(
-                        this_env["environmentName"],
-                    ),
-                    "dw": self.cdpy.dw.gather_clusters(this_env["crn"]),
-                    "ml": self.cdpy.ml.describe_all_workspaces(
-                        this_env["environmentName"],
-                    ),
-                    "de": self.cdpy.de.list_services(
-                        this_env["environmentName"],
-                        remove_deleted=True,
-                    ),
-                    "opdb": self.cdpy.opdb.describe_all_databases(
-                        this_env["environmentName"],
-                    ),
-                    "df": df if df is not None else [],
+                    "datahub": datahub,
+                    "dw": dw,
+                    "ml": ml_workspaces,
+                    "de": de_services,
+                    "opdb": opdb,
+                    "df": df_services,
                 }
                 updated_envs.append(this_env)
             self.environments = updated_envs
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="str", aliases=["environment"]),
-            descendants=dict(required=False, type="bool", default=False),
-        ),
-        supports_check_mode=True,
-    )
+    result = EnvironmentInfo()
 
-    result = EnvironmentInfo(module)
     output = dict(changed=False, environments=result.environments)
 
-    if result.debug:
+    if result.debug_log:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
