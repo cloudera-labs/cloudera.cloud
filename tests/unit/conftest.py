@@ -25,7 +25,7 @@ import pytest
 
 from pytest import MonkeyPatch
 from pytest_mock import MockerFixture
-from typing import Callable
+from typing import Callable, Dict
 from unittest.mock import MagicMock, Mock
 
 from ansible.module_utils import basic
@@ -108,20 +108,52 @@ def module_creds() -> dict[str, str]:
     }
 
 
-@pytest.fixture(scope="module")
-def env_context(request) -> dict[str, str]:
+@pytest.fixture(scope="function")
+def env_context(request) -> Dict[str, str]:
     """
     Validates and provides required environment variables for integration tests.
-    Set REQUIRED_ENV_VARS in the test module to specify required variables.
+
+    Set REQUIRED_ENV_VARS at module, class, or function level to specify required variables.
+    Variables from narrower scopes (function > class > module) are appended to broader scopes.
+
+    Usage:
+        # At module level
+        REQUIRED_ENV_VARS = ["VAR1", "VAR2"]
+
+        # At class level
+        class TestClass:
+            REQUIRED_ENV_VARS = ["VAR3"]  # Adds to module-level vars
+
+        # At function level
+        def test_func(env_context):
+            pass
+        test_func.REQUIRED_ENV_VARS = ["VAR4"]  # Adds to class and module-level vars
+
     Returns a dictionary of environment variable names to their values.
     """
 
-    required_vars = getattr(request.module, "REQUIRED_ENV_VARS", [])
+    # Collect required vars from all scopes (module -> class -> function)
+    required_vars = []
+
+    # Module-level vars
+    if hasattr(request.module, "REQUIRED_ENV_VARS"):
+        required_vars.extend(request.module.REQUIRED_ENV_VARS)
+
+    # Class-level vars (if test is in a class)
+    if request.cls and hasattr(request.cls, "REQUIRED_ENV_VARS"):
+        required_vars.extend(request.cls.REQUIRED_ENV_VARS)
+
+    # Function-level vars
+    if hasattr(request.function, "REQUIRED_ENV_VARS"):
+        required_vars.extend(request.function.REQUIRED_ENV_VARS)
+
+    # Remove duplicates while preserving order
+    required_vars = list(dict.fromkeys(required_vars))
 
     missing = [var for var in required_vars if var not in os.environ]
     if missing:
         pytest.skip(
-            f"Skipping module {request.module.__name__}: "
+            f"Skipping test {request.node.nodeid}: "
             f"Missing required env vars: {', '.join(missing)}",
         )
 

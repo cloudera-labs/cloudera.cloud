@@ -118,6 +118,8 @@ filterwarnings = [
   "ignore:'crypt' is deprecated and slated for removal in Python 3.13:DeprecationWarning",
 ]
 markers = [
+  # TODO: Remove the integration_api and integration_token markers — integration
+  # tests now skip themselves via the env_context fixture, which fully subsumes them.
   "integration_api: marks tests as integration tests using CDP API credentials",
   "integration_token: marks tests as integration tests using CDP token credentials",
   "slow: marks tests as slow tests",
