@@ -18,7 +18,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import os
 import pytest
 
 from ansible_collections.cloudera.cloud.plugins.modules import (
@@ -36,9 +35,6 @@ REQUIRED_ENV_VARS = [
     "CDP_PRIVATE_KEY",
     "CDW_CLUSTER_ID",
 ]
-
-# Mark all tests in this module as integration tests requiring API credentials
-pytestmark = pytest.mark.integration_api
 
 
 @pytest.fixture
@@ -62,87 +58,87 @@ def dw_connector_info_module_args(module_args, env_context) -> dict:
     return wrapped_args
 
 
-class TestDwConnectorInfoIntegration:
-    """Integration tests for dw_connector_info module using real CDP API."""
+def test_list_all_connectors(dw_connector_info_module_args):
+    """Test listing all connectors in a cluster."""
+    dw_connector_info_module_args({})
 
-    def test_list_all_connectors(self, dw_connector_info_module_args):
-        """Test listing all connectors in a cluster."""
-        dw_connector_info_module_args({})
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_connector_info.main()
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_connector_info.main()
+    result = exc.value
+    assert result.changed is False
+    assert "connectors" in result
+    assert isinstance(result["connectors"], list)
 
-        result = exc.value
-        assert result.changed is False
-        assert "connectors" in result
-        assert isinstance(result["connectors"], list)
 
-    def test_get_connector_by_id(self, dw_connector_info_module_args, env_context):
-        """Test getting connector by ID."""
-        # Temporarily set up to list all and get first ID
-        dw_connector_info_module_args({})
+def test_get_connector_by_id(dw_connector_info_module_args):
+    """Test getting connector by ID."""
+    # Temporarily set up to list all and get first ID
+    dw_connector_info_module_args({})
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_connector_info.main()
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_connector_info.main()
 
-        result = exc.value
-        connectors = result.connectors if hasattr(result, "connectors") else []
+    result = exc.value
+    connectors = result.connectors if hasattr(result, "connectors") else []
 
-        if not connectors:
-            pytest.skip("No connectors available for testing")
+    if not connectors:
+        pytest.skip("No connectors available for testing")
 
-        connector_id = connectors[0]["id"]
+    connector_id = connectors[0]["id"]
 
-        # Now test with specific connector_id
-        dw_connector_info_module_args({"connector_id": connector_id})
+    # Now test with specific connector_id
+    dw_connector_info_module_args({"connector_id": connector_id})
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_connector_info.main()
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_connector_info.main()
 
-        result = exc.value
-        assert result.changed is False
-        assert hasattr(result, "connectors")
-        assert len(result.connectors) == 1
-        assert result.connectors[0]["id"] == connector_id
+    result = exc.value
+    assert result.changed is False
+    assert hasattr(result, "connectors")
+    assert len(result.connectors) == 1
+    assert result.connectors[0]["id"] == connector_id
 
-    def test_get_connector_by_name(self, dw_connector_info_module_args):
-        """Test getting connector by name."""
-        # Temporarily set up to list all and get first name
-        dw_connector_info_module_args({})
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_connector_info.main()
+def test_get_connector_by_name(dw_connector_info_module_args):
+    """Test getting connector by name."""
+    # Temporarily set up to list all and get first name
+    dw_connector_info_module_args({})
 
-        result = exc.value
-        connectors = result.connectors if hasattr(result, "connectors") else []
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_connector_info.main()
 
-        if not connectors:
-            pytest.skip("No connectors available for testing")
+    result = exc.value
+    connectors = result.connectors if hasattr(result, "connectors") else []
 
-        connector_name = connectors[0]["name"]
+    if not connectors:
+        pytest.skip("No connectors available for testing")
 
-        # Now test with specific name
-        dw_connector_info_module_args({"name": connector_name})
+    connector_name = connectors[0]["name"]
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_connector_info.main()
+    # Now test with specific name
+    dw_connector_info_module_args({"name": connector_name})
 
-        result = exc.value
-        assert result.changed is False
-        assert hasattr(result, "connectors")
-        assert len(result.connectors) == 1
-        assert result.connectors[0]["name"] == connector_name
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_connector_info.main()
 
-    def test_get_nonexistent_connector(self, dw_connector_info_module_args):
-        """Test getting a connector that doesn't exist."""
-        dw_connector_info_module_args(
-            {"connector_id": "nonexistent-connector-99999"},
-        )
+    result = exc.value
+    assert result.changed is False
+    assert hasattr(result, "connectors")
+    assert len(result.connectors) == 1
+    assert result.connectors[0]["name"] == connector_name
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_connector_info.main()
 
-        result = exc.value
-        assert result.changed is False
-        assert hasattr(result, "connectors")
-        assert len(result.connectors) == 0
+def test_get_nonexistent_connector(dw_connector_info_module_args):
+    """Test getting a connector that doesn't exist."""
+    dw_connector_info_module_args(
+        {"connector_id": "nonexistent-connector-99999"},
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_connector_info.main()
+
+    result = exc.value
+    assert result.changed is False
+    assert hasattr(result, "connectors")
+    assert len(result.connectors) == 0

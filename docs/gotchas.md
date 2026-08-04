@@ -2,7 +2,7 @@
 
 # Common Gotchas
 
-1. **`AutoExecuteMeta` metaclass**: Modules with `ServicesModule` base auto-execute `process()` after `__init__` — no explicit `main()` call needed
+1. **`AutoExecuteMeta` metaclass**: Modules with `ServicesModule` base auto-run `process()` on instantiation — but you **still need** a `main()` (instantiate the class, then `exit_json`) and the `if __name__ == "__main__": main()` block. `AutoExecuteMeta` never calls `exit_json`, so without `main()` the module emits no output
 2. **NULLABLE vs None**: Use `NULLABLE` for unset optional fields, `None` for explicitly null values
 3. **Immutable fields**: Validate immutable fields don't change; fail with a clear message if they do
 4. **RST docs are generated**: Never edit `docsbuild/rst/*.rst` files directly — they're auto-generated from module DOCUMENTATION strings

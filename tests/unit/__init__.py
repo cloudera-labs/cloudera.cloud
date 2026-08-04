@@ -155,7 +155,7 @@ def prepare_body(
         return None
 
 
-class TestCdpClient(CdpClient):
+class CdpTestClient(CdpClient):
     def __init__(
         self,
         endpoint: str,

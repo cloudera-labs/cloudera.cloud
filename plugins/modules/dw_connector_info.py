@@ -20,7 +20,7 @@ module: dw_connector_info
 short_description: Gather information about CDP Data Warehouse Connectors
 description:
     - Gather information about CDP Data Warehouse Connectors
-    - The module supports check_mode
+    - The module supports C(check_mode).
 author:
   - "Webster Mudge (@wmudge)"
 version_added: "3.4.0"
@@ -35,16 +35,24 @@ options:
   connector_id:
     description:
       - The ID of the connector to query.
-      - Mutually exclusive with I(name).
+      - Mutually exclusive with O(name).
     type: str
     aliases:
       - connector_identifier
   name:
     description:
       - The name of the connector to query.
-      - Mutually exclusive with I(connector_id).
+      - Mutually exclusive with O(connector_id).
     type: str
+attributes:
+  check_mode:
+    support: full
+  diff_mode:
+    support: N/A
+  platform:
+    platforms: all
 extends_documentation_fragment:
+  - ansible.builtin.action_common_attributes
   - cloudera.cloud.cdp_client
 """
 

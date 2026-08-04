@@ -40,16 +40,16 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
 class Connector:
     """CDP Data Warehouse Database Connector."""
 
-    id: Union[str, None, type] = NULLABLE
-    name: Union[str, None, type] = NULLABLE
-    template: Union[str, None, type] = NULLABLE
-    crn: Union[str, None, type] = NULLABLE
-    description: Union[str, None, type] = NULLABLE
-    config: Union[Dict[str, str], None, type] = NULLABLE
-    createdAt: Union[int, None, type] = NULLABLE
-    createdBy: Union[str, None, type] = NULLABLE
-    updatedAt: Union[int, None, type] = NULLABLE
-    updatedBy: Union[str, None, type] = NULLABLE
+    id: Union[str, None, NULLABLE] = NULLABLE
+    name: Union[str, None, NULLABLE] = NULLABLE
+    template: Union[str, None, NULLABLE] = NULLABLE
+    crn: Union[str, None, NULLABLE] = NULLABLE
+    description: Union[str, None, NULLABLE] = NULLABLE
+    config: Union[Dict[str, str], None, NULLABLE] = NULLABLE
+    createdAt: Union[int, None, NULLABLE] = NULLABLE
+    createdBy: Union[str, None, NULLABLE] = NULLABLE
+    updatedAt: Union[int, None, NULLABLE] = NULLABLE
+    updatedBy: Union[str, None, NULLABLE] = NULLABLE
 
 
 class CdpDwClient:

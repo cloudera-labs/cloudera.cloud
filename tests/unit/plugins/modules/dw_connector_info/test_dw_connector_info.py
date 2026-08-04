@@ -65,221 +65,224 @@ CONNECTOR_2 = Connector(
 )
 
 
-class TestDwConnectorInfoModule:
-    """Unit tests for dw_connector_info module."""
+def test_list_all_connectors(module_args, mocker):
+    """Test listing all connectors in a cluster."""
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "cluster_id": CLUSTER_ID,
+        },
+    )
 
-    def test_list_all_connectors(self, module_args, mocker):
-        """Test listing all connectors in a cluster."""
-        module_args(
-            {
-                "endpoint": BASE_URL,
-                "access_key": ACCESS_KEY,
-                "private_key": PRIVATE_KEY,
-                "cluster_id": CLUSTER_ID,
-            },
-        )
+    # Patch load_cdp_config to avoid reading real config files
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
 
-        # Patch load_cdp_config to avoid reading real config files
-        config = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-        )
-        config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
+    # Patch CdpDwClient to avoid real API calls
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
+        autospec=True,
+    ).return_value
 
-        # Patch CdpDwClient to avoid real API calls
-        client = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
-            autospec=True,
-        ).return_value
+    client.list_connectors.return_value = [CONNECTOR_1, CONNECTOR_2]
 
-        client.list_connectors.return_value = [CONNECTOR_1, CONNECTOR_2]
+    with pytest.raises(AnsibleExitJson) as result:
+        dw_connector_info.main()
 
-        with pytest.raises(AnsibleExitJson) as result:
-            dw_connector_info.main()
+    assert result.value.changed is False
+    assert len(result.value.connectors) == 2
+    assert result.value.connectors[0]["id"] == "connector-1"
+    assert result.value.connectors[1]["id"] == "connector-2"
+    client.list_connectors.assert_called_once_with(CLUSTER_ID)
 
-        assert result.value.changed is False
-        assert len(result.value.connectors) == 2
-        assert result.value.connectors[0]["id"] == "connector-1"
-        assert result.value.connectors[1]["id"] == "connector-2"
-        client.list_connectors.assert_called_once_with(CLUSTER_ID)
 
-    def test_list_connectors_empty(self, module_args, mocker):
-        """Test listing connectors when none exist."""
-        module_args(
-            {
-                "endpoint": BASE_URL,
-                "access_key": ACCESS_KEY,
-                "private_key": PRIVATE_KEY,
-                "cluster_id": CLUSTER_ID,
-            },
-        )
+def test_list_connectors_empty(module_args, mocker):
+    """Test listing connectors when none exist."""
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "cluster_id": CLUSTER_ID,
+        },
+    )
 
-        # Patch load_cdp_config
-        config = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-        )
-        config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
 
-        # Patch CdpDwClient
-        client = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
-            autospec=True,
-        ).return_value
+    # Patch CdpDwClient
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
+        autospec=True,
+    ).return_value
 
-        client.list_connectors.return_value = []
+    client.list_connectors.return_value = []
 
-        with pytest.raises(AnsibleExitJson) as result:
-            dw_connector_info.main()
+    with pytest.raises(AnsibleExitJson) as result:
+        dw_connector_info.main()
 
-        assert result.value.changed is False
-        assert len(result.value.connectors) == 0
+    assert result.value.changed is False
+    assert len(result.value.connectors) == 0
 
-    def test_get_connector_by_id(self, module_args, mocker):
-        """Test getting connector by ID."""
-        module_args(
-            {
-                "endpoint": BASE_URL,
-                "access_key": ACCESS_KEY,
-                "private_key": PRIVATE_KEY,
-                "cluster_id": CLUSTER_ID,
-                "connector_id": "connector-1",
-            },
-        )
 
-        # Patch load_cdp_config
-        config = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-        )
-        config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
+def test_get_connector_by_id(module_args, mocker):
+    """Test getting connector by ID."""
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "cluster_id": CLUSTER_ID,
+            "connector_id": "connector-1",
+        },
+    )
 
-        # Patch CdpDwClient
-        client = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
-            autospec=True,
-        ).return_value
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
 
-        client.get_connector_by_id.return_value = CONNECTOR_1
+    # Patch CdpDwClient
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
+        autospec=True,
+    ).return_value
 
-        with pytest.raises(AnsibleExitJson) as result:
-            dw_connector_info.main()
+    client.get_connector_by_id.return_value = CONNECTOR_1
 
-        assert result.value.changed is False
-        assert len(result.value.connectors) == 1
-        assert result.value.connectors[0]["id"] == "connector-1"
+    with pytest.raises(AnsibleExitJson) as result:
+        dw_connector_info.main()
 
-    def test_get_connector_by_id_not_found(self, module_args, mocker):
-        """Test getting connector by ID when it doesn't exist."""
-        module_args(
-            {
-                "endpoint": BASE_URL,
-                "access_key": ACCESS_KEY,
-                "private_key": PRIVATE_KEY,
-                "cluster_id": CLUSTER_ID,
-                "connector_id": "nonexistent-id",
-            },
-        )
+    assert result.value.changed is False
+    assert len(result.value.connectors) == 1
+    assert result.value.connectors[0]["id"] == "connector-1"
 
-        # Patch load_cdp_config
-        config = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-        )
-        config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
 
-        # Patch CdpDwClient
-        client = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
-            autospec=True,
-        ).return_value
+def test_get_connector_by_id_not_found(module_args, mocker):
+    """Test getting connector by ID when it doesn't exist."""
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "cluster_id": CLUSTER_ID,
+            "connector_id": "nonexistent-id",
+        },
+    )
 
-        client.get_connector_by_id.return_value = None
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
 
-        with pytest.raises(AnsibleExitJson) as result:
-            dw_connector_info.main()
+    # Patch CdpDwClient
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
+        autospec=True,
+    ).return_value
 
-        assert result.value.changed is False
-        assert len(result.value.connectors) == 0
+    client.get_connector_by_id.return_value = None
 
-    def test_get_connector_by_name(self, module_args, mocker):
-        """Test getting connector by name."""
-        module_args(
-            {
-                "endpoint": BASE_URL,
-                "access_key": ACCESS_KEY,
-                "private_key": PRIVATE_KEY,
-                "cluster_id": CLUSTER_ID,
-                "name": "connector-2",
-            },
-        )
+    with pytest.raises(AnsibleExitJson) as result:
+        dw_connector_info.main()
 
-        # Patch load_cdp_config
-        config = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-        )
-        config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
+    assert result.value.changed is False
+    assert len(result.value.connectors) == 0
 
-        # Patch CdpDwClient
-        client = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
-            autospec=True,
-        ).return_value
 
-        client.get_connector_by_name.return_value = CONNECTOR_2
+def test_get_connector_by_name(module_args, mocker):
+    """Test getting connector by name."""
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "cluster_id": CLUSTER_ID,
+            "name": "connector-2",
+        },
+    )
 
-        with pytest.raises(AnsibleExitJson) as result:
-            dw_connector_info.main()
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
 
-        assert result.value.changed is False
-        assert len(result.value.connectors) == 1
-        assert result.value.connectors[0]["name"] == "connector-2"
+    # Patch CdpDwClient
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
+        autospec=True,
+    ).return_value
 
-    def test_get_connector_by_name_not_found(self, module_args, mocker):
-        """Test getting connector by name when it doesn't exist."""
-        module_args(
-            {
-                "endpoint": BASE_URL,
-                "access_key": ACCESS_KEY,
-                "private_key": PRIVATE_KEY,
-                "cluster_id": CLUSTER_ID,
-                "name": "nonexistent-name",
-            },
-        )
+    client.get_connector_by_name.return_value = CONNECTOR_2
 
-        # Patch load_cdp_config
-        config = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-        )
-        config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
+    with pytest.raises(AnsibleExitJson) as result:
+        dw_connector_info.main()
 
-        # Patch CdpDwClient
-        client = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
-            autospec=True,
-        ).return_value
+    assert result.value.changed is False
+    assert len(result.value.connectors) == 1
+    assert result.value.connectors[0]["name"] == "connector-2"
 
-        client.get_connector_by_name.return_value = None
 
-        with pytest.raises(AnsibleExitJson) as result:
-            dw_connector_info.main()
+def test_get_connector_by_name_not_found(module_args, mocker):
+    """Test getting connector by name when it doesn't exist."""
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "cluster_id": CLUSTER_ID,
+            "name": "nonexistent-name",
+        },
+    )
 
-        assert result.value.changed is False
-        assert len(result.value.connectors) == 0
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
 
-    def test_mutually_exclusive_connector_id_and_name(self, module_args, mocker):
-        """Test that connector_id and name are mutually exclusive."""
-        module_args(
-            {
-                "endpoint": BASE_URL,
-                "access_key": ACCESS_KEY,
-                "private_key": PRIVATE_KEY,
-                "cluster_id": CLUSTER_ID,
-                "connector_id": "connector-1",
-                "name": "connector-1",
-            },
-        )
+    # Patch CdpDwClient
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.dw_connector_info.CdpDwClient",
+        autospec=True,
+    ).return_value
 
-        # Patch load_cdp_config
-        mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-        ).return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
+    client.get_connector_by_name.return_value = None
 
-        with pytest.raises(AnsibleFailJson):
-            dw_connector_info.main()
+    with pytest.raises(AnsibleExitJson) as result:
+        dw_connector_info.main()
+
+    assert result.value.changed is False
+    assert len(result.value.connectors) == 0
+
+
+def test_mutually_exclusive_connector_id_and_name(module_args, mocker):
+    """Test that connector_id and name are mutually exclusive."""
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "cluster_id": CLUSTER_ID,
+            "connector_id": "connector-1",
+            "name": "connector-1",
+        },
+    )
+
+    # Patch load_cdp_config
+    mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    ).return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
+
+    with pytest.raises(AnsibleFailJson):
+        dw_connector_info.main()
