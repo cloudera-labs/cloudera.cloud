@@ -42,6 +42,15 @@ class AnsibleFailJson(Exception):
         )
         self.__dict__.update(kwargs)
 
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __iter__(self):
+        return iter(self.__dict__)
+
+    def __len__(self):
+        return len(self.__dict__)
+
 
 class AnsibleExitJson(Exception):
     """Exception class to be raised by module.exit_json and caught by the test case"""
@@ -52,8 +61,14 @@ class AnsibleExitJson(Exception):
         )
         self.__dict__.update(kwargs)
 
-    def __getattr__(self, attr):
-        return self.__dict__.get(attr, None)
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __iter__(self):
+        return iter(self.__dict__)
+
+    def __len__(self):
+        return len(self.__dict__)
 
 
 def handle_response(func):
@@ -140,7 +155,7 @@ def prepare_body(
         return None
 
 
-class TestCdpClient(CdpClient):
+class CdpTestClient(CdpClient):
     def __init__(
         self,
         endpoint: str,

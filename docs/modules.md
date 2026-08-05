@@ -54,6 +54,18 @@ class ServiceEntityModule(ServicesModule):
     def process(self):
         # Implement logic
         # Set self.changed and self.diff
+
+
+def main():
+    result = ServiceEntityModule()  # AutoExecuteMeta runs process() here
+    result.module.exit_json(
+        changed=result.changed,
+        # ...module-specific return values...
+    )
+
+
+if __name__ == "__main__":
+    main()
 ```
 
 ## Development Workflow
@@ -114,7 +126,7 @@ When tasked with creating a new Ansible module (e.g., `service_entity`), execute
 - [ ] Argument Spec: Populate `argument_spec=dict(Model.argument_spec(), state=...)` inside `__init__`.
 - [ ] Implement `process()`: Place all business logic, state transitions (present/absent), and idempotency checks inside the `process(self)` method.
 - [ ] Populate `self.diff`: Build `self.diff["before"]`/`self.diff["after"]` for create/update/delete, guarded by `if self.module._diff:` and computed before the `check_mode` guard. See [architecture.md](architecture.md#constructing-the-diff).
-- [ ] No `main()` Call: CRITICAL: Do not append an explicit `if __name__ == '__main__': main()` invocation block at the bottom of the file. The `AutoExecuteMeta` metaclass handles execution automatically after instantiation.
+- [ ] Emit Results via `main()`: Add a `main()` that instantiates the module class and calls `result.module.exit_json(...)`, ending the file with an `if __name__ == "__main__": main()` block. `AutoExecuteMeta` auto-runs `process()` on instantiation, but it does **not** call `exit_json` — without `main()` the module produces no output. (Do not call `main()` from inside `process()`.)
 - [ ] Unit Tests: Write unit tests in `test_{module_name}.py` leveraging `module_args` and `mocker` to mock the Client layer. Follow the _vertical_ style testing approach (one test, one implementation, repeat). Do not follow a _horizontal_ style testing approach (all tests, all implementation). Write each test, run the test. Write the implementation, run the test. Repeat.
 - [ ] Integration Tests: Write integration tests in `test_{module_name}_int.py`. Utilize the `env_context` fixture, which skips the tests when credentials are absent (no pytest marker required). Follow the _vertical_ style testing approach (one test, one implementation, repeat). Do not follow a _horizontal_ style testing approach (all tests, all implementation). Write each test, run the test. Write the implementation, run the test. Repeat.
 

@@ -14,7 +14,7 @@ This file is a **router**: the invariants below apply to all work; read the link
 - Small, reviewable diffs; write the failing test first (TDD).
 - **Never edit generated `docsbuild/rst/*.rst`** — regenerate from module docstrings (`hatch run docs:build`).
 - `NULLABLE` = unset, `None` = explicitly null. Don't conflate them.
-- `ServicesModule` subclasses auto-run `process()` (`AutoExecuteMeta`) — no manual `main()` call.
+- `ServicesModule` subclasses auto-run `process()` on instantiation (`AutoExecuteMeta`), but a module **still needs a `main()`** that instantiates it and calls `exit_json`, plus the `if __name__ == "__main__": main()` block — `AutoExecuteMeta` never calls `exit_json`.
 - Mutation modules must populate `self.diff` (guarded by `self.module._diff`) — see [docs/architecture.md](docs/architecture.md).
 - Do not modify `pyproject.toml` or other Hatch configuration without direct, human approval.
 - Never hardcode API credentials in code or tests; use `env_context` or environment variables.

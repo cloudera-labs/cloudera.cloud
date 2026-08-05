@@ -34,7 +34,7 @@ from ansible.module_utils.common.text.converters import to_bytes
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleFailJson,
     AnsibleExitJson,
-    TestCdpClient,
+    CdpTestClient,
 )
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
@@ -226,13 +226,13 @@ def ansible_cdp_client(
 
 
 @pytest.fixture(scope="session")
-def test_cdp_client() -> TestCdpClient:
+def test_cdp_client() -> CdpTestClient:
     if "CDP_ACCESS_KEY_ID" not in os.environ or "CDP_PRIVATE_KEY" not in os.environ:
         pytest.skip(
             "CDP API credentials not set in env vars. Skipping integration tests.",
         )
 
-    return TestCdpClient(
+    return CdpTestClient(
         endpoint=os.getenv("CDP_API_ENDPOINT"),  # pyright: ignore[reportArgumentType]
         access_key=os.getenv(
             "CDP_ACCESS_KEY_ID",
