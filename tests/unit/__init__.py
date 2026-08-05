@@ -162,7 +162,7 @@ class TestCdpClient(CdpClient):
 
         url = f"{self.endpoint}/{path.strip('/')}"
 
-        return Request().get(
+        return self.request.get(
             url=url,
             headers=set_credential_headers(
                 method="GET",
@@ -170,6 +170,7 @@ class TestCdpClient(CdpClient):
                 access_key=self.access_key,
                 private_key=self.private_key,
             ),
+            timeout=60,
         )
 
     def post(
@@ -183,7 +184,7 @@ class TestCdpClient(CdpClient):
         body = prepare_body(data, json_data)
 
         try:
-            response = Request().post(
+            response = self.request.post(
                 url=url,
                 headers=set_credential_headers(
                     method="POST",
@@ -192,6 +193,7 @@ class TestCdpClient(CdpClient):
                     private_key=self.private_key,
                 ),
                 data=body,
+                timeout=60,
             )
             # Parse successful response
             response_text = response.read().decode("utf-8")
@@ -234,11 +236,12 @@ class TestCdpClient(CdpClient):
                         pass
 
                 # Follow redirect
-                redirect_response = Request().open(
+                redirect_response = self.request.open(
                     method="POST",
                     url=redirect_url,
                     headers=redirect_headers,
                     data=redirect_body.encode("utf-8") if redirect_body else None,
+                    timeout=60,
                 )
 
                 # Parse redirect response
@@ -259,7 +262,7 @@ class TestCdpClient(CdpClient):
     ) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
 
-        return Request().put(
+        return self.request.put(
             url=url,
             headers=set_credential_headers(
                 method="PUT",
@@ -268,12 +271,13 @@ class TestCdpClient(CdpClient):
                 private_key=self.private_key,
             ),
             data=prepare_body(data, json_data),
+            timeout=60,
         )
 
     def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
 
-        return Request().delete(
+        return self.request.delete(
             url=url,
             headers=set_credential_headers(
                 method="DELETE",
@@ -281,4 +285,5 @@ class TestCdpClient(CdpClient):
                 access_key=self.access_key,
                 private_key=self.private_key,
             ),
+            timeout=60,
         )
