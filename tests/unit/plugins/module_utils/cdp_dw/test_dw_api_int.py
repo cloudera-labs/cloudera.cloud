@@ -98,7 +98,11 @@ def existing_cluster_id(env_context) -> str:
 
 
 @pytest.fixture
-def managed_connector(request, dw_client, existing_cluster_id) -> Generator[Connector]:
+def managed_connector(
+    request,
+    dw_client,
+    existing_cluster_id,
+) -> Generator[Connector, None, None]:
     """Creates a test connector and ensures cleanup regardless of test outcome."""
     connector_name = re.sub(r"[^A-Za-z0-9]", "", request.node.name)
     connector_config = {
