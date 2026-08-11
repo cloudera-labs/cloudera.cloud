@@ -485,8 +485,8 @@ class TestDwSecret:
         assert "createdBy" not in result
 
 
-class TestCdpDwClientListSecrets:
-    """Unit tests for CdpDwClient.list_secrets."""
+class TestCdpDwClientSecret:
+    """Unit tests for CdpDwClient create/get/delete secret methods."""
 
     def test_list_secrets_returns_dw_secret_list(self, mocker):
         """list_secrets returns a List[DwSecret] from API result."""
@@ -552,3 +552,158 @@ class TestCdpDwClientListSecrets:
 
         with pytest.raises(Exception, match="API error"):
             client.list_secrets("env-abc123")
+
+    def test_create_secret_returns_dw_secret(self, mocker):
+        """create_secret posts the correct payload and returns a DwSecret."""
+        mock_response = {
+            "result": {
+                "secretName": "my-secret",
+                "secretProviderKey": "key-abc",
+                "createdBy": "crn:cdp:iam:us-west-1:account:user:user1",
+                "properties": {"cloudProvider": "AWS"},
+            },
+        }
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.create_secret(
+            cluster_id="env-abc123",
+            secret_name="my-secret",
+            secret_value="s3cr3t",
+        )
+
+        assert isinstance(result, DwSecret)
+        assert result.secretName == "my-secret"
+        assert result.secretProviderKey == "key-abc"
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/createSecret",
+            data={
+                "clusterId": "env-abc123",
+                "secretName": "my-secret",
+                "secretValue": "s3cr3t",
+            },
+        )
+
+    def test_register_secret_returns_dw_secret(self, mocker):
+        """register_secret posts the correct payload (with Azure vault) and returns a DwSecret."""
+        mock_response = {
+            "result": {
+                "secretName": "my-secret",
+                "secretProviderKey": "provider-key-1",
+                "properties": {"azureVaultName": "my-vault", "cloudProvider": "AZURE"},
+            },
+        }
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.register_secret(
+            cluster_id="env-abc123",
+            secret_name="my-secret",
+            secret_provider_key="provider-key-1",
+            azure_vault_name="my-vault",
+        )
+
+        assert isinstance(result, DwSecret)
+        assert result.secretName == "my-secret"
+        assert result.secretProviderKey == "provider-key-1"
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/registerSecret",
+            data={
+                "clusterId": "env-abc123",
+                "secretName": "my-secret",
+                "secretProviderKey": "provider-key-1",
+                "azureVaultName": "my-vault",
+            },
+        )
+
+    def test_register_secret_omits_azure_vault_when_absent(self, mocker):
+        """register_secret leaves azureVaultName out of the payload when not provided."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {"result": {"secretName": "aws-secret"}}
+
+        client = CdpDwClient(api_client=api_client)
+        client.register_secret(
+            cluster_id="env-abc123",
+            secret_name="aws-secret",
+            secret_provider_key="arn:aws:secret:xyz",
+        )
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/registerSecret",
+            data={
+                "clusterId": "env-abc123",
+                "secretName": "aws-secret",
+                "secretProviderKey": "arn:aws:secret:xyz",
+            },
+        )
+
+    def test_list_secrets_name_filter(self, mocker):
+        """list_secrets(name=...) marshals only the matching entry."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "result": [
+                {"secretName": "secret-one", "secretProviderKey": "key-one"},
+                {"secretName": "secret-two", "secretProviderKey": "key-two"},
+            ],
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.list_secrets("env-abc123", name="secret-two")
+
+        assert len(result) == 1
+        assert isinstance(result[0], DwSecret)
+        assert result[0].secretName == "secret-two"
+
+    def test_get_secret_found(self, mocker):
+        """get_secret returns the matching DwSecret."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "result": [
+                {"secretName": "secret-one", "secretProviderKey": "key-one"},
+                {"secretName": "secret-two", "secretProviderKey": "key-two"},
+            ],
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.get_secret("env-abc123", "secret-two")
+
+        assert result is not None
+        assert isinstance(result, DwSecret)
+        assert result.secretName == "secret-two"
+
+    def test_get_secret_not_found(self, mocker):
+        """get_secret returns None when no secret matches."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "result": [
+                {"secretName": "secret-one", "secretProviderKey": "key-one"},
+            ],
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.get_secret("env-abc123", "nonexistent")
+
+        assert result is None
+
+    def test_delete_secret(self, mocker):
+        """delete_secret posts the correct payload and squelches 404."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDwClient(api_client=api_client)
+        client.delete_secret("env-abc123", "my-secret")
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/deleteSecret",
+            json_data={
+                "clusterId": "env-abc123",
+                "secretName": "my-secret",
+            },
+            squelch={404: {}},
+        )

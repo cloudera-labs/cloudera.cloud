@@ -58,53 +58,79 @@ def dw_secret_info_module_args(module_args, env_context):
     return wrapped_args
 
 
-class TestDwSecretInfoIntegration:
-    """Integration tests for dw_secret_info module using real CDP API."""
+# Integration tests for the dw_secret_info module.
+#
+# The created_secret (Kubernetes) and registered_secret (cloud provider vault)
+# fixtures are shared via tests/unit/plugins/conftest.py; each self-skips unless
+# its gating environment variable (CDW_SECRET_VALUE / CDW_SECRET_PROVIDER_KEY) is set.
 
-    def test_list_all_secrets(self, dw_secret_info_module_args):
-        """Test listing all secrets returns a list."""
-        dw_secret_info_module_args({})
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_secret_info.main()
+def test_list_all_secrets_k8s(dw_secret_info_module_args, created_dw_secret):
+    """Listing all secrets includes the created (Kubernetes) secret."""
+    dw_secret_info_module_args({})
 
-        result = exc.value
-        assert result.changed is False
-        assert isinstance(result.secrets, list)
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_secret_info.main()
 
-    def test_name_filter_exact_match(self, dw_secret_info_module_args):
-        """Test that filtering by name returns only the matching secret."""
-        # First list all to find a real name
-        dw_secret_info_module_args({})
+    result = exc.value
+    assert result.changed is False
+    assert isinstance(result.secrets, list)
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_secret_info.main()
+    names = [s["secretName"] for s in result.secrets]
+    assert created_dw_secret.secretName in names
 
-        all_secrets = exc.value.secrets
 
-        if not all_secrets:
-            pytest.skip("No secrets available for testing")
+def test_list_all_secrets_provider(dw_secret_info_module_args, registered_dw_secret):
+    """Listing all secrets includes the registered (cloud provider) secret."""
+    dw_secret_info_module_args({})
 
-        target_name = all_secrets[0]["secretName"]
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_secret_info.main()
 
-        # Now filter by that name
-        dw_secret_info_module_args({"name": target_name})
+    result = exc.value
+    assert result.changed is False
+    assert isinstance(result.secrets, list)
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_secret_info.main()
+    names = [s["secretName"] for s in result.secrets]
+    assert registered_dw_secret.secretName in names
 
-        result = exc.value
-        assert result.changed is False
-        assert len(result.secrets) == 1
-        assert result.secrets[0]["secretName"] == target_name
 
-    def test_name_filter_no_match(self, dw_secret_info_module_args):
-        """Test that filtering by a nonexistent name returns an empty list."""
-        dw_secret_info_module_args({"name": "nonexistent-secret-99999"})
+def test_name_filter_exact_match_k8s(dw_secret_info_module_args, created_dw_secret):
+    """Filtering by the created secret's name returns only that secret."""
+    dw_secret_info_module_args({"name": created_dw_secret.secretName})
 
-        with pytest.raises(AnsibleExitJson) as exc:
-            dw_secret_info.main()
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_secret_info.main()
 
-        result = exc.value
-        assert result.changed is False
-        assert result.secrets == []
+    result = exc.value
+    assert result.changed is False
+    assert len(result.secrets) == 1
+    assert result.secrets[0]["secretName"] == created_dw_secret.secretName
+
+
+def test_name_filter_exact_match_provider(
+    dw_secret_info_module_args,
+    registered_dw_secret,
+):
+    """Filtering by the registered secret's name returns only that secret."""
+    dw_secret_info_module_args({"name": registered_dw_secret.secretName})
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_secret_info.main()
+
+    result = exc.value
+    assert result.changed is False
+    assert len(result.secrets) == 1
+    assert result.secrets[0]["secretName"] == registered_dw_secret.secretName
+
+
+def test_name_filter_no_match(dw_secret_info_module_args):
+    """Filtering by a nonexistent name returns an empty list."""
+    dw_secret_info_module_args({"name": "nonexistent-secret-99999"})
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_secret_info.main()
+
+    result = exc.value
+    assert result.changed is False
+    assert result.secrets == []
