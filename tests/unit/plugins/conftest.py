@@ -92,7 +92,7 @@ def created_dw_secret(
     secret_value = os.getenv("CDW_SECRET_VALUE")
     if not secret_value:
         pytest.skip(
-            "CDW_SECRET_VALUE not set; skipping Kubernetes secret creation test"
+            "CDW_SECRET_VALUE not set; skipping Kubernetes secret creation test",
         )
 
     secret_name = re.sub(r"[^A-Za-z0-9]", "", request.node.name)
