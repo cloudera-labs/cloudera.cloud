@@ -27,6 +27,7 @@ from typing import (
     Union,
 )
 
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
 )
@@ -62,6 +63,25 @@ class ConnectorTestJob:
     jobFinishTime: Union[str, None, NULLABLE] = NULLABLE
     labels: Union[Dict[str, str], None, NULLABLE] = NULLABLE
     outputLog: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class DwSecretProperties:
+    """Properties of a CDW secret."""
+
+    azureVaultName: Union[str, None, NULLABLE] = NULLABLE
+    cloudProvider: Union[str, None, NULLABLE] = NULLABLE
+    version: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class DwSecret:
+    """Details of a single CDW secret."""
+
+    secretName: Union[str, None, NULLABLE] = NULLABLE
+    secretProviderKey: Union[str, None, NULLABLE] = NULLABLE
+    createdBy: Union[str, None, NULLABLE] = NULLABLE
+    properties: Union[DwSecretProperties, None, NULLABLE] = NULLABLE
 
 
 class CdpDwClient:
@@ -288,3 +308,128 @@ class CdpDwClient:
             squelch={404: {"results": []}},
         )
         return [from_dict(ConnectorTestJob, j) for j in response.get("results", [])]
+
+    def list_secrets(
+        self,
+        cluster_id: str,
+        name: Optional[str] = None,
+    ) -> List[DwSecret]:
+        """
+        List secrets in a CDW cluster.
+
+        Args:
+            cluster_id: The ID of the cluster
+            name: Optional secret name to filter by (exact match). When provided,
+                only the matching entry is marshalled into a DwSecret.
+
+        Returns:
+            List of DwSecret dataclass instances
+        """
+        response = self.api_client.post(
+            "/api/v1/dw/listSecrets",
+            json_data={"clusterId": cluster_id},
+        )
+        return [
+            from_dict(DwSecret, item)
+            for item in response.get("result", [])
+            if name is None or item.get("secretName") == name
+        ]
+
+    def get_secret(
+        self,
+        cluster_id: str,
+        name: str,
+    ) -> Optional[DwSecret]:
+        """
+        Get a secret by its name.
+
+        Args:
+            cluster_id: The ID of the cluster
+            name: The name of the secret
+
+        Returns:
+            DwSecret dataclass instance, or None if not found
+        """
+        secrets = self.list_secrets(cluster_id, name=name)
+        return secrets[0] if secrets else None
+
+    def create_secret(
+        self,
+        cluster_id: str,
+        secret_name: str,
+        secret_value: str,
+    ) -> DwSecret:
+        """
+        Create a secret in a Kubernetes cluster.
+
+        Args:
+            cluster_id: The ID of the cluster
+            secret_name: The name of the secret
+            secret_value: The value (contents) of the secret
+
+        Returns:
+            DwSecret dataclass instance of the created secret
+        """
+        response = self.api_client.post(
+            "/api/v1/dw/createSecret",
+            data={
+                "clusterId": cluster_id,
+                "secretName": secret_name,
+                "secretValue": secret_value,
+            },
+        )
+        return from_dict(DwSecret, response.get("result", {}))
+
+    def register_secret(
+        self,
+        cluster_id: str,
+        secret_name: str,
+        secret_provider_key: str,
+        azure_vault_name: Optional[str] = None,
+    ) -> DwSecret:
+        """
+        Register a reference to a secret stored in the cloud provider's vault.
+
+        Unlike C(create_secret) (which stores the secret value in the cluster's
+        Kubernetes metadata), this registers metadata that references a secret
+        already held in the cloud provider's vault. The two approaches are
+        mutually exclusive.
+
+        Args:
+            cluster_id: The ID of the cluster
+            secret_name: The name of the secret
+            secret_provider_key: The key of the secret in the cloud provider's vault
+            azure_vault_name: The name of the Azure Key Vault (required for Azure)
+
+        Returns:
+            DwSecret dataclass instance of the registered secret
+        """
+        data: Dict[str, Any] = {
+            "clusterId": cluster_id,
+            "secretName": secret_name,
+            "secretProviderKey": secret_provider_key,
+        }
+        if azure_vault_name is not None:
+            data["azureVaultName"] = azure_vault_name
+        response = self.api_client.post(
+            "/api/v1/dw/registerSecret",
+            data=data,
+        )
+        return from_dict(DwSecret, response.get("result", {}))
+
+    def delete_secret(self, cluster_id: str, secret_name: str) -> None:
+        """
+        Delete a secret from a CDW cluster.
+
+        Args:
+            cluster_id: The ID of the cluster
+            secret_name: The name of the secret to delete
+        """
+        self.api_client.post(
+            "/api/v1/dw/deleteSecret",
+            json_data={
+                "clusterId": cluster_id,
+                "secretName": secret_name,
+            },
+            squelch={404: {}},
+        )

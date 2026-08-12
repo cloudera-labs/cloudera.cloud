@@ -18,6 +18,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import pytest
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
 )
@@ -25,6 +27,13 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
     CdpDwClient,
     Connector,
     ConnectorTestJob,
+    DwSecret,
+    DwSecretProperties,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
+    from_dict,
+    to_dict,
 )
 
 
@@ -381,3 +390,320 @@ def test_list_connector_test_jobs(mocker):
         },
         squelch={404: {"results": []}},
     )
+
+
+class TestDwSecretProperties:
+    """Unit tests for DwSecretProperties dataclass."""
+
+    def test_defaults_are_nullable(self):
+        """All optional fields default to NULLABLE sentinel."""
+        props = DwSecretProperties()
+        assert props.azureVaultName is NULLABLE
+        assert props.cloudProvider is NULLABLE
+        assert props.version is NULLABLE
+
+    def test_from_dict_populates_fields(self):
+        """from_dict correctly populates DwSecretProperties fields."""
+        data = {
+            "azureVaultName": "my-vault",
+            "cloudProvider": "AZURE",
+            "version": "1",
+        }
+        props = from_dict(DwSecretProperties, data)
+        assert props.azureVaultName == "my-vault"
+        assert props.cloudProvider == "AZURE"
+        assert props.version == "1"
+
+    def test_from_dict_partial_fields(self):
+        """from_dict handles partial data, leaving unset fields as NULLABLE."""
+        data = {"cloudProvider": "AWS"}
+        props = from_dict(DwSecretProperties, data)
+        assert props.cloudProvider == "AWS"
+        assert props.azureVaultName is NULLABLE
+        assert props.version is NULLABLE
+
+    def test_to_dict_excludes_nullable(self):
+        """to_dict omits NULLABLE fields from output."""
+        props = DwSecretProperties(cloudProvider="AWS")
+        result = to_dict(props)
+        assert result == {"cloudProvider": "AWS"}
+        assert "azureVaultName" not in result
+        assert "version" not in result
+
+
+class TestDwSecret:
+    """Unit tests for DwSecret dataclass."""
+
+    def test_defaults_are_nullable(self):
+        """All optional fields default to NULLABLE sentinel."""
+        secret = DwSecret()
+        assert secret.secretName is NULLABLE
+        assert secret.secretProviderKey is NULLABLE
+        assert secret.createdBy is NULLABLE
+        assert secret.properties is NULLABLE
+
+    def test_from_dict_flat_fields(self):
+        """from_dict correctly populates flat DwSecret fields."""
+        data = {
+            "secretName": "db-password",
+            "secretProviderKey": "db-password-key",
+            "createdBy": "crn:cdp:iam:us-west-1:account:user:user1",
+        }
+        secret = from_dict(DwSecret, data)
+        assert secret.secretName == "db-password"
+        assert secret.secretProviderKey == "db-password-key"
+        assert secret.createdBy == "crn:cdp:iam:us-west-1:account:user:user1"
+
+    def test_from_dict_with_nested_properties(self):
+        """from_dict correctly populates nested DwSecretProperties."""
+        data = {
+            "secretName": "azure-secret",
+            "properties": {
+                "azureVaultName": "my-vault",
+                "cloudProvider": "AZURE",
+                "version": "2",
+            },
+        }
+        secret = from_dict(DwSecret, data)
+        assert secret.secretName == "azure-secret"
+        assert isinstance(secret.properties, DwSecretProperties)
+        assert secret.properties.azureVaultName == "my-vault"
+        assert secret.properties.cloudProvider == "AZURE"
+        assert secret.properties.version == "2"
+
+    def test_to_dict_round_trip(self):
+        """to_dict produces clean dict with no NULLABLE values."""
+        secret = DwSecret(
+            secretName="my-secret",
+            secretProviderKey="my-key",
+            properties=DwSecretProperties(cloudProvider="AWS"),
+        )
+        result = to_dict(secret)
+        assert result["secretName"] == "my-secret"
+        assert result["secretProviderKey"] == "my-key"
+        assert result["properties"] == {"cloudProvider": "AWS"}
+        assert "createdBy" not in result
+
+
+class TestCdpDwClientSecret:
+    """Unit tests for CdpDwClient create/get/delete secret methods."""
+
+    def test_list_secrets_returns_dw_secret_list(self, mocker):
+        """list_secrets returns a List[DwSecret] from API result."""
+        mock_response = {
+            "result": [
+                {
+                    "secretName": "secret-one",
+                    "secretProviderKey": "key-one",
+                    "createdBy": "crn:cdp:iam:us-west-1:account:user:user1",
+                    "properties": {"cloudProvider": "AWS"},
+                },
+                {
+                    "secretName": "secret-two",
+                    "secretProviderKey": "key-two",
+                    "createdBy": "crn:cdp:iam:us-west-1:account:user:user2",
+                    "properties": {"azureVaultName": "vault", "cloudProvider": "AZURE"},
+                },
+            ],
+        }
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.list_secrets("env-abc123")
+
+        assert len(result) == 2
+        assert isinstance(result[0], DwSecret)
+        assert result[0].secretName == "secret-one"
+        assert result[1].secretName == "secret-two"
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/listSecrets",
+            json_data={"clusterId": "env-abc123"},
+        )
+
+    def test_list_secrets_empty_result_key(self, mocker):
+        """list_secrets returns [] when result key is an empty list."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {"result": []}
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.list_secrets("env-abc123")
+
+        assert result == []
+
+    def test_list_secrets_missing_result_key(self, mocker):
+        """list_secrets returns [] when result key is absent from response."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.list_secrets("env-abc123")
+
+        assert result == []
+
+    def test_list_secrets_api_error_propagates(self, mocker):
+        """list_secrets propagates exceptions raised by the API client."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.side_effect = Exception("API error")
+
+        client = CdpDwClient(api_client=api_client)
+
+        with pytest.raises(Exception, match="API error"):
+            client.list_secrets("env-abc123")
+
+    def test_create_secret_returns_dw_secret(self, mocker):
+        """create_secret posts the correct payload and returns a DwSecret."""
+        mock_response = {
+            "result": {
+                "secretName": "my-secret",
+                "secretProviderKey": "key-abc",
+                "createdBy": "crn:cdp:iam:us-west-1:account:user:user1",
+                "properties": {"cloudProvider": "AWS"},
+            },
+        }
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.create_secret(
+            cluster_id="env-abc123",
+            secret_name="my-secret",
+            secret_value="s3cr3t",
+        )
+
+        assert isinstance(result, DwSecret)
+        assert result.secretName == "my-secret"
+        assert result.secretProviderKey == "key-abc"
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/createSecret",
+            data={
+                "clusterId": "env-abc123",
+                "secretName": "my-secret",
+                "secretValue": "s3cr3t",
+            },
+        )
+
+    def test_register_secret_returns_dw_secret(self, mocker):
+        """register_secret posts the correct payload (with Azure vault) and returns a DwSecret."""
+        mock_response = {
+            "result": {
+                "secretName": "my-secret",
+                "secretProviderKey": "provider-key-1",
+                "properties": {"azureVaultName": "my-vault", "cloudProvider": "AZURE"},
+            },
+        }
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.register_secret(
+            cluster_id="env-abc123",
+            secret_name="my-secret",
+            secret_provider_key="provider-key-1",
+            azure_vault_name="my-vault",
+        )
+
+        assert isinstance(result, DwSecret)
+        assert result.secretName == "my-secret"
+        assert result.secretProviderKey == "provider-key-1"
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/registerSecret",
+            data={
+                "clusterId": "env-abc123",
+                "secretName": "my-secret",
+                "secretProviderKey": "provider-key-1",
+                "azureVaultName": "my-vault",
+            },
+        )
+
+    def test_register_secret_omits_azure_vault_when_absent(self, mocker):
+        """register_secret leaves azureVaultName out of the payload when not provided."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {"result": {"secretName": "aws-secret"}}
+
+        client = CdpDwClient(api_client=api_client)
+        client.register_secret(
+            cluster_id="env-abc123",
+            secret_name="aws-secret",
+            secret_provider_key="arn:aws:secret:xyz",
+        )
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/registerSecret",
+            data={
+                "clusterId": "env-abc123",
+                "secretName": "aws-secret",
+                "secretProviderKey": "arn:aws:secret:xyz",
+            },
+        )
+
+    def test_list_secrets_name_filter(self, mocker):
+        """list_secrets(name=...) marshals only the matching entry."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "result": [
+                {"secretName": "secret-one", "secretProviderKey": "key-one"},
+                {"secretName": "secret-two", "secretProviderKey": "key-two"},
+            ],
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.list_secrets("env-abc123", name="secret-two")
+
+        assert len(result) == 1
+        assert isinstance(result[0], DwSecret)
+        assert result[0].secretName == "secret-two"
+
+    def test_get_secret_found(self, mocker):
+        """get_secret returns the matching DwSecret."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "result": [
+                {"secretName": "secret-one", "secretProviderKey": "key-one"},
+                {"secretName": "secret-two", "secretProviderKey": "key-two"},
+            ],
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.get_secret("env-abc123", "secret-two")
+
+        assert result is not None
+        assert isinstance(result, DwSecret)
+        assert result.secretName == "secret-two"
+
+    def test_get_secret_not_found(self, mocker):
+        """get_secret returns None when no secret matches."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "result": [
+                {"secretName": "secret-one", "secretProviderKey": "key-one"},
+            ],
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.get_secret("env-abc123", "nonexistent")
+
+        assert result is None
+
+    def test_delete_secret(self, mocker):
+        """delete_secret posts the correct payload and squelches 404."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDwClient(api_client=api_client)
+        client.delete_secret("env-abc123", "my-secret")
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/deleteSecret",
+            json_data={
+                "clusterId": "env-abc123",
+                "secretName": "my-secret",
+            },
+            squelch={404: {}},
+        )

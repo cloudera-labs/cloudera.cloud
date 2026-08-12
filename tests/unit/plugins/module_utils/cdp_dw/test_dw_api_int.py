@@ -18,19 +18,16 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import re
 import pytest
+import re
 import warnings
 
 from typing import Generator
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
-    CdpDwClient,
     Connector,
     ConnectorTestJob,
-)
-from ansible_collections.cloudera.cloud.tests.unit import (
-    CdpTestClient,
+    DwSecret,
 )
 
 
@@ -81,27 +78,10 @@ ICEBERG_CONNECTOR_CONFIG = {
 
 
 @pytest.fixture
-def dw_client(env_context) -> CdpDwClient:
-    """Provide a live Data Warehouse client, skipping when credentials are absent."""
-    api_client = CdpTestClient(
-        endpoint=env_context["CDP_API_ENDPOINT"],
-        access_key=env_context["CDP_ACCESS_KEY_ID"],
-        private_key=env_context["CDP_PRIVATE_KEY"],
-    )
-    return CdpDwClient(api_client=api_client)
-
-
-@pytest.fixture
-def existing_cluster_id(env_context) -> str:
-    """Provide a valid DW cluster id from the environment."""
-    return env_context["CDW_CLUSTER_ID"]
-
-
-@pytest.fixture
 def managed_connector(
     request,
     dw_client,
-    existing_cluster_id,
+    existing_dw_cluster_id,
 ) -> Generator[Connector, None, None]:
     """Creates a test connector and ensures cleanup regardless of test outcome."""
     connector_name = re.sub(r"[^A-Za-z0-9]", "", request.node.name)
@@ -111,7 +91,7 @@ def managed_connector(
     }
 
     connector = dw_client.create_connector(
-        cluster_id=existing_cluster_id,
+        cluster_id=existing_dw_cluster_id,
         name=connector_name,
         template="iceberg",
         config=connector_config,
@@ -124,16 +104,16 @@ def managed_connector(
 
     # Cleanup — squelch any error in case test already deleted it
     try:
-        dw_client.delete_connector(existing_cluster_id, connector.id)
+        dw_client.delete_connector(existing_dw_cluster_id, connector.id)
     except Exception as e:
         warnings.warn(
             f"Failed to delete test connector {connector.id} during cleanup: {e}",
         )
 
 
-def test_list_connectors(dw_client, existing_cluster_id):
+def test_list_connectors(dw_client, existing_dw_cluster_id):
     """Test listing connectors in a cluster returns Connector instances."""
-    connectors = dw_client.list_connectors(existing_cluster_id)
+    connectors = dw_client.list_connectors(existing_dw_cluster_id)
 
     assert isinstance(connectors, list)
     assert all(isinstance(c, Connector) for c in connectors)
@@ -144,15 +124,15 @@ def test_list_connectors(dw_client, existing_cluster_id):
         assert connectors[0].template is not None
 
 
-def test_get_connector_by_id(dw_client, existing_cluster_id):
+def test_get_connector_by_id(dw_client, existing_dw_cluster_id):
     """Test getting connector by ID."""
-    connectors = dw_client.list_connectors(existing_cluster_id)
+    connectors = dw_client.list_connectors(existing_dw_cluster_id)
 
     if not connectors:
         pytest.skip("No connectors available for testing")
 
     connector_id = connectors[0].id
-    result = dw_client.get_connector_by_id(existing_cluster_id, connector_id)
+    result = dw_client.get_connector_by_id(existing_dw_cluster_id, connector_id)
 
     assert result is not None
     assert isinstance(result, Connector)
@@ -161,15 +141,15 @@ def test_get_connector_by_id(dw_client, existing_cluster_id):
     assert result.template is not None
 
 
-def test_get_connector_by_name(dw_client, existing_cluster_id):
+def test_get_connector_by_name(dw_client, existing_dw_cluster_id):
     """Test getting connector by name."""
-    connectors = dw_client.list_connectors(existing_cluster_id)
+    connectors = dw_client.list_connectors(existing_dw_cluster_id)
 
     if not connectors:
         pytest.skip("No connectors available for testing")
 
     connector_name = connectors[0].name
-    result = dw_client.get_connector_by_name(existing_cluster_id, connector_name)
+    result = dw_client.get_connector_by_name(existing_dw_cluster_id, connector_name)
 
     assert result is not None
     assert isinstance(result, Connector)
@@ -178,10 +158,10 @@ def test_get_connector_by_name(dw_client, existing_cluster_id):
     assert result.template is not None
 
 
-def test_get_nonexistent_connector(dw_client, existing_cluster_id):
+def test_get_nonexistent_connector(dw_client, existing_dw_cluster_id):
     """Test getting a connector that doesn't exist."""
     result = dw_client.get_connector_by_id(
-        existing_cluster_id,
+        existing_dw_cluster_id,
         "nonexistent-connector-99999",
     )
 
@@ -189,21 +169,10 @@ def test_get_nonexistent_connector(dw_client, existing_cluster_id):
     assert result is None
 
 
-def test_get_connector_by_nonexistent_name(dw_client, existing_cluster_id):
+def test_get_connector_by_nonexistent_name(dw_client, existing_dw_cluster_id):
     """Test getting a connector by nonexistent name."""
     result = dw_client.get_connector_by_name(
-        existing_cluster_id,
-        "nonexistent-connector-99999",
-    )
-
-    # Should return None
-    assert result is None
-
-
-def test_get_connector_by_nonexistent_name(dw_client, existing_cluster_id):
-    """Test getting a connector by nonexistent name."""
-    result = dw_client.get_connector_by_name(
-        existing_cluster_id,
+        existing_dw_cluster_id,
         "nonexistent-connector-99999",
     )
 
@@ -219,10 +188,15 @@ def test_create_connector(managed_connector):
     assert managed_connector.template == "iceberg"
 
 
-def test_update_connector(request, dw_client, existing_cluster_id, managed_connector):
+def test_update_connector(
+    request,
+    dw_client,
+    existing_dw_cluster_id,
+    managed_connector,
+):
     """Test updating a connector description."""
     dw_client.update_connector(
-        cluster_id=existing_cluster_id,
+        cluster_id=existing_dw_cluster_id,
         connector_id=managed_connector.id,
         name=managed_connector.name,
         template=managed_connector.template,
@@ -231,34 +205,37 @@ def test_update_connector(request, dw_client, existing_cluster_id, managed_conne
     )
 
     # Re-fetch and verify the update
-    updated = dw_client.get_connector_by_id(existing_cluster_id, managed_connector.id)
+    updated = dw_client.get_connector_by_id(
+        existing_dw_cluster_id,
+        managed_connector.id,
+    )
     assert updated is not None
     assert isinstance(updated, Connector)
     assert updated.id == managed_connector.id
 
 
-def test_delete_connector(dw_client, existing_cluster_id, managed_connector):
+def test_delete_connector(dw_client, existing_dw_cluster_id, managed_connector):
     """Test deleting a connector removes it from the cluster."""
     connector_id = managed_connector.id
 
     dw_client.delete_connector(
-        cluster_id=existing_cluster_id,
+        cluster_id=existing_dw_cluster_id,
         connector_id=connector_id,
     )
 
     # Verify it no longer exists
-    result = dw_client.get_connector_by_id(existing_cluster_id, connector_id)
+    result = dw_client.get_connector_by_id(existing_dw_cluster_id, connector_id)
     assert result is None
 
 
 def test_create_connector_test_job(
     dw_client,
-    existing_cluster_id,
+    existing_dw_cluster_id,
     managed_connector,
 ):
     """Test creating a test job for a connector returns a job ID."""
     job_id = dw_client.create_connector_test_job(
-        cluster_id=existing_cluster_id,
+        cluster_id=existing_dw_cluster_id,
         connector_id=managed_connector.id,
     )
 
@@ -268,18 +245,134 @@ def test_create_connector_test_job(
 
 def test_list_connector_test_jobs(
     dw_client,
-    existing_cluster_id,
+    existing_dw_cluster_id,
     managed_connector,
 ):
     """Test listing connector test jobs returns ConnectorTestJob instances."""
     # Create a test job first
     dw_client.create_connector_test_job(
-        cluster_id=existing_cluster_id,
+        cluster_id=existing_dw_cluster_id,
         connector_id=managed_connector.id,
     )
 
     # List all test jobs for the cluster
-    jobs = dw_client.list_connector_test_jobs(cluster_id=existing_cluster_id)
+    jobs = dw_client.list_connector_test_jobs(cluster_id=existing_dw_cluster_id)
 
     assert isinstance(jobs, list)
     assert all(isinstance(j, ConnectorTestJob) for j in jobs)
+
+
+class TestCdpDwClientSecretIntegration:
+    """Integration tests for CdpDwClient secret CRUD."""
+
+    def test_list_secrets(self, dw_client, existing_dw_cluster_id):
+        """Test that list_secrets returns a list of DwSecret instances or an empty list."""
+        secrets = dw_client.list_secrets(existing_dw_cluster_id)
+
+        assert isinstance(secrets, list)
+        assert all(isinstance(s, DwSecret) for s in secrets)
+
+    @pytest.mark.usefixtures("created_dw_secret")
+    def test_list_secrets_k8s(self, dw_client, existing_dw_cluster_id):
+        """Test that list_secrets returns a list of DwSecret instances for a Kubernetes cluster."""
+        secrets = dw_client.list_secrets(existing_dw_cluster_id)
+
+        assert isinstance(secrets, list)
+        assert all(isinstance(s, DwSecret) for s in secrets)
+        assert len(secrets) > 0
+
+    @pytest.mark.usefixtures("registered_dw_secret")
+    def test_list_secrets_provider(self, dw_client, existing_dw_cluster_id):
+        """Test that list_secrets returns a list of DwSecret instances for a cloud provider cluster."""
+        secrets = dw_client.list_secrets(existing_dw_cluster_id)
+
+        assert isinstance(secrets, list)
+        assert all(isinstance(s, DwSecret) for s in secrets)
+        assert len(secrets) > 0
+
+    def test_create_secret(self, created_dw_secret):
+        """create_secret returns a populated DwSecret instance for a Kubernetes cluster."""
+        assert isinstance(created_dw_secret, DwSecret)
+        assert created_dw_secret.secretName is not None
+
+    def test_register_secret(self, registered_dw_secret):
+        """register_secret returns a populated DwSecret instance for a cloud provider cluster."""
+        assert isinstance(registered_dw_secret, DwSecret)
+        assert registered_dw_secret.secretName is not None
+        assert registered_dw_secret.secretProviderKey is not None
+
+    def test_get_secret_k8s(
+        self,
+        dw_client,
+        existing_dw_cluster_id,
+        created_dw_secret,
+    ):
+        """get_secret returns the provisioned secret (Kubernetes)."""
+        result = dw_client.get_secret(
+            existing_dw_cluster_id,
+            created_dw_secret.secretName,
+        )
+
+        assert result is not None
+        assert isinstance(result, DwSecret)
+        assert result.secretName == created_dw_secret.secretName
+
+    def test_get_secret_provider(
+        self,
+        dw_client,
+        existing_dw_cluster_id,
+        registered_dw_secret,
+    ):
+        """get_secret returns the provisioned secret (cloud provider)."""
+        result = dw_client.get_secret(
+            existing_dw_cluster_id,
+            registered_dw_secret.secretName,
+        )
+
+        assert result is not None
+        assert isinstance(result, DwSecret)
+        assert result.secretName == registered_dw_secret.secretName
+
+    def test_get_secret_not_found(self, dw_client, existing_dw_cluster_id):
+        """get_secret returns None for a nonexistent secret."""
+        result = dw_client.get_secret(
+            existing_dw_cluster_id,
+            "nonexistent-secret-99999",
+        )
+
+        assert result is None
+
+    def test_delete_secret_k8s(
+        self,
+        dw_client,
+        existing_dw_cluster_id,
+        created_dw_secret,
+    ):
+        """delete_secret removes the secret (Kubernetes) from the cluster."""
+        dw_client.delete_secret(existing_dw_cluster_id, created_dw_secret.secretName)
+
+        result = dw_client.get_secret(
+            existing_dw_cluster_id,
+            created_dw_secret.secretName,
+        )
+        assert result is None
+
+    def test_delete_secret_provider(
+        self,
+        dw_client,
+        existing_dw_cluster_id,
+        registered_dw_secret,
+    ):
+        """delete_secret removes the secret (cloud provider) from the cluster."""
+        dw_client.delete_secret(existing_dw_cluster_id, registered_dw_secret.secretName)
+
+        result = dw_client.get_secret(
+            existing_dw_cluster_id,
+            registered_dw_secret.secretName,
+        )
+        assert result is None
+
+    def test_list_secrets_invalid_cluster(self, dw_client):
+        """Test that an invalid cluster ID propagates an API error."""
+        with pytest.raises(Exception):
+            dw_client.list_secrets("nonexistent-cluster-99999")
