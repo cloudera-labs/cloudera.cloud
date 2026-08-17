@@ -67,6 +67,58 @@ Then run `pytest` directly instead of `hatch test`.
 
 All other requirements, like `PYTHONPATH`, are still valid.
 
+## Data Warehouse (CDW) integration tests
+
+The Data Warehouse (`dw_*`) integration tests do **not** use the `integration_api`/`integration_token` markers. Instead each test (or its fixture) skips itself when a required environment variable is absent — via the `env_context` fixture, the `required_or_skip` helper, or a direct `os.getenv` check. Set the variables below to enable the corresponding tests; leave them unset to skip.
+
+**Always required** (all DW tests skip without these):
+
+| Variable | Description |
+| --- | --- |
+| `CDP_API_ENDPOINT` | CDP control-plane API endpoint, e.g. `https://console.us-west-1.cdp.cloudera.com` |
+| `CDP_ACCESS_KEY_ID` | CDP API access key ID |
+| `CDP_PRIVATE_KEY` | CDP API private key |
+| `CDW_CLUSTER_ID` | ID of an existing CDW cluster (environment), e.g. `env-abc123` |
+
+**Virtual Warehouse tests** (`dw_virtual_warehouse`, `dw_virtual_warehouse_info`,
+and the client VW suites):
+
+| Variable | Required? | Description |
+| --- | --- | --- |
+| `CDW_DBC_ID` | Required | ID of an existing Database Catalog to attach new Virtual Warehouses to, e.g. `warehouse-abc123`. Without it, all VW tests skip. |
+| `CDW_CONNECTOR_ID` | Optional | ID of an existing connector, e.g. `connector-...`. Enables the Trino connector-association tests; if unset, those tests skip. |
+| `CDW_VW_TIMEOUT` | Optional | Seconds to wait for a Virtual Warehouse to reach a stable state (default `3600`). Creation is slow — raise on constrained clusters. |
+
+> [!WARNING]
+> VW integration tests create and delete **real** Virtual Warehouses in `CDW_CLUSTER_ID`, which is not immediate (minutes) and incurs cloud cost. Shared, read-only warehouses are created once per test class; delete tests provision their own throwaway warehouse.
+
+Because they spin up warehouses, the VW integration tests are marked `slow` and are therefore excluded from the default run. Run them explicitly (with the environment variables above set):
+
+```bash
+hatch test -k dw_virtual_warehouse -m slow
+```
+
+**Secret tests** (`dw_secret`, `dw_secret_info`):
+
+| Variable | Required? | Description |
+| --- | --- | --- |
+| `CDW_SECRET_VALUE` | Optional | Value for a Kubernetes-stored secret. Enables secret **creation** tests; if unset, they skip. |
+| `CDW_SECRET_PROVIDER_KEY` | Optional | Provider key for a cloud-vault secret. Enables secret **registration** tests; if unset, they skip. |
+| `CDW_SECRET_AZURE_VAULT_NAME` | Optional | Azure Key Vault name, paired with `CDW_SECRET_PROVIDER_KEY` for Azure registration. |
+
+**Example — run the DW Virtual Warehouse suites**
+
+```bash
+export CDP_API_ENDPOINT="https://console.us-west-1.cdp.cloudera.com"
+export CDP_ACCESS_KEY_ID="..."
+export CDP_PRIVATE_KEY="..."
+export CDW_CLUSTER_ID="env-abc123"
+export CDW_DBC_ID="warehouse-abc123"
+export CDW_CONNECTOR_ID="connector-..."   # optional, for Trino association
+
+hatch test -k dw_virtual_warehouse
+```
+
 ## Custom Pytest Markers
 
 | Marker | Enabled | Description |

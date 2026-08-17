@@ -66,6 +66,34 @@ class ConnectorTestJob:
 
 
 @dataclass
+class VirtualWarehouse:
+    """CDP Data Warehouse Virtual Warehouse.
+
+    C(associatedConnectors) is stored as the raw API map,
+    C(<connectorId>: {name, configId}). Only its key set (the connector ids)
+    is meaningful for reconciliation; C(name) and C(configId) are managed by
+    the server and are excluded from change detection.
+    """
+
+    id: Union[str, None, NULLABLE] = NULLABLE
+    name: Union[str, None, NULLABLE] = NULLABLE
+    vwType: Union[str, None, NULLABLE] = NULLABLE
+    dbcId: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    instanceType: Union[str, None, NULLABLE] = NULLABLE
+    nodeCount: Union[int, None, NULLABLE] = NULLABLE
+    crn: Union[str, None, NULLABLE] = NULLABLE
+    creator: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    creationDate: Union[str, None, NULLABLE] = NULLABLE
+    configId: Union[str, None, NULLABLE] = NULLABLE
+    cdhVersion: Union[str, None, NULLABLE] = NULLABLE
+    availabilityZone: Union[str, None, NULLABLE] = NULLABLE
+    endpoints: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    tags: Union[List[Any], None, NULLABLE] = NULLABLE
+    associatedConnectors: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+
+
+@dataclass
 class DwSecretProperties:
     """Properties of a CDW secret."""
 
@@ -308,6 +336,223 @@ class CdpDwClient:
             squelch={404: {"results": []}},
         )
         return [from_dict(ConnectorTestJob, j) for j in response.get("results", [])]
+
+    def list_vws(
+        self,
+        cluster_id: str,
+        name: Optional[str] = None,
+    ) -> List[VirtualWarehouse]:
+        """
+        List Virtual Warehouses in a cluster.
+
+        Args:
+            cluster_id: The ID of the cluster
+            name: Optional Virtual Warehouse name to filter by (exact match).
+                When provided, only the matching entry is marshalled.
+
+        Returns:
+            List of VirtualWarehouse dataclass instances
+        """
+        response = self.api_client.post(
+            "/api/v1/dw/listVws",
+            data={"clusterId": cluster_id},
+            squelch={404: {"vws": []}},
+        )
+        return [
+            from_dict(VirtualWarehouse, vw)
+            for vw in response.get("vws", [])
+            if name is None or vw.get("name") == name
+        ]
+
+    def get_vw_by_id(
+        self,
+        cluster_id: str,
+        vw_id: str,
+    ) -> Optional[VirtualWarehouse]:
+        """
+        Get Virtual Warehouse details by ID.
+
+        Args:
+            cluster_id: The ID of the cluster
+            vw_id: The ID of the Virtual Warehouse
+
+        Returns:
+            VirtualWarehouse dataclass instance, or None if not found
+        """
+        response = self.api_client.post(
+            "/api/v1/dw/describeVw",
+            data={"clusterId": cluster_id, "vwId": vw_id},
+            squelch={400: None, 404: None},
+        )
+        if response is None:
+            return None
+        vw = response.get("vw")
+        return from_dict(VirtualWarehouse, vw) if vw else None
+
+    def get_vw_by_name(
+        self,
+        cluster_id: str,
+        name: str,
+    ) -> Optional[VirtualWarehouse]:
+        """
+        Get Virtual Warehouse details by name.
+
+        Args:
+            cluster_id: The ID of the cluster
+            name: The name of the Virtual Warehouse
+
+        Returns:
+            VirtualWarehouse dataclass instance, or None if not found
+        """
+        vws = self.list_vws(cluster_id, name=name)
+        return vws[0] if vws else None
+
+    def create_vw(
+        self,
+        cluster_id: str,
+        dbc_id: str,
+        vw_type: str,
+        name: str,
+        tshirt_size: Optional[str] = None,
+        node_count: Optional[int] = None,
+        instance_type: Optional[str] = None,
+        autoscaling: Optional[Dict[str, Any]] = None,
+        config: Optional[Dict[str, Any]] = None,
+        impala_ha: Optional[Dict[str, Any]] = None,
+        tags: Optional[Dict[str, str]] = None,
+        enable_unified_analytics: Optional[bool] = None,
+        enable_platform_jwt_auth: Optional[bool] = None,
+    ) -> Optional[VirtualWarehouse]:
+        """
+        Create a Virtual Warehouse in a cluster.
+
+        The C(createVw) endpoint returns only the new warehouse id, so this
+        method re-describes the warehouse and returns its full representation.
+
+        Args:
+            cluster_id: The ID of the cluster
+            dbc_id: The ID of the Database Catalog to attach
+            vw_type: The type of Virtual Warehouse (hive, impala, trino)
+            name: The display name of the Virtual Warehouse
+            tshirt_size: Optional deployment T-shirt size
+            node_count: Optional node count (forces a custom template)
+            instance_type: Optional underlying compute instance type
+            autoscaling: Optional autoscaling configuration
+            config: Optional service configuration (ServiceConfigReq)
+            impala_ha: Optional Impala high-availability settings
+            tags: Optional key-value resource tags
+            enable_unified_analytics: Optional Unified Analytics flag (Impala)
+            enable_platform_jwt_auth: Optional CDP JWT auth flag
+
+        Returns:
+            VirtualWarehouse dataclass instance of the created warehouse, or
+            None if it cannot yet be described.
+        """
+        data: Dict[str, Any] = {
+            "clusterId": cluster_id,
+            "dbcId": dbc_id,
+            "vwType": vw_type,
+            "name": name,
+        }
+        optional = {
+            "tShirtSize": tshirt_size,
+            "nodeCount": node_count,
+            "instanceType": instance_type,
+            "autoscaling": autoscaling,
+            "config": config,
+            "impalaHaSettings": impala_ha,
+            "tags": tags,
+            "enableUnifiedAnalytics": enable_unified_analytics,
+            "platformJwtAuth": enable_platform_jwt_auth,
+        }
+        data.update({k: v for k, v in optional.items() if v is not None})
+        response = self.api_client.post(
+            "/api/v1/dw/createVw",
+            data=data,
+        )
+        vw_id = response.get("vwId", "")
+        return self.get_vw_by_id(cluster_id, vw_id) if vw_id else None
+
+    def update_vw(
+        self,
+        cluster_id: str,
+        vw_id: str,
+        tshirt_size: Optional[str] = None,
+        node_count: Optional[int] = None,
+        config: Optional[Dict[str, Any]] = None,
+        autoscaling: Optional[Dict[str, Any]] = None,
+        impala_ha: Optional[Dict[str, Any]] = None,
+        associated_connectors: Optional[List[str]] = None,
+    ) -> Optional[VirtualWarehouse]:
+        """
+        Update a Virtual Warehouse.
+
+        C(associated_connectors) is a list of connector ids. The API treats the
+        C(associatedConnectors) map as the authoritative (full-sync) set, so the
+        map sent here replaces the warehouse's current associations. Only the
+        connector id (the map key) is honored on write; C(name) is ignored and
+        C(configId) is auto-assigned by the server, so each value is an empty
+        object.
+
+        The C(updateVw) endpoint returns only a status message, so this method
+        re-describes the warehouse and returns its full representation.
+
+        Args:
+            cluster_id: The ID of the cluster
+            vw_id: The ID of the Virtual Warehouse to update
+            tshirt_size: Optional new deployment T-shirt size
+            node_count: Optional new node count
+            config: Optional service configuration delta (ServiceConfigReq)
+            autoscaling: Optional autoscaling configuration
+            impala_ha: Optional Impala high-availability settings
+            associated_connectors: Optional full desired set of connector ids
+
+        Returns:
+            VirtualWarehouse dataclass instance reflecting the updated state, or
+            None if it cannot be described.
+        """
+        data: Dict[str, Any] = {
+            "clusterId": cluster_id,
+            "vwId": vw_id,
+        }
+        optional: Dict[str, Any] = {
+            "tShirtSize": tshirt_size,
+            "nodeCount": node_count,
+            "config": config,
+            "autoscaling": autoscaling,
+            "impalaHaSettings": impala_ha,
+        }
+        data.update({k: v for k, v in optional.items() if v is not None})
+        if associated_connectors is not None:
+            data["associatedConnectors"] = {
+                connector_id: {"name": ""} for connector_id in associated_connectors
+            }
+        self.api_client.post(
+            "/api/v1/dw/updateVw",
+            data=data,
+        )
+        return self.get_vw_by_id(cluster_id, vw_id)
+
+    def delete_vw(
+        self,
+        cluster_id: str,
+        vw_id: str,
+    ) -> None:
+        """
+        Delete a Virtual Warehouse from a cluster.
+
+        Args:
+            cluster_id: The ID of the cluster
+            vw_id: The ID of the Virtual Warehouse to delete
+        """
+        self.api_client.post(
+            "/api/v1/dw/deleteVw",
+            data={
+                "clusterId": cluster_id,
+                "vwId": vw_id,
+            },
+            squelch={404: {}},
+        )
 
     def list_secrets(
         self,

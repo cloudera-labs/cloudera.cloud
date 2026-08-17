@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,20 +19,17 @@ DOCUMENTATION = r"""
 module: dw_virtual_warehouse_info
 short_description: Gather information about CDP Data Warehouse Virtual Warehouses
 description:
-    - Gather information about CDP Virtual Warehouses
+  - Gather information about CDP Data Warehouse (CDW) Virtual Warehouses in a cluster.
+  - Optionally filter by Virtual Warehouse id, name, or parent Database Catalog.
+  - The module supports C(check_mode).
 author:
   - "Webster Mudge (@wmudge)"
-  - "Dan Chaffelson (@chaffelson)"
-  - "Saravanan Raju (@raju-saravanan)"
 version_added: "1.5.0"
-requirements:
-  - cdpy
 options:
   warehouse_id:
     description:
       - The identifier of the Virtual Warehouse.
-      - Requires I(cluster_id).
-      - Mutually exclusive with I(name) and I(catalog_id).
+      - Mutually exclusive with O(name) and O(catalog_id).
     type: str
     aliases:
       - vw_id
@@ -41,60 +38,50 @@ options:
     description:
       - The identifier of the parent Data Warehouse Cluster of the Virtual Warehouse(s).
     type: str
+    required: true
   catalog_id:
     description:
       - The identifier of the parent Database Catalog attached to the Virtual Warehouse(s).
-      - Requires I(cluster_id).
-      - Mutally exclusive with I(warehouse_id) and I(name).
+      - Mutually exclusive with O(warehouse_id) and O(name).
     type: str
     aliases:
       - dbc_id
   name:
     description:
       - The name of the Virtual Warehouse.
-      - Requires I(cluster_id).
-      - Mutually exclusive with I(warehouse_id) and I(catalog_id).
+      - Mutually exclusive with O(warehouse_id) and O(catalog_id).
     type: str
-  delay:
-    description:
-      - The internal polling interval (in seconds) while the module waits for the Virtual Warehouse to achieve the declared
-        state.
-    type: int
-    default: 15
-    aliases:
-      - polling_delay
-  timeout:
-    description:
-      - The internal polling timeout (in seconds) while the module waits for the Virtual Warehouse to achieve the declared
-        state.
-    type: int
-    default: 3600
-    aliases:
-      - polling_timeout
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - ansible.builtin.action_common_attributes
+  - cloudera.cloud.cdp_client
+attributes:
+  check_mode:
+    support: full
+  diff_mode:
+    support: N/A
+  platform:
+    platforms: all
 """
 
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# List all Virtual Warehouses in a Cluster
-- cloudera.cloud.dw_virtual_warehouse_info:
+- name: List all Virtual Warehouses in a Cluster
+  cloudera.cloud.dw_virtual_warehouse_info:
     cluster_id: example-cluster-id
 
-# List all Virtual Warehouses associated with a Data Catalog
-- cloudera.cloud.dw_virtual_warehouse_info:
+- name: List all Virtual Warehouses associated with a Database Catalog
+  cloudera.cloud.dw_virtual_warehouse_info:
     cluster_id: example-cluster-id
     catalog_id: example-data-catalog-id
 
-# Describe a Virtual Warehouse by ID
-- cloudera.cloud.dw_virtual_warehouse_info:
+- name: Describe a Virtual Warehouse by ID
+  cloudera.cloud.dw_virtual_warehouse_info:
     cluster_id: example-cluster-id
     warehouse_id: example-virtual-warehouse-id
 
-# Describe a Virtual Warehouse by name
-- cloudera.cloud.dw_virtual_warehouse_info:
+- name: Describe a Virtual Warehouse by name
+  cloudera.cloud.dw_virtual_warehouse_info:
     cluster_id: example-cluster-id
     name: example-virtual-warehouse
 """
@@ -102,141 +89,137 @@ EXAMPLES = r"""
 RETURN = r"""
 virtual_warehouses:
   description: The details about the CDP Data Warehouse Virtual Warehouse(s).
+  returned: always
   type: list
   elements: dict
   contains:
     id:
       description: The identifier of the Virtual Warehouse.
-      returned: always
+      returned: when available
       type: str
     name:
       description: The name of the Virtual Warehouse.
-      returned: always
+      returned: when available
       type: str
     vwType:
       description: The Virtual Warehouse type.
-      returned: always
+      returned: when available
       type: str
     dbcId:
       description: The Database Catalog ID associated with the Virtual Warehouse.
-      returned: always
-      type: str
-    creationDate:
-      description: The creation time of the Virtual Warehouse in UTC.
-      returned: always
+      returned: when available
       type: str
     status:
       description: The status of the Virtual Warehouse.
-      returned: always
+      returned: when available
       type: str
+    instanceType:
+      description: The underlying compute instance type.
+      returned: when available
+      type: str
+    nodeCount:
+      description: The node count (compute cluster size) of the Virtual Warehouse.
+      returned: when available
+      type: int
     creator:
       description: Details about the Virtual Warehouse creator.
-      returned: always
+      returned: when available
       type: dict
-      contains:
-        crn:
-          description: The creator's Actor CRN.
-          type: str
-          returned: always
-        email:
-          description: Email address (for users).
-          type: str
-          returned: when supported
-        workloadUsername:
-          description: Username (for users).
-          type: str
-          returned: when supported
-        machineUsername:
-          description: Username (for machine users).
-          type: str
-          returned: when supported
+    creationDate:
+      description: The creation time of the Virtual Warehouse in UTC.
+      returned: when available
+      type: str
+    configId:
+      description: The identifier of the Virtual Warehouse configuration.
+      returned: when available
+      type: str
     tags:
       description: Custom tags applied to the Virtual Warehouse.
-      returned: always
+      returned: when available
+      type: list
+      elements: dict
+    associatedConnectors:
+      description:
+        - The connectors associated with the Virtual Warehouse, keyed by
+          connector id.
+      returned: when available
       type: dict
 sdk_out:
   description: Returns the captured CDP SDK log.
-  returned: when supported
+  returned: when debug is true
   type: str
 sdk_out_lines:
   description: Returns a list of each line of the captured CDP SDK log.
-  returned: when supported
+  returned: when debug is true
   type: list
   elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any, Dict, List
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
+    CdpDwClient,
+    VirtualWarehouse,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+    to_dict,
+)
 
 
-class DwVirtualWarehouseInfo(CdpModule):
-    def __init__(self, module):
-        super(DwVirtualWarehouseInfo, self).__init__(module)
+class DwVirtualWarehouseInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                warehouse_id=dict(type="str", aliases=["vw_id", "id"]),
+                cluster_id=dict(required=True, type="str"),
+                catalog_id=dict(type="str", aliases=["dbc_id"]),
+                name=dict(type="str"),
+            ),
+            mutually_exclusive=[["warehouse_id", "name", "catalog_id"]],
+            supports_check_mode=True,
+        )
+        self.warehouse_id = self.get_param("warehouse_id")
+        self.cluster_id = self.get_param("cluster_id")
+        self.catalog_id = self.get_param("catalog_id")
+        self.name = self.get_param("name")
 
-        # Set variables
-        self.warehouse_id = self._get_param("warehouse_id")
-        self.cluster_id = self._get_param("cluster_id")
-        self.catalog_id = self._get_param("catalog_id")
-        self.type = self._get_param("type")
-        self.name = self._get_param("name")
-        self.delay = self._get_param("delay")
-        self.timeout = self._get_param("timeout")
+        self.virtual_warehouses: List[VirtualWarehouse] = []
 
-        # Initialize return values
-        self.virtual_warehouses = []
-
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
+        client = CdpDwClient(api_client=self.api_client)
+
         if self.warehouse_id is not None:
-            target = self.cdpy.dw.describe_vw(
-                cluster_id=self.cluster_id,
-                vw_id=self.warehouse_id,
-            )
-            if target is not None:
-                self.virtual_warehouses.append(target)
+            vw = client.get_vw_by_id(self.cluster_id, self.warehouse_id)
+            self.virtual_warehouses = [vw] if vw is not None else []
+        elif self.name is not None:
+            vw = client.get_vw_by_name(self.cluster_id, self.name)
+            self.virtual_warehouses = [vw] if vw is not None else []
+        elif self.catalog_id is not None:
+            self.virtual_warehouses = [
+                vw
+                for vw in client.list_vws(self.cluster_id)
+                if vw.dbcId == self.catalog_id
+            ]
         else:
-            vws = self.cdpy.dw.list_vws(cluster_id=self.cluster_id)
-            if self.name is not None:
-                for vw in vws:
-                    if vw["name"] == self.name:
-                        self.virtual_warehouses.append(
-                            self.cdpy.dw.describe_vw(
-                                cluster_id=self.cluster_id,
-                                vw_id=vw["id"],
-                            ),
-                        )
-            elif self.catalog_id is not None:
-                self.virtual_warehouses = [
-                    v for v in vws if v["dbcId"] == self.catalog_id
-                ]
-            else:
-                self.virtual_warehouses = vws
+            self.virtual_warehouses = client.list_vws(self.cluster_id)
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            warehouse_id=dict(type="str", aliases=["vw_id", "id"]),
-            cluster_id=dict(required=True, type="str"),
-            catalog_id=dict(type="str", aliases=["dbc_id"]),
-            name=dict(type="str"),
-            delay=dict(type="int", aliases=["polling_delay"], default=15),
-            timeout=dict(type="int", aliases=["polling_timeout"], default=3600),
-        ),
-        mutually_exclusive=[["warehouse_id", "name", "catalog_id"]],
-        supports_check_mode=True,
+    result = DwVirtualWarehouseInfo()
+
+    output: Dict[str, Any] = dict(
+        changed=False,
+        virtual_warehouses=[to_dict(vw) for vw in result.virtual_warehouses],
     )
 
-    result = DwVirtualWarehouseInfo(module)
-    output = dict(changed=False, virtual_warehouses=result.virtual_warehouses)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
-
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":

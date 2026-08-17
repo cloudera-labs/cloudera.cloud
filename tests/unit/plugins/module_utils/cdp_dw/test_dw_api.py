@@ -29,6 +29,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
     ConnectorTestJob,
     DwSecret,
     DwSecretProperties,
+    VirtualWarehouse,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     NULLABLE,
@@ -705,5 +706,293 @@ class TestCdpDwClientSecret:
                 "clusterId": "env-abc123",
                 "secretName": "my-secret",
             },
+            squelch={404: {}},
+        )
+
+
+VW_ID = "trino-abc123"
+VW_NAME = "test-vw"
+DBC_ID = "warehouse-abc123"
+
+
+class TestCdpDwClientVw:
+    """Unit tests for CdpDwClient Virtual Warehouse methods."""
+
+    def test_list_vws_returns_instances(self, mocker):
+        """list_vws marshals the response into VirtualWarehouse instances."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "vws": [
+                {"id": "trino-1", "name": "vw-one", "vwType": "trino"},
+                {"id": "hive-2", "name": "vw-two", "vwType": "hive"},
+            ],
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.list_vws(CLUSTER_ID)
+
+        assert len(result) == 2
+        assert all(isinstance(vw, VirtualWarehouse) for vw in result)
+        assert result[0].id == "trino-1"
+        assert result[1].name == "vw-two"
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/listVws",
+            data={"clusterId": CLUSTER_ID},
+            squelch={404: {"vws": []}},
+        )
+
+    def test_list_vws_name_filter(self, mocker):
+        """list_vws(name=...) marshals only the matching entry."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "vws": [
+                {"id": "trino-1", "name": "vw-one"},
+                {"id": "trino-2", "name": "vw-two"},
+            ],
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.list_vws(CLUSTER_ID, name="vw-two")
+
+        assert len(result) == 1
+        assert result[0].id == "trino-2"
+
+    def test_list_vws_empty(self, mocker):
+        """list_vws returns [] when no warehouses are present."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {"vws": []}
+
+        client = CdpDwClient(api_client=api_client)
+        assert client.list_vws(CLUSTER_ID) == []
+
+    def test_get_vw_by_id_found(self, mocker):
+        """get_vw_by_id returns the VirtualWarehouse, including raw associatedConnectors."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "vw": {
+                "id": VW_ID,
+                "name": VW_NAME,
+                "vwType": "trino",
+                "associatedConnectors": {
+                    "connector-1": {"name": "hive", "configId": "cfg-1"},
+                },
+            },
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.get_vw_by_id(CLUSTER_ID, VW_ID)
+
+        assert isinstance(result, VirtualWarehouse)
+        assert result.id == VW_ID
+        assert result.associatedConnectors == {
+            "connector-1": {"name": "hive", "configId": "cfg-1"},
+        }
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/describeVw",
+            data={"clusterId": CLUSTER_ID, "vwId": VW_ID},
+            squelch={400: None, 404: None},
+        )
+
+    def test_get_vw_by_id_not_found(self, mocker):
+        """get_vw_by_id returns None when the response has no vw."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDwClient(api_client=api_client)
+        assert client.get_vw_by_id(CLUSTER_ID, "missing") is None
+
+    def test_get_vw_by_name_found(self, mocker):
+        """get_vw_by_name returns the matching VirtualWarehouse."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {
+            "vws": [
+                {"id": "trino-1", "name": "other"},
+                {"id": VW_ID, "name": VW_NAME},
+            ],
+        }
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.get_vw_by_name(CLUSTER_ID, VW_NAME)
+
+        assert isinstance(result, VirtualWarehouse)
+        assert result.id == VW_ID
+
+    def test_get_vw_by_name_not_found(self, mocker):
+        """get_vw_by_name returns None when no warehouse matches."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {"vws": [{"id": "trino-1", "name": "other"}]}
+
+        client = CdpDwClient(api_client=api_client)
+        assert client.get_vw_by_name(CLUSTER_ID, "nonexistent") is None
+
+    def test_create_vw_minimal(self, mocker):
+        """create_vw posts required fields, then re-describes and returns the VW."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.side_effect = [
+            {"vwId": VW_ID},
+            {"vw": {"id": VW_ID, "name": VW_NAME, "vwType": "trino"}},
+        ]
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.create_vw(
+            cluster_id=CLUSTER_ID,
+            dbc_id=DBC_ID,
+            vw_type="trino",
+            name=VW_NAME,
+        )
+
+        assert isinstance(result, VirtualWarehouse)
+        assert result.id == VW_ID
+
+        create_call, describe_call = api_client.post.call_args_list
+        assert create_call == mocker.call(
+            "/api/v1/dw/createVw",
+            data={
+                "clusterId": CLUSTER_ID,
+                "dbcId": DBC_ID,
+                "vwType": "trino",
+                "name": VW_NAME,
+            },
+        )
+        assert describe_call == mocker.call(
+            "/api/v1/dw/describeVw",
+            data={"clusterId": CLUSTER_ID, "vwId": VW_ID},
+            squelch={400: None, 404: None},
+        )
+
+    def test_create_vw_with_optionals(self, mocker):
+        """create_vw maps optional params to their camelCase API fields."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.side_effect = [
+            {"vwId": VW_ID},
+            {"vw": {"id": VW_ID, "name": VW_NAME, "vwType": "impala"}},
+        ]
+
+        client = CdpDwClient(api_client=api_client)
+        client.create_vw(
+            cluster_id=CLUSTER_ID,
+            dbc_id=DBC_ID,
+            vw_type="impala",
+            name=VW_NAME,
+            tshirt_size="xsmall",
+            node_count=3,
+            enable_unified_analytics=True,
+        )
+
+        assert api_client.post.call_args_list[0] == mocker.call(
+            "/api/v1/dw/createVw",
+            data={
+                "clusterId": CLUSTER_ID,
+                "dbcId": DBC_ID,
+                "vwType": "impala",
+                "name": VW_NAME,
+                "tShirtSize": "xsmall",
+                "nodeCount": 3,
+                "enableUnifiedAnalytics": True,
+            },
+        )
+
+    def test_create_vw_no_id_returns_none(self, mocker):
+        """create_vw returns None (and skips describe) when no vwId is returned."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.create_vw(
+            cluster_id=CLUSTER_ID,
+            dbc_id=DBC_ID,
+            vw_type="trino",
+            name=VW_NAME,
+        )
+
+        assert result is None
+        api_client.post.assert_called_once()
+
+    def test_update_vw_serializes_associated_connectors(self, mocker):
+        """update_vw serializes a list of connector ids to the {id: {}} map."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.side_effect = [
+            {},
+            {"vw": {"id": VW_ID, "name": VW_NAME, "vwType": "trino"}},
+        ]
+
+        client = CdpDwClient(api_client=api_client)
+        result = client.update_vw(
+            cluster_id=CLUSTER_ID,
+            vw_id=VW_ID,
+            associated_connectors=["connector-1", "connector-2"],
+        )
+
+        assert isinstance(result, VirtualWarehouse)
+        assert result.id == VW_ID
+        assert api_client.post.call_args_list[0] == mocker.call(
+            "/api/v1/dw/updateVw",
+            data={
+                "clusterId": CLUSTER_ID,
+                "vwId": VW_ID,
+                "associatedConnectors": {
+                    "connector-1": {"name": ""},
+                    "connector-2": {"name": ""},
+                },
+            },
+        )
+
+    def test_update_vw_empty_connector_list_sends_empty_map(self, mocker):
+        """update_vw with an explicit empty list still sends an (empty) map."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.side_effect = [{}, {"vw": {"id": VW_ID}}]
+
+        client = CdpDwClient(api_client=api_client)
+        client.update_vw(
+            cluster_id=CLUSTER_ID,
+            vw_id=VW_ID,
+            associated_connectors=[],
+        )
+
+        assert api_client.post.call_args_list[0] == mocker.call(
+            "/api/v1/dw/updateVw",
+            data={
+                "clusterId": CLUSTER_ID,
+                "vwId": VW_ID,
+                "associatedConnectors": {},
+            },
+        )
+
+    def test_update_vw_fields_without_connectors(self, mocker):
+        """update_vw omits associatedConnectors when not provided; maps size fields."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.side_effect = [{}, {"vw": {"id": VW_ID}}]
+
+        client = CdpDwClient(api_client=api_client)
+        client.update_vw(
+            cluster_id=CLUSTER_ID,
+            vw_id=VW_ID,
+            tshirt_size="medium",
+            node_count=5,
+        )
+
+        assert api_client.post.call_args_list[0] == mocker.call(
+            "/api/v1/dw/updateVw",
+            data={
+                "clusterId": CLUSTER_ID,
+                "vwId": VW_ID,
+                "tShirtSize": "medium",
+                "nodeCount": 5,
+            },
+        )
+
+    def test_delete_vw(self, mocker):
+        """delete_vw posts the correct payload and squelches 404."""
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDwClient(api_client=api_client)
+        client.delete_vw(CLUSTER_ID, VW_ID)
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/dw/deleteVw",
+            data={"clusterId": CLUSTER_ID, "vwId": VW_ID},
             squelch={404: {}},
         )

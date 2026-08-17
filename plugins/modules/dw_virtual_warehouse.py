@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,19 +19,24 @@ DOCUMENTATION = r"""
 module: dw_virtual_warehouse
 short_description: Create, manage, and destroy CDP Data Warehouse Virtual Warehouses
 description:
-    - Create CDP Virtual Warehouse
+  - Create, reconcile, and delete a CDP Data Warehouse (CDW) Virtual Warehouse.
+  - Supports C(hive), C(impala), and C(trino) Virtual Warehouses.
+  - Trino connector association is declarative and full-sync; the supplied set of
+    connector ids becomes the warehouse's complete association set. Connectors
+    not listed are detached. At this time, an empty set is a no-op and emits a warning.
+  - Reconciliation of an existing warehouse is limited to the following fields -
+    O(node_count) and O(connectors). Other creation options - O(tshirt_size),
+    O(autoscaling), O(common_configs) - are applied at creation time and are not reconciled.
+  - The module supports C(check_mode).
 author:
   - "Webster Mudge (@wmudge)"
-  - "Dan Chaffelson (@chaffelson)"
-  - "Saravanan Raju (@raju-saravanan)"
 version_added: "1.5.0"
-requirements:
-  - cdpy
 options:
   warehouse_id:
     description:
       - The identifier of the Virtual Warehouse.
-      - Required if C(state=absent).
+      - Required if O(state=absent).
+      - Used as the primary lookup key; takes precedence over O(name).
     type: str
     aliases:
       - vw_id
@@ -40,31 +45,33 @@ options:
     description:
       - The identifier of the parent Data Warehouse Cluster of the Virtual Warehouse.
     type: str
-    required: True
+    required: true
   catalog_id:
     description:
       - The identifier of the parent Database Catalog attached to the Virtual Warehouse.
-      - Required if C(state=present)
+      - Required if O(state=present).
     type: str
     aliases:
       - dbc_id
   type:
     description:
-      - The type of Virtual Warehouse to be created.
-      - Required if C(state=present)
+      - The type of Virtual Warehouse.
+      - Required if O(state=present).
     type: str
     choices:
       - hive
       - impala
+      - trino
   name:
     description:
       - The name of the Virtual Warehouse.
-      - Required if C(state=present)
+      - Required if O(state=present).
+      - Used as the lookup key when O(warehouse_id) is not specified.
     type: str
   tshirt_size:
     description:
       - The name of deployment T-shirt size, i.e. the deployment template, to use.
-      - This will determine the number of nodes.
+      - Applied at creation only; not reconciled on an existing warehouse.
     type: str
     choices:
       - xsmall
@@ -73,49 +80,69 @@ options:
       - large
     aliases:
       - template
+  node_count:
+    description:
+      - The number of nodes (compute cluster size) for the Virtual Warehouse.
+      - Reconciled on an existing warehouse.
+    type: int
+  instance_type:
+    description:
+      - The underlying compute instance type for the Virtual Warehouse.
+      - Applied at creation only.
+    type: str
+  connectors:
+    description:
+      - The complete, desired set of Database Connector C(identifiers) to associate
+        with the Virtual Warehouse.
+      - Only valid for C(trino) Virtual Warehouses.
+      - Full-sync semantics; connectors not listed are detached. An empty list
+        is a no-op (does not yet detach all connectors) and emits a warning.
+    type: list
+    elements: str
   autoscaling:
     description:
-      - Auto-scaling configuration for a Virtual Warehouse
+      - Auto-scaling configuration for the Virtual Warehouse.
+      - Applied at creation only; not reconciled.
     type: dict
-    elements: dict
-    required: False
     suboptions:
       min_nodes:
-        description: The minimum number of available nodes for Virtual Warehouse autoscaling.
+        description: The minimum number of available nodes for autoscaling.
         type: int
       max_nodes:
-        description: The maximum number of available nodes for Virtual Warehouse autoscaling.
+        description: The maximum number of available nodes for autoscaling.
         type: int
       auto_suspend_timeout_seconds:
-        description: Auto suspend threshold for Virtual Warehouse.
+        description: Auto suspend threshold for the Virtual Warehouse.
         type: int
       disable_auto_suspend:
-        description: Turn off auto suspend for Virtual Warehouse.
+        description: Turn off auto suspend for the Virtual Warehouse.
         type: bool
       hive_desired_free_capacity:
         description:
-          - Set Desired free capacity for Hive Virtual Wearhouses.
-          - Either I(hive_scale_wait_time_seconds) or I(hive_desired_free_capacity) can be provided.
+          - Desired free capacity for Hive Virtual Warehouses.
+          - Either O(autoscaling.hive_scale_wait_time_seconds) or
+            O(autoscaling.hive_desired_free_capacity) can be provided.
         type: int
       hive_scale_wait_time_seconds:
         description:
-          - Set wait time before a scale event happens for Hive Virtual Wearhouses.
-          - Either I(hive_scale_wait_time_seconds) or I(hive_desired_free_capacity) can be provided.
+          - Wait time before a scale event happens for Hive Virtual Warehouses.
+          - Either O(autoscaling.hive_scale_wait_time_seconds) or
+            O(autoscaling.hive_desired_free_capacity) can be provided.
         type: int
       impala_scale_down_delay_seconds:
-        description:
-          - Scale down threshold in seconds for Impala Virtual Wearhouses.
+        description: Scale down threshold in seconds for Impala Virtual Warehouses.
         type: int
       impala_scale_up_delay_seconds:
-        description:
-          - Scale up threshold in seconds for Impala Virtual Wearhouses.
+        description: Scale up threshold in seconds for Impala Virtual Warehouses.
         type: int
       pod_config_name:
-        description:
-          - Name of the pod configuration.
+        description: Name of the pod configuration.
         type: str
   common_configs:
-    description: Configurations that are applied to every application in the Virtual Warehouse service.
+    description:
+      - Configurations that are applied to every application in the Virtual
+        Warehouse service.
+      - Applied at creation only.
     type: dict
     suboptions:
       configBlocks:
@@ -153,58 +180,28 @@ options:
                 description: JSON type configuration.
                 type: str
   application_configs:
-    description: Configurations that are applied to specific applications in the Virtual Warehouse service.
+    description:
+      - Configurations that are applied to specific applications in the Virtual
+        Warehouse service.
+      - Applied at creation only.
     type: dict
-    suboptions:
-      __application_name__:
-        description: The application name or identifier.
-        type: dict
-        suboptions:
-          configBlocks:
-            description: List of I(ConfigBlocks) for the specified application.
-            type: list
-            required: False
-            elements: dict
-            suboptions:
-              id:
-                description:
-                  - ID of the ConfigBlock.
-                  - Unique within an ApplicationConfig.
-                type: str
-              format:
-                description: Format of ConfigBlock.
-                type: str
-              content:
-                description: Contents of a ConfigBlock.
-                type: dict
-                suboptions:
-                  keyValues:
-                    description: Key-value type configuration.
-                    type: dict
-                  text:
-                    description: Text type configuration.
-                    type: str
-                  json:
-                    description: JSON type configuration.
-                    type: str
   impala_ha:
     description:
-      - High Availability settings for a Impala Virtual Warehouse
+      - High Availability settings for an Impala Virtual Warehouse.
+      - Applied at creation only.
     type: dict
-    elements: dict
-    required: False
     suboptions:
       enable_catalog_high_availability:
-        description: Enables a backup instance for Impala catalog to ensure high availability.
+        description: Enables a backup instance for Impala catalog for high availability.
         type: bool
       enable_shutdown_of_coordinator:
         description:
           - Enables a shutdown of the coordinator.
-          - If Unified Analytics is enabled, then this setting is explicitly disabled and should not be provided.
+          - If Unified Analytics is enabled, this setting is explicitly disabled
+            and should not be provided.
         type: bool
       high_availability_mode:
-        description:
-          - Set High Availability mode.
+        description: Set High Availability mode.
         type: str
         choices:
           - ACTIVE_PASSIVE
@@ -217,27 +214,39 @@ options:
         description: Delay in seconds before the shutdown of coordinator event happens.
         type: int
   ldap_groups:
-    description: LDAP Groupnames to enabled for authentication to the Virtual Warehouse.
+    description:
+      - LDAP group names enabled for authentication to the Virtual Warehouse.
+      - Applied at creation only.
     type: list
     elements: str
   enable_sso:
-    description: Flag to enable Single Sign-On (SSO) for the Virtual Warehouse.
+    description:
+      - Flag to enable Single Sign-On (SSO) for the Virtual Warehouse.
+      - Applied at creation only.
     type: bool
-    default: False
   enable_unified_analytics:
     description:
       - Flag to enable Unified Analytics for the Virtual Warehouse.
-      - This can only be specified in the case of Impala Virtual Warehouses.
+      - Only valid for Impala Virtual Warehouses.
+      - Applied at creation only.
     type: bool
   enable_platform_jwt_auth:
     description:
-      - Flag to configure the Virtual Warehouse to support JWTs issues by the CDP JWT token provider.
+      - Flag to configure the Virtual Warehouse to support JWTs issued by the CDP
+        JWT token provider.
+      - Applied at creation only.
     type: bool
   tags:
-    description: Key-value tags associated with the Virtual Warehouse cloud provider resources.
+    description:
+      - Key-value tags associated with the Virtual Warehouse cloud provider resources.
+      - Applied at creation only.
     type: dict
   state:
-    description: The declarative state of the Virtual Warehouse
+    description:
+      - The declarative state of the Virtual Warehouse.
+      - V(present) creates the warehouse if it does not exist, and reconciles
+        O(node_count) and O(connectors) if it does.
+      - V(absent) deletes the warehouse if it exists (idempotent).
     type: str
     default: present
     choices:
@@ -245,81 +254,81 @@ options:
       - absent
   wait:
     description:
-      - Flag to enable internal polling to wait for the Virtual Warehouse to achieve the declared state.
-      - If set to FALSE, the module will return immediately.
+      - Flag to enable internal polling to wait for the Virtual Warehouse to
+        achieve the declared state.
+      - If set to V(false), the module returns immediately.
     type: bool
-    default: True
+    default: true
   delay:
     description:
-      - The internal polling interval (in seconds) while the module waits for the Virtual Warehouse to achieve the
-        declared state.
+      - The internal polling interval (in seconds) while the module waits for the
+        Virtual Warehouse to achieve the declared state.
     type: int
     default: 15
     aliases:
       - polling_delay
   timeout:
     description:
-      - The internal polling timeout (in seconds) while the module waits for the Virtual Warehouse to achieve the
-        declared state.
+      - The internal polling timeout (in seconds) while the module waits for the
+        Virtual Warehouse to achieve the declared state.
     type: int
     default: 3600
     aliases:
       - polling_timeout
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - ansible.builtin.action_common_attributes
+  - cloudera.cloud.cdp_client
+attributes:
+  check_mode:
+    support: full
+  diff_mode:
+    support: full
+  platform:
+    platforms: all
 """
 
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# Create a Virtual Warehouse
-- cloudera.cloud.dw_virtual_warehouse:
+- name: Create a Hive Virtual Warehouse
+  cloudera.cloud.dw_virtual_warehouse:
     cluster_id: example-cluster-id
-    name: example-virtual-warehouse
+    catalog_id: example-catalog-id
+    name: example-hive-vw
     type: hive
     tshirt_size: xsmall
-    autoscaling:
-      min_nodes: 3
-      max_nodes: 19
-    tags:
-      some_key: "some value"
-    enable_sso: true
-    ldap_groups: ['group1', 'group2', 'group3']
 
-# Create a Virtual Warehouse with configurations
-- cloudera.cloud.dw_virtual_warehouse:
+- name: Create a Trino Virtual Warehouse and associate connectors
+  cloudera.cloud.dw_virtual_warehouse:
     cluster_id: example-cluster-id
-    name: example-virtual-warehouse
-    type: "hive"
-    tshirt_size: "xsmall"
-    enable_sso: true
-    ldap_groups: ['group1', 'group2', 'group3']
-    common_configs:
-      configBlocks:
-        - id: das-ranger-policymgr
-          format: HADOOP_XML
-          content:
-            keyValues:
-              'xasecure.policymgr.clientssl.truststore': '/path_to_ca_cert/cacerts'
-    application_configs:
-      das-webapp:
-        configBlocks:
-          - id: hive-kerberos-config
-            format: TEXT
-            content:
-              text: "\n[libdefaults]\n\trenew_lifetime = 7d"
+    catalog_id: example-catalog-id
+    name: example-trino-vw
+    type: trino
+    connectors:
+      - connector-1783687110-gwv6
+      - connector-1783688742-pqgw
 
-# Delete a Virtual Warehouse
-- cloudera.cloud.dw_virtual_warehouse:
+- name: Reconcile the connector set (full-sync) and resize an existing warehouse
+  cloudera.cloud.dw_virtual_warehouse:
     cluster_id: example-cluster-id
-    warehouse_id: example-virtual-warehouse-id
+    catalog_id: example-catalog-id
+    name: example-trino-vw
+    type: trino
+    node_count: 5
+    connectors:
+      - connector-1783687110-gwv6
+
+- name: Delete a Virtual Warehouse
+  cloudera.cloud.dw_virtual_warehouse:
+    cluster_id: example-cluster-id
+    warehouse_id: example-trino-vw-id
     state: absent
 """
 
 RETURN = r"""
 virtual_warehouse:
   description: The details about the CDP Data Warehouse Virtual Warehouse.
+  returned: always
   type: dict
   contains:
     id:
@@ -336,375 +345,430 @@ virtual_warehouse:
       type: str
     dbcId:
       description: The Database Catalog ID associated with the Virtual Warehouse.
-      returned: always
-      type: str
-    creationDate:
-      description: The creation time of the Virtual Warehouse in UTC.
-      returned: always
+      returned: when available
       type: str
     status:
       description: The status of the Virtual Warehouse.
-      returned: always
+      returned: when available
       type: str
+    instanceType:
+      description: The underlying compute instance type.
+      returned: when available
+      type: str
+    nodeCount:
+      description: The node count (compute cluster size) of the Virtual Warehouse.
+      returned: when available
+      type: int
     creator:
       description: Details about the Virtual Warehouse creator.
-      returned: always
+      returned: when available
       type: dict
-      contains:
-        crn:
-          description: The creator's Actor CRN.
-          type: str
-          returned: always
-        email:
-          description: Email address (for users).
-          type: str
-          returned: when supported
-        workloadUsername:
-          description: Username (for users).
-          type: str
-          returned: when supported
-        machineUsername:
-          description: Username (for machine users).
-          type: str
-          returned: when supported
+    creationDate:
+      description: The creation time of the Virtual Warehouse in UTC.
+      returned: when available
+      type: str
+    configId:
+      description: The identifier of the Virtual Warehouse configuration.
+      returned: when available
+      type: str
     tags:
       description: Custom tags applied to the Virtual Warehouse.
-      returned: always
+      returned: when available
+      type: list
+      elements: dict
+    associatedConnectors:
+      description:
+        - The connectors associated with the Virtual Warehouse, keyed by
+          connector id.
+      returned: when available
       type: dict
 sdk_out:
   description: Returns the captured CDP SDK log.
-  returned: when supported
+  returned: when debug is true
   type: str
 sdk_out_lines:
   description: Returns a list of each line of the captured CDP SDK log.
-  returned: when supported
+  returned: when debug is true
   type: list
   elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+import time
+
+from typing import Any, Dict, List, Optional
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+    to_dict,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
+    CdpDwClient,
+    VirtualWarehouse,
+)
 
 
-class DwVirtualWarehouse(CdpModule):
-    def __init__(self, module):
-        super(DwVirtualWarehouse, self).__init__(module)
+# Virtual Warehouse lifecycle status groupings
+ENABLED_STATES = frozenset({"Running", "Created", "Stopped"})
+FAILED_STATES = frozenset({"Failed", "Error"})
 
-        # Set variables
-        self.warehouse_id = self._get_param("warehouse_id")
-        self.cluster_id = self._get_param("cluster_id")
-        self.dbc_id = self._get_param("catalog_id")
-        self.type = self._get_param("type")
-        self.name = self._get_param("name")
-        self.tshirt_size = self._get_param("tshirt_size")
-        self.common_configs = self._get_param("common_configs")
-        self.application_configs = self._get_param("application_configs")
-        self.ldap_groups = self._get_param("ldap_groups")
-        self.enable_sso = self._get_param("enable_sso")
-        self.state = self._get_param("state")
-        self.tags = self._get_param("tags")
-        self.wait = self._get_param("wait")
-        self.delay = self._get_param("delay")
-        self.timeout = self._get_param("timeout")
-        self.enable_unified_analytics = self._get_param("enable_unified_analytics")
-        self.enable_platform_jwt_auth = self._get_param("enable_platform_jwt_auth")
-        # Autoscaling nested parameters
-        self.autoscaling_min_nodes = self._get_nested_param("autoscaling", "min_nodes")
-        self.autoscaling_max_nodes = self._get_nested_param("autoscaling", "max_nodes")
-        self.autoscaling_auto_suspend_timeout_seconds = self._get_nested_param(
-            "autoscaling",
-            "auto_suspend_timeout_seconds",
-        )
-        self.autoscaling_disable_auto_suspend = self._get_nested_param(
-            "autoscaling",
-            "disable_auto_suspend",
-        )
-        self.autoscaling_hive_desired_free_capacity = self._get_nested_param(
-            "autoscaling",
-            "hive_desired_free_capacity",
-        )
-        self.autoscaling_hive_scale_wait_time_seconds = self._get_nested_param(
-            "autoscaling",
-            "hive_scale_wait_time_seconds",
-        )
-        self.autoscaling_impala_scale_down_delay_seconds = self._get_nested_param(
-            "autoscaling",
-            "impala_scale_down_delay_seconds",
-        )
-        self.autoscaling_impala_scale_up_delay_seconds = self._get_nested_param(
-            "autoscaling",
-            "impala_scale_up_delay_seconds",
-        )
-        self.autoscaling_pod_config_name = self._get_nested_param(
-            "autoscaling",
-            "pod_config_name",
-        )
-        # impala_ha nested parameters
-        self.impala_ha_enable_catalog_high_availability = self._get_nested_param(
-            "impala_ha",
-            "enable_catalog_high_availability",
-        )
-        self.impala_ha_enable_shutdown_of_coordinator = self._get_nested_param(
-            "impala_ha",
-            "enable_shutdown_of_coordinator",
-        )
-        self.impala_ha_high_availability_mode = self._get_nested_param(
-            "impala_ha",
-            "high_availability_mode",
-        )
-        self.impala_ha_num_of_active_coordinators = self._get_nested_param(
-            "impala_ha",
-            "num_of_active_coordinators",
-        )
-        self.impala_ha_shutdown_of_coordinator_delay_seconds = self._get_nested_param(
-            "impala_ha",
-            "shutdown_of_coordinator_delay_seconds",
+
+class DwVirtualWarehouse(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                warehouse_id=dict(type="str", aliases=["vw_id", "id"]),
+                cluster_id=dict(required=True, type="str"),
+                catalog_id=dict(type="str", aliases=["dbc_id"]),
+                type=dict(type="str", choices=["hive", "impala", "trino"]),
+                name=dict(type="str"),
+                tshirt_size=dict(
+                    type="str",
+                    choices=["xsmall", "small", "medium", "large"],
+                    aliases=["template"],
+                ),
+                node_count=dict(type="int"),
+                instance_type=dict(type="str"),
+                connectors=dict(type="list", elements="str"),
+                autoscaling=dict(
+                    type="dict",
+                    options=dict(
+                        min_nodes=dict(type="int"),
+                        max_nodes=dict(type="int"),
+                        auto_suspend_timeout_seconds=dict(type="int"),
+                        disable_auto_suspend=dict(type="bool"),
+                        hive_desired_free_capacity=dict(type="int"),
+                        hive_scale_wait_time_seconds=dict(type="int"),
+                        impala_scale_down_delay_seconds=dict(type="int"),
+                        impala_scale_up_delay_seconds=dict(type="int"),
+                        pod_config_name=dict(type="str"),
+                    ),
+                ),
+                common_configs=dict(
+                    type="dict",
+                    options=dict(
+                        configBlocks=dict(
+                            type="list",
+                            elements="dict",
+                            options=dict(
+                                id=dict(type="str"),
+                                format=dict(
+                                    type="str",
+                                    choices=[
+                                        "HADOOP_XML",
+                                        "PROPERTIES",
+                                        "TEXT",
+                                        "JSON",
+                                        "BINARY",
+                                        "ENV",
+                                        "FLAGFILE",
+                                    ],
+                                ),
+                                content=dict(
+                                    type="dict",
+                                    options=dict(
+                                        keyValues=dict(type="dict"),
+                                        text=dict(type="str"),
+                                        json=dict(type="json"),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                application_configs=dict(type="dict"),
+                impala_ha=dict(
+                    type="dict",
+                    options=dict(
+                        enable_catalog_high_availability=dict(type="bool"),
+                        enable_shutdown_of_coordinator=dict(type="bool"),
+                        high_availability_mode=dict(
+                            type="str",
+                            choices=["ACTIVE_PASSIVE", "ACTIVE_ACTIVE", "DISABLED"],
+                        ),
+                        num_of_active_coordinators=dict(type="int"),
+                        shutdown_of_coordinator_delay_seconds=dict(type="int"),
+                    ),
+                ),
+                ldap_groups=dict(type="list", elements="str"),
+                enable_sso=dict(type="bool"),
+                enable_unified_analytics=dict(type="bool"),
+                enable_platform_jwt_auth=dict(type="bool"),
+                tags=dict(type="dict"),
+                state=dict(
+                    type="str",
+                    choices=["present", "absent"],
+                    default="present",
+                ),
+                wait=dict(type="bool", default=True),
+                delay=dict(type="int", default=15, aliases=["polling_delay"]),
+                timeout=dict(type="int", default=3600, aliases=["polling_timeout"]),
+            ),
+            required_if=[
+                ("state", "absent", ("warehouse_id",)),
+                ("state", "present", ("catalog_id", "type", "name")),
+            ],
+            supports_check_mode=True,
         )
 
-        # Initialize return values
-        self.virtual_warehouse = {}
+        self.warehouse_id = self.get_param("warehouse_id")
+        self.cluster_id = self.get_param("cluster_id")
+        self.catalog_id = self.get_param("catalog_id")
+        self.type = self.get_param("type")
+        self.name = self.get_param("name")
+        self.tshirt_size = self.get_param("tshirt_size")
+        self.node_count = self.get_param("node_count")
+        self.instance_type = self.get_param("instance_type")
+        self.connectors = self.get_param("connectors")
+        self.autoscaling = self.get_param("autoscaling")
+        self.common_configs = self.get_param("common_configs")
+        self.application_configs = self.get_param("application_configs")
+        self.impala_ha = self.get_param("impala_ha")
+        self.ldap_groups = self.get_param("ldap_groups")
+        self.enable_sso = self.get_param("enable_sso")
+        self.enable_unified_analytics = self.get_param("enable_unified_analytics")
+        self.enable_platform_jwt_auth = self.get_param("enable_platform_jwt_auth")
+        self.tags = self.get_param("tags")
+        self.state = self.get_param("state")
+        self.wait = self.get_param("wait")
+        self.delay = self.get_param("delay")
+        self.timeout = self.get_param("timeout")
 
-        # Initialize internal values
-        self.target = None
+        self.virtual_warehouse: Dict[str, Any] = {}
         self.changed = False
+        self.diff: Dict[str, Any] = {"before": {}, "after": {}}
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        if self.warehouse_id is None:
-            vws = self.cdpy.dw.list_vws(cluster_id=self.cluster_id)
-            for vw in vws:
-                if self.name is not None and vw["name"] == self.name:
-                    self.target = self.cdpy.dw.describe_vw(
-                        cluster_id=self.cluster_id,
-                        vw_id=vw["id"],
-                    )
-        else:
-            self.target = self.cdpy.dw.describe_vw(
-                cluster_id=self.cluster_id,
-                vw_id=self.warehouse_id,
+        client = CdpDwClient(api_client=self.api_client)
+
+        # Connector association is a Trino-only capability.
+        if (
+            self.connectors is not None
+            and self.type is not None
+            and self.type != "trino"
+        ):
+            self.module.fail_json(
+                msg=(
+                    "The 'connectors' parameter is only valid for Trino Virtual "
+                    f"Warehouses; got type={self.type!r}."
+                ),
             )
 
-        if self.target is not None:
-            # Begin Virtual Warehouse Exists
-            if self.state == "absent":
-                if self.module.check_mode:
-                    self.virtual_warehouse = self.target
-                else:
-                    # Begin Drop
-                    if self.target["status"] not in self.cdpy.sdk.REMOVABLE_STATES:
-                        self.module.fail_json(
-                            msg="Virtual Warehouse not in valid state for Delete operation: %s"
-                            % self.target["status"],
-                        )
-                    else:
-                        _ = self.cdpy.dw.delete_vw(
-                            cluster_id=self.cluster_id,
-                            vw_id=self.target["id"],
-                        )
-                        self.changed = True
-                        if self.wait:
-                            self.cdpy.sdk.wait_for_state(
-                                describe_func=self.cdpy.dw.describe_vw,
-                                params=dict(
-                                    cluster_id=self.cluster_id,
-                                    vw_id=self.target["id"],
-                                ),
-                                field=None,
-                                delay=self.delay,
-                                timeout=self.timeout,
-                            )
-                        else:
-                            self.cdpy.sdk.sleep(self.delay)  # Wait for consistency sync
-                            self.virtual_warehouse = self.cdpy.dw.describe_vw(
-                                cluster_id=self.cluster_id,
-                                vw_id=self.target["id"],
-                            )
-                    # End Drop
-            elif self.state == "present":
-                # Begin Config check
-                self.module.warn(
-                    "Virtual Warehouse already present and reconciliation is not yet implemented",
-                )
-                if self.wait and not self.module.check_mode:
-                    self.target = self.cdpy.sdk.wait_for_state(
-                        describe_func=self.cdpy.dw.describe_vw,
-                        params=dict(
-                            cluster_id=self.cluster_id,
-                            vw_id=self.target["id"],
-                        ),
-                        state=self.cdpy.sdk.STARTED_STATES
-                        + self.cdpy.sdk.STOPPED_STATES,
-                        delay=self.delay,
-                        timeout=self.timeout,
-                    )
-                self.virtual_warehouse = self.target
-                # End Config check
-            else:
-                self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state,
-                )
-            # End Virtual Warehouse Exists
+        existing = self._find_existing(client)
+
+        if self.state == "absent":
+            self._handle_absent(client, existing)
+            return
+
+        # state == "present"
+        if existing is None:
+            self._handle_create(client)
         else:
-            # Begin Virtual Warehouse Not Found
-            if self.state == "absent":
-                self.module.warn(
-                    "Virtual Warehouse is already absent in Cluster %s"
-                    % self.cluster_id,
+            self._handle_reconcile(client, existing)
+
+    def _find_existing(self, client) -> Optional[VirtualWarehouse]:
+        if self.warehouse_id is not None:
+            return client.get_vw_by_id(self.cluster_id, self.warehouse_id)
+        if self.name is not None:
+            return client.get_vw_by_name(self.cluster_id, self.name)
+        return None
+
+    def _handle_absent(self, client, existing) -> None:
+        if existing is None:
+            return
+        self.changed = True
+        if self.module._diff:
+            self.diff["before"] = to_dict(existing)
+        if not self.module.check_mode:
+            client.delete_vw(self.cluster_id, existing.id)
+            if self.wait:
+                self._wait_for_absence(client, existing.id)
+
+    def _handle_create(self, client) -> None:
+        self.changed = True
+
+        desired_connectors = self._desired_connector_ids()
+
+        if self.module._diff:
+            after: Dict[str, Any] = {
+                "name": self.name,
+                "vwType": self.type,
+                "dbcId": self.catalog_id,
+            }
+            if self.node_count is not None:
+                after["nodeCount"] = self.node_count
+            if desired_connectors is not None:
+                after["associatedConnectors"] = sorted(desired_connectors)
+            self.diff["after"] = after
+
+        if self.module.check_mode:
+            return
+
+        created = client.create_vw(
+            cluster_id=self.cluster_id,
+            dbc_id=self.catalog_id,
+            vw_type=self.type,
+            name=self.name,
+            tshirt_size=self.tshirt_size,
+            node_count=self.node_count,
+            instance_type=self.instance_type,
+            autoscaling=self.autoscaling,
+            config=self._build_service_config(),
+            impala_ha=self.impala_ha,
+            tags=self.tags,
+            enable_unified_analytics=self.enable_unified_analytics,
+            enable_platform_jwt_auth=self.enable_platform_jwt_auth,
+        )
+        if created is None:
+            self.module.fail_json(
+                msg="Virtual Warehouse creation did not return a warehouse.",
+            )
+
+        vw_id = created.id
+        current = created
+        if self.wait:
+            current = self._wait_for_presence(client, vw_id)
+
+        # Step 2: associate connectors (Trino two-step) once the warehouse exists.
+        if desired_connectors:
+            current = client.update_vw(
+                cluster_id=self.cluster_id,
+                vw_id=vw_id,
+                associated_connectors=sorted(desired_connectors),
+            )
+            if self.wait:
+                current = self._wait_for_presence(client, vw_id)
+
+        self.virtual_warehouse = to_dict(current) if current else {}
+
+    def _handle_reconcile(self, client, existing) -> None:
+        node_changed = (
+            self.node_count is not None and self.node_count != existing.nodeCount
+        )
+
+        current_connector_ids = set(
+            (
+                existing.associatedConnectors.keys()
+                if isinstance(existing.associatedConnectors, dict)
+                else []
+            ),
+        )
+        desired_connectors = self._desired_connector_ids()
+        connectors_changed = (
+            desired_connectors is not None
+            and set(desired_connectors) != current_connector_ids
+        )
+
+        if node_changed or connectors_changed:
+            self.changed = True
+            if self.module._diff:
+                before: Dict[str, Any] = {}
+                after: Dict[str, Any] = {}
+                if node_changed:
+                    before["nodeCount"] = existing.nodeCount
+                    after["nodeCount"] = self.node_count
+                if connectors_changed:
+                    before["associatedConnectors"] = sorted(current_connector_ids)
+                    after["associatedConnectors"] = sorted(desired_connectors)
+                self.diff["before"] = before
+                self.diff["after"] = after
+
+            if not self.module.check_mode:
+                updated = client.update_vw(
+                    cluster_id=self.cluster_id,
+                    vw_id=existing.id,
+                    node_count=self.node_count if node_changed else None,
+                    associated_connectors=(
+                        sorted(desired_connectors) if connectors_changed else None
+                    ),
                 )
-            elif self.state == "present":
-                if not self.module.check_mode:
-                    vw_id = self.cdpy.dw.create_vw(
-                        cluster_id=self.cluster_id,
-                        dbc_id=self.dbc_id,
-                        vw_type=self.type,
-                        name=self.name,
-                        tshirt_size=self.tshirt_size,
-                        autoscaling_min_cluster=self.autoscaling_min_nodes,
-                        autoscaling_max_cluster=self.autoscaling_max_nodes,
-                        autoscaling_auto_suspend_timeout_seconds=self.autoscaling_auto_suspend_timeout_seconds,
-                        autoscaling_disable_auto_suspend=self.autoscaling_disable_auto_suspend,
-                        autoscaling_hive_desired_free_capacity=self.autoscaling_hive_desired_free_capacity,
-                        autoscaling_hive_scale_wait_time_seconds=self.autoscaling_hive_scale_wait_time_seconds,
-                        autoscaling_impala_scale_down_delay_seconds=self.autoscaling_impala_scale_down_delay_seconds,
-                        autoscaling_impala_scale_up_delay_seconds=self.autoscaling_impala_scale_up_delay_seconds,
-                        autoscaling_pod_config_name=self.autoscaling_pod_config_name,
-                        impala_ha_enable_catalog_high_availability=self.impala_ha_enable_catalog_high_availability,
-                        impala_ha_enable_shutdown_of_coordinator=self.impala_ha_enable_shutdown_of_coordinator,
-                        impala_ha_high_availability_mode=self.impala_ha_high_availability_mode,
-                        impala_ha_num_of_active_coordinators=self.impala_ha_num_of_active_coordinators,
-                        impala_ha_shutdown_of_coordinator_delay_seconds=self.impala_ha_shutdown_of_coordinator_delay_seconds,
-                        common_configs=self.common_configs,
-                        application_configs=self.application_configs,
-                        ldap_groups=self.ldap_groups,
-                        enable_sso=self.enable_sso,
-                        enable_unified_analytics=self.enable_unified_analytics,
-                        enable_platform_jwt_auth=self.enable_platform_jwt_auth,
-                        tags=self.tags,
-                    )
-                    self.changed = True
-                    if self.wait:
-                        completed_states = (
-                            self.cdpy.sdk.STARTED_STATES + self.cdpy.sdk.STOPPED_STATES
-                        )
-                        self.virtual_warehouse = self.cdpy.sdk.wait_for_state(
-                            describe_func=self.cdpy.dw.describe_vw,
-                            params=dict(cluster_id=self.cluster_id, vw_id=vw_id),
-                            state=completed_states,
-                            delay=self.delay,
-                            timeout=self.timeout,
-                        )
-                    else:
-                        self.virtual_warehouse = self.cdpy.dw.describe_vw(
-                            cluster_id=self.cluster_id,
-                            vw_id=vw_id,
-                        )
-            else:
+                if self.wait:
+                    updated = self._wait_for_presence(client, existing.id)
+                self.virtual_warehouse = to_dict(updated) if updated else {}
+                return
+
+        # No change, or check_mode: report the existing representation.
+        self.virtual_warehouse = to_dict(existing)
+
+    def _desired_connector_ids(self) -> Optional[List[str]]:
+        """Resolve the desired connector id set, warning on the empty (no-op) case.
+
+        Returns None when connectors are unmanaged (parameter omitted). An empty
+        desired set cannot be applied (the API will not detach all connectors),
+        so it is treated as unmanaged after warning.
+        """
+        if self.connectors is None:
+            return None
+        if len(self.connectors) == 0:
+            self.module.warn(
+                "An empty 'connectors' set cannot detach all connectors; "
+                "the connector association is left unchanged.",
+            )
+            return None
+        return self.connectors
+
+    def _build_service_config(self) -> Optional[Dict[str, Any]]:
+        """Assemble the ServiceConfigReq payload from the discrete config params."""
+        config: Dict[str, Any] = {}
+        if self.common_configs is not None:
+            config["commonConfigs"] = self.common_configs
+        if self.application_configs is not None:
+            config["applicationConfigs"] = self.application_configs
+        if self.ldap_groups is not None:
+            config["ldapGroups"] = self.ldap_groups
+        if self.enable_sso is not None:
+            config["enableSSO"] = self.enable_sso
+        return config or None
+
+    def _wait_for_presence(self, client, vw_id):
+        """Poll until the Virtual Warehouse reaches a running state or fails.
+
+        Returns the settled VirtualWarehouse so callers avoid an extra describe.
+        """
+        deadline = time.time() + self.timeout
+        while time.time() < deadline:
+            vw = client.get_vw_by_id(self.cluster_id, vw_id)
+            status = vw.status if vw is not None else None
+            if status in ENABLED_STATES:
+                return vw
+            if status in FAILED_STATES:
                 self.module.fail_json(
-                    msg="State %s is not valid for this module" % self.state,
+                    msg=f"Virtual Warehouse {vw_id} entered a failed state: {status}",
                 )
-            # End Virtual Warehouse Not Found
+            time.sleep(self.delay)
+        self.module.fail_json(
+            msg=f"Timed out waiting for Virtual Warehouse {vw_id} to reach a running state.",
+        )
+
+    def _wait_for_absence(self, client, vw_id) -> None:
+        """Poll until the Virtual Warehouse no longer exists."""
+        deadline = time.time() + self.timeout
+        while time.time() < deadline:
+            if client.get_vw_by_id(self.cluster_id, vw_id) is None:
+                return
+            time.sleep(self.delay)
+        self.module.fail_json(
+            msg=f"Timed out waiting for Virtual Warehouse {vw_id} to be deleted.",
+        )
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            warehouse_id=dict(type="str", aliases=["vw_id", "id"]),
-            cluster_id=dict(required=True, type="str"),
-            catalog_id=dict(type="str", aliases=["dbc_id"]),
-            type=dict(type="str"),
-            name=dict(type="str"),
-            tshirt_size=dict(
-                type="str",
-                choices=["xsmall", "small", "medium", "large"],
-                aliases=["template"],
-            ),
-            autoscaling=dict(
-                type="dict",
-                options=dict(
-                    min_nodes=dict(type="int"),
-                    max_nodes=dict(type="int"),
-                    auto_suspend_timeout_seconds=dict(type="int"),
-                    disable_auto_suspend=dict(type="bool"),
-                    hive_desired_free_capacity=dict(type="int"),
-                    hive_scale_wait_time_seconds=dict(type="int"),
-                    impala_scale_down_delay_seconds=dict(type="int"),
-                    impala_scale_up_delay_seconds=dict(type="int"),
-                    pod_config_name=dict(type="str"),
-                ),
-            ),
-            impala_ha=dict(
-                type="dict",
-                options=dict(
-                    enable_catalog_high_availability=dict(type="bool"),
-                    enable_shutdown_of_coordinator=dict(type="bool"),
-                    high_availability_mode=dict(
-                        type="str",
-                        choices=["ACTIVE_PASSIVE", "ACTIVE_ACTIVE", "DISABLED"],
-                    ),
-                    num_of_active_coordinators=dict(type="int"),
-                    shutdown_of_coordinator_delay_seconds=dict(type="int"),
-                ),
-            ),
-            common_configs=dict(
-                type="dict",
-                options=dict(
-                    configBlocks=dict(
-                        type="list",
-                        elements="dict",
-                        options=dict(
-                            id=dict(type="str"),
-                            format=dict(
-                                type="str",
-                                choices=[
-                                    "HADOOP_XML",
-                                    "PROPERTIES",
-                                    "TEXT",
-                                    "JSON",
-                                    "BINARY",
-                                    "ENV",
-                                    "FLAGFILE",
-                                ],
-                            ),
-                            content=dict(
-                                type="dict",
-                                options=dict(
-                                    keyValues=dict(type="dict"),
-                                    text=dict(type="str"),
-                                    json=dict(type="json"),
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-            application_configs=dict(type="dict"),
-            ldap_groups=dict(type="list"),
-            enable_sso=dict(type="bool", default=False),
-            tags=dict(type="dict"),
-            state=dict(type="str", choices=["present", "absent"], default="present"),
-            wait=dict(type="bool", default=True),
-            delay=dict(type="int", aliases=["polling_delay"], default=15),
-            timeout=dict(type="int", aliases=["polling_timeout"], default=3600),
-            enable_unified_analytics=dict(type="bool"),
-            enable_platform_jwt_auth=dict(type="bool"),
-        ),
-        required_if=[
-            ["state", "absent", ["warehouse_id"]],
-            ["state", "present", ["catalog_id", "type", "name"]],
-        ],
-        supports_check_mode=True,
+    result = DwVirtualWarehouse()
+
+    output: Dict[str, Any] = dict(
+        changed=result.changed,
+        virtual_warehouse=result.virtual_warehouse,
     )
 
-    result = DwVirtualWarehouse(module)
-    output = dict(changed=result.changed, virtual_warehouse=result.virtual_warehouse)
+    if result.diff["before"] or result.diff["after"]:
+        output["diff"] = result.diff
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":

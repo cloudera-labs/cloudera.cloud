@@ -19,15 +19,15 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import pytest
-import re
-import warnings
 
 from typing import Callable
 
 from ansible_collections.cloudera.cloud.plugins.modules import dw_connector
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import CdpDwClient
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
+)
+from ansible_collections.cloudera.cloud.tests.unit import (
+    HIVE_CONNECTOR_CONFIG,
 )
 
 
@@ -38,27 +38,6 @@ REQUIRED_ENV_VARS = [
     "CDP_PRIVATE_KEY",
     "CDW_CLUSTER_ID",
 ]
-
-HIVE_CONNECTOR_TEMPLATE = "hive"  # A valid connector template for testing
-HIVE_CONNECTOR_CONFIG = {
-    "connector.name": "hive",
-    "fs.cache.directories": "/data/trino/caches/hive",
-    "fs.cache.enabled": "true",
-    "fs.cache.max-disk-usage-percentages": "30",
-    "fs.cache.preferred-hosts-count": "2",
-    "fs.cache.ttl": "7d",
-    "hive.allow-drop-table": "true",
-    "hive.collect-column-statistics-on-write": "false",
-    "hive.metastore.uri": "thrift://metastore-service.{{ .Values.warehouseId }}.svc.cluster.local:9083",
-    "hive.non-managed-table-writes-enabled": "true",
-    "hive.security": "{{ .Values.authorizationMode }}",
-    "hive.temporary-staging-directory-enabled": "{{ if and .Values.isPrivateCloud .Values.ozone .Values.ozone.enabled }}false{{ else }}true{{ end }}",
-    "ranger.audit_config": "/etc/trino/ranger-hive-audit.xml",
-    "ranger.hadoop_config": "/etc/trino/core-site.xml",
-    "ranger.policy_mgr_ssl_config": "/etc/trino/ranger-policymgr-ssl.xml",
-    "ranger.security_config": "/etc/trino/ranger-hive-security.xml",
-    "ranger.service_name": "{{ .Values.rangerHiveSvcName }}",
-}
 
 
 @pytest.fixture
@@ -82,67 +61,6 @@ def dw_connector_module_args(module_args, env_context) -> Callable[[dict], None]
     return wrapped_args
 
 
-@pytest.fixture
-def cleanup_connector(test_cdp_client, env_context):
-    """Fixture that registers connector names for cleanup after the test.
-
-    Call the returned function with one or more connector names to schedule
-    them for deletion in teardown, regardless of test outcome.
-    """
-    names = []
-
-    def register(*connector_names):
-        names.extend(connector_names)
-
-    yield register
-
-    cluster_id = env_context.get("CDW_CLUSTER_ID")
-    if not cluster_id:
-        warnings.warn(
-            f"cleanup_connector: no Data Warehouse Cluster ID: {cluster_id}. Skipping cleanup of connectors: {names}",
-        )
-        return
-    client = CdpDwClient(api_client=test_cdp_client)
-    for name in names:
-        existing = client.get_connector_by_name(cluster_id, name)
-        if existing is not None:
-            try:
-                client.delete_connector(cluster_id, existing.id)
-            except Exception as exc:
-                warnings.warn(
-                    f"cleanup_connector: failed to delete '{name}': {exc}",
-                )
-
-
-@pytest.fixture
-def valid_connector_name(request):
-    """Provide a unique connector name for each test, stripped to alphanumerics only."""
-    return re.sub(r"[^A-Za-z0-9]", "", request.node.name)
-
-
-@pytest.fixture
-def existing_connector(
-    test_cdp_client,
-    env_context,
-    valid_connector_name,
-    cleanup_connector,
-):
-    """Fixture that creates a test connector, yields it, and cleans it up after the test."""
-    cluster_id = env_context.get("CDW_CLUSTER_ID")
-    client = CdpDwClient(api_client=test_cdp_client)
-
-    connector = client.create_connector(
-        cluster_id=cluster_id,
-        name=valid_connector_name,
-        template=HIVE_CONNECTOR_TEMPLATE,
-        description="Ansible integration test connector",
-        config=HIVE_CONNECTOR_CONFIG,
-    )
-    cleanup_connector(valid_connector_name)
-
-    yield connector
-
-
 def test_present_creates_connector(
     dw_connector_module_args,
     valid_connector_name,
@@ -154,7 +72,7 @@ def test_present_creates_connector(
     dw_connector_module_args(
         {
             "name": valid_connector_name,
-            "template": HIVE_CONNECTOR_TEMPLATE,
+            "template": "hive",
             "description": "Ansible integration test connector",
             "config": HIVE_CONNECTOR_CONFIG,
             "state": "present",
@@ -167,7 +85,7 @@ def test_present_creates_connector(
     assert result.value.changed is True
     assert result.value.connector != {}
     assert result.value.connector.get("name") == valid_connector_name
-    assert result.value.connector.get("template") == HIVE_CONNECTOR_TEMPLATE
+    assert result.value.connector.get("template") == "hive"
     assert result.value.connector.get("id") is not None
 
 
@@ -183,7 +101,7 @@ def test_present_idempotent(
     dw_connector_module_args(
         {
             "name": valid_connector_name,
-            "template": HIVE_CONNECTOR_TEMPLATE,
+            "template": "hive",
             "description": "Ansible integration test connector",
             "config": HIVE_CONNECTOR_CONFIG,
             "state": "present",
@@ -199,7 +117,7 @@ def test_present_idempotent(
     dw_connector_module_args(
         {
             "name": valid_connector_name,
-            "template": HIVE_CONNECTOR_TEMPLATE,
+            "template": "hive",
             "description": "Ansible integration test connector",
             "config": HIVE_CONNECTOR_CONFIG,
             "state": "present",
@@ -247,7 +165,7 @@ def test_tested_state_creates_and_tests(
     dw_connector_module_args(
         {
             "name": valid_connector_name,
-            "template": HIVE_CONNECTOR_TEMPLATE,
+            "template": "hive",
             "state": "tested",
         },
     )
@@ -268,7 +186,7 @@ def test_tested_state_existing(dw_connector_module_args, existing_connector):
     dw_connector_module_args(
         {
             "name": existing_connector.name,
-            "template": HIVE_CONNECTOR_TEMPLATE,
+            "template": "hive",
             "state": "tested",
         },
     )
@@ -290,7 +208,7 @@ def test_tested_state_produces_unique_job_ids(
     """Test that each execution of state=tested produces a distinct jobId."""
     args = {
         "name": existing_connector.name,
-        "template": HIVE_CONNECTOR_TEMPLATE,
+        "template": "hive",
         "state": "tested",
     }
 

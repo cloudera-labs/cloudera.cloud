@@ -65,7 +65,7 @@ def dw_secret_info_module_args(module_args, env_context):
 # its gating environment variable (CDW_SECRET_VALUE / CDW_SECRET_PROVIDER_KEY) is set.
 
 
-def test_list_all_secrets_k8s(dw_secret_info_module_args, created_dw_secret):
+def test_list_all_secrets_k8s(dw_secret_info_module_args, existing_dw_secret_k8s):
     """Listing all secrets includes the created (Kubernetes) secret."""
     dw_secret_info_module_args({})
 
@@ -77,10 +77,13 @@ def test_list_all_secrets_k8s(dw_secret_info_module_args, created_dw_secret):
     assert isinstance(result.secrets, list)
 
     names = [s["secretName"] for s in result.secrets]
-    assert created_dw_secret.secretName in names
+    assert existing_dw_secret_k8s.secretName in names
 
 
-def test_list_all_secrets_provider(dw_secret_info_module_args, registered_dw_secret):
+def test_list_all_secrets_provider(
+    dw_secret_info_module_args,
+    existing_dw_secret_provider,
+):
     """Listing all secrets includes the registered (cloud provider) secret."""
     dw_secret_info_module_args({})
 
@@ -92,12 +95,15 @@ def test_list_all_secrets_provider(dw_secret_info_module_args, registered_dw_sec
     assert isinstance(result.secrets, list)
 
     names = [s["secretName"] for s in result.secrets]
-    assert registered_dw_secret.secretName in names
+    assert existing_dw_secret_provider.secretName in names
 
 
-def test_name_filter_exact_match_k8s(dw_secret_info_module_args, created_dw_secret):
+def test_name_filter_exact_match_k8s(
+    dw_secret_info_module_args,
+    existing_dw_secret_k8s,
+):
     """Filtering by the created secret's name returns only that secret."""
-    dw_secret_info_module_args({"name": created_dw_secret.secretName})
+    dw_secret_info_module_args({"name": existing_dw_secret_k8s.secretName})
 
     with pytest.raises(AnsibleExitJson) as exc:
         dw_secret_info.main()
@@ -105,15 +111,15 @@ def test_name_filter_exact_match_k8s(dw_secret_info_module_args, created_dw_secr
     result = exc.value
     assert result.changed is False
     assert len(result.secrets) == 1
-    assert result.secrets[0]["secretName"] == created_dw_secret.secretName
+    assert result.secrets[0]["secretName"] == existing_dw_secret_k8s.secretName
 
 
 def test_name_filter_exact_match_provider(
     dw_secret_info_module_args,
-    registered_dw_secret,
+    existing_dw_secret_provider,
 ):
     """Filtering by the registered secret's name returns only that secret."""
-    dw_secret_info_module_args({"name": registered_dw_secret.secretName})
+    dw_secret_info_module_args({"name": existing_dw_secret_provider.secretName})
 
     with pytest.raises(AnsibleExitJson) as exc:
         dw_secret_info.main()
@@ -121,7 +127,7 @@ def test_name_filter_exact_match_provider(
     result = exc.value
     assert result.changed is False
     assert len(result.secrets) == 1
-    assert result.secrets[0]["secretName"] == registered_dw_secret.secretName
+    assert result.secrets[0]["secretName"] == existing_dw_secret_provider.secretName
 
 
 def test_name_filter_no_match(dw_secret_info_module_args):
