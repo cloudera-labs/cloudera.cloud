@@ -14,13 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import json
+import pytest
+import time
+import warnings
 
 from email.utils import formatdate
 from functools import wraps
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode, urlparse
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from http.client import HTTPResponse
 from ansible.module_utils.urls import Request
 
@@ -31,6 +36,14 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
 )
+
+
+def required_or_skip(var: str) -> str:
+    """Return an environment variable's value, skipping the test when it is unset."""
+    value = os.getenv(var)
+    if not value:
+        pytest.skip(f"{var} not set; skipping Data Warehouse test")
+    return value
 
 
 class AnsibleFailJson(Exception):
@@ -69,6 +82,82 @@ class AnsibleExitJson(Exception):
 
     def __len__(self):
         return len(self.__dict__)
+
+
+HIVE_CONNECTOR_CONFIG = {
+    "connector.name": "hive",
+    "fs.cache.directories": "/data/trino/caches/hive",
+    "fs.cache.enabled": "true",
+    "fs.cache.max-disk-usage-percentages": "30",
+    "fs.cache.preferred-hosts-count": "2",
+    "fs.cache.ttl": "7d",
+    "hive.allow-drop-table": "true",
+    "hive.collect-column-statistics-on-write": "false",
+    "hive.metastore.uri": "thrift://metastore-service.{{ .Values.warehouseId }}.svc.cluster.local:9083",
+    "hive.non-managed-table-writes-enabled": "true",
+    "hive.security": "{{ .Values.authorizationMode }}",
+    "hive.temporary-staging-directory-enabled": "{{ if and .Values.isPrivateCloud .Values.ozone .Values.ozone.enabled }}false{{ else }}true{{ end }}",
+    "ranger.audit_config": "/etc/trino/ranger-hive-audit.xml",
+    "ranger.hadoop_config": "/etc/trino/core-site.xml",
+    "ranger.policy_mgr_ssl_config": "/etc/trino/ranger-policymgr-ssl.xml",
+    "ranger.security_config": "/etc/trino/ranger-hive-security.xml",
+    "ranger.service_name": "{{ .Values.rangerHiveSvcName }}",
+}
+
+ICEBERG_CONNECTOR_CONFIG = {
+    "connector.name": "iceberg",
+    "fs.cache.directories": "/data/trino/caches/",  # Needs the "catalog" name appended to this root path
+    "fs.cache.enabled": "true",
+    "fs.cache.max-disk-usage-percentages": "30",
+    "fs.cache.preferred-hosts-count": "2",
+    "fs.cache.ttl": "7d",
+    "hive.metastore.uri": "thrift://metastore-service.{{ .Values.warehouseId }}.svc.cluster.local:9083",
+    "iceberg.catalog.type": "hive_metastore",
+    "iceberg.security": "{{ .Values.authorizationMode }}",
+    "ranger.audit_config": "/etc/trino/ranger-hive-audit.xml",
+    "ranger.hadoop_config": "/etc/trino/core-site.xml",
+    "ranger.policy_mgr_ssl_config": "/etc/trino/ranger-policymgr-ssl.xml",
+    "ranger.security_config": "/etc/trino/ranger-hive-security.xml",
+    "ranger.service_name": "{{ .Values.rangerHiveSvcName }}",
+}
+
+
+# Connection-level failures worth retrying. HTTPError (a URLError subclass) is
+# deliberately excluded: HTTP status codes are semantic, not transient, and each
+# verb method handles them itself (squelch, 308 redirect, etc.).
+_TRANSIENT_ERRORS = (URLError, OSError, TimeoutError)
+
+
+def with_retry(func):
+    """Retry a CdpTestClient HTTP verb on transient failures with exponential backoff.
+
+    Applies the retry behavior originally inlined in C(get()) to every verb:
+    up to C(self.max_retries) attempts, backoff of C(0.5 * 2**attempt) seconds
+    capped at 5s. Only transient (connection/OS/timeout) errors are retried;
+    C(HTTPError) is re-raised immediately so the wrapped method's own status
+    handling is preserved.
+    """
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        for attempt in range(self.max_retries):
+            try:
+                return func(self, *args, **kwargs)
+            except HTTPError:
+                raise
+            except _TRANSIENT_ERRORS as e:
+                if attempt < self.max_retries - 1:
+                    wait_time = min(0.5 * (2**attempt), 5)
+                    warnings.warn(
+                        f"{func.__name__} request failed: {e}. "
+                        f"Retrying in {wait_time:.1f}s "
+                        f"(attempt {attempt + 1}/{self.max_retries})...",
+                    )
+                    time.sleep(wait_time)
+                    continue
+                raise
+
+    return wrapper
 
 
 def handle_response(func):
@@ -162,6 +251,7 @@ class CdpTestClient(CdpClient):
         access_key: str,
         private_key: str,
         default_page_size: int = 100,
+        max_retries: int = 3,
     ):
         super().__init__(default_page_size)
         self.request = Request(http_agent="TestCdpClient/1.0")
@@ -169,7 +259,9 @@ class CdpTestClient(CdpClient):
         self.access_key = access_key
         self.private_key = private_key
         self.cookies = {}  # Cookie storage for XSRF tokens (needed for /dfx endpoints)
+        self.max_retries = max_retries
 
+    @with_retry
     def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         # Prepare query parameters
         if params:
@@ -187,6 +279,7 @@ class CdpTestClient(CdpClient):
             ),
         )
 
+    @with_retry
     def post(
         self,
         path: str,
@@ -265,6 +358,7 @@ class CdpTestClient(CdpClient):
             else:
                 raise
 
+    @with_retry
     def put(
         self,
         path: str,
@@ -285,6 +379,7 @@ class CdpTestClient(CdpClient):
             data=prepare_body(data, json_data),
         )
 
+    @with_retry
     def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
 
