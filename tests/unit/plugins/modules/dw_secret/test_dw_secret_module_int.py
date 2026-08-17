@@ -66,7 +66,7 @@ def _secret_name(request):
 def test_present_create_idempotent(
     request,
     dw_secret_module_args,
-    delete_dw_secret,
+    disposable_dw_secret,
 ):
     """state=present creates a Kubernetes secret, then is idempotent (gated by CDW_SECRET_VALUE)."""
     secret_value = os.getenv("CDW_SECRET_VALUE")
@@ -76,7 +76,7 @@ def test_present_create_idempotent(
         )
 
     name = _secret_name(request)
-    delete_dw_secret(name)
+    disposable_dw_secret(name)
 
     # First run: creates the secret
     dw_secret_module_args(
@@ -101,7 +101,7 @@ def test_present_create_idempotent(
 def test_present_register_idempotent(
     request,
     dw_secret_module_args,
-    delete_dw_secret,
+    disposable_dw_secret,
 ):
     """state=present registers a provider secret, then is idempotent (gated by CDW_SECRET_PROVIDER_KEY)."""
     provider_key = os.getenv("CDW_SECRET_PROVIDER_KEY")
@@ -111,7 +111,7 @@ def test_present_register_idempotent(
         )
 
     name = _secret_name(request)
-    delete_dw_secret(name)
+    disposable_dw_secret(name)
 
     args = {
         "name": name,
@@ -143,13 +143,13 @@ def test_absent_k8s(
     dw_secret_module_args,
     dw_client,
     existing_dw_cluster_id,
-    created_dw_secret,
+    existing_dw_secret_k8s,
 ):
     """state=absent deletes a created secret (gated by CDW_SECRET_VALUE)."""
 
     dw_secret_module_args(
         {
-            "name": created_dw_secret.secretName,
+            "name": existing_dw_secret_k8s.secretName,
             "state": "absent",
         },
     )
@@ -158,7 +158,7 @@ def test_absent_k8s(
 
     assert exc.value.changed is True
     assert (
-        dw_client.get_secret(existing_dw_cluster_id, created_dw_secret.secretName)
+        dw_client.get_secret(existing_dw_cluster_id, existing_dw_secret_k8s.secretName)
         is None
     )
 
@@ -168,13 +168,13 @@ def test_absent_provider(
     dw_secret_module_args,
     dw_client,
     existing_dw_cluster_id,
-    registered_dw_secret,
+    existing_dw_secret_provider,
 ):
     """state=absent deletes a registered secret (gated by CDW_SECRET_PROVIDER_KEY)."""
 
     dw_secret_module_args(
         {
-            "name": registered_dw_secret.secretName,
+            "name": existing_dw_secret_provider.secretName,
             "state": "absent",
         },
     )
@@ -183,6 +183,9 @@ def test_absent_provider(
 
     assert exc.value.changed is True
     assert (
-        dw_client.get_secret(existing_dw_cluster_id, registered_dw_secret.secretName)
+        dw_client.get_secret(
+            existing_dw_cluster_id,
+            existing_dw_secret_provider.secretName,
+        )
         is None
     )
