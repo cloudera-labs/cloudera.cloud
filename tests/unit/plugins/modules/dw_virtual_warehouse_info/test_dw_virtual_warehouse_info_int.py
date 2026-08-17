@@ -54,6 +54,7 @@ def dw_vw_info_module_args(module_args, env_context):
     return wrapped_args
 
 
+@pytest.mark.slow
 class TestDwVirtualWarehouseInfoIntegration:
     """Drive the info module against a shared, class-scoped Trino warehouse."""
 

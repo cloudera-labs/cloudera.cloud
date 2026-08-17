@@ -92,6 +92,12 @@ and the client VW suites):
 > [!WARNING]
 > VW integration tests create and delete **real** Virtual Warehouses in `CDW_CLUSTER_ID`, which is not immediate (minutes) and incurs cloud cost. Shared, read-only warehouses are created once per test class; delete tests provision their own throwaway warehouse.
 
+Because they spin up warehouses, the VW integration tests are marked `slow` and are therefore excluded from the default run. Run them explicitly (with the environment variables above set):
+
+```bash
+hatch test -k dw_virtual_warehouse -m slow
+```
+
 **Secret tests** (`dw_secret`, `dw_secret_info`):
 
 | Variable | Required? | Description |

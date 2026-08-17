@@ -63,6 +63,7 @@ def _vw_name(request):
 
 
 # TODO Convert to proper cleanup fixture that deletes any warehouses created by the test, rather than relying on the test to clean up after itself.
+@pytest.mark.slow
 @pytest.mark.parametrize("vw_type", ["trino", "hive", "impala"])
 def test_present_create_then_absent(
     request,

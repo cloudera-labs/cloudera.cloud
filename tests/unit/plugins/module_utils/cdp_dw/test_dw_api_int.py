@@ -202,6 +202,7 @@ class TestVwListIntegration:
         assert all(isinstance(vw, VirtualWarehouse) for vw in vws)
 
 
+@pytest.mark.slow
 class TestVwTrinoIntegration:
     """Trino Virtual Warehouse lifecycle.
 
@@ -267,6 +268,7 @@ class TestVwTrinoIntegration:
         assert dw_client.get_vw_by_id(existing_dw_cluster_id, vw.id) is None
 
 
+@pytest.mark.slow
 class TestVwHiveIntegration:
     """Hive Virtual Warehouse lifecycle (shared class-scoped warehouse for reads)."""
 
@@ -306,6 +308,7 @@ class TestVwHiveIntegration:
         assert dw_client.get_vw_by_id(existing_dw_cluster_id, vw.id) is None
 
 
+@pytest.mark.slow
 class TestVwImpalaIntegration:
     """Impala Virtual Warehouse lifecycle (shared class-scoped warehouse for reads)."""
 
