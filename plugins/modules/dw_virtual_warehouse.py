@@ -30,7 +30,7 @@ description:
   - The module supports C(check_mode).
 author:
   - "Webster Mudge (@wmudge)"
-version_added: "3.4.0"
+version_added: "1.5.0"
 options:
   warehouse_id:
     description:
