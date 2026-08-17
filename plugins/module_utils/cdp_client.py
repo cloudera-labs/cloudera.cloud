@@ -628,7 +628,7 @@ class AnsibleCdpClient(CdpClient):
 
                 except CdpError:
                     raise
-                except Exception as e:
+                except (Exception, OSError) as e:
                     # Retry on connection errors
                     if attempt < max_retries - 1:
                         wait_time = min(0.5 * (2**attempt), 5)
