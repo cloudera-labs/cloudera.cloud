@@ -252,9 +252,10 @@ class CdpTestClient(CdpClient):
         private_key: str,
         default_page_size: int = 100,
         max_retries: int = 3,
+        timeout: int = 60,  # Uses a shared Request instance with an explicit timeout (default 60s) to avoid SSLSocket read timeouts on slow CDP APIs (e.g. enableService); bare Request() defaults to 10s which is insufficient for APIs that do upfront provisioning work before responding.
     ):
         super().__init__(default_page_size)
-        self.request = Request(http_agent="TestCdpClient/1.0")
+        self.request = Request(http_agent="TestCdpClient/1.0", timeout=timeout)
         self.endpoint = endpoint.rstrip("/")
         self.access_key = access_key
         self.private_key = private_key
@@ -269,7 +270,7 @@ class CdpTestClient(CdpClient):
 
         url = f"{self.endpoint}/{path.strip('/')}"
 
-        return Request().get(
+        return self.request.get(
             url=url,
             headers=set_credential_headers(
                 method="GET",
@@ -291,7 +292,7 @@ class CdpTestClient(CdpClient):
         body = prepare_body(data, json_data)
 
         try:
-            response = Request().post(
+            response = self.request.post(
                 url=url,
                 headers=set_credential_headers(
                     method="POST",
@@ -342,7 +343,7 @@ class CdpTestClient(CdpClient):
                         pass
 
                 # Follow redirect
-                redirect_response = Request().open(
+                redirect_response = self.request.open(
                     method="POST",
                     url=redirect_url,
                     headers=redirect_headers,
@@ -368,7 +369,7 @@ class CdpTestClient(CdpClient):
     ) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
 
-        return Request().put(
+        return self.request.put(
             url=url,
             headers=set_credential_headers(
                 method="PUT",
@@ -383,7 +384,7 @@ class CdpTestClient(CdpClient):
     def delete(self, path: str, squelch: Dict[int, Any] = {}) -> Dict[str, Any]:
         url = f"{self.endpoint}/{path.strip('/')}"
 
-        return Request().delete(
+        return self.request.delete(
             url=url,
             headers=set_credential_headers(
                 method="DELETE",
