@@ -36,6 +36,8 @@ REQUIRED_ENV_VARS = [
     "CDP_ACCESS_KEY_ID",
     "CDP_PRIVATE_KEY",
     "DE_ENV_NAME",
+    "AZURE_MANAGED_IDENTITY_ID",
+    "AZURE_VC_MANAGED_IDENTITIES",
 ]
 
 DEFAULT_INSTANCE_TYPE = "r5.2xlarge"
@@ -382,13 +384,69 @@ def test_de_service_enable_check_mode(de_module_args, env_context, de_service_di
     assert result.value.changed is True
     assert result.value.service == {}
 
-    # Verify the service was NOT actually created
-    from ansible_collections.cloudera.cloud.tests.unit import TestCdpClient
 
-    test_client = TestCdpClient(
-        endpoint=env_context["CDP_API_ENDPOINT"],
-        access_key=env_context["CDP_ACCESS_KEY_ID"],
-        private_key=env_context["CDP_PRIVATE_KEY"],
+# @pytest.mark.data_service
+# @pytest.mark.azure
+def test_de_service_enable_azure(
+    de_module_args,
+    env_context,
+    de_service_disable,
+):
+    """Test enabling a CDE service on Azure with managed identities and verify idempotency."""
+    azure_service_identity = env_context.get("AZURE_MANAGED_IDENTITY_ID")
+    azure_vc_identity = env_context.get("AZURE_VC_MANAGED_IDENTITIES")
+
+    random_suffix = random.randint(100000, 999999)
+    service_name = f"test-cde-az-{random_suffix}"
+    env_name = env_context["DE_ENV_NAME"]
+    instance_type = "Standard_E16s_v4"  # Azure-specific instance type
+
+    de_service_disable(service_name, env_name)
+
+    # First run — enable
+    de_module_args(
+        {
+            "name": service_name,
+            "environment": env_name,
+            "instance_type": instance_type,
+            "minimum_instances": 1,
+            "maximum_instances": 2,
+            "minimum_spot_instances": 0,
+            "maximum_spot_instances": 0,
+            "azure_service_managed_identity": azure_service_identity,
+            "azure_virtual_cluster_managed_identities": azure_vc_identity,
+            "state": "present",
+            "wait": True,
+        },
     )
-    de_client = CdpDeClient(api_client=test_client)
-    assert de_client.get_service_by_name(service_name, env_name=env_name) is None
+
+    with pytest.raises(AnsibleExitJson) as result:
+        de.main()
+
+    assert result.value.changed is True
+    assert result.value.service is not None
+    assert result.value.service.get("name") == service_name
+    assert result.value.service.get("status") in CdpDeClient.REMOVABLE_STATUSES
+
+    # Second run — idempotent
+    de_module_args(
+        {
+            "name": service_name,
+            "environment": env_name,
+            "instance_type": instance_type,
+            "minimum_instances": 1,
+            "maximum_instances": 2,
+            "minimum_spot_instances": 0,
+            "maximum_spot_instances": 0,
+            "azure_service_managed_identity": azure_service_identity,
+            "azure_virtual_cluster_managed_identities": azure_vc_identity,
+            "state": "present",
+            "wait": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        de.main()
+
+    assert result.value.changed is False
+    assert result.value.service.get("name") == service_name

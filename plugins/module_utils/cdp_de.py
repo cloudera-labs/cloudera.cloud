@@ -293,6 +293,23 @@ class CdpDeClient:
         cpu_requests: Optional[str] = None,
         memory_requests: Optional[str] = None,
         gpu_requests: Optional[str] = None,
+        subnets: Optional[List[str]] = None,
+        network_outbound_type: Optional[str] = None,
+        deploy_previous_version: Optional[bool] = None,
+        disable_arm64: Optional[bool] = None,
+        azure_database_private_dns_zone_id: Optional[str] = None,
+        azure_fileshare_private_dns_zone_id: Optional[str] = None,
+        azure_service_managed_identity: Optional[str] = None,
+        azure_virtual_cluster_managed_identities: Optional[str] = None,
+        custom_azure_files_configs: Optional[Dict[str, Any]] = None,
+        all_purpose_minimum_instances: Optional[int] = None,
+        all_purpose_maximum_instances: Optional[int] = None,
+        all_purpose_minimum_spot_instances: Optional[int] = None,
+        all_purpose_maximum_spot_instances: Optional[int] = None,
+        all_purpose_initial_instances: Optional[int] = None,
+        all_purpose_initial_spot_instances: Optional[int] = None,
+        all_purpose_instance_type: Optional[str] = None,
+        all_purpose_root_volume_size: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Enable a Data Engineering service.
@@ -369,6 +386,40 @@ class CdpDeClient:
             data["memoryRequests"] = memory_requests
         if gpu_requests is not None:
             data["gpuRequests"] = gpu_requests
+        if subnets is not None:
+            data["subnets"] = subnets
+        if network_outbound_type is not None:
+            data["networkOutboundType"] = network_outbound_type
+        if deploy_previous_version is not None:
+            data["deployPreviousVersion"] = deploy_previous_version
+        if disable_arm64 is not None:
+            data["disableArm64"] = disable_arm64
+        if azure_database_private_dns_zone_id is not None:
+            data["azureDatabasePrivateDNSZoneId"] = azure_database_private_dns_zone_id
+        if azure_fileshare_private_dns_zone_id is not None:
+            data["azureFilesharePrivateDNSZoneId"] = azure_fileshare_private_dns_zone_id
+        if azure_service_managed_identity is not None:
+            data["azureServiceManagedIdentity"] = azure_service_managed_identity
+        if azure_virtual_cluster_managed_identities is not None:
+            data["azureVirtualClusterManagedIdentities"] = azure_virtual_cluster_managed_identities
+        if custom_azure_files_configs is not None:
+            data["customAzureFilesConfigs"] = custom_azure_files_configs
+        if all_purpose_minimum_instances is not None:
+            data["allPurposeMinimumInstances"] = all_purpose_minimum_instances
+        if all_purpose_maximum_instances is not None:
+            data["allPurposeMaximumInstances"] = all_purpose_maximum_instances
+        if all_purpose_minimum_spot_instances is not None:
+            data["allPurposeMinimumSpotInstances"] = all_purpose_minimum_spot_instances
+        if all_purpose_maximum_spot_instances is not None:
+            data["allPurposeMaximumSpotInstances"] = all_purpose_maximum_spot_instances
+        if all_purpose_initial_instances is not None:
+            data["allPurposeInitialInstances"] = all_purpose_initial_instances
+        if all_purpose_initial_spot_instances is not None:
+            data["allPurposeInitialSpotInstances"] = all_purpose_initial_spot_instances
+        if all_purpose_instance_type is not None:
+            data["allPurposeInstanceType"] = all_purpose_instance_type
+        if all_purpose_root_volume_size is not None:
+            data["allPurposeRootVolumeSize"] = all_purpose_root_volume_size
 
         return self.api_client.post("/api/v1/de/enableService", data=data)
 

@@ -93,6 +93,105 @@ options:
       - Applicable to services with the All Purpose (ALLP) virtual cluster tier.
     type: int
     required: False
+  all_purpose_initial_instances:
+    description:
+      - Initial number of instances when the service is enabled for the All Purpose Instance Group.
+      - Applicable to services with the All Purpose (ALLP) virtual cluster tier.
+    type: int
+    required: False
+  all_purpose_initial_spot_instances:
+    description:
+      - Initial number of spot instances when the service is enabled for the All Purpose Instance Group.
+      - Applicable to services with the All Purpose (ALLP) virtual cluster tier.
+    type: int
+    required: False
+  all_purpose_instance_type:
+    description:
+      - Instance type for the All Purpose Instance Group.
+      - Applicable to services with the All Purpose (ALLP) virtual cluster tier.
+    type: str
+    required: False
+  all_purpose_root_volume_size:
+    description:
+      - EBS volume size in GB for the All Purpose Instance Group.
+      - Applicable to services with the All Purpose (ALLP) virtual cluster tier.
+    type: int
+    required: False
+  subnets:
+    description:
+      - List of Subnet IDs of CDP subnets to use for the Kubernetes worker nodes.
+    type: list
+    elements: str
+    required: False
+  network_outbound_type:
+    description:
+      - Network outbound type.
+      - Currently only C(UDR) is supported.
+      - Applicable to Azure deployments only.
+    type: str
+    required: False
+    choices:
+      - UDR
+  deploy_previous_version:
+    description:
+      - If set to C(true), the previous version of the CDE service will be deployed.
+    type: bool
+    required: False
+    default: False
+  disable_arm64:
+    description:
+      - When set to C(true), disables ARM64 (Graviton) instances for the CDE service database.
+      - When set to C(false) (default), Graviton instances may be used for the database.
+    type: bool
+    required: False
+  azure_database_private_dns_zone_id:
+    description:
+      - Resource ID of the custom private DNS zone associated with the Azure database.
+      - Applicable to Azure deployments only.
+    type: str
+    required: False
+  azure_fileshare_private_dns_zone_id:
+    description:
+      - Resource ID of the custom private DNS zone for the Azure storage account.
+      - Applicable to Azure deployments only.
+    type: str
+    required: False
+  azure_service_managed_identity:
+    description:
+      - Azure managed identity resource ID for the CDE service.
+      - Applicable to Azure deployments only.
+    type: str
+    required: False
+  azure_virtual_cluster_managed_identities:
+    description:
+      - Azure managed identity resource IDs for virtual clusters.
+      - Applicable to Azure deployments only.
+    type: str
+    required: False
+  custom_azure_files_configs:
+    description:
+      - Override Azure Files storage configuration.
+      - By default CDE uses public File Shares storage provisioned by AKS.
+      - Applicable to Azure deployments only.
+    type: dict
+    required: False
+    suboptions:
+      azure_files_fqdn:
+        description:
+          - Azure File Share server address.
+          - Defaults to C(<storageaccount>.file.core.windows.net).
+        type: str
+        required: False
+      resource_group:
+        description:
+          - Resource Group of the Storage Account.
+        type: str
+        required: True
+      storage_account_name:
+        description:
+          - Azure Storage Account of the File Share.
+        type: str
+        required: True
   chart_value_overrides:
     description:
       - Chart overrides for enabling a service.
@@ -430,6 +529,73 @@ class DEService(ServicesModule):
                     type="int",
                     default=None,
                 ),
+                all_purpose_initial_instances=dict(
+                    required=False,
+                    type="int",
+                    default=None,
+                ),
+                all_purpose_initial_spot_instances=dict(
+                    required=False,
+                    type="int",
+                    default=None,
+                ),
+                all_purpose_instance_type=dict(
+                    required=False,
+                    type="str",
+                ),
+                all_purpose_root_volume_size=dict(
+                    required=False,
+                    type="int",
+                    default=None,
+                ),
+                subnets=dict(
+                    required=False,
+                    type="list",
+                    elements="str",
+                    default=None,
+                ),
+                network_outbound_type=dict(
+                    required=False,
+                    type="str",
+                    choices=["UDR"],
+                    default=None,
+                ),
+                deploy_previous_version=dict(
+                    required=False,
+                    type="bool",
+                    default=False,
+                ),
+                disable_arm64=dict(
+                    required=False,
+                    type="bool",
+                    default=None,
+                ),
+                azure_database_private_dns_zone_id=dict(
+                    required=False,
+                    type="str",
+                ),
+                azure_fileshare_private_dns_zone_id=dict(
+                    required=False,
+                    type="str",
+                ),
+                azure_service_managed_identity=dict(
+                    required=False,
+                    type="str",
+                ),
+                azure_virtual_cluster_managed_identities=dict(
+                    required=False,
+                    type="str",
+                ),
+                custom_azure_files_configs=dict(
+                    required=False,
+                    type="dict",
+                    default=None,
+                    options=dict(
+                        azure_files_fqdn=dict(required=False, type="str"),
+                        resource_group=dict(required=True, type="str"),
+                        storage_account_name=dict(required=True, type="str"),
+                    ),
+                ),
                 chart_value_overrides=dict(
                     required=False,
                     type="list",
@@ -523,6 +689,39 @@ class DEService(ServicesModule):
         )
         self.all_purpose_maximum_spot_instances: Optional[int] = self.get_param(
             "all_purpose_maximum_spot_instances",
+        )
+        self.all_purpose_initial_instances: Optional[int] = self.get_param(
+            "all_purpose_initial_instances",
+        )
+        self.all_purpose_initial_spot_instances: Optional[int] = self.get_param(
+            "all_purpose_initial_spot_instances",
+        )
+        self.all_purpose_instance_type: Optional[str] = self.get_param(
+            "all_purpose_instance_type",
+        )
+        self.all_purpose_root_volume_size: Optional[int] = self.get_param(
+            "all_purpose_root_volume_size",
+        )
+        self.subnets: Optional[list] = self.get_param("subnets")
+        self.network_outbound_type: Optional[str] = self.get_param(
+            "network_outbound_type",
+        )
+        self.deploy_previous_version: bool = self.get_param("deploy_previous_version")
+        self.disable_arm64: Optional[bool] = self.get_param("disable_arm64")
+        self.azure_database_private_dns_zone_id: Optional[str] = self.get_param(
+            "azure_database_private_dns_zone_id",
+        )
+        self.azure_fileshare_private_dns_zone_id: Optional[str] = self.get_param(
+            "azure_fileshare_private_dns_zone_id",
+        )
+        self.azure_service_managed_identity: Optional[str] = self.get_param(
+            "azure_service_managed_identity",
+        )
+        self.azure_virtual_cluster_managed_identities: Optional[str] = self.get_param(
+            "azure_virtual_cluster_managed_identities",
+        )
+        self.custom_azure_files_configs: Optional[dict] = self.get_param(
+            "custom_azure_files_configs",
         )
         self.chart_value_overrides: Optional[list] = self.get_param(
             "chart_value_overrides",
@@ -625,6 +824,15 @@ class DEService(ServicesModule):
                 self.changed = True
 
                 if not self.module.check_mode:
+                    custom_azure_files_configs = None
+                    if self.custom_azure_files_configs:
+                        custom_azure_files_configs = {
+                            "resourceGroup": self.custom_azure_files_configs["resource_group"],
+                            "storageAccountName": self.custom_azure_files_configs["storage_account_name"],
+                        }
+                        if self.custom_azure_files_configs.get("azure_files_fqdn"):
+                            custom_azure_files_configs["azureFilesFQDN"] = self.custom_azure_files_configs["azure_files_fqdn"]
+
                     result = self.de_client.enable_service(
                         name=self.name,
                         env=self.environment,
@@ -649,6 +857,23 @@ class DEService(ServicesModule):
                         cpu_requests=self.cpu_requests,
                         memory_requests=self.memory_requests,
                         gpu_requests=self.gpu_requests,
+                        subnets=self.subnets,
+                        network_outbound_type=self.network_outbound_type,
+                        deploy_previous_version=self.deploy_previous_version,
+                        disable_arm64=self.disable_arm64,
+                        azure_database_private_dns_zone_id=self.azure_database_private_dns_zone_id,
+                        azure_fileshare_private_dns_zone_id=self.azure_fileshare_private_dns_zone_id,
+                        azure_service_managed_identity=self.azure_service_managed_identity,
+                        azure_virtual_cluster_managed_identities=self.azure_virtual_cluster_managed_identities,
+                        custom_azure_files_configs=custom_azure_files_configs,
+                        all_purpose_minimum_instances=self.all_purpose_minimum_instances,
+                        all_purpose_maximum_instances=self.all_purpose_maximum_instances,
+                        all_purpose_minimum_spot_instances=self.all_purpose_minimum_spot_instances,
+                        all_purpose_maximum_spot_instances=self.all_purpose_maximum_spot_instances,
+                        all_purpose_initial_instances=self.all_purpose_initial_instances,
+                        all_purpose_initial_spot_instances=self.all_purpose_initial_spot_instances,
+                        all_purpose_instance_type=self.all_purpose_instance_type,
+                        all_purpose_root_volume_size=self.all_purpose_root_volume_size,
                     )
 
                     service = result.get("service") if result else None
