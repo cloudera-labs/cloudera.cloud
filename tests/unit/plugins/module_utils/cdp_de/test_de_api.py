@@ -18,13 +18,23 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import pytest
-
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    AllPurposeInstanceGroupDetails,
     CdpDeClient,
+    ServiceDescription,
+    ServiceResources,
+    ServiceSummary,
+    VcDescription,
+    VcSummary,
+    check_service_updates,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
+    from_dict,
+    to_dict,
 )
 
 
@@ -72,11 +82,12 @@ class TestCdpDeClient:
         client = CdpDeClient(api_client=api_client)
         response = client.list_services()
 
-        # Validate the response
-        assert "services" in response
-        assert len(response["services"]) == 2
-        assert response["services"][0]["clusterId"] == "cluster-123"
-        assert response["services"][1]["name"] == "service-2"
+        # Validate the response is a list of ServiceSummary dataclasses
+        assert isinstance(response, list)
+        assert len(response) == 2
+        assert all(isinstance(s, ServiceSummary) for s in response)
+        assert response[0].clusterId == "cluster-123"
+        assert response[1].name == "service-2"
 
         # Verify that the post method was called with correct parameters
         api_client.post.assert_called_once_with(
@@ -112,10 +123,10 @@ class TestCdpDeClient:
         client = CdpDeClient(api_client=api_client)
         response = client.list_services(remove_deleted=False)
 
-        # Validate the response
-        assert "services" in response
-        assert len(response["services"]) == 2
-        assert response["services"][1]["status"] == "ClusterDeletionCompleted"
+        # Validate the response is a list of ServiceSummary dataclasses
+        assert isinstance(response, list)
+        assert len(response) == 2
+        assert response[1].status == "ClusterDeletionCompleted"
 
         # Verify that the post method was called with correct parameters
         api_client.post.assert_called_once_with(
@@ -136,8 +147,8 @@ class TestCdpDeClient:
         response = client.list_services()
 
         # Validate the response - should return empty list on 404
-        assert "services" in response
-        assert len(response["services"]) == 0
+        assert isinstance(response, list)
+        assert len(response) == 0
 
     def test_describe_service(self, mocker):
         """Test describing a Data Engineering service."""
@@ -168,12 +179,13 @@ class TestCdpDeClient:
         client = CdpDeClient(api_client=api_client)
         response = client.describe_service(CLUSTER_ID)
 
-        # Validate the response
-        assert "service" in response
-        assert response["service"]["clusterId"] == CLUSTER_ID
-        assert response["service"]["name"] == SERVICE_NAME
-        assert response["service"]["environmentName"] == ENV_NAME
-        assert response["service"]["resources"]["instance_type"] == "m5.2xlarge"
+        # Validate the response is an unwrapped ServiceDescription dataclass
+        assert isinstance(response, ServiceDescription)
+        assert response.clusterId == CLUSTER_ID
+        assert response.name == SERVICE_NAME
+        assert response.environmentName == ENV_NAME
+        assert isinstance(response.resources, ServiceResources)
+        assert response.resources.instance_type == "m5.2xlarge"
 
         # Verify that the post method was called with correct parameters
         api_client.post.assert_called_once_with(
@@ -193,8 +205,8 @@ class TestCdpDeClient:
         client = CdpDeClient(api_client=api_client)
         response = client.describe_service("nonexistent-cluster")
 
-        # Validate the response - should return empty dict on 404
-        assert response == {}
+        # Validate the response - should return None on 404
+        assert response is None
 
     def test_describe_service_invalid_state(self, mocker):
         """Test describing a service in invalid state (500 error)."""
@@ -207,37 +219,33 @@ class TestCdpDeClient:
         client = CdpDeClient(api_client=api_client)
         response = client.describe_service(CLUSTER_ID)
 
-        # Validate the response - should return empty dict on 500
-        assert response == {}
+        # Validate the response - should return None on 500
+        assert response is None
 
     def test_get_service_by_name(self, mocker):
         """Test getting service details by name."""
 
-        # Mock list_services response
-        list_mock = {
-            "services": [
-                {
-                    "clusterId": CLUSTER_ID,
-                    "name": SERVICE_NAME,
-                    "environmentName": ENV_NAME,
-                },
-                {
-                    "clusterId": "cluster-other",
-                    "name": "other-service",
-                    "environmentName": "other-env",
-                },
-            ],
-        }
+        # Mock list_services response (list of ServiceSummary dataclasses)
+        list_mock = [
+            ServiceSummary(
+                clusterId=CLUSTER_ID,
+                name=SERVICE_NAME,
+                environmentName=ENV_NAME,
+            ),
+            ServiceSummary(
+                clusterId="cluster-other",
+                name="other-service",
+                environmentName="other-env",
+            ),
+        ]
 
-        # Mock describe_service response
-        describe_mock = {
-            "service": {
-                "clusterId": CLUSTER_ID,
-                "name": SERVICE_NAME,
-                "environmentName": ENV_NAME,
-                "status": "ClusterCreationCompleted",
-            },
-        }
+        # Mock describe_service response (unwrapped ServiceDescription)
+        describe_mock = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            name=SERVICE_NAME,
+            environmentName=ENV_NAME,
+            status="ClusterCreationCompleted",
+        )
 
         # Mock the CdpClient instance
         api_client = mocker.create_autospec(CdpClient, instance=True)
@@ -252,10 +260,10 @@ class TestCdpDeClient:
         # Test getting service by name
         response = client.get_service_by_name(SERVICE_NAME)
 
-        # Validate the response
-        assert response is not None
-        assert response["service"]["name"] == SERVICE_NAME
-        assert response["service"]["clusterId"] == CLUSTER_ID
+        # Validate the response is an unwrapped ServiceDescription
+        assert isinstance(response, ServiceDescription)
+        assert response.name == SERVICE_NAME
+        assert response.clusterId == CLUSTER_ID
 
         # Verify the methods were called
         client.list_services.assert_called_once()
@@ -264,16 +272,14 @@ class TestCdpDeClient:
     def test_get_service_by_name_not_found(self, mocker):
         """Test getting service by name when it doesn't exist."""
 
-        # Mock list_services response
-        list_mock = {
-            "services": [
-                {
-                    "clusterId": "cluster-other",
-                    "name": "other-service",
-                    "environmentName": "other-env",
-                },
-            ],
-        }
+        # Mock list_services response (list of ServiceSummary dataclasses)
+        list_mock = [
+            ServiceSummary(
+                clusterId="cluster-other",
+                name="other-service",
+                environmentName="other-env",
+            ),
+        ]
 
         # Mock the CdpClient instance
         api_client = mocker.create_autospec(CdpClient, instance=True)
@@ -293,18 +299,72 @@ class TestCdpDeClient:
         # Verify the methods were called
         client.list_services.assert_called_once()
 
-    def test_get_service_by_cluster_id(self, mocker):
-        """Test getting service details by cluster ID."""
+    def test_enable_service(self, mocker):
+        """Test enabling a service returns an unwrapped ServiceDescription."""
 
-        # Mock describe_service response
-        describe_mock = {
+        mock_response = {
             "service": {
                 "clusterId": CLUSTER_ID,
                 "name": SERVICE_NAME,
                 "environmentName": ENV_NAME,
-                "status": "ClusterCreationCompleted",
+                "status": "ClusterCreationInProgress",
             },
         }
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        client = CdpDeClient(api_client=api_client)
+        response = client.enable_service(
+            name=SERVICE_NAME,
+            env=ENV_NAME,
+            instance_type="m5.2xlarge",
+            minimum_instances=1,
+            maximum_instances=4,
+        )
+
+        assert isinstance(response, ServiceDescription)
+        assert response.clusterId == CLUSTER_ID
+        assert response.name == SERVICE_NAME
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/de/enableService",
+            data={
+                "name": SERVICE_NAME,
+                "env": ENV_NAME,
+                "instanceType": "m5.2xlarge",
+                "minimumInstances": 1,
+                "maximumInstances": 4,
+            },
+        )
+
+    def test_enable_service_no_service_in_response(self, mocker):
+        """Test enabling a service returns None when response lacks a service."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDeClient(api_client=api_client)
+        response = client.enable_service(
+            name=SERVICE_NAME,
+            env=ENV_NAME,
+            instance_type="m5.2xlarge",
+            minimum_instances=1,
+            maximum_instances=4,
+        )
+
+        assert response is None
+
+    def test_get_service_by_cluster_id(self, mocker):
+        """Test getting service details by cluster ID."""
+
+        # Mock describe_service response (unwrapped ServiceDescription)
+        describe_mock = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            name=SERVICE_NAME,
+            environmentName=ENV_NAME,
+            status="ClusterCreationCompleted",
+        )
 
         # Mock the CdpClient instance
         api_client = mocker.create_autospec(CdpClient, instance=True)
@@ -318,10 +378,10 @@ class TestCdpDeClient:
         # Test getting service by cluster ID
         response = client.get_service_by_cluster_id(CLUSTER_ID)
 
-        # Validate the response
-        assert response is not None
-        assert response["service"]["clusterId"] == CLUSTER_ID
-        assert response["service"]["name"] == SERVICE_NAME
+        # Validate the response is an unwrapped ServiceDescription
+        assert isinstance(response, ServiceDescription)
+        assert response.clusterId == CLUSTER_ID
+        assert response.name == SERVICE_NAME
 
         # Verify the method was called
         client.describe_service.assert_called_once_with(CLUSTER_ID)
@@ -335,8 +395,8 @@ class TestCdpDeClient:
         # Create the CdpDeClient instance
         client = CdpDeClient(api_client=api_client)
 
-        # Mock the describe_service method to return empty dict
-        mocker.patch.object(client, "describe_service", return_value={})
+        # Mock the describe_service method to return None (not found)
+        mocker.patch.object(client, "describe_service", return_value=None)
 
         # Test getting service by cluster ID
         response = client.get_service_by_cluster_id("nonexistent-cluster")
@@ -373,11 +433,12 @@ class TestCdpDeClient:
         client = CdpDeClient(api_client=api_client)
         response = client.list_virtual_clusters(CLUSTER_ID)
 
-        # Validate the response
+        # Validate the response is a list of VcSummary dataclasses
         assert isinstance(response, list)
         assert len(response) == 2
-        assert response[0]["vcId"] == "vc-123"
-        assert response[1]["vcName"] == "vc-2"
+        assert all(isinstance(vc, VcSummary) for vc in response)
+        assert response[0].vcId == "vc-123"
+        assert response[1].vcName == "vc-2"
 
         # Verify that the post method was called with correct parameters
         api_client.post.assert_called_once_with(
@@ -424,12 +485,12 @@ class TestCdpDeClient:
         client = CdpDeClient(api_client=api_client)
         response = client.describe_virtual_cluster(CLUSTER_ID, VC_ID)
 
-        # Validate the response
-        assert response is not None
-        assert response["vcId"] == VC_ID
-        assert response["vcName"] == VC_NAME
-        assert response["clusterId"] == CLUSTER_ID
-        assert response["sparkVersion"] == "3.2.1"
+        # Validate the response is a VcDescription dataclass
+        assert isinstance(response, VcDescription)
+        assert response.vcId == VC_ID
+        assert response.vcName == VC_NAME
+        assert response.clusterId == CLUSTER_ID
+        assert response.sparkVersion == "3.2.1"
 
         # Verify that the post method was called with correct parameters
         api_client.post.assert_called_once_with(
@@ -455,27 +516,19 @@ class TestCdpDeClient:
     def test_get_virtual_cluster_by_name(self, mocker):
         """Test getting virtual cluster details by name."""
 
-        # Mock list_virtual_clusters response
+        # Mock list_virtual_clusters response (list of VcSummary dataclasses)
         list_mock = [
-            {
-                "vcId": VC_ID,
-                "vcName": VC_NAME,
-                "clusterId": CLUSTER_ID,
-            },
-            {
-                "vcId": "vc-other",
-                "vcName": "other-vc",
-                "clusterId": CLUSTER_ID,
-            },
+            VcSummary(vcId=VC_ID, vcName=VC_NAME, clusterId=CLUSTER_ID),
+            VcSummary(vcId="vc-other", vcName="other-vc", clusterId=CLUSTER_ID),
         ]
 
-        # Mock describe_virtual_cluster response
-        describe_mock = {
-            "vcId": VC_ID,
-            "vcName": VC_NAME,
-            "clusterId": CLUSTER_ID,
-            "status": "ClusterCreationCompleted",
-        }
+        # Mock describe_virtual_cluster response (VcDescription)
+        describe_mock = VcDescription(
+            vcId=VC_ID,
+            vcName=VC_NAME,
+            clusterId=CLUSTER_ID,
+            status="ClusterCreationCompleted",
+        )
 
         # Mock the CdpClient instance
         api_client = mocker.create_autospec(CdpClient, instance=True)
@@ -494,10 +547,10 @@ class TestCdpDeClient:
         # Test getting virtual cluster by name
         response = client.get_virtual_cluster_by_name(CLUSTER_ID, VC_NAME)
 
-        # Validate the response
-        assert response is not None
-        assert response["vcName"] == VC_NAME
-        assert response["vcId"] == VC_ID
+        # Validate the response is a VcDescription dataclass
+        assert isinstance(response, VcDescription)
+        assert response.vcName == VC_NAME
+        assert response.vcId == VC_ID
 
         # Verify the methods were called
         client.list_virtual_clusters.assert_called_once_with(CLUSTER_ID)
@@ -506,13 +559,9 @@ class TestCdpDeClient:
     def test_get_virtual_cluster_by_name_not_found(self, mocker):
         """Test getting virtual cluster by name when it doesn't exist."""
 
-        # Mock list_virtual_clusters response
+        # Mock list_virtual_clusters response (list of VcSummary dataclasses)
         list_mock = [
-            {
-                "vcId": "vc-other",
-                "vcName": "other-vc",
-                "clusterId": CLUSTER_ID,
-            },
+            VcSummary(vcId="vc-other", vcName="other-vc", clusterId=CLUSTER_ID),
         ]
 
         # Mock the CdpClient instance
@@ -532,3 +581,273 @@ class TestCdpDeClient:
 
         # Verify the methods were called
         client.list_virtual_clusters.assert_called_once_with(CLUSTER_ID)
+
+    def test_create_virtual_cluster(self, mocker):
+        """Test creating a virtual cluster returns an unwrapped VcDescription."""
+
+        mock_response = {
+            "Vc": {
+                "vcId": VC_ID,
+                "vcName": VC_NAME,
+                "clusterId": CLUSTER_ID,
+                "status": "AppInstalling",
+            },
+        }
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        client = CdpDeClient(api_client=api_client)
+        response = client.create_virtual_cluster(
+            name=VC_NAME,
+            cluster_id=CLUSTER_ID,
+            cpu_requests="10",
+            memory_requests="30Gi",
+        )
+
+        assert isinstance(response, VcDescription)
+        assert response.vcId == VC_ID
+        assert response.vcName == VC_NAME
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/de/createVc",
+            data={
+                "name": VC_NAME,
+                "clusterId": CLUSTER_ID,
+                "cpuRequests": "10",
+                "memoryRequests": "30Gi",
+            },
+        )
+
+    def test_create_virtual_cluster_no_vc_in_response(self, mocker):
+        """Test creating a virtual cluster returns None when response lacks a Vc."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDeClient(api_client=api_client)
+        response = client.create_virtual_cluster(
+            name=VC_NAME,
+            cluster_id=CLUSTER_ID,
+            cpu_requests="10",
+            memory_requests="30Gi",
+        )
+
+        assert response is None
+
+    def test_wait_for_service_state_already_target(self, mocker):
+        """Test wait returns the ServiceDescription when already at target status."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        client = CdpDeClient(api_client=api_client)
+
+        described = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            name=SERVICE_NAME,
+            status="ClusterCreationCompleted",
+        )
+        mocker.patch.object(client, "describe_service", return_value=described)
+
+        result = client.wait_for_service_state(
+            cluster_id=CLUSTER_ID,
+            target_statuses={"ClusterCreationCompleted"},
+        )
+
+        assert isinstance(result, ServiceDescription)
+        assert result.clusterId == CLUSTER_ID
+
+    def test_get_service_state_falls_back_to_list(self, mocker):
+        """Test _get_service_state falls back to list_services on a 404 describe."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        client = CdpDeClient(api_client=api_client)
+
+        mocker.patch.object(client, "describe_service", return_value=None)
+        mocker.patch.object(
+            client,
+            "list_services",
+            return_value=[
+                ServiceSummary(
+                    clusterId=CLUSTER_ID,
+                    name=SERVICE_NAME,
+                    status="ClusterDeletionInProgress",
+                ),
+            ],
+        )
+
+        status, service = client._get_service_state(CLUSTER_ID)
+
+        assert status == "ClusterDeletionInProgress"
+        assert isinstance(service, ServiceSummary)
+        assert service.clusterId == CLUSTER_ID
+
+    def test_wait_for_vc_state_already_target(self, mocker):
+        """Test VC wait returns the VcDescription when already at target status."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        client = CdpDeClient(api_client=api_client)
+
+        described = VcDescription(
+            vcId=VC_ID,
+            vcName=VC_NAME,
+            clusterId=CLUSTER_ID,
+            status="AppInstalled",
+        )
+        mocker.patch.object(
+            client,
+            "describe_virtual_cluster",
+            return_value=described,
+        )
+
+        result = client.wait_for_vc_state(
+            cluster_id=CLUSTER_ID,
+            vc_id=VC_ID,
+            target_statuses={"AppInstalled"},
+        )
+
+        assert isinstance(result, VcDescription)
+        assert result.vcId == VC_ID
+
+
+class TestCheckServiceUpdates:
+    """Unit tests for check_service_updates reading a ServiceDescription."""
+
+    def test_no_changes_returns_empty(self):
+        details = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            resources=ServiceResources(min_instances=1, max_instances=5),
+        )
+        assert (
+            check_service_updates(
+                cluster_id=CLUSTER_ID,
+                service_details=details,
+                minimum_instances=1,
+                maximum_instances=5,
+            )
+            == {}
+        )
+
+    def test_detects_instance_change(self):
+        details = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            resources=ServiceResources(min_instances=1, max_instances=5),
+        )
+        result = check_service_updates(
+            cluster_id=CLUSTER_ID,
+            service_details=details,
+            minimum_instances=2,
+        )
+        assert result == {"minimum_instances": 2, "cluster_id": CLUSTER_ID}
+
+    def test_nullable_resources_treated_as_zero(self):
+        details = ServiceDescription(clusterId=CLUSTER_ID)
+        result = check_service_updates(
+            cluster_id=CLUSTER_ID,
+            service_details=details,
+            minimum_instances=3,
+        )
+        assert result == {"minimum_instances": 3, "cluster_id": CLUSTER_ID}
+
+    def test_whitelist_ips_compared_as_set(self):
+        details = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            whitelistIps="10.0.0.0/8,192.168.0.0/16",
+        )
+        assert (
+            check_service_updates(
+                cluster_id=CLUSTER_ID,
+                service_details=details,
+                whitelist_ips=["192.168.0.0/16", "10.0.0.0/8"],
+            )
+            == {}
+        )
+        assert check_service_updates(
+            cluster_id=CLUSTER_ID,
+            service_details=details,
+            whitelist_ips=["10.0.0.0/8"],
+        ) == {"whitelist_ips": ["10.0.0.0/8"], "cluster_id": CLUSTER_ID}
+
+    def test_all_purpose_instance_group_change(self):
+        details = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            resources=ServiceResources(
+                allPurposeInstanceGroupDetails=AllPurposeInstanceGroupDetails(
+                    min_instances=1,
+                ),
+            ),
+        )
+        result = check_service_updates(
+            cluster_id=CLUSTER_ID,
+            service_details=details,
+            all_purpose_minimum_instances=4,
+        )
+        assert result == {
+            "all_purpose_minimum_instances": 4,
+            "cluster_id": CLUSTER_ID,
+        }
+
+
+class TestDeDataclasses:
+    """Unit tests for DE dataclass construction and serialization."""
+
+    def test_defaults_are_nullable(self):
+        desc = ServiceDescription()
+        assert desc.clusterId is NULLABLE
+        assert desc.resources is NULLABLE
+        assert desc.whitelistIps is NULLABLE
+
+    def test_from_dict_populates_flat_fields(self):
+        desc = from_dict(
+            ServiceDescription,
+            {"clusterId": CLUSTER_ID, "name": SERVICE_NAME, "status": "OK"},
+        )
+        assert desc.clusterId == CLUSTER_ID
+        assert desc.name == SERVICE_NAME
+        assert desc.status == "OK"
+        assert desc.environmentName is NULLABLE
+
+    def test_from_dict_nested_resources(self):
+        desc = from_dict(
+            ServiceDescription,
+            {
+                "clusterId": CLUSTER_ID,
+                "resources": {
+                    "min_instances": "1",
+                    "allPurposeInstanceGroupDetails": {"min_instances": "2"},
+                },
+            },
+        )
+        assert isinstance(desc.resources, ServiceResources)
+        assert desc.resources.min_instances == "1"
+        assert isinstance(
+            desc.resources.allPurposeInstanceGroupDetails,
+            AllPurposeInstanceGroupDetails,
+        )
+        assert desc.resources.allPurposeInstanceGroupDetails.min_instances == "2"
+
+    def test_to_dict_excludes_nullable(self):
+        desc = ServiceDescription(clusterId=CLUSTER_ID)
+        result = to_dict(desc)
+        assert result == {"clusterId": CLUSTER_ID}
+        assert "resources" not in result
+
+    def test_to_dict_round_trip_nested(self):
+        desc = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            resources=ServiceResources(min_instances="1", max_instances="5"),
+        )
+        result = to_dict(desc)
+        assert result["clusterId"] == CLUSTER_ID
+        assert result["resources"] == {"min_instances": "1", "max_instances": "5"}
+
+    def test_vc_from_dict_and_to_dict(self):
+        vc = from_dict(
+            VcDescription,
+            {"vcId": VC_ID, "vcName": VC_NAME, "clusterId": CLUSTER_ID},
+        )
+        assert vc.vcId == VC_ID
+        assert to_dict(vc) == {
+            "vcId": VC_ID,
+            "vcName": VC_NAME,
+            "clusterId": CLUSTER_ID,
+        }
