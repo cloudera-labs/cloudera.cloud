@@ -27,7 +27,20 @@ from ansible_collections.cloudera.cloud.tests.unit import (
 
 from ansible_collections.cloudera.cloud.plugins.modules import de_info
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import CdpClient
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import CdpDeClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CdpDeClient,
+    ServiceDescription,
+    ServiceSummary,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import from_dict
+
+
+def _summary(data):
+    return from_dict(ServiceSummary, data)
+
+
+def _description(data):
+    return from_dict(ServiceDescription, data)
 
 
 BASE_URL = "https://cloudera.internal/api"
@@ -67,31 +80,33 @@ def test_de_info_list_all(module_args, mocker):
     ).return_value
 
     # Mock list_services response
-    client.list_services.return_value = {
-        "services": [
+    client.list_services.return_value = [
+        _summary(
             {
                 "clusterId": "cluster-123",
                 "name": "service-1",
                 "status": "ClusterCreationCompleted",
             },
+        ),
+        _summary(
             {
                 "clusterId": "cluster-456",
                 "name": "service-2",
                 "status": "ClusterCreationCompleted",
             },
-        ],
-    }
+        ),
+    ]
 
     # Mock describe_service response - returns generic service details
-    client.describe_service.return_value = {
-        "service": {
+    client.describe_service.return_value = _description(
+        {
             "clusterId": "cluster-123",
             "name": "service-1",
             "status": "ClusterCreationCompleted",
             "environmentName": "env-1",
             "cloudPlatform": "AWS",
         },
-    }
+    )
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -131,8 +146,8 @@ def test_de_info_by_name(module_args, mocker):
     ).return_value
 
     # Mock get_service_by_name response
-    client.get_service_by_name.return_value = {
-        "service": {
+    client.get_service_by_name.return_value = _description(
+        {
             "clusterId": CLUSTER_ID,
             "name": SERVICE_NAME,
             "status": "ClusterCreationCompleted",
@@ -141,7 +156,7 @@ def test_de_info_by_name(module_args, mocker):
             "cloudPlatform": "AWS",
             "clusterFqdn": "test.cloudera.com",
         },
-    }
+    )
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -181,8 +196,8 @@ def test_de_info_by_cluster_id(module_args, mocker):
     ).return_value
 
     # Mock get_service_by_cluster_id response (direct lookup by cluster_id)
-    client.get_service_by_cluster_id.return_value = {
-        "service": {
+    client.get_service_by_cluster_id.return_value = _description(
+        {
             "clusterId": CLUSTER_ID,
             "name": SERVICE_NAME,
             "status": "ClusterCreationCompleted",
@@ -190,7 +205,7 @@ def test_de_info_by_cluster_id(module_args, mocker):
             "environmentCrn": ENV_CRN,
             "cloudPlatform": "AWS",
         },
-    }
+    )
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -229,20 +244,20 @@ def test_de_info_by_env_name(module_args, mocker):
     ).return_value
 
     # Mock list_services response with env_name filter
-    client.list_services.return_value = {
-        "services": [
+    client.list_services.return_value = [
+        _summary(
             {
                 "clusterId": CLUSTER_ID,
                 "name": SERVICE_NAME,
                 "environmentName": ENV_NAME,
                 "status": "ClusterCreationCompleted",
             },
-        ],
-    }
+        ),
+    ]
 
     # Mock describe_service response
-    client.describe_service.return_value = {
-        "service": {
+    client.describe_service.return_value = _description(
+        {
             "clusterId": CLUSTER_ID,
             "name": SERVICE_NAME,
             "environmentName": ENV_NAME,
@@ -250,7 +265,7 @@ def test_de_info_by_env_name(module_args, mocker):
             "status": "ClusterCreationCompleted",
             "cloudPlatform": "AWS",
         },
-    }
+    )
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -290,43 +305,45 @@ def test_de_info_multiple_services_same_env(module_args, mocker):
     ).return_value
 
     # Mock list_services response with multiple services in same environment
-    client.list_services.return_value = {
-        "services": [
+    client.list_services.return_value = [
+        _summary(
             {
                 "clusterId": "cluster-123",
                 "name": "service-1",
                 "environmentName": ENV_NAME,
                 "status": "ClusterCreationCompleted",
             },
+        ),
+        _summary(
             {
                 "clusterId": "cluster-456",
                 "name": "service-2",
                 "environmentName": ENV_NAME,
                 "status": "ClusterCreationCompleted",
             },
-        ],
-    }
+        ),
+    ]
 
     # Mock describe_service responses for each cluster
     def describe_service_side_effect(cluster_id):
         if cluster_id == "cluster-123":
-            return {
-                "service": {
+            return _description(
+                {
                     "clusterId": "cluster-123",
                     "name": "service-1",
                     "environmentName": ENV_NAME,
                     "status": "ClusterCreationCompleted",
                 },
-            }
+            )
         elif cluster_id == "cluster-456":
-            return {
-                "service": {
+            return _description(
+                {
                     "clusterId": "cluster-456",
                     "name": "service-2",
                     "environmentName": ENV_NAME,
                     "status": "ClusterCreationCompleted",
                 },
-            }
+            )
 
     client.describe_service.side_effect = describe_service_side_effect
 
@@ -451,7 +468,7 @@ def test_de_info_empty_list(module_args, mocker):
     ).return_value
 
     # Mock list_services returning empty list
-    client.list_services.return_value = {"services": []}
+    client.list_services.return_value = []
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -490,13 +507,13 @@ def test_de_info_deleted_service_via_cluster_id(module_args, mocker):
     ).return_value
 
     # Mock get_service_by_cluster_id returning deleted service
-    client.get_service_by_cluster_id.return_value = {
-        "service": {
+    client.get_service_by_cluster_id.return_value = _description(
+        {
             "clusterId": CLUSTER_ID,
             "name": SERVICE_NAME,
             "status": "ClusterDeletionCompleted",
         },
-    }
+    )
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -535,8 +552,8 @@ def test_de_info_service_details(module_args, mocker):
     ).return_value
 
     # Mock get_service_by_cluster_id with full details
-    client.get_service_by_cluster_id.return_value = {
-        "service": {
+    client.get_service_by_cluster_id.return_value = _description(
+        {
             "clusterId": CLUSTER_ID,
             "name": SERVICE_NAME,
             "environmentName": ENV_NAME,
@@ -553,7 +570,7 @@ def test_de_info_service_details(module_args, mocker):
             "whitelistIps": "10.0.0.0/16",
             "loadbalancerAllowlist": "10.1.0.0/16",
         },
-    }
+    )
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
