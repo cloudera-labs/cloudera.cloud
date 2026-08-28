@@ -24,6 +24,7 @@ author:
   - "Curtis Howard (@curtishoward)"
   - "Alan Silva (@acsjumpi)"
   - "Ronald Suplina (@rsuplina)"
+  - "Webster Mudge (@wmudge)"
 version_added: "1.5.0"
 options:
   name:
@@ -491,9 +492,11 @@ from typing import Any, Dict, Optional
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
+    to_dict,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     CdpDeClient,
+    ServiceDescription,
     check_service_updates,
 )
 
@@ -770,23 +773,20 @@ class DEService(ServicesModule):
         elif self.state == "present":
             self._handle_update(existing)
 
-    def _find_existing(self) -> Optional[Dict[str, Any]]:
-        result = self.de_client.get_service_by_name(
+    def _find_existing(self) -> Optional[ServiceDescription]:
+        return self.de_client.get_service_by_name(
             self.name,
             env_name=self.environment,
         )
-        if result:
-            return result.get("service", result)
-        return None
 
-    def _handle_absent(self, existing: Dict[str, Any]) -> None:
+    def _handle_absent(self, existing: ServiceDescription) -> None:
         self.changed = True
-        self.service = existing
+        self.service = to_dict(existing)
         if self.module._diff:
-            self.diff["before"] = existing
+            self.diff["before"] = to_dict(existing)
 
         if not self.module.check_mode:
-            cluster_id = existing.get("clusterId")
+            cluster_id = existing.clusterId
             if self.wait:
                 result = self.de_client.wait_for_service_state(
                     cluster_id=cluster_id,
@@ -795,7 +795,7 @@ class DEService(ServicesModule):
                     delay=self.delay,
                     force=self.force,
                 )
-                self.service = result if result else {}
+                self.service = to_dict(result) if result else {}
             else:
                 self.de_client.disable_service(cluster_id, force=self.force)
 
@@ -867,10 +867,10 @@ class DEService(ServicesModule):
             all_purpose_root_volume_size=self.all_purpose_root_volume_size,
         )
 
-        service = result.get("service") if result else None
+        service = result if result else None
         if service:
-            self.service = service
-            cluster_id = service.get("clusterId")
+            self.service = to_dict(service)
+            cluster_id = service.clusterId
 
             if self.wait and cluster_id:
                 wait_result = self.de_client.wait_for_service_state(
@@ -880,12 +880,12 @@ class DEService(ServicesModule):
                     delay=self.delay,
                 )
                 if wait_result:
-                    self.service = wait_result
+                    self.service = to_dict(wait_result)
             if self.module._diff:
                 self.diff["after"] = self.service
 
-    def _handle_update(self, existing: Dict[str, Any]) -> None:
-        cluster_id = existing.get("clusterId")
+    def _handle_update(self, existing: ServiceDescription) -> None:
+        cluster_id = existing.clusterId
         update_params = check_service_updates(
             cluster_id=cluster_id,
             service_details=existing,
@@ -903,11 +903,11 @@ class DEService(ServicesModule):
 
         if update_params:
             self.changed = True
-            self.service = existing
+            self.service = to_dict(existing)
 
             if self.module._diff:
-                self.diff["before"] = existing
-                self.diff["after"] = existing.copy()
+                self.diff["before"] = to_dict(existing)
+                self.diff["after"] = to_dict(existing)
                 self.diff["after"].update(update_params)
 
             if not self.module.check_mode:
@@ -921,11 +921,11 @@ class DEService(ServicesModule):
                         delay=self.delay,
                     )
                     if result:
-                        self.service = result
+                        self.service = to_dict(result)
                         if self.module._diff:
-                            self.diff["after"] = result
+                            self.diff["after"] = to_dict(result)
         else:
-            self.service = existing
+            self.service = to_dict(existing)
 
 
 def main():
