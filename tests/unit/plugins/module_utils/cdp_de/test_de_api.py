@@ -355,6 +355,80 @@ class TestCdpDeClient:
 
         assert response is None
 
+    def test_update_service(self, mocker):
+        """update_service posts camelCase params and returns the raw status dict."""
+
+        mock_response = {"status": "ClusterCreationInProgress"}
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = mock_response
+
+        client = CdpDeClient(api_client=api_client)
+        response = client.update_service(
+            cluster_id=CLUSTER_ID,
+            minimum_instances=1,
+            maximum_instances=5,
+            minimum_spot_instances=0,
+            maximum_spot_instances=2,
+            whitelist_ips=["10.0.0.0/8"],
+            loadbalancer_allowlist=["192.168.0.0/16"],
+        )
+
+        assert response == mock_response
+        api_client.post.assert_called_once_with(
+            "/api/v1/de/updateService",
+            data={
+                "clusterId": CLUSTER_ID,
+                "minimumInstances": 1,
+                "maximumInstances": 5,
+                "minimumSpotInstances": 0,
+                "maximumSpotInstances": 2,
+                "whitelistIps": ["10.0.0.0/8"],
+                "loadbalancerAllowlist": ["192.168.0.0/16"],
+            },
+        )
+
+    def test_update_service_no_changes(self, mocker):
+        """update_service with only a cluster id posts just the clusterId."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDeClient(api_client=api_client)
+        response = client.update_service(cluster_id=CLUSTER_ID)
+
+        assert response == {}
+        api_client.post.assert_called_once_with(
+            "/api/v1/de/updateService",
+            data={"clusterId": CLUSTER_ID},
+        )
+
+    def test_update_service_all_purpose_instances(self, mocker):
+        """update_service maps All Purpose Instance Group params to camelCase."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        api_client.post.return_value = {}
+
+        client = CdpDeClient(api_client=api_client)
+        client.update_service(
+            cluster_id=CLUSTER_ID,
+            all_purpose_minimum_instances=1,
+            all_purpose_maximum_instances=3,
+            all_purpose_minimum_spot_instances=0,
+            all_purpose_maximum_spot_instances=2,
+        )
+
+        api_client.post.assert_called_once_with(
+            "/api/v1/de/updateService",
+            data={
+                "clusterId": CLUSTER_ID,
+                "allPurposeMinimumInstances": 1,
+                "allPurposeMaximumInstances": 3,
+                "allPurposeMinimumSpotInstances": 0,
+                "allPurposeMaximumSpotInstances": 2,
+            },
+        )
+
     def test_get_service_by_cluster_id(self, mocker):
         """Test getting service details by cluster ID."""
 
