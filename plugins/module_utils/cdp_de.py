@@ -19,17 +19,141 @@ A REST client for the Cloudera on Cloud Platform (CDP) Data Engineering API
 """
 
 
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import time
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
     CdpError,
 )
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
+    from_dict,
+)
+
+
+@dataclass
+class AllPurposeInstanceGroupDetails:
+    """Resource details of the All Purpose Instance Group of a CDE Service.
+
+    Field names are the snake_case keys returned by the DE API.
+    """
+
+    instance_type: Union[str, None, NULLABLE] = NULLABLE
+    min_instances: Union[str, None, NULLABLE] = NULLABLE
+    max_instances: Union[str, None, NULLABLE] = NULLABLE
+    min_spot_instances: Union[str, None, NULLABLE] = NULLABLE
+    max_spot_instances: Union[str, None, NULLABLE] = NULLABLE
+    initial_instances: Union[str, None, NULLABLE] = NULLABLE
+    initial_spot_instances: Union[str, None, NULLABLE] = NULLABLE
+    root_vol_size: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class ServiceResources:
+    """Resource details of a CDE Service.
+
+    Field names are the snake_case keys returned by the DE API, except the
+    nested ``allPurposeInstanceGroupDetails`` which is camelCase.
+    """
+
+    instance_type: Union[str, None, NULLABLE] = NULLABLE
+    min_instances: Union[str, None, NULLABLE] = NULLABLE
+    max_instances: Union[str, None, NULLABLE] = NULLABLE
+    min_spot_instances: Union[str, None, NULLABLE] = NULLABLE
+    max_spot_instances: Union[str, None, NULLABLE] = NULLABLE
+    initial_instances: Union[str, None, NULLABLE] = NULLABLE
+    initial_spot_instances: Union[str, None, NULLABLE] = NULLABLE
+    root_vol_size: Union[str, None, NULLABLE] = NULLABLE
+    allPurposeInstanceGroupDetails: Union[
+        AllPurposeInstanceGroupDetails,
+        None,
+        NULLABLE,
+    ] = NULLABLE
+
+
+@dataclass
+class ServiceSummary:
+    """Summary of a CDE Service as returned by ``listServices``."""
+
+    clusterId: Union[str, None, NULLABLE] = NULLABLE
+    name: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    environmentName: Union[str, None, NULLABLE] = NULLABLE
+    environmentCrn: Union[str, None, NULLABLE] = NULLABLE
+    cloudPlatform: Union[str, None, NULLABLE] = NULLABLE
+    clusterFqdn: Union[str, None, NULLABLE] = NULLABLE
+    creatorEmail: Union[str, None, NULLABLE] = NULLABLE
+    creatorCrn: Union[str, None, NULLABLE] = NULLABLE
+    enablingTime: Union[str, None, NULLABLE] = NULLABLE
+    tenantId: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class ServiceDescription:
+    """Full description of a CDE Service as returned by ``describeService``."""
+
+    clusterId: Union[str, None, NULLABLE] = NULLABLE
+    name: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    environmentName: Union[str, None, NULLABLE] = NULLABLE
+    environmentCrn: Union[str, None, NULLABLE] = NULLABLE
+    cloudPlatform: Union[str, None, NULLABLE] = NULLABLE
+    clusterFqdn: Union[str, None, NULLABLE] = NULLABLE
+    creatorEmail: Union[str, None, NULLABLE] = NULLABLE
+    creatorCrn: Union[str, None, NULLABLE] = NULLABLE
+    enablingTime: Union[str, None, NULLABLE] = NULLABLE
+    resources: Union[ServiceResources, None, NULLABLE] = NULLABLE
+    tenantId: Union[str, None, NULLABLE] = NULLABLE
+    logLocation: Union[str, None, NULLABLE] = NULLABLE
+    whitelistIps: Union[str, None, NULLABLE] = NULLABLE
+    loadbalancerAllowlist: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class VcSummary:
+    """Summary of a Virtual Cluster as returned by ``listVcs``."""
+
+    vcId: Union[str, None, NULLABLE] = NULLABLE
+    vcName: Union[str, None, NULLABLE] = NULLABLE
+    clusterId: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class VcDescription:
+    """Full description of a Virtual Cluster as returned by ``describeVc``."""
+
+    vcId: Union[str, None, NULLABLE] = NULLABLE
+    vcName: Union[str, None, NULLABLE] = NULLABLE
+    clusterId: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    vcTier: Union[str, None, NULLABLE] = NULLABLE
+    sparkVersion: Union[str, None, NULLABLE] = NULLABLE
+    creatorEmail: Union[str, None, NULLABLE] = NULLABLE
+    creatorCrn: Union[str, None, NULLABLE] = NULLABLE
+    vcApiUrl: Union[str, None, NULLABLE] = NULLABLE
+    accessControl: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    resources: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+
+
+def _coerce_int(value: Any) -> int:
+    """Coerce a dataclass field to int, treating NULLABLE/None/empty as 0."""
+    if value is NULLABLE or value is None or value == "":
+        return 0
+    return int(value)
+
+
+def _coerce_str(value: Any) -> str:
+    """Coerce a dataclass field to str, treating NULLABLE/None as empty."""
+    if value is NULLABLE or value is None:
+        return ""
+    return value
 
 
 def check_service_updates(
     cluster_id: str,
-    service_details: Dict[str, Any],
+    service_details: "ServiceDescription",
     minimum_instances: Optional[int] = None,
     maximum_instances: Optional[int] = None,
     minimum_spot_instances: Optional[int] = None,
@@ -49,7 +173,7 @@ def check_service_updates(
 
     Args:
         cluster_id: The cluster ID of the service
-        service_details: Current ServiceDescription dict from describe_service
+        service_details: Current ServiceDescription from describe_service
         minimum_instances: Desired minimum number of instances
         maximum_instances: Desired maximum number of instances
         minimum_spot_instances: Desired minimum number of spot instances
@@ -64,55 +188,59 @@ def check_service_updates(
     Returns:
         Dict of update parameters including cluster_id if changes detected, else empty dict
     """
-    resources = service_details.get("resources", {}) or {}
-    all_purpose_resources = resources.get("allPurposeInstanceGroupDetails", {}) or {}
+    resources = service_details.resources
+    if not isinstance(resources, ServiceResources):
+        resources = ServiceResources()
+    all_purpose_resources = resources.allPurposeInstanceGroupDetails
+    if not isinstance(all_purpose_resources, AllPurposeInstanceGroupDetails):
+        all_purpose_resources = AllPurposeInstanceGroupDetails()
     updates = {}
 
     if minimum_instances is not None:
-        if int(resources.get("min_instances") or 0) != minimum_instances:
+        if _coerce_int(resources.min_instances) != minimum_instances:
             updates["minimum_instances"] = minimum_instances
 
     if maximum_instances is not None:
-        if int(resources.get("max_instances") or 0) != maximum_instances:
+        if _coerce_int(resources.max_instances) != maximum_instances:
             updates["maximum_instances"] = maximum_instances
 
     if minimum_spot_instances is not None:
-        if int(resources.get("min_spot_instances") or 0) != minimum_spot_instances:
+        if _coerce_int(resources.min_spot_instances) != minimum_spot_instances:
             updates["minimum_spot_instances"] = minimum_spot_instances
 
     if maximum_spot_instances is not None:
-        if int(resources.get("max_spot_instances") or 0) != maximum_spot_instances:
+        if _coerce_int(resources.max_spot_instances) != maximum_spot_instances:
             updates["maximum_spot_instances"] = maximum_spot_instances
 
     if whitelist_ips is not None:
-        current_raw = service_details.get("whitelistIps", "") or ""
+        current_raw = _coerce_str(service_details.whitelistIps)
         current_ips = {ip.strip() for ip in current_raw.split(",") if ip.strip()}
         if current_ips != set(whitelist_ips):
             updates["whitelist_ips"] = whitelist_ips
 
     if loadbalancer_allowlist is not None:
-        current_raw = service_details.get("loadbalancerAllowlist", "") or ""
+        current_raw = _coerce_str(service_details.loadbalancerAllowlist)
         current_lb = {ip.strip() for ip in current_raw.split(",") if ip.strip()}
         if current_lb != set(loadbalancer_allowlist):
             updates["loadbalancer_allowlist"] = loadbalancer_allowlist
 
     if all_purpose_minimum_instances is not None:
         if (
-            int(all_purpose_resources.get("min_instances") or 0)
+            _coerce_int(all_purpose_resources.min_instances)
             != all_purpose_minimum_instances
         ):
             updates["all_purpose_minimum_instances"] = all_purpose_minimum_instances
 
     if all_purpose_maximum_instances is not None:
         if (
-            int(all_purpose_resources.get("max_instances") or 0)
+            _coerce_int(all_purpose_resources.max_instances)
             != all_purpose_maximum_instances
         ):
             updates["all_purpose_maximum_instances"] = all_purpose_maximum_instances
 
     if all_purpose_minimum_spot_instances is not None:
         if (
-            int(all_purpose_resources.get("min_spot_instances") or 0)
+            _coerce_int(all_purpose_resources.min_spot_instances)
             != all_purpose_minimum_spot_instances
         ):
             updates["all_purpose_minimum_spot_instances"] = (
@@ -121,7 +249,7 @@ def check_service_updates(
 
     if all_purpose_maximum_spot_instances is not None:
         if (
-            int(all_purpose_resources.get("max_spot_instances") or 0)
+            _coerce_int(all_purpose_resources.max_spot_instances)
             != all_purpose_maximum_spot_instances
         ):
             updates["all_purpose_maximum_spot_instances"] = (
@@ -138,13 +266,13 @@ class CdpDeClient:
     """CDP Data Engineering API client."""
 
     # Service statuses that indicate a healthy running service (can be disabled)
-    REMOVABLE_STATUSES = ["ClusterCreationCompleted"]
+    REMOVABLE_STATUSES = {"ClusterCreationCompleted"}
 
     # Service statuses that indicate the service has been fully deleted
-    STOPPED_STATUSES = ["ClusterDeletionCompleted"]
+    STOPPED_STATUSES = {"ClusterDeletionCompleted"}
 
     # Service statuses indicating active deletion is in progress
-    TERMINATION_STATUSES = ["ClusterDeletionInProgress"]
+    TERMINATION_STATUSES = {"ClusterDeletionInProgress"}
 
     # Virtual cluster statuses that indicate the VC is active and can be deleted
     VC_REMOVABLE_STATUSES = {"AppInstalled"}
@@ -156,6 +284,7 @@ class CdpDeClient:
     FAILED_STATUSES = {
         "ClusterDNSDeletionFailed",
         "ClusterChartDeletionFailed",
+        "ClusterChartInstallationFailed",
         "ClusterServiceMeshDeletionFailed",
         "ClusterTLSCertDeletionFailed",
         "DBDeletionFailed",
@@ -163,6 +292,7 @@ class CdpDeClient:
         "FSDeletionFailed",
         "ClusterNamespaceDeletionFailed",
         "ClusterAccessGroupDeletionFailed",
+        "ClusterAccessGroupInstallationFailed",
         "ClusterDeletionFailed",
         "ClusterUpgradeFailed",
     }
@@ -184,7 +314,7 @@ class CdpDeClient:
         self,
         remove_deleted: bool = True,
         env_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> List[ServiceSummary]:
         """
         List Data Engineering services.
 
@@ -193,8 +323,7 @@ class CdpDeClient:
             env_name: Optional environment name to filter services by.
 
         Returns:
-            Dictionary containing:
-                - services: List of service summary objects.
+            List of ServiceSummary objects.
         """
         data: Dict[str, Any] = {"removeDeleted": remove_deleted}
 
@@ -204,15 +333,14 @@ class CdpDeClient:
             squelch={404: {"services": []}},
         )
 
+        services = [from_dict(ServiceSummary, s) for s in result.get("services", [])]
+
         if env_name:
-            services = result.get("services", [])
-            result["services"] = [
-                s for s in services if s.get("environmentName") == env_name
-            ]
+            services = [s for s in services if s.environmentName == env_name]
 
-        return result
+        return services
 
-    def describe_service(self, cluster_id: str) -> Dict[str, Any]:
+    def describe_service(self, cluster_id: str) -> Optional[ServiceDescription]:
         """
         Describe a Data Engineering service.
 
@@ -220,19 +348,21 @@ class CdpDeClient:
             cluster_id: The cluster ID of the service
 
         Returns:
-            Dictionary containing service details, or empty dict if not found
+            ServiceDescription for the service, or None if not found
         """
-        return self.api_client.post(
+        result = self.api_client.post(
             "/api/v1/de/describeService",
             data={"clusterId": cluster_id},
             squelch={404: {}},
         )
+        service = result.get("service") if result else None
+        return from_dict(ServiceDescription, service) if service else None
 
     def get_service_by_name(
         self,
         name: str,
         env_name: Optional[str] = None,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[ServiceDescription]:
         """
         Get service details by service name, optionally filtered by environment.
 
@@ -241,19 +371,18 @@ class CdpDeClient:
             env_name: Optional environment name to narrow the search
 
         Returns:
-            Full describe result dict or None if not found
+            ServiceDescription or None if not found
         """
         services = self.list_services(env_name=env_name)
-        for service in services.get("services", []):
-            if service.get("name") == name:
-                cluster_id = service.get("clusterId")
-                if cluster_id:
-                    result = self.describe_service(cluster_id)
-                    if result and result.get("service"):
-                        return result
+        for service in services:
+            if service.name == name and service.clusterId:
+                return self.describe_service(service.clusterId)
         return None
 
-    def get_service_by_cluster_id(self, cluster_id: str) -> Optional[Dict[str, Any]]:
+    def get_service_by_cluster_id(
+        self,
+        cluster_id: str,
+    ) -> Optional[ServiceDescription]:
         """
         Get service details by cluster ID.
 
@@ -261,12 +390,9 @@ class CdpDeClient:
             cluster_id: The cluster ID
 
         Returns:
-            Full describe result dict or None if not found
+            ServiceDescription or None if not found
         """
-        result = self.describe_service(cluster_id)
-        if not result or not result.get("service"):
-            return None
-        return result
+        return self.describe_service(cluster_id)
 
     def enable_service(
         self,
@@ -310,7 +436,7 @@ class CdpDeClient:
         all_purpose_initial_spot_instances: Optional[int] = None,
         all_purpose_instance_type: Optional[str] = None,
         all_purpose_root_volume_size: Optional[int] = None,
-    ) -> Dict[str, Any]:
+    ) -> Optional[ServiceDescription]:
         """
         Enable a Data Engineering service.
 
@@ -340,7 +466,8 @@ class CdpDeClient:
             gpu_requests: GPU request quota (Private Cloud only)
 
         Returns:
-            Dictionary containing service details of the created service
+            ServiceDescription of the created service, or None if the response
+            contained no service details
         """
         data: Dict[str, Any] = {
             "name": name,
@@ -423,7 +550,9 @@ class CdpDeClient:
         if all_purpose_root_volume_size is not None:
             data["allPurposeRootVolumeSize"] = all_purpose_root_volume_size
 
-        return self.api_client.post("/api/v1/de/enableService", data=data)
+        result = self.api_client.post("/api/v1/de/enableService", data=data)
+        service = result.get("service") if result else None
+        return from_dict(ServiceDescription, service) if service else None
 
     def disable_service(
         self,
@@ -506,7 +635,7 @@ class CdpDeClient:
     def _get_service_state(
         self,
         cluster_id: str,
-    ) -> Optional[Tuple[str, Dict[str, Any]]]:
+    ) -> Optional[Tuple[Optional[str], Union[ServiceDescription, ServiceSummary]]]:
         """
         Helper to get the current service status.
 
@@ -514,28 +643,28 @@ class CdpDeClient:
             cluster_id: The cluster ID of the service
 
         Returns:
-            Tuple of (status_string, service_details) or None if service not found
+            Tuple of (status_string, service) or None if service not found.
+            The service is a ServiceDescription from describeService, or a
+            ServiceSummary from the listServices fallback.
         """
         result = self.describe_service(cluster_id)
-        if not result or not result.get("service"):
+        if result is None:
             # describeService returns 404 while a service is still terminating;
             # fall back to listServices to get the true current state.
-            services = self.list_services()
-            for svc in services.get("services", []):
-                if svc.get("clusterId") == cluster_id:
-                    return (svc.get("status"), svc)
+            for svc in self.list_services():
+                if svc.clusterId == cluster_id:
+                    return (svc.status, svc)
             return None
-        service = result["service"]
-        return (service.get("status"), service)
+        return (result.status, result)
 
     def wait_for_service_state(
         self,
         cluster_id: str,
-        target_statuses: List[str],
+        target_statuses: Set[str],
         timeout: int = 7200,
         delay: int = 60,
         force: bool = False,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[Union[ServiceDescription, ServiceSummary]]:
         """
         Wait for a Data Engineering service to reach a target status.
 
@@ -544,7 +673,7 @@ class CdpDeClient:
 
         Args:
             cluster_id: The cluster ID of the service
-            target_statuses: List of acceptable target statuses
+            target_statuses: Set of acceptable target statuses
             timeout: Maximum time to wait in seconds
             delay: Polling interval in seconds
             force: Whether to force disable (used when targeting stopped statuses)
@@ -558,14 +687,14 @@ class CdpDeClient:
         """
         start_time = time.time()
 
-        if any(s in self.STOPPED_STATUSES for s in target_statuses):
+        if not self.STOPPED_STATUSES.isdisjoint(target_statuses):
             result = self._get_service_state(cluster_id)
             if result is None:
                 return None
 
             current_status, service = result
 
-            if current_status in self.REMOVABLE_STATUSES:
+            if current_status in (self.REMOVABLE_STATUSES | self.FAILED_STATUSES):
                 self.disable_service(cluster_id, force=force)
             elif current_status in target_statuses:
                 return service
@@ -607,7 +736,7 @@ class CdpDeClient:
     # Virtual Cluster Methods
     # ========================================================================
 
-    def list_virtual_clusters(self, cluster_id: str) -> List[Dict[str, Any]]:
+    def list_virtual_clusters(self, cluster_id: str) -> List[VcSummary]:
         """
         List virtual clusters in a Data Engineering service.
 
@@ -615,20 +744,20 @@ class CdpDeClient:
             cluster_id: The cluster ID of the service
 
         Returns:
-            List of virtual cluster summary objects
+            List of VcSummary objects
         """
         result = self.api_client.post(
             "/api/v1/de/listVcs",
             data={"clusterId": cluster_id},
             squelch={404: {"vcs": []}},
         )
-        return result.get("vcs", [])
+        return [from_dict(VcSummary, vc) for vc in result.get("vcs", [])]
 
     def describe_virtual_cluster(
         self,
         cluster_id: str,
         vc_id: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[VcDescription]:
         """
         Describe a virtual cluster.
 
@@ -637,20 +766,21 @@ class CdpDeClient:
             vc_id: The virtual cluster ID
 
         Returns:
-            Virtual cluster details dict, or None if not found
+            VcDescription, or None if not found
         """
         result = self.api_client.post(
             "/api/v1/de/describeVc",
             data={"clusterId": cluster_id, "vcId": vc_id},
             squelch={404: None},
         )
-        return result.get("vc") if result else None
+        vc = result.get("vc") if result else None
+        return from_dict(VcDescription, vc) if vc else None
 
     def get_virtual_cluster_by_name(
         self,
         cluster_id: str,
         vc_name: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[VcDescription]:
         """
         Get virtual cluster details by name.
 
@@ -659,14 +789,12 @@ class CdpDeClient:
             vc_name: The virtual cluster name
 
         Returns:
-            Virtual cluster details dict, or None if not found
+            VcDescription, or None if not found
         """
         vcs = self.list_virtual_clusters(cluster_id)
         for vc in vcs:
-            if vc.get("vcName") == vc_name:
-                vc_id = vc.get("vcId")
-                if vc_id:
-                    return self.describe_virtual_cluster(cluster_id, vc_id)
+            if vc.vcName == vc_name and vc.vcId:
+                return self.describe_virtual_cluster(cluster_id, vc.vcId)
         return None
 
     def create_virtual_cluster(
@@ -687,7 +815,7 @@ class CdpDeClient:
         full_access_groups: Optional[List[str]] = None,
         view_only_users: Optional[List[str]] = None,
         view_only_groups: Optional[List[str]] = None,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[VcDescription]:
         """
         Create a virtual cluster.
 
@@ -710,7 +838,7 @@ class CdpDeClient:
             view_only_groups: Groups with view-only access
 
         Returns:
-            VcDescription dict for the created virtual cluster, or None on failure
+            VcDescription for the created virtual cluster, or None on failure
         """
         data: Dict[str, Any] = {
             "name": name,
@@ -744,7 +872,8 @@ class CdpDeClient:
             data["viewOnlyGroups"] = view_only_groups
 
         result = self.api_client.post("/api/v1/de/createVc", data=data)
-        return result.get("Vc") if result else None
+        vc = result.get("Vc") if result else None
+        return from_dict(VcDescription, vc) if vc else None
 
     def delete_virtual_cluster(
         self,
@@ -770,17 +899,17 @@ class CdpDeClient:
         self,
         cluster_id: str,
         vc_id: str,
-        target_statuses: List[str],
+        target_statuses: Set[str],
         timeout: int = 600,
         delay: int = 30,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[VcDescription]:
         """
         Wait for a virtual cluster to reach one of the target statuses.
 
         Args:
             cluster_id: The cluster ID of the service
             vc_id: The virtual cluster ID
-            target_statuses: List of acceptable target statuses
+            target_statuses: Set of acceptable target statuses
             timeout: Maximum time to wait in seconds
             delay: Polling interval in seconds
 
@@ -802,6 +931,6 @@ class CdpDeClient:
             vc = self.describe_virtual_cluster(cluster_id, vc_id)
             if vc is None:
                 return None
-            if vc.get("status") in target_statuses:
+            if vc.status in target_statuses:
                 return vc
             time.sleep(delay)
