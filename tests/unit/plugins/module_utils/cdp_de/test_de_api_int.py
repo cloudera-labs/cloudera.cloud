@@ -32,9 +32,11 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     CdpDeClient,
     ServiceDescription,
+    ServiceResources,
     ServiceSummary,
     VcDescription,
     VcSummary,
+    check_service_updates,
 )
 
 
@@ -212,6 +214,46 @@ class TestServiceIntegration:
             )
 
         assert "409" in str(exc.value)
+
+    def test_update_service_scales_instances(self, de_client, resettable_de_service):
+        """update_service changes maximum_instances and the change is observable.
+
+        Uses C(resettable_de_service), which snapshots the shared service's config
+        and restores it at teardown, so the bump here leaves no lasting drift.
+        """
+        service = resettable_de_service
+        cluster_id = service.clusterId
+
+        resources = service.resources
+        if not isinstance(resources, ServiceResources):
+            resources = ServiceResources()
+        try:
+            current_max = int(resources.max_instances)
+        except (TypeError, ValueError):
+            current_max = 1
+        new_max = current_max + 1
+
+        de_client.update_service(cluster_id=cluster_id, maximum_instances=new_max)
+        ready = de_client.wait_for_service_state(
+            cluster_id=cluster_id,
+            target_statuses=CdpDeClient.REMOVABLE_STATUSES,
+        )
+        assert ready is not None
+
+        # The new maximum is reflected on the read path.
+        updated = de_client.describe_service(cluster_id)
+        assert isinstance(updated, ServiceDescription)
+        assert int(updated.resources.max_instances) == new_max
+
+        # And no further update is reported for that value (idempotent).
+        assert (
+            check_service_updates(
+                cluster_id=cluster_id,
+                service_details=updated,
+                maximum_instances=new_max,
+            )
+            == {}
+        )
 
 
 # @pytest.mark.slow
