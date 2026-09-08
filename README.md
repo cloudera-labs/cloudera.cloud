@@ -2,6 +2,8 @@
 
 [![Collection Docs](https://img.shields.io/badge/collection-documentation-ff550D?logo=ansible&logoColor=white)](https://cloudera-labs.github.io/cloudera.cloud/)
 [![Publishing](https://img.shields.io/badge/Publishing-passing-5555F9?logo=github)](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/publish_docs.yml)
+[![FOSSA License Scan](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/fossa.yml/badge.svg?branch=main)](https://github.com/cloudera-labs/cloudera.cloud/actions/workflows/fossa.yml)
+[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B449%2Fgithub.com%2Fcloudera-labs%2Fcloudera.cloud.svg?type=shield&issueType=license)](https://app.fossa.com/projects/custom%2B449%2Fgithub.com%2Fcloudera-labs%2Fcloudera.cloud?ref=badge_shield&issueType=license)
 
 `cloudera.cloud` is an Ansible collection that lets you manage your **[Cloudera Platform](https://www.cloudera.com/products/cloudera-data-platform.html) on cloud (Public Cloud)** resources. This collection enables you to:
 
