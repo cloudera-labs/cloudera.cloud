@@ -1,0 +1,60 @@
+---
+# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: FOSSA License Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+      - devel
+      - "release/**"
+  push:
+    branches:
+      - main
+      - devel
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fossa:
+    name: FOSSA License Scan
+    runs-on: ubuntu-latest
+    # Do not run on fork PRs; FOSSA_API_KEY is unavailable to untrusted workflows.
+    if: >
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # fossa-action only runs `fossa analyze` when run-tests is false.
+      - name: Upload dependency graph to FOSSA
+        uses: fossas/fossa-action@v2
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
+          project: github.com/cloudera-labs/cloudera.cloud
+
+      - name: Run FOSSA policy test
+        if: github.event_name == 'pull_request'
+        uses: fossas/fossa-action@v2
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
+          project: github.com/cloudera-labs/cloudera.cloud
+          run-tests: true
+          test-diff-revision: ${{ github.event.pull_request.base.sha }}
