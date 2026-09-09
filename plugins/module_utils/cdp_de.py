@@ -20,7 +20,7 @@ A REST client for the Cloudera on Cloud Platform (CDP) Data Engineering API
 
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Union
 import time
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
@@ -277,24 +277,48 @@ class CdpDeClient:
     # Virtual cluster statuses that indicate the VC is active and can be deleted
     VC_REMOVABLE_STATUSES = {"AppInstalled"}
 
-    # Virtual cluster statuses that indicate the VC has been deleted or is being deleted
-    VC_STOPPED_STATUSES = {"AppDeleted", "AppDeletionInProgress"}
+    # Virtual cluster statuses that indicate the VC has been deleted
+    VC_STOPPED_STATUSES = {"AppDeleted", "AppNotDeletedFromDB"}
 
-    # Service statuses that indicate a non-recoverable failure
+    # Virtual cluster statuses indicating active deletion is in progress
+    VC_TERMINATION_STATUSES = {"AppDeletionInitiated"}
+
+    # Virtual cluster statuses that indicate a non-recoverable failure
+    VC_FAILED_STATUSES = {
+        "AppDeletionFailed",
+        "AppInstallationFailed",
+    }
+
+    # Service statuses that indicate a non-recoverable failure. These are every
+    # status mapped to the "Failed" external status in the CDP service status
+    # model, plus ClusterDeleteFromDBFailed (a terminal delete failure). The
+    # Maintenance/Upgrade/TLSCertRenewal failures are intentionally omitted: they
+    # map to the "Available" external status, i.e. the service remains usable.
     FAILED_STATUSES = {
-        "ClusterDNSDeletionFailed",
+        "ClusterAccessGroupCreationFailed",
+        "ClusterAccessGroupDeletionFailed",
         "ClusterChartDeletionFailed",
         "ClusterChartInstallationFailed",
-        "ClusterServiceMeshDeletionFailed",
-        "ClusterTLSCertDeletionFailed",
-        "DBDeletionFailed",
-        "FSMountTargetsDeletionFailed",
-        "FSDeletionFailed",
-        "ClusterNamespaceDeletionFailed",
-        "ClusterAccessGroupDeletionFailed",
-        "ClusterAccessGroupInstallationFailed",
+        "ClusterCreationFailed",
+        "ClusterDeleteFromDBFailed",
         "ClusterDeletionFailed",
-        "ClusterUpgradeFailed",
+        "ClusterDNSCreationFailed",
+        "ClusterDNSDeletionFailed",
+        "ClusterIngressCreationFailed",
+        "ClusterMonitoringConfigurationFailed",
+        "ClusterNamespaceDeletionFailed",
+        "ClusterProvisioningFailed",
+        "ClusterServiceMeshDeletionFailed",
+        "ClusterServiceMeshProvisioningFailed",
+        "ClusterTLSCertCreationFailed",
+        "ClusterTLSCertDeletionFailed",
+        "ClusterUserSyncCheckFailed",
+        "DBDeletionFailed",
+        "DBProvisioningFailed",
+        "FSDeletionFailed",
+        "FSMountTargetsCreationFailed",
+        "FSMountTargetsDeletionFailed",
+        "FSProvisioningFailed",
     }
 
     def __init__(self, api_client: CdpClient):
@@ -378,21 +402,6 @@ class CdpDeClient:
             if service.name == name and service.clusterId:
                 return self.describe_service(service.clusterId)
         return None
-
-    def get_service_by_cluster_id(
-        self,
-        cluster_id: str,
-    ) -> Optional[ServiceDescription]:
-        """
-        Get service details by cluster ID.
-
-        Args:
-            cluster_id: The cluster ID
-
-        Returns:
-            ServiceDescription or None if not found
-        """
-        return self.describe_service(cluster_id)
 
     def enable_service(
         self,
@@ -632,80 +641,40 @@ class CdpDeClient:
 
         return self.api_client.post("/api/v1/de/updateService", data=data)
 
-    def _get_service_state(
-        self,
-        cluster_id: str,
-    ) -> Optional[Tuple[Optional[str], Union[ServiceDescription, ServiceSummary]]]:
-        """
-        Helper to get the current service status.
-
-        Args:
-            cluster_id: The cluster ID of the service
-
-        Returns:
-            Tuple of (status_string, service) or None if service not found.
-            The service is a ServiceDescription from describeService, or a
-            ServiceSummary from the listServices fallback.
-        """
-        result = self.describe_service(cluster_id)
-        if result is None:
-            # describeService returns 404 while a service is still terminating;
-            # fall back to listServices to get the true current state.
-            for svc in self.list_services():
-                if svc.clusterId == cluster_id:
-                    return (svc.status, svc)
-            return None
-        return (result.status, result)
-
     def wait_for_service_state(
         self,
         cluster_id: str,
         target_statuses: Set[str],
+        error_statuses: Optional[Set[str]] = None,
         timeout: int = 7200,
         delay: int = 60,
-        force: bool = False,
-    ) -> Optional[Union[ServiceDescription, ServiceSummary]]:
+    ) -> Optional[ServiceDescription]:
         """
-        Wait for a Data Engineering service to reach a target status.
+        Poll a Data Engineering service until it reaches a target status.
 
-        If target includes a stopped status, automatically initiates disablement
-        when the service is in a removable state.
+        This is a pure waiter: it does not initiate any action. The caller is
+        responsible for enabling, disabling, or updating the service first; this
+        method only observes the result.
 
         Args:
             cluster_id: The cluster ID of the service
             target_statuses: Set of acceptable target statuses
+            error_statuses: Statuses treated as non-recoverable failures.
+                Defaults to FAILED_STATUSES.
             timeout: Maximum time to wait in seconds
             delay: Polling interval in seconds
-            force: Whether to force disable (used when targeting stopped statuses)
 
         Returns:
-            Service details dict when target status is reached, or None if service gone
+            ServiceDescription when a target status is reached, or None if the
+            service is no longer visible (fully deleted).
 
         Raises:
-            CdpError: If timeout is reached, service enters a failed status, or
-                      disable cannot be initiated from the current status
+            CdpError: If the timeout is reached or the service enters an error status.
         """
+        if error_statuses is None:
+            error_statuses = self.FAILED_STATUSES
+
         start_time = time.time()
-
-        if not self.STOPPED_STATUSES.isdisjoint(target_statuses):
-            result = self._get_service_state(cluster_id)
-            if result is None:
-                return None
-
-            current_status, service = result
-
-            if current_status in (self.REMOVABLE_STATUSES | self.FAILED_STATUSES):
-                self.disable_service(cluster_id, force=force)
-            elif current_status in target_statuses:
-                return service
-            elif current_status in self.TERMINATION_STATUSES:
-                pass  # Already disabling — proceed to wait loop
-            else:
-                raise CdpError(
-                    f"Cannot disable DE service in status '{current_status}'. "
-                    f"Service must be in one of {self.REMOVABLE_STATUSES} to be disabled.",
-                )
-
         while True:
             elapsed = time.time() - start_time
             if elapsed > timeout:
@@ -714,18 +683,18 @@ class CdpDeClient:
                     f"after {timeout} seconds.",
                 )
 
-            result = self._get_service_state(cluster_id)
+            service = self.describe_service(cluster_id)
 
-            if result is None:
+            if service is None:
                 # Service no longer visible — treat as successfully stopped
                 return None
 
-            current_status, service = result
+            current_status = service.status
 
             if current_status in target_statuses:
                 return service
 
-            if current_status in self.FAILED_STATUSES:
+            if current_status in error_statuses:
                 raise CdpError(
                     f"DE service entered failed status '{current_status}'.",
                 )
@@ -879,7 +848,7 @@ class CdpDeClient:
         self,
         cluster_id: str,
         vc_id: str,
-    ) -> Dict[str, Any]:
+    ) -> None:
         """
         Delete a virtual cluster.
 
@@ -888,11 +857,12 @@ class CdpDeClient:
             vc_id: The virtual cluster ID
 
         Returns:
-            Dictionary containing deletion status
+            None
         """
         return self.api_client.post(
             "/api/v1/de/deleteVc",
             data={"clusterId": cluster_id, "vcId": vc_id},
+            squelch={200: None, 404: None},
         )
 
     def wait_for_vc_state(
@@ -900,26 +870,36 @@ class CdpDeClient:
         cluster_id: str,
         vc_id: str,
         target_statuses: Set[str],
-        timeout: int = 600,
+        error_statuses: Optional[Set[str]] = None,
+        timeout: int = 900,
         delay: int = 30,
     ) -> Optional[VcDescription]:
         """
-        Wait for a virtual cluster to reach one of the target statuses.
+        Poll a virtual cluster until it reaches one of the target statuses.
+
+        This is a pure waiter: it does not initiate any action. The caller is
+        responsible for creating or deleting the virtual cluster first; this
+        method only observes the result.
 
         Args:
             cluster_id: The cluster ID of the service
             vc_id: The virtual cluster ID
             target_statuses: Set of acceptable target statuses
+            error_statuses: Statuses treated as non-recoverable failures.
+                Defaults to VC_FAILED_STATUSES.
             timeout: Maximum time to wait in seconds
             delay: Polling interval in seconds
 
         Returns:
-            Virtual cluster details dict when target status is reached,
-            or None if the VC is no longer visible (fully deleted)
+            VcDescription when a target status is reached, or None if the VC is
+            no longer visible (fully deleted).
 
         Raises:
-            CdpError: If timeout is reached before the target status is achieved
+            CdpError: If the timeout is reached or the VC enters an error status.
         """
+        if error_statuses is None:
+            error_statuses = self.VC_FAILED_STATUSES
+
         start_time = time.time()
         while True:
             elapsed = time.time() - start_time
@@ -933,4 +913,8 @@ class CdpDeClient:
                 return None
             if vc.status in target_statuses:
                 return vc
+            if vc.status in error_statuses:
+                raise CdpError(
+                    f"Virtual cluster entered failed status '{vc.status}'.",
+                )
             time.sleep(delay)

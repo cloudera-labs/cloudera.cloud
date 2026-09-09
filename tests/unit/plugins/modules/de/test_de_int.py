@@ -110,15 +110,14 @@ def test_present_aws(request, de_module_args, cleanup_de_service):
 # @pytest.mark.slow
 def test_present_update_aws(
     de_module_args,
-    resettable_de_service,
+    disposable_de_service,
 ):
-    """Bump an existing service's maximum_instances, then re-check idempotency.
+    """Bump a service's maximum_instances, then re-check idempotency.
 
-    Operates on the shared C(existing_de_service); C(resettable_de_service)
-    snapshots the original config and restores it at teardown, so no throwaway
-    service is provisioned and no manual cleanup is needed.
+    Operates on C(disposable_de_service), a net-new service owned by this test,
+    so the mutation has no side effects and the service is torn down at teardown.
     """
-    service = resettable_de_service
+    service = disposable_de_service
     name = service.name
     env_name = service.environmentName
     timeout = 7200

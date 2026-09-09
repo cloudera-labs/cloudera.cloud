@@ -539,11 +539,11 @@ def existing_de_service(de_client) -> Generator[ServiceDescription, None, None]:
         )
     finally:
         try:
-            # Targeting a stopped status initiates the disable from a removable state.
+            # Initiate the disable from a removable state, then wait to stopped.
+            de_client.disable_service(created.clusterId, force=True)
             de_client.wait_for_service_state(
                 created.clusterId,
                 CdpDeClient.STOPPED_STATUSES,
-                force=True,
             )
         except Exception as e:
             warnings.warn(
@@ -582,12 +582,11 @@ def cleanup_de_service(
             if existing is None:
                 continue
             try:
-                # Targeting a stopped status initiates the disable from a
-                # removable state.
+                # Initiate the disable from a removable state, then wait to stopped.
+                de_client.disable_service(cluster_id, force=True)
                 de_client.wait_for_service_state(
                     cluster_id=cluster_id,
                     target_statuses=CdpDeClient.STOPPED_STATUSES,
-                    force=True,
                 )
             except Exception as e:
                 warnings.warn(
@@ -646,12 +645,11 @@ def disposable_de_service(
     finally:
         if de_client.get_service_by_cluster_id(ready.clusterId) is not None:
             try:
-                # Targeting a stopped status initiates the disable from a
-                # removable state.
+                # Initiate the disable from a removable state, then wait to stopped.
+                de_client.disable_service(ready.clusterId, force=True)
                 de_client.wait_for_service_state(
                     cluster_id=ready.clusterId,
                     target_statuses=CdpDeClient.STOPPED_STATUSES,
-                    force=True,
                 )
             except Exception as e:
                 warnings.warn(

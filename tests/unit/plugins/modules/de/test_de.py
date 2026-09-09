@@ -418,13 +418,15 @@ def test_absent_disable_with_wait(de_module_args, de_client):
     assert result.value.changed is True
     assert result.value.service["status"] == "ClusterDeletionCompleted"
 
+    de_client.disable_service.assert_called_once()
+    disable_args = de_client.disable_service.call_args
+    assert disable_args[0][0] == CLUSTER_ID
+    assert disable_args.kwargs["force"] is False
+
     de_client.wait_for_service_state.assert_called_once()
     wait_args = de_client.wait_for_service_state.call_args.kwargs
     assert wait_args["cluster_id"] == CLUSTER_ID
     assert wait_args["target_statuses"] == CdpDeClient.STOPPED_STATUSES
-    assert wait_args["force"] is False
-
-    de_client.disable_service.assert_not_called()
 
 
 def test_absent_disable_wait_returns_none(de_module_args, de_client):

@@ -277,11 +277,11 @@ class TestServiceLifecycleIntegration:
         assert service.status in CdpDeClient.REMOVABLE_STATUSES
         assert de_client.get_service_by_cluster_id(cluster_id) is not None
 
-        # Targeting a stopped status initiates the disable from a removable state.
+        # Initiate the disable from a removable state, then wait to stopped.
+        de_client.disable_service(cluster_id, force=True)
         result = de_client.wait_for_service_state(
             cluster_id=cluster_id,
             target_statuses=CdpDeClient.STOPPED_STATUSES,
-            force=True,
         )
 
         # Either fully gone (None) or reported in a stopped status.

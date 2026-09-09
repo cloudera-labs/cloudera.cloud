@@ -18,8 +18,11 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import pytest
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
+    CdpError,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     AllPurposeInstanceGroupDetails,
@@ -429,55 +432,6 @@ class TestCdpDeClient:
             },
         )
 
-    def test_get_service_by_cluster_id(self, mocker):
-        """Test getting service details by cluster ID."""
-
-        # Mock describe_service response (unwrapped ServiceDescription)
-        describe_mock = ServiceDescription(
-            clusterId=CLUSTER_ID,
-            name=SERVICE_NAME,
-            environmentName=ENV_NAME,
-            status="ClusterCreationCompleted",
-        )
-
-        # Mock the CdpClient instance
-        api_client = mocker.create_autospec(CdpClient, instance=True)
-
-        # Create the CdpDeClient instance
-        client = CdpDeClient(api_client=api_client)
-
-        # Mock the describe_service method
-        mocker.patch.object(client, "describe_service", return_value=describe_mock)
-
-        # Test getting service by cluster ID
-        response = client.get_service_by_cluster_id(CLUSTER_ID)
-
-        # Validate the response is an unwrapped ServiceDescription
-        assert isinstance(response, ServiceDescription)
-        assert response.clusterId == CLUSTER_ID
-        assert response.name == SERVICE_NAME
-
-        # Verify the method was called
-        client.describe_service.assert_called_once_with(CLUSTER_ID)
-
-    def test_get_service_by_cluster_id_not_found(self, mocker):
-        """Test getting service by cluster ID when it doesn't exist."""
-
-        # Mock the CdpClient instance
-        api_client = mocker.create_autospec(CdpClient, instance=True)
-
-        # Create the CdpDeClient instance
-        client = CdpDeClient(api_client=api_client)
-
-        # Mock the describe_service method to return None (not found)
-        mocker.patch.object(client, "describe_service", return_value=None)
-
-        # Test getting service by cluster ID
-        response = client.get_service_by_cluster_id("nonexistent-cluster")
-
-        # Validate the response
-        assert response is None
-
     def test_list_virtual_clusters(self, mocker):
         """Test listing virtual clusters in a service."""
 
@@ -730,30 +684,107 @@ class TestCdpDeClient:
         assert isinstance(result, ServiceDescription)
         assert result.clusterId == CLUSTER_ID
 
-    def test_get_service_state_falls_back_to_list(self, mocker):
-        """Test _get_service_state falls back to list_services on a 404 describe."""
+    def test_wait_for_service_state_gone_returns_none(self, mocker):
+        """wait_for_service_state returns None when the service is gone (describe 404)."""
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpDeClient(api_client=api_client)
 
+        # describeService 404s once the cluster is fully removed.
         mocker.patch.object(client, "describe_service", return_value=None)
-        mocker.patch.object(
-            client,
-            "list_services",
-            return_value=[
-                ServiceSummary(
-                    clusterId=CLUSTER_ID,
-                    name=SERVICE_NAME,
-                    status="ClusterDeletionInProgress",
-                ),
-            ],
+
+        result = client.wait_for_service_state(
+            cluster_id=CLUSTER_ID,
+            target_statuses=CdpDeClient.STOPPED_STATUSES,
         )
 
-        status, service = client._get_service_state(CLUSTER_ID)
+        assert result is None
 
-        assert status == "ClusterDeletionInProgress"
-        assert isinstance(service, ServiceSummary)
-        assert service.clusterId == CLUSTER_ID
+    def test_wait_for_service_state_raises_on_error_status(self, mocker):
+        """wait_for_service_state raises when the service enters an error status."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        client = CdpDeClient(api_client=api_client)
+
+        described = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            name=SERVICE_NAME,
+            status="ClusterCreationFailed",
+        )
+        mocker.patch.object(client, "describe_service", return_value=described)
+
+        with pytest.raises(CdpError, match="ClusterCreationFailed"):
+            client.wait_for_service_state(
+                cluster_id=CLUSTER_ID,
+                target_statuses=CdpDeClient.REMOVABLE_STATUSES,
+            )
+
+    def test_wait_for_service_state_does_not_initiate(self, mocker):
+        """wait_for_service_state only polls — it never initiates a disable."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        client = CdpDeClient(api_client=api_client)
+
+        described = ServiceDescription(
+            clusterId=CLUSTER_ID,
+            name=SERVICE_NAME,
+            status="ClusterDeletionCompleted",
+        )
+        mocker.patch.object(client, "describe_service", return_value=described)
+        disable = mocker.patch.object(client, "disable_service")
+
+        client.wait_for_service_state(
+            cluster_id=CLUSTER_ID,
+            target_statuses=CdpDeClient.STOPPED_STATUSES,
+        )
+
+        disable.assert_not_called()
+
+    def test_wait_for_vc_state_raises_on_error_status(self, mocker):
+        """wait_for_vc_state raises when the VC enters a failed status (the reported gap)."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        client = CdpDeClient(api_client=api_client)
+
+        for failed_status in ("AppInstallationFailed", "AppDeletionFailed"):
+            described = VcDescription(
+                vcId=VC_ID,
+                vcName=VC_NAME,
+                clusterId=CLUSTER_ID,
+                status=failed_status,
+            )
+            mocker.patch.object(
+                client,
+                "describe_virtual_cluster",
+                return_value=described,
+            )
+
+            with pytest.raises(CdpError, match=failed_status):
+                client.wait_for_vc_state(
+                    cluster_id=CLUSTER_ID,
+                    vc_id=VC_ID,
+                    target_statuses=CdpDeClient.VC_REMOVABLE_STATUSES,
+                )
+
+    def test_wait_for_vc_state_gone_returns_none(self, mocker):
+        """wait_for_vc_state returns None when the VC is gone (describe 404)."""
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        client = CdpDeClient(api_client=api_client)
+
+        mocker.patch.object(
+            client,
+            "describe_virtual_cluster",
+            return_value=None,
+        )
+
+        result = client.wait_for_vc_state(
+            cluster_id=CLUSTER_ID,
+            vc_id=VC_ID,
+            target_statuses=CdpDeClient.VC_STOPPED_STATUSES,
+        )
+
+        assert result is None
 
     def test_wait_for_vc_state_already_target(self, mocker):
         """Test VC wait returns the VcDescription when already at target status."""

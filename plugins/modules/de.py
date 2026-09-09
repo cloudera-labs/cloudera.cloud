@@ -787,17 +787,15 @@ class DEService(ServicesModule):
 
         if not self.module.check_mode:
             cluster_id = existing.clusterId
+            self.de_client.disable_service(cluster_id, force=self.force)
             if self.wait:
                 result = self.de_client.wait_for_service_state(
                     cluster_id=cluster_id,
                     target_statuses=CdpDeClient.STOPPED_STATUSES,
                     timeout=self.timeout,
                     delay=self.delay,
-                    force=self.force,
                 )
                 self.service = to_dict(result) if result else {}
-            else:
-                self.de_client.disable_service(cluster_id, force=self.force)
 
     def _handle_create(self) -> None:
         self.changed = True
