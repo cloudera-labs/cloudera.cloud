@@ -281,7 +281,7 @@ class DEServiceInfo(ServicesModule):
             if service:
                 self.services.append(to_dict(service))
         elif self.cluster_id:
-            service = self.de_client.get_service_by_cluster_id(self.cluster_id)
+            service = self.de_client.describe_service(self.cluster_id)
             if service:
                 self.services.append(to_dict(service))
         else:

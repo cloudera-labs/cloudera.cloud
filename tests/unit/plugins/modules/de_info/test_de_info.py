@@ -195,8 +195,8 @@ def test_de_info_by_cluster_id(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock get_service_by_cluster_id response (direct lookup by cluster_id)
-    client.get_service_by_cluster_id.return_value = _description(
+    # Mock describe_service response (direct lookup by cluster_id)
+    client.describe_service.return_value = _description(
         {
             "clusterId": CLUSTER_ID,
             "name": SERVICE_NAME,
@@ -216,7 +216,7 @@ def test_de_info_by_cluster_id(module_args, mocker):
     assert result.value.services[0]["clusterId"] == CLUSTER_ID
 
     # Verify CdpDeClient was called correctly
-    client.get_service_by_cluster_id.assert_called_once_with(CLUSTER_ID)
+    client.describe_service.assert_called_once_with(CLUSTER_ID)
 
 
 def test_de_info_by_env_name(module_args, mocker):
@@ -430,8 +430,8 @@ def test_de_info_not_found_by_cluster_id(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock get_service_by_cluster_id returning None
-    client.get_service_by_cluster_id.return_value = None
+    # Mock describe_service returning None
+    client.describe_service.return_value = None
 
     # Test module execution
     with pytest.raises(AnsibleExitJson) as result:
@@ -441,7 +441,7 @@ def test_de_info_not_found_by_cluster_id(module_args, mocker):
     assert len(result.value.services) == 0
 
     # Verify CdpDeClient was called correctly
-    client.get_service_by_cluster_id.assert_called_once_with(nonexistent_cluster_id)
+    client.describe_service.assert_called_once_with(nonexistent_cluster_id)
 
 
 def test_de_info_empty_list(module_args, mocker):
@@ -506,8 +506,8 @@ def test_de_info_deleted_service_via_cluster_id(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock get_service_by_cluster_id returning deleted service
-    client.get_service_by_cluster_id.return_value = _description(
+    # Mock describe_service returning deleted service
+    client.describe_service.return_value = _description(
         {
             "clusterId": CLUSTER_ID,
             "name": SERVICE_NAME,
@@ -524,7 +524,7 @@ def test_de_info_deleted_service_via_cluster_id(module_args, mocker):
     assert result.value.services[0]["status"] == "ClusterDeletionCompleted"
 
     # Verify CdpDeClient was called correctly
-    client.get_service_by_cluster_id.assert_called_once_with(CLUSTER_ID)
+    client.describe_service.assert_called_once_with(CLUSTER_ID)
 
 
 def test_de_info_service_details(module_args, mocker):
@@ -551,8 +551,8 @@ def test_de_info_service_details(module_args, mocker):
         autospec=True,
     ).return_value
 
-    # Mock get_service_by_cluster_id with full details
-    client.get_service_by_cluster_id.return_value = _description(
+    # Mock describe_service with full details
+    client.describe_service.return_value = _description(
         {
             "clusterId": CLUSTER_ID,
             "name": SERVICE_NAME,
@@ -587,4 +587,4 @@ def test_de_info_service_details(module_args, mocker):
     assert service["creatorEmail"] == "user@example.com"
 
     # Verify CdpDeClient was called correctly
-    client.get_service_by_cluster_id.assert_called_once_with(CLUSTER_ID)
+    client.describe_service.assert_called_once_with(CLUSTER_ID)
