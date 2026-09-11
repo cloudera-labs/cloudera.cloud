@@ -25,6 +25,10 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpError,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CDE_SERVICE_REMOVABLE_STATUSES,
+    CDE_SERVICE_STOPPED_STATUSES,
+    CDE_VC_REMOVABLE_STATUSES,
+    CDE_VC_STOPPED_STATUSES,
     AllPurposeInstanceGroupDetails,
     CdpDeClient,
     ServiceDescription,
@@ -695,7 +699,7 @@ class TestCdpDeClient:
 
         result = client.wait_for_service_state(
             cluster_id=CLUSTER_ID,
-            target_statuses=CdpDeClient.STOPPED_STATUSES,
+            target_statuses=CDE_SERVICE_STOPPED_STATUSES,
         )
 
         assert result is None
@@ -716,7 +720,7 @@ class TestCdpDeClient:
         with pytest.raises(CdpError, match="ClusterCreationFailed"):
             client.wait_for_service_state(
                 cluster_id=CLUSTER_ID,
-                target_statuses=CdpDeClient.REMOVABLE_STATUSES,
+                target_statuses=CDE_SERVICE_REMOVABLE_STATUSES,
             )
 
     def test_wait_for_service_state_does_not_initiate(self, mocker):
@@ -735,7 +739,7 @@ class TestCdpDeClient:
 
         client.wait_for_service_state(
             cluster_id=CLUSTER_ID,
-            target_statuses=CdpDeClient.STOPPED_STATUSES,
+            target_statuses=CDE_SERVICE_STOPPED_STATUSES,
         )
 
         disable.assert_not_called()
@@ -763,7 +767,7 @@ class TestCdpDeClient:
                 client.wait_for_vc_state(
                     cluster_id=CLUSTER_ID,
                     vc_id=VC_ID,
-                    target_statuses=CdpDeClient.VC_REMOVABLE_STATUSES,
+                    target_statuses=CDE_VC_REMOVABLE_STATUSES,
                 )
 
     def test_wait_for_vc_state_gone_returns_none(self, mocker):
@@ -781,7 +785,7 @@ class TestCdpDeClient:
         result = client.wait_for_vc_state(
             cluster_id=CLUSTER_ID,
             vc_id=VC_ID,
-            target_statuses=CdpDeClient.VC_STOPPED_STATUSES,
+            target_statuses=CDE_VC_STOPPED_STATUSES,
         )
 
         assert result is None

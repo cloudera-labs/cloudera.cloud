@@ -23,14 +23,15 @@ import re
 import warnings
 
 from typing import Generator
+from urllib.error import HTTPError
 
 import pytest
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    CdpError,
-)
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
-    CdpDeClient,
+    CDE_SERVICE_REMOVABLE_STATUSES,
+    CDE_SERVICE_STOPPED_STATUSES,
+    CDE_VC_REMOVABLE_STATUSES,
     ServiceDescription,
     ServiceResources,
     ServiceSummary,
@@ -79,7 +80,7 @@ def existing_de_virtual_cluster(
         yield vc
         return
 
-    name = re.sub(r"[^a-z0-9]+", "-", request.node.name.lower()).strip("-")
+    name = "ansible-" + re.sub(r"[^a-z0-9]", "-", request.node.name.lower())[:20]
 
     # Reuse a name collision rather than clobber it, and do not tear it down.
     existing = de_client.get_virtual_cluster_by_name(cluster_id, name)
@@ -104,7 +105,7 @@ def existing_de_virtual_cluster(
     ready = de_client.wait_for_vc_state(
         cluster_id,
         created.vcId,
-        CdpDeClient.VC_REMOVABLE_STATUSES,
+        CDE_VC_REMOVABLE_STATUSES,
     )
 
     try:
@@ -173,23 +174,6 @@ class TestServiceIntegration:
 
         assert result is None
 
-    def test_get_service_by_cluster_id(self, de_client, existing_de_service):
-        """get_service_by_cluster_id returns the matching ServiceDescription."""
-        cluster_id = existing_de_service.clusterId
-
-        result = de_client.get_service_by_cluster_id(cluster_id)
-
-        assert result is not None
-        assert isinstance(result, ServiceDescription)
-        assert result.clusterId == cluster_id
-        assert result.name is not None
-
-    def test_get_service_by_cluster_id_not_found(self, de_client):
-        """get_service_by_cluster_id returns None when the service doesn't exist."""
-        result = de_client.get_service_by_cluster_id("nonexistent-cluster-12345")
-
-        assert result is None
-
     def test_service_details_completeness(self, de_client, existing_de_service):
         """describe_service reports all expected core fields."""
         result = de_client.describe_service(existing_de_service.clusterId)
@@ -202,7 +186,7 @@ class TestServiceIntegration:
 
     def test_enable_existing_service_conflicts(self, de_client, existing_de_service):
         """enable_service on an already-enabled name/env raises HTTP 409 Conflict."""
-        with pytest.raises(CdpError) as exc:
+        with pytest.raises(HTTPError) as exc:
             de_client.enable_service(
                 name=existing_de_service.name,
                 env=existing_de_service.environmentName,
@@ -213,15 +197,14 @@ class TestServiceIntegration:
                 maximum_spot_instances=0,
             )
 
-        assert "409" in str(exc.value)
+        assert 409 == exc.value.code
 
-    def test_update_service_scales_instances(self, de_client, resettable_de_service):
+    def test_update_service_scales_instances(self, de_client, disposable_de_service):
         """update_service changes maximum_instances and the change is observable.
 
-        Uses C(resettable_de_service), which snapshots the shared service's config
-        and restores it at teardown, so the bump here leaves no lasting drift.
+        Uses C(disposable_de_service) to isolate changes.
         """
-        service = resettable_de_service
+        service = disposable_de_service
         cluster_id = service.clusterId
 
         resources = service.resources
@@ -236,7 +219,7 @@ class TestServiceIntegration:
         de_client.update_service(cluster_id=cluster_id, maximum_instances=new_max)
         ready = de_client.wait_for_service_state(
             cluster_id=cluster_id,
-            target_statuses=CdpDeClient.REMOVABLE_STATUSES,
+            target_statuses=CDE_SERVICE_REMOVABLE_STATUSES,
         )
         assert ready is not None
 
@@ -255,17 +238,6 @@ class TestServiceIntegration:
             == {}
         )
 
-
-# @pytest.mark.slow
-class TestServiceLifecycleIntegration:
-    """Enable/disable/remove lifecycle for CdpDeClient service management.
-
-    Uses C(disposable_de_service), which enables a net-new service owned by the
-    test, so disabling it here has no side effects. Enabling a DE service is slow
-    and costly, so the whole enable -> verify -> disable -> remove path runs
-    against a single service.
-    """
-
     def test_service_enable_disable_remove(self, de_client, disposable_de_service):
         """A freshly enabled service is readable, then disables to a removed state."""
         service = disposable_de_service
@@ -274,21 +246,21 @@ class TestServiceLifecycleIntegration:
         # Enabled by the fixture to a removable state and visible on the read path.
         assert isinstance(service, ServiceDescription)
         assert cluster_id is not None
-        assert service.status in CdpDeClient.REMOVABLE_STATUSES
-        assert de_client.get_service_by_cluster_id(cluster_id) is not None
+        assert service.status in CDE_SERVICE_REMOVABLE_STATUSES
+        assert de_client.describe_service(cluster_id) is not None
 
         # Initiate the disable from a removable state, then wait to stopped.
         de_client.disable_service(cluster_id, force=True)
         result = de_client.wait_for_service_state(
             cluster_id=cluster_id,
-            target_statuses=CdpDeClient.STOPPED_STATUSES,
+            target_statuses=CDE_SERVICE_STOPPED_STATUSES,
         )
 
         # Either fully gone (None) or reported in a stopped status.
         if result is None:
-            assert de_client.get_service_by_cluster_id(cluster_id) is None
+            assert de_client.describe_service(cluster_id) is None
         else:
-            assert result.status in CdpDeClient.STOPPED_STATUSES
+            assert result.status in CDE_SERVICE_STOPPED_STATUSES
 
 
 class TestVirtualClusterIntegration:

@@ -38,6 +38,8 @@ from urllib.error import HTTPError
 import pytest
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CDE_SERVICE_REMOVABLE_STATUSES,
+    CDE_SERVICE_STOPPED_STATUSES,
     CdpDeClient,
     ServiceDescription,
     ServiceResources,
@@ -527,7 +529,7 @@ def existing_de_service(de_client) -> Generator[ServiceDescription, None, None]:
         assert created is not None
         ready = de_client.wait_for_service_state(
             created.clusterId,
-            CdpDeClient.REMOVABLE_STATUSES,
+            CDE_SERVICE_REMOVABLE_STATUSES,
         )
 
         yield ready
@@ -543,7 +545,7 @@ def existing_de_service(de_client) -> Generator[ServiceDescription, None, None]:
             de_client.disable_service(created.clusterId, force=True)
             de_client.wait_for_service_state(
                 created.clusterId,
-                CdpDeClient.STOPPED_STATUSES,
+                CDE_SERVICE_STOPPED_STATUSES,
             )
         except Exception as e:
             warnings.warn(
@@ -586,7 +588,7 @@ def cleanup_de_service(
                 de_client.disable_service(cluster_id, force=True)
                 de_client.wait_for_service_state(
                     cluster_id=cluster_id,
-                    target_statuses=CdpDeClient.STOPPED_STATUSES,
+                    target_statuses=CDE_SERVICE_STOPPED_STATUSES,
                 )
             except Exception as e:
                 warnings.warn(
@@ -611,7 +613,7 @@ def disposable_de_service(
     CDP_DE_ENVIRONMENT being present.
     """
     env_name = required_or_skip("CDP_DE_ENVIRONMENT")
-    name = "ansible-" + re.sub(r"[^a-z0-9]", "", request.node.name.lower())[:20]
+    name = "ansible-" + re.sub(r"[^a-z0-9]", "-", request.node.name.lower())[:20]
 
     existing = de_client.get_service_by_name(name)
     if existing is not None:
@@ -621,7 +623,7 @@ def disposable_de_service(
 
         ready = de_client.wait_for_service_state(
             existing.clusterId,
-            CdpDeClient.REMOVABLE_STATUSES,
+            CDE_SERVICE_REMOVABLE_STATUSES,
         )
     else:
         created = de_client.enable_service(
@@ -637,7 +639,7 @@ def disposable_de_service(
 
         ready = de_client.wait_for_service_state(
             created.clusterId,
-            CdpDeClient.REMOVABLE_STATUSES,
+            CDE_SERVICE_REMOVABLE_STATUSES,
         )
 
     try:
@@ -649,7 +651,7 @@ def disposable_de_service(
                 de_client.disable_service(ready.clusterId, force=True)
                 de_client.wait_for_service_state(
                     cluster_id=ready.clusterId,
-                    target_statuses=CdpDeClient.STOPPED_STATUSES,
+                    target_statuses=CDE_SERVICE_STOPPED_STATUSES,
                 )
             except Exception as e:
                 warnings.warn(
@@ -701,7 +703,7 @@ def resettable_de_service(
         de_client.update_service(cluster_id=cluster_id, **restore)
         de_client.wait_for_service_state(
             cluster_id=cluster_id,
-            target_statuses=CdpDeClient.REMOVABLE_STATUSES,
+            target_statuses=CDE_SERVICE_REMOVABLE_STATUSES,
         )
     except Exception as e:
         warnings.warn(
