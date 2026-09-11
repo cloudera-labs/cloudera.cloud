@@ -262,64 +262,72 @@ def check_service_updates(
     return {}
 
 
+"""Service statuses that indicate a healthy running service (can be disabled)"""
+CDE_SERVICE_REMOVABLE_STATUSES = {"ClusterCreationCompleted"}
+
+
+"""Service statuses that indicate the service has been fully deleted"""
+CDE_SERVICE_STOPPED_STATUSES = {"ClusterDeletionCompleted"}
+
+
+"""Service statuses indicating active deletion is in progress"""
+CDE_SERVICE_TERMINATION_STATUSES = {"ClusterDeletionInProgress"}
+
+
+"""Service statuses that indicate a non-recoverable failure. These are every
+status mapped to the "Failed" external status in the CDP service status
+model, plus ClusterDeleteFromDBFailed (a terminal delete failure). The
+Maintenance/Upgrade/TLSCertRenewal failures are intentionally omitted: they
+map to the "Available" external status, i.e. the service remains usable."""
+CDE_SERVICE_FAILED_STATUSES = {
+    "ClusterAccessGroupCreationFailed",
+    "ClusterAccessGroupDeletionFailed",
+    "ClusterChartDeletionFailed",
+    "ClusterChartInstallationFailed",
+    "ClusterCreationFailed",
+    "ClusterDeleteFromDBFailed",
+    "ClusterDeletionFailed",
+    "ClusterDNSCreationFailed",
+    "ClusterDNSDeletionFailed",
+    "ClusterIngressCreationFailed",
+    "ClusterMonitoringConfigurationFailed",
+    "ClusterNamespaceDeletionFailed",
+    "ClusterProvisioningFailed",
+    "ClusterServiceMeshDeletionFailed",
+    "ClusterServiceMeshProvisioningFailed",
+    "ClusterTLSCertCreationFailed",
+    "ClusterTLSCertDeletionFailed",
+    "ClusterUserSyncCheckFailed",
+    "DBDeletionFailed",
+    "DBProvisioningFailed",
+    "FSDeletionFailed",
+    "FSMountTargetsCreationFailed",
+    "FSMountTargetsDeletionFailed",
+    "FSProvisioningFailed",
+}
+
+
+"""Virtual cluster statuses that indicate the VC is active and can be deleted"""
+CDE_VC_REMOVABLE_STATUSES = {"AppInstalled"}
+
+
+"""Virtual cluster statuses that indicate the VC has been deleted"""
+CDE_VC_STOPPED_STATUSES = {"AppDeleted", "AppNotDeletedFromDB"}
+
+
+"""Virtual cluster statuses indicating active deletion is in progress"""
+CDE_VC_TERMINATION_STATUSES = {"AppDeletionInitiated"}
+
+
+"""Virtual cluster statuses that indicate a non-recoverable failure"""
+CDE_VC_FAILED_STATUSES = {
+    "AppDeletionFailed",
+    "AppInstallationFailed",
+}
+
+
 class CdpDeClient:
     """CDP Data Engineering API client."""
-
-    # Service statuses that indicate a healthy running service (can be disabled)
-    REMOVABLE_STATUSES = {"ClusterCreationCompleted"}
-
-    # Service statuses that indicate the service has been fully deleted
-    STOPPED_STATUSES = {"ClusterDeletionCompleted"}
-
-    # Service statuses indicating active deletion is in progress
-    TERMINATION_STATUSES = {"ClusterDeletionInProgress"}
-
-    # Virtual cluster statuses that indicate the VC is active and can be deleted
-    VC_REMOVABLE_STATUSES = {"AppInstalled"}
-
-    # Virtual cluster statuses that indicate the VC has been deleted
-    VC_STOPPED_STATUSES = {"AppDeleted", "AppNotDeletedFromDB"}
-
-    # Virtual cluster statuses indicating active deletion is in progress
-    VC_TERMINATION_STATUSES = {"AppDeletionInitiated"}
-
-    # Virtual cluster statuses that indicate a non-recoverable failure
-    VC_FAILED_STATUSES = {
-        "AppDeletionFailed",
-        "AppInstallationFailed",
-    }
-
-    # Service statuses that indicate a non-recoverable failure. These are every
-    # status mapped to the "Failed" external status in the CDP service status
-    # model, plus ClusterDeleteFromDBFailed (a terminal delete failure). The
-    # Maintenance/Upgrade/TLSCertRenewal failures are intentionally omitted: they
-    # map to the "Available" external status, i.e. the service remains usable.
-    FAILED_STATUSES = {
-        "ClusterAccessGroupCreationFailed",
-        "ClusterAccessGroupDeletionFailed",
-        "ClusterChartDeletionFailed",
-        "ClusterChartInstallationFailed",
-        "ClusterCreationFailed",
-        "ClusterDeleteFromDBFailed",
-        "ClusterDeletionFailed",
-        "ClusterDNSCreationFailed",
-        "ClusterDNSDeletionFailed",
-        "ClusterIngressCreationFailed",
-        "ClusterMonitoringConfigurationFailed",
-        "ClusterNamespaceDeletionFailed",
-        "ClusterProvisioningFailed",
-        "ClusterServiceMeshDeletionFailed",
-        "ClusterServiceMeshProvisioningFailed",
-        "ClusterTLSCertCreationFailed",
-        "ClusterTLSCertDeletionFailed",
-        "ClusterUserSyncCheckFailed",
-        "DBDeletionFailed",
-        "DBProvisioningFailed",
-        "FSDeletionFailed",
-        "FSMountTargetsCreationFailed",
-        "FSMountTargetsDeletionFailed",
-        "FSProvisioningFailed",
-    }
 
     def __init__(self, api_client: CdpClient):
         """
@@ -645,7 +653,7 @@ class CdpDeClient:
         self,
         cluster_id: str,
         target_statuses: Set[str],
-        error_statuses: Optional[Set[str]] = None,
+        error_statuses: Set[str] = CDE_SERVICE_FAILED_STATUSES,
         timeout: int = 7200,
         delay: int = 60,
     ) -> Optional[ServiceDescription]:
@@ -671,9 +679,6 @@ class CdpDeClient:
         Raises:
             CdpError: If the timeout is reached or the service enters an error status.
         """
-        if error_statuses is None:
-            error_statuses = self.FAILED_STATUSES
-
         start_time = time.time()
         while True:
             elapsed = time.time() - start_time
@@ -870,8 +875,8 @@ class CdpDeClient:
         cluster_id: str,
         vc_id: str,
         target_statuses: Set[str],
-        error_statuses: Optional[Set[str]] = None,
-        timeout: int = 900,
+        error_statuses: Set[str] = CDE_VC_FAILED_STATUSES,
+        timeout: int = 1800,
         delay: int = 30,
     ) -> Optional[VcDescription]:
         """
@@ -897,9 +902,6 @@ class CdpDeClient:
         Raises:
             CdpError: If the timeout is reached or the VC enters an error status.
         """
-        if error_statuses is None:
-            error_statuses = self.VC_FAILED_STATUSES
-
         start_time = time.time()
         while True:
             elapsed = time.time() - start_time
