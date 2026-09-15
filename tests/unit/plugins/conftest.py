@@ -580,7 +580,7 @@ def cleanup_de_service(
         yield register
     finally:
         for cluster_id in cluster_ids:
-            existing = de_client.get_service_by_cluster_id(cluster_id)
+            existing = de_client.describe_service(cluster_id)
             if existing is None:
                 continue
             try:
@@ -613,7 +613,7 @@ def disposable_de_service(
     CDP_DE_ENVIRONMENT being present.
     """
     env_name = required_or_skip("CDP_DE_ENVIRONMENT")
-    name = "ansible-" + re.sub(r"[^a-z0-9]", "-", request.node.name.lower())[:20]
+    name = "ansible-" + re.sub(r"[^a-z0-9]", "-", request.node.name.lower())
 
     existing = de_client.get_service_by_name(name)
     if existing is not None:
@@ -634,6 +634,7 @@ def disposable_de_service(
             maximum_instances=2,
             minimum_spot_instances=0,
             maximum_spot_instances=0,
+            enable_public_endpoint=True,
         )
         assert created is not None
 
@@ -645,7 +646,7 @@ def disposable_de_service(
     try:
         yield ready
     finally:
-        if de_client.get_service_by_cluster_id(ready.clusterId) is not None:
+        if de_client.describe_service(ready.clusterId) is not None:
             try:
                 # Initiate the disable from a removable state, then wait to stopped.
                 de_client.disable_service(ready.clusterId, force=True)

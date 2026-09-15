@@ -247,7 +247,10 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
     to_dict,
 )
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import CdpDeClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CDE_SERVICE_FAILED_STATUSES,
+    CdpDeClient,
+)
 
 
 class DEServiceInfo(ServicesModule):
@@ -287,7 +290,7 @@ class DEServiceInfo(ServicesModule):
         else:
             services = self.de_client.list_services(env_name=self.env_name)
             for svc in services:
-                if svc.status in CdpDeClient.FAILED_STATUSES:
+                if svc.status in CDE_SERVICE_FAILED_STATUSES:
                     self.services.append(to_dict(svc))
                 else:
                     service_details = self.de_client.describe_service(svc.clusterId)

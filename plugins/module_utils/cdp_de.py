@@ -264,23 +264,23 @@ def check_service_updates(
     return {}
 
 
-"""Service statuses that indicate a healthy running service (can be disabled)"""
+# """Service statuses that indicate a healthy running service (can be disabled)"""
 CDE_SERVICE_REMOVABLE_STATUSES = {"ClusterCreationCompleted"}
 
 
-"""Service statuses that indicate the service has been fully deleted"""
+# """Service statuses that indicate the service has been fully deleted"""
 CDE_SERVICE_STOPPED_STATUSES = {"ClusterDeletionCompleted"}
 
 
-"""Service statuses indicating active deletion is in progress"""
+# """Service statuses indicating active deletion is in progress"""
 CDE_SERVICE_TERMINATION_STATUSES = {"ClusterDeletionInProgress"}
 
 
-"""Service statuses that indicate a non-recoverable failure. These are every
-status mapped to the "Failed" external status in the CDP service status
-model, plus ClusterDeleteFromDBFailed (a terminal delete failure). The
-Maintenance/Upgrade/TLSCertRenewal failures are intentionally omitted: they
-map to the "Available" external status, i.e. the service remains usable."""
+# """Service statuses that indicate a non-recoverable failure. These are every
+# status mapped to the "Failed" external status in the CDP service status
+# model, plus ClusterDeleteFromDBFailed (a terminal delete failure). The
+# Maintenance/Upgrade/TLSCertRenewal failures are intentionally omitted: they
+# map to the "Available" external status, i.e. the service remains usable."""
 CDE_SERVICE_FAILED_STATUSES = {
     "ClusterAccessGroupCreationFailed",
     "ClusterAccessGroupDeletionFailed",
@@ -309,19 +309,19 @@ CDE_SERVICE_FAILED_STATUSES = {
 }
 
 
-"""Virtual cluster statuses that indicate the VC is active and can be deleted"""
+# """Virtual cluster statuses that indicate the VC is active and can be deleted"""
 CDE_VC_REMOVABLE_STATUSES = {"AppInstalled"}
 
 
-"""Virtual cluster statuses that indicate the VC has been deleted"""
+# """Virtual cluster statuses that indicate the VC has been deleted"""
 CDE_VC_STOPPED_STATUSES = {"AppDeleted", "AppNotDeletedFromDB"}
 
 
-"""Virtual cluster statuses indicating active deletion is in progress"""
+# """Virtual cluster statuses indicating active deletion is in progress"""
 CDE_VC_TERMINATION_STATUSES = {"AppDeletionInitiated"}
 
 
-"""Virtual cluster statuses that indicate a non-recoverable failure"""
+# """Virtual cluster statuses that indicate a non-recoverable failure"""
 CDE_VC_FAILED_STATUSES = {
     "AppDeletionFailed",
     "AppInstallationFailed",
@@ -489,8 +489,9 @@ class CdpDeClient:
             contained no service details
         """
         if not re.match(r"^[a-zA-Z][a-zA-Z0-9\-\.]+[a-zA-Z0-9]$", name):
-            raise ValueError(f"Invalid service name: {name}. Must match regex: ^[a-zA-Z][a-zA-Z0-9\-\.]+[a-zA-Z0-9]$")
-
+            raise ValueError(
+                f"Invalid service name: {name}. Must match regex: ^[a-zA-Z][a-zA-Z0-9\-\.]+[a-zA-Z0-9]$",
+            )
 
         data: Dict[str, Any] = {
             "name": name,

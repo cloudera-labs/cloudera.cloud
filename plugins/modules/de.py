@@ -495,6 +495,8 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     to_dict,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CDE_SERVICE_REMOVABLE_STATUSES,
+    CDE_SERVICE_STOPPED_STATUSES,
     CdpDeClient,
     ServiceDescription,
     check_service_updates,
@@ -791,7 +793,7 @@ class DEService(ServicesModule):
             if self.wait:
                 result = self.de_client.wait_for_service_state(
                     cluster_id=cluster_id,
-                    target_statuses=CdpDeClient.STOPPED_STATUSES,
+                    target_statuses=CDE_SERVICE_STOPPED_STATUSES,
                     timeout=self.timeout,
                     delay=self.delay,
                 )
@@ -873,7 +875,7 @@ class DEService(ServicesModule):
             if self.wait and cluster_id:
                 wait_result = self.de_client.wait_for_service_state(
                     cluster_id=cluster_id,
-                    target_statuses=CdpDeClient.REMOVABLE_STATUSES,
+                    target_statuses=CDE_SERVICE_REMOVABLE_STATUSES,
                     timeout=self.timeout,
                     delay=self.delay,
                 )
@@ -914,7 +916,7 @@ class DEService(ServicesModule):
                 if self.wait:
                     result = self.de_client.wait_for_service_state(
                         cluster_id=cluster_id,
-                        target_statuses=CdpDeClient.REMOVABLE_STATUSES,
+                        target_statuses=CDE_SERVICE_REMOVABLE_STATUSES,
                         timeout=self.timeout,
                         delay=self.delay,
                     )

@@ -24,7 +24,8 @@ import pytest
 
 from ansible_collections.cloudera.cloud.plugins.modules import de
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
-    CdpDeClient,
+    CDE_SERVICE_REMOVABLE_STATUSES,
+    CDE_SERVICE_STOPPED_STATUSES,
     ServiceDescription,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
@@ -82,8 +83,8 @@ def de_client(mocker):
         "ansible_collections.cloudera.cloud.plugins.modules.de.CdpDeClient",
         autospec=True,
     )
-    mock_class.REMOVABLE_STATUSES = CdpDeClient.REMOVABLE_STATUSES
-    mock_class.STOPPED_STATUSES = CdpDeClient.STOPPED_STATUSES
+    mock_class.CDE_SERVICE_REMOVABLE_STATUSES = CDE_SERVICE_REMOVABLE_STATUSES
+    mock_class.CDE_SERVICE_STOPPED_STATUSES = CDE_SERVICE_STOPPED_STATUSES
     return mock_class.return_value
 
 
@@ -179,7 +180,7 @@ def test_present_enable_with_wait(de_module_args, de_client):
     de_client.wait_for_service_state.assert_called_once()
     wait_args = de_client.wait_for_service_state.call_args.kwargs
     assert wait_args["cluster_id"] == CLUSTER_ID
-    assert wait_args["target_statuses"] == CdpDeClient.REMOVABLE_STATUSES
+    assert wait_args["target_statuses"] == CDE_SERVICE_REMOVABLE_STATUSES
 
 
 def test_present_enable_custom_params(de_module_args, de_client):
@@ -345,7 +346,7 @@ def test_reconcile_update_with_wait(de_module_args, de_client, mocker):
     de_client.wait_for_service_state.assert_called_once()
     wait_args = de_client.wait_for_service_state.call_args.kwargs
     assert wait_args["cluster_id"] == CLUSTER_ID
-    assert wait_args["target_statuses"] == CdpDeClient.REMOVABLE_STATUSES
+    assert wait_args["target_statuses"] == CDE_SERVICE_REMOVABLE_STATUSES
 
 
 def test_reconcile_update_check_mode(de_module_args, de_client, mocker):
@@ -426,7 +427,7 @@ def test_absent_disable_with_wait(de_module_args, de_client):
     de_client.wait_for_service_state.assert_called_once()
     wait_args = de_client.wait_for_service_state.call_args.kwargs
     assert wait_args["cluster_id"] == CLUSTER_ID
-    assert wait_args["target_statuses"] == CdpDeClient.STOPPED_STATUSES
+    assert wait_args["target_statuses"] == CDE_SERVICE_STOPPED_STATUSES
 
 
 def test_absent_disable_wait_returns_none(de_module_args, de_client):

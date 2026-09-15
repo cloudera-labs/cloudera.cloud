@@ -25,7 +25,7 @@ import pytest
 
 from ansible_collections.cloudera.cloud.plugins.modules import de
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
-    CdpDeClient,
+    CDE_SERVICE_REMOVABLE_STATUSES,
     ServiceResources,
 )
 from ansible_collections.cloudera.cloud.tests.unit import (
@@ -41,7 +41,7 @@ REQUIRED_ENV_VARS = [
     "CDP_PRIVATE_KEY",
 ]
 
-DEFAULT_INSTANCE_TYPE = "m5.2xlarge"
+DEFAULT_INSTANCE_TYPE = "r5.2xlarge"
 
 
 @pytest.fixture
@@ -62,29 +62,22 @@ def de_module_args(module_args, env_context):
     return wrapped_args
 
 
-def _service_name(request):
-    return "ansible-" + re.sub(r"[^a-z0-9]", "", request.node.name.lower())[:20]
-
-
-@pytest.mark.slow
+# @pytest.mark.slow
 def test_present_aws(request, de_module_args, cleanup_de_service):
     """Enable a service via the module, verify idempotency, then disable it."""
     # Skip the test if the required environment variables are not set
     env_name = required_or_skip("CDP_DE_ENVIRONMENT")
-    subnets = required_or_skip("CDP_DE_SUBNETS").split(",")
 
-    name = _service_name(request)
+    name = "ansible-" + re.sub(r"[^a-z0-9]", "-", request.node.name.lower())[:20]
 
     create_args = {
         "name": name,
         "environment": env_name,
         "instance_type": DEFAULT_INSTANCE_TYPE,
         "minimum_instances": 1,
-        "maximum_instances": 1,
+        "maximum_instances": 2,
         "minimum_spot_instances": 0,
         "maximum_spot_instances": 0,
-        # "subnets": subnets,
-        # "enable_public_endpoint": True,
         "state": "present",
         "wait": True,
         "timeout": 4500,
@@ -98,13 +91,15 @@ def test_present_aws(request, de_module_args, cleanup_de_service):
 
     assert exc.value.changed is True
     assert exc.value.service["name"] == name
-    assert exc.value.service["status"] in CdpDeClient.REMOVABLE_STATUSES
+    assert exc.value.service["status"] in CDE_SERVICE_REMOVABLE_STATUSES
 
     # Idempotent re-run of present (no reconcilable drift)
     de_module_args(create_args)
     with pytest.raises(AnsibleExitJson) as exc:
         de.main()
     assert exc.value.changed is False
+    assert exc.value.service["name"] == name
+    assert exc.value.service["status"] in CDE_SERVICE_REMOVABLE_STATUSES
 
 
 # @pytest.mark.slow
@@ -146,17 +141,17 @@ def test_present_update_aws(
     with pytest.raises(AnsibleExitJson) as exc:
         de.main()
     assert exc.value.changed is True
-    assert exc.value.service["resources"]["max_instances"] == new_max
+    assert int(exc.value.service["resources"]["max_instances"]) == new_max
 
     # Idempotent re-run after update
     de_module_args(update_args)
     with pytest.raises(AnsibleExitJson) as exc:
         de.main()
     assert exc.value.changed is False
-    assert exc.value.service["resources"]["max_instances"] == new_max
+    assert int(exc.value.service["resources"]["max_instances"]) == new_max
 
 
-@pytest.mark.slow
+# @pytest.mark.slow
 def test_absent_aws(de_module_args, de_client, disposable_de_service):
     """Disable an existing service via the module, then verify idempotency.
 
@@ -191,25 +186,19 @@ def test_absent_aws(de_module_args, de_client, disposable_de_service):
     assert exc.value.changed is False
 
 
-@pytest.mark.slow
+# @pytest.mark.slow
 def test_present_azure(
     request,
     de_module_args,
     env_context,
-    de_client,
     cleanup_de_service,
 ):
     """Enable an Azure service with managed identities, verify idempotency, then disable it."""
-    azure_service_identity = os.getenv("AZURE_MANAGED_IDENTITY_ID")
-    azure_vc_identity = os.getenv("AZURE_VC_MANAGED_IDENTITIES")
-    if not azure_service_identity or not azure_vc_identity:
-        pytest.skip(
-            "AZURE_MANAGED_IDENTITY_ID / AZURE_VC_MANAGED_IDENTITIES not set; "
-            "skipping Azure DE service test",
-        )
+    env_name = required_or_skip("CDP_DE_ENVIRONMENT")
+    azure_service_identity = required_or_skip("AZURE_MANAGED_IDENTITY_ID")
+    azure_vc_identity = required_or_skip("AZURE_VC_MANAGED_IDENTITIES")
 
-    name = _service_name(request)
-    env_name = env_context["DE_ENV_NAME"]
+    name = "ansible-" + re.sub(r"[^a-z0-9]", "-", request.node.name.lower())[:20]
     instance_type = "Standard_E16s_v4"
     timeout = 7200
 
@@ -218,7 +207,7 @@ def test_present_azure(
         "environment": env_name,
         "instance_type": instance_type,
         "minimum_instances": 1,
-        "maximum_instances": 1,
+        "maximum_instances": 2,
         "minimum_spot_instances": 0,
         "maximum_spot_instances": 0,
         "azure_service_managed_identity": azure_service_identity,
@@ -236,10 +225,12 @@ def test_present_azure(
 
     assert exc.value.changed is True
     assert exc.value.service["name"] == name
-    assert exc.value.service["status"] in CdpDeClient.REMOVABLE_STATUSES
+    assert exc.value.service["status"] in CDE_SERVICE_REMOVABLE_STATUSES
 
     # Idempotent re-run of present (service already exists)
     de_module_args(create_args)
     with pytest.raises(AnsibleExitJson) as exc:
         de.main()
     assert exc.value.changed is False
+    assert exc.value.service["name"] == name
+    assert exc.value.service["status"] in CDE_SERVICE_REMOVABLE_STATUSES
