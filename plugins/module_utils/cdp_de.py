@@ -18,10 +18,12 @@
 A REST client for the Cloudera on Cloud Platform (CDP) Data Engineering API
 """
 
+import time
+import re
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Union
-import time
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
     CdpError,
@@ -486,6 +488,10 @@ class CdpDeClient:
             ServiceDescription of the created service, or None if the response
             contained no service details
         """
+        if not re.match(r"^[a-zA-Z][a-zA-Z0-9\-\.]+[a-zA-Z0-9]$", name):
+            raise ValueError(f"Invalid service name: {name}. Must match regex: ^[a-zA-Z][a-zA-Z0-9\-\.]+[a-zA-Z0-9]$")
+
+
         data: Dict[str, Any] = {
             "name": name,
             "env": env,
