@@ -27,6 +27,7 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlencode, urlparse
 from urllib.error import HTTPError, URLError
 from http.client import HTTPResponse
+
 from ansible.module_utils.urls import Request
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (

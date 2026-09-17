@@ -26,7 +26,6 @@ from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
 )
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import CdpDeClient
 from ansible_collections.cloudera.cloud.plugins.modules import de_info
 
 # Required environment variables for integration tests
@@ -35,9 +34,6 @@ REQUIRED_ENV_VARS = [
     "CDP_ACCESS_KEY_ID",
     "CDP_PRIVATE_KEY",
 ]
-
-# Mark all tests in this module as integration tests requiring API credentials
-pytestmark = pytest.mark.integration_api
 
 
 @pytest.fixture
@@ -60,36 +56,7 @@ def de_info_module_args(module_args, env_context) -> Callable[[dict], None]:
     return wrapped_args
 
 
-@pytest.fixture
-def de_client(test_cdp_client) -> CdpDeClient:
-    """Fixture to provide a Data Engineering client for tests."""
-    return CdpDeClient(api_client=test_cdp_client)
-
-
-@pytest.fixture
-def valid_de_service(de_client):
-    """Fixture to find a valid, describable Data Engineering service for testing."""
-    services = de_client.list_services().get("services", [])
-
-    if not services:
-        pytest.skip("No Data Engineering services available for testing")
-
-    # Find a service that can be described successfully (skip failed states)
-    for svc in services:
-        # Skip services in deletion/upgrade failed states
-        if svc.get("status") in CdpDeClient.FAILED_STATUSES:
-            continue
-
-        cluster_id = svc.get("clusterId")
-        if cluster_id:
-            details = de_client.describe_service(cluster_id)
-            if details.get("service"):
-                return svc
-
-    pytest.skip("No describable Data Engineering services available for testing")
-
-
-def test_de_service_info_list_all(de_info_module_args):
+def test_de_service_info_list_all(de_info_module_args, existing_de_service):
     """Test listing all Data Engineering services."""
 
     de_info_module_args({})
@@ -101,12 +68,15 @@ def test_de_service_info_list_all(de_info_module_args):
     assert result.value.changed is False
     assert result.value.services is not None
     assert isinstance(result.value.services, list)
+    assert any(
+        svc.get("name") == existing_de_service.name for svc in result.value.services
+    )
 
 
-def test_de_service_info_by_name(de_info_module_args, valid_de_service):
+def test_de_service_info_by_name(de_info_module_args, existing_de_service):
     """Test getting Data Engineering service by name."""
 
-    service_name = valid_de_service.get("name")
+    service_name = existing_de_service.name
 
     de_info_module_args({"name": service_name})
 
@@ -121,10 +91,10 @@ def test_de_service_info_by_name(de_info_module_args, valid_de_service):
     assert "clusterId" in result.value.services[0]
 
 
-def test_de_service_info_by_cluster_id(de_info_module_args, valid_de_service):
+def test_de_service_info_by_cluster_id(de_info_module_args, existing_de_service):
     """Test getting Data Engineering service by cluster ID."""
 
-    cluster_id = valid_de_service.get("clusterId")
+    cluster_id = existing_de_service.clusterId
 
     de_info_module_args({"cluster_id": cluster_id})
 
@@ -139,13 +109,10 @@ def test_de_service_info_by_cluster_id(de_info_module_args, valid_de_service):
     assert "name" in result.value.services[0]
 
 
-def test_de_service_info_by_env_name(de_info_module_args, valid_de_service):
+def test_de_service_info_by_env_name(de_info_module_args, existing_de_service):
     """Test getting Data Engineering service by environment name."""
 
-    env_name = valid_de_service.get("environmentName")
-
-    if not env_name:
-        pytest.skip("Service does not have environmentName")
+    env_name = existing_de_service.environmentName
 
     de_info_module_args({"env_name": env_name})
 

@@ -18,435 +18,219 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import pytest
-import random
-from typing import Callable, Generator
+import os
+import re
 
+import pytest
+
+from ansible_collections.cloudera.cloud.plugins.modules import de
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CDE_SERVICE_REMOVABLE_STATUSES,
+    ServiceResources,
+)
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
-    AnsibleFailJson,
+    required_or_skip,
 )
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import CdpDeClient
-from ansible_collections.cloudera.cloud.plugins.modules import de
 
 # Required environment variables for integration tests
 REQUIRED_ENV_VARS = [
     "CDP_API_ENDPOINT",
     "CDP_ACCESS_KEY_ID",
     "CDP_PRIVATE_KEY",
-    "DE_ENV_NAME",
-    "AZURE_MANAGED_IDENTITY_ID",
-    "AZURE_VC_MANAGED_IDENTITIES",
 ]
 
 DEFAULT_INSTANCE_TYPE = "r5.2xlarge"
 
-# Mark all tests in this module as integration tests requiring API credentials
-pytestmark = pytest.mark.integration_api
-
 
 @pytest.fixture
-def de_module_args(module_args, env_context) -> Callable[[dict], None]:
-    """Fixture to pre-populate common DE module arguments."""
+def de_module_args(module_args, env_context):
+    """Pre-populate common de module arguments from the env."""
 
     def wrapped_args(args=None):
         if args is None:
             args = {}
-
-        args.update(
-            {
-                "endpoint": env_context["CDP_API_ENDPOINT"],
-                "access_key": env_context["CDP_ACCESS_KEY_ID"],
-                "private_key": env_context["CDP_PRIVATE_KEY"],
-            },
-        )
-        return module_args(args)
+        merged = {
+            "endpoint": env_context["CDP_API_ENDPOINT"],
+            "access_key": env_context["CDP_ACCESS_KEY_ID"],
+            "private_key": env_context["CDP_PRIVATE_KEY"],
+        }
+        merged.update(args)
+        return module_args(merged)
 
     return wrapped_args
 
 
-@pytest.fixture
-def de_client(test_cdp_client) -> CdpDeClient:
-    """Fixture to provide a Data Engineering client for tests."""
-    return CdpDeClient(api_client=test_cdp_client)
+# @pytest.mark.slow
+def test_present_aws(request, de_module_args, cleanup_de_service):
+    """Enable a service via the module, verify idempotency, then disable it."""
+    # Skip the test if the required environment variables are not set
+    env_name = required_or_skip("CDP_DE_ENVIRONMENT")
+
+    name = "ansible-" + re.sub(r"[^a-z0-9]", "-", request.node.name.lower())[:20]
+
+    create_args = {
+        "name": name,
+        "environment": env_name,
+        "instance_type": DEFAULT_INSTANCE_TYPE,
+        "minimum_instances": 1,
+        "maximum_instances": 2,
+        "minimum_spot_instances": 0,
+        "maximum_spot_instances": 0,
+        "state": "present",
+        "wait": True,
+        "timeout": 4500,
+    }
+
+    de_module_args(create_args)
+    with pytest.raises(AnsibleExitJson) as exc:
+        de.main()
+
+    cleanup_de_service(exc.value.service["clusterId"])
+
+    assert exc.value.changed is True
+    assert exc.value.service["name"] == name
+    assert exc.value.service["status"] in CDE_SERVICE_REMOVABLE_STATUSES
+
+    # Idempotent re-run of present (no reconcilable drift)
+    de_module_args(create_args)
+    with pytest.raises(AnsibleExitJson) as exc:
+        de.main()
+    assert exc.value.changed is False
+    assert exc.value.service["name"] == name
+    assert exc.value.service["status"] in CDE_SERVICE_REMOVABLE_STATUSES
 
 
-@pytest.fixture
-def de_service_disable(de_client) -> Generator[Callable[[str, str], None], None, None]:
+# @pytest.mark.slow
+def test_present_update_aws(
+    de_module_args,
+    disposable_de_service,
+):
+    """Bump a service's maximum_instances, then re-check idempotency.
+
+    Operates on C(disposable_de_service), a net-new service owned by this test,
+    so the mutation has no side effects and the service is torn down at teardown.
     """
-    Fixture to clean up CDE services created during integration tests.
+    service = disposable_de_service
+    name = service.name
+    env_name = service.environmentName
+    timeout = 7200
 
-    Registers a (name, env_name) pair for cleanup and disables + waits after the test.
+    resources = service.resources
+    if not isinstance(resources, ServiceResources):
+        resources = ServiceResources()
+
+    try:
+        current_max = int(resources.max_instances)
+    except (TypeError, ValueError):
+        current_max = 1
+    new_max = current_max + 1
+
+    update_args = {
+        "name": name,
+        "environment": env_name,
+        "maximum_instances": new_max,
+        "state": "present",
+        "wait": True,
+        "timeout": timeout,
+    }
+
+    # Update maximum_instances
+    de_module_args(update_args)
+    with pytest.raises(AnsibleExitJson) as exc:
+        de.main()
+    assert exc.value.changed is True
+    assert int(exc.value.service["resources"]["max_instances"]) == new_max
+
+    # Idempotent re-run after update
+    de_module_args(update_args)
+    with pytest.raises(AnsibleExitJson) as exc:
+        de.main()
+    assert exc.value.changed is False
+    assert int(exc.value.service["resources"]["max_instances"]) == new_max
+
+
+# @pytest.mark.slow
+def test_absent_aws(de_module_args, de_client, disposable_de_service):
+    """Disable an existing service via the module, then verify idempotency.
+
+    Uses C(disposable_de_service) so the target service is owned by this test;
+    the fixture disables it at teardown if the module did not.
     """
-    services_to_cleanup = []
+    service = disposable_de_service
+    name = service.name
+    env_name = service.environmentName
+    timeout = 7200
 
-    def _register(name: str, env_name: str):
-        services_to_cleanup.append((name, env_name))
+    absent_args = {
+        "name": name,
+        "environment": env_name,
+        "state": "absent",
+        "wait": True,
+        "timeout": timeout,
+    }
 
-    yield _register
-
-    for name, env_name in services_to_cleanup:
-        try:
-            result = de_client.get_service_by_name(name, env_name=env_name)
-            if result:
-                cluster_id = result.get("service", {}).get("clusterId")
-                if cluster_id:
-                    de_client.wait_for_service_state(
-                        cluster_id=cluster_id,
-                        target_statuses=CdpDeClient.STOPPED_STATUSES,
-                        timeout=7200,
-                        delay=60,
-                    )
-        except Exception:
-            pass
-
-
-@pytest.fixture
-def de_service_enable(
-    de_client,
-    de_service_disable,
-    env_context,
-) -> Callable[[str], dict]:
-    """
-    Fixture to create a CDE service for tests that need an existing service.
-
-    Creates the service (or reuses an existing one) and registers it for cleanup.
-    Returns the service details dict.
-    """
-
-    def _de_service_enable(service_name: str) -> dict:
-        env_name = env_context["DE_ENV_NAME"]
-        instance_type = env_context.get("DE_INSTANCE_TYPE", DEFAULT_INSTANCE_TYPE)
-        de_service_disable(service_name, env_name)
-
-        # Check if service already exists
-        existing = de_client.get_service_by_name(service_name, env_name=env_name)
-        if existing:
-            service = existing.get("service", existing)
-            current_status = service.get("status")
-
-            # Wait for it to reach a usable state if it's transitioning
-            if current_status not in CdpDeClient.REMOVABLE_STATUSES:
-                cluster_id = service.get("clusterId")
-                if cluster_id:
-                    result = de_client.wait_for_service_state(
-                        cluster_id=cluster_id,
-                        target_statuses=CdpDeClient.REMOVABLE_STATUSES,
-                        timeout=7200,
-                        delay=60,
-                    )
-                    return result if result else service
-            return service
-
-        # Create a new service
-        result = de_client.enable_service(
-            name=service_name,
-            env=env_name,
-            instance_type=instance_type,
-            minimum_instances=1,
-            maximum_instances=2,
-            minimum_spot_instances=0,
-            maximum_spot_instances=0,
-        )
-        service = result.get("service") if result else None
-        if not service:
-            pytest.skip(f"Failed to create CDE service '{service_name}'")
-
-        cluster_id = service.get("clusterId")
-        if cluster_id:
-            wait_result = de_client.wait_for_service_state(
-                cluster_id=cluster_id,
-                target_statuses=CdpDeClient.REMOVABLE_STATUSES,
-                timeout=7200,
-                delay=60,
-            )
-            return wait_result if wait_result else service
-
-        return service
-
-    return _de_service_enable
-
-
-@pytest.mark.data_service
-def test_de_service_enable(de_module_args, env_context, de_service_disable):
-    """Test enabling a CDE service and verify idempotency on second run."""
-
-    random_suffix = random.randint(100000, 999999)
-    service_name = f"test-cde-{random_suffix}"
-    env_name = env_context["DE_ENV_NAME"]
-    instance_type = env_context.get("DE_INSTANCE_TYPE", DEFAULT_INSTANCE_TYPE)
-
-    de_service_disable(service_name, env_name)
-
-    # First run — enable
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": True,
-        },
-    )
-
-    with pytest.raises(AnsibleExitJson) as result:
+    # Disable
+    de_module_args(absent_args)
+    with pytest.raises(AnsibleExitJson) as exc:
         de.main()
+    assert exc.value.changed is True
 
-    assert result.value.changed is True
-    assert result.value.service is not None
-    assert result.value.service.get("name") == service_name
-    assert result.value.service.get("status") in CdpDeClient.REMOVABLE_STATUSES
+    assert de_client.get_service_by_name(name, env_name=env_name) is None
 
-    # Second run — idempotent (no config changes)
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": True,
-        },
-    )
-
-    with pytest.raises(AnsibleExitJson) as result:
+    # Idempotent re-run of absent (service already gone)
+    de_module_args(absent_args)
+    with pytest.raises(AnsibleExitJson) as exc:
         de.main()
-
-    assert result.value.changed is False
-    assert result.value.service.get("name") == service_name
+    assert exc.value.changed is False
 
 
-@pytest.mark.data_service
-def test_de_service_update(de_module_args, env_context, de_service_disable):
-    """Test updating an existing CDE service's instance counts."""
-
-    random_suffix = random.randint(100000, 999999)
-    service_name = f"test-cde-update-{random_suffix}"
-    env_name = env_context["DE_ENV_NAME"]
-    instance_type = env_context.get("DE_INSTANCE_TYPE", DEFAULT_INSTANCE_TYPE)
-
-    de_service_disable(service_name, env_name)
-
-    # First run — create service with initial config
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": True,
-        },
-    )
-
-    with pytest.raises(AnsibleExitJson) as result:
-        de.main()
-
-    assert result.value.changed is True
-    assert result.value.service is not None
-    assert result.value.service.get("name") == service_name
-    assert result.value.service.get("status") in CdpDeClient.REMOVABLE_STATUSES
-
-    # Second run — update maximum_instances
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 3,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": True,
-        },
-    )
-
-    with pytest.raises(AnsibleExitJson) as result:
-        de.main()
-
-    assert result.value.changed is True
-    assert result.value.service is not None
-
-    # Verify idempotency after update
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 3,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": True,
-        },
-    )
-
-    with pytest.raises(AnsibleExitJson) as result:
-        de.main()
-
-    assert result.value.changed is False
-
-
-@pytest.mark.data_service
-def test_de_service_disable(de_module_args, env_context, de_service_enable):
-    """Test disabling a CDE service and verify idempotency."""
-
-    random_suffix = random.randint(100000, 999999)
-    service_name = f"test-cde-disable-{random_suffix}"
-    env_name = env_context["DE_ENV_NAME"]
-    instance_type = env_context.get("DE_INSTANCE_TYPE", DEFAULT_INSTANCE_TYPE)
-
-    # Ensure service exists
-    existing = de_service_enable(service_name)
-    assert existing is not None
-
-    # First run — disable
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "absent",
-            "wait": True,
-        },
-    )
-
-    with pytest.raises(AnsibleExitJson) as result:
-        de.main()
-
-    assert result.value.changed is True
-
-    # Second run — idempotent (service already gone)
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "absent",
-            "wait": True,
-        },
-    )
-
-    with pytest.raises(AnsibleExitJson) as result:
-        de.main()
-
-    assert result.value.changed is False
-    assert result.value.service == {}
-
-
-@pytest.mark.data_service
-def test_de_service_enable_check_mode(de_module_args, env_context, de_service_disable):
-    """Test that check mode reports changed but does not create the service."""
-
-    random_suffix = random.randint(100000, 999999)
-    service_name = f"test-cde-checkmode-{random_suffix}"
-    env_name = env_context["DE_ENV_NAME"]
-    instance_type = env_context.get("DE_INSTANCE_TYPE", DEFAULT_INSTANCE_TYPE)
-
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "_ansible_check_mode": True,
-        },
-    )
-
-    with pytest.raises(AnsibleExitJson) as result:
-        de.main()
-
-    assert result.value.changed is True
-    assert result.value.service == {}
-
-
-# @pytest.mark.data_service
-# @pytest.mark.azure
-def test_de_service_enable_azure(
+# @pytest.mark.slow
+def test_present_azure(
+    request,
     de_module_args,
     env_context,
-    de_service_disable,
+    cleanup_de_service,
 ):
-    """Test enabling a CDE service on Azure with managed identities and verify idempotency."""
-    azure_service_identity = env_context.get("AZURE_MANAGED_IDENTITY_ID")
-    azure_vc_identity = env_context.get("AZURE_VC_MANAGED_IDENTITIES")
+    """Enable an Azure service with managed identities, verify idempotency, then disable it."""
+    env_name = required_or_skip("CDP_DE_ENVIRONMENT")
+    azure_service_identity = required_or_skip("AZURE_MANAGED_IDENTITY_ID")
+    azure_vc_identity = required_or_skip("AZURE_VC_MANAGED_IDENTITIES")
 
-    random_suffix = random.randint(100000, 999999)
-    service_name = f"test-cde-az-{random_suffix}"
-    env_name = env_context["DE_ENV_NAME"]
-    instance_type = "Standard_E16s_v4"  # Azure-specific instance type
+    name = "ansible-" + re.sub(r"[^a-z0-9]", "-", request.node.name.lower())[:20]
+    instance_type = "Standard_E16s_v4"
+    timeout = 7200
 
-    de_service_disable(service_name, env_name)
+    create_args = {
+        "name": name,
+        "environment": env_name,
+        "instance_type": instance_type,
+        "minimum_instances": 1,
+        "maximum_instances": 2,
+        "minimum_spot_instances": 0,
+        "maximum_spot_instances": 0,
+        "azure_service_managed_identity": azure_service_identity,
+        "azure_virtual_cluster_managed_identities": azure_vc_identity,
+        "state": "present",
+        "wait": True,
+        "timeout": timeout,
+    }
 
-    # First run — enable
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "azure_service_managed_identity": azure_service_identity,
-            "azure_virtual_cluster_managed_identities": azure_vc_identity,
-            "state": "present",
-            "wait": True,
-        },
-    )
-
-    with pytest.raises(AnsibleExitJson) as result:
+    de_module_args(create_args)
+    with pytest.raises(AnsibleExitJson) as exc:
         de.main()
 
-    assert result.value.changed is True
-    assert result.value.service is not None
-    assert result.value.service.get("name") == service_name
-    assert result.value.service.get("status") in CdpDeClient.REMOVABLE_STATUSES
+    cleanup_de_service(exc.value.service["clusterId"])
 
-    # Second run — idempotent
-    de_module_args(
-        {
-            "name": service_name,
-            "environment": env_name,
-            "instance_type": instance_type,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "azure_service_managed_identity": azure_service_identity,
-            "azure_virtual_cluster_managed_identities": azure_vc_identity,
-            "state": "present",
-            "wait": True,
-        },
-    )
+    assert exc.value.changed is True
+    assert exc.value.service["name"] == name
+    assert exc.value.service["status"] in CDE_SERVICE_REMOVABLE_STATUSES
 
-    with pytest.raises(AnsibleExitJson) as result:
+    # Idempotent re-run of present (service already exists)
+    de_module_args(create_args)
+    with pytest.raises(AnsibleExitJson) as exc:
         de.main()
-
-    assert result.value.changed is False
-    assert result.value.service.get("name") == service_name
+    assert exc.value.changed is False
+    assert exc.value.service["name"] == name
+    assert exc.value.service["status"] in CDE_SERVICE_REMOVABLE_STATUSES

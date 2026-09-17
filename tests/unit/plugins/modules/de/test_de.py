@@ -20,20 +20,25 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.cloudera.cloud.tests.unit import (
-    AnsibleFailJson,
-    AnsibleExitJson,
-)
+# pylint: disable=redefined-outer-name,unused-argument
 
 from ansible_collections.cloudera.cloud.plugins.modules import de
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CDE_SERVICE_REMOVABLE_STATUSES,
+    CDE_SERVICE_STOPPED_STATUSES,
+    ServiceDescription,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    from_dict,
+)
+from ansible_collections.cloudera.cloud.tests.unit import (
+    AnsibleExitJson,
+)
 
 
 BASE_URL = "https://cloudera.internal/api"
 ACCESS_KEY = "test-access-key"
 PRIVATE_KEY = "test-private-key"
-FILE_ACCESS_KEY = "file-access-key"
-FILE_PRIVATE_KEY = "file-private-key"
-FILE_REGION = "default"
 
 SERVICE_NAME = "test-de-service"
 ENV_NAME = "test-environment"
@@ -41,33 +46,46 @@ CLUSTER_ID = "cluster-abc-123"
 INSTANCE_TYPE = "r5.2xlarge"
 
 
-def _patch_common(mocker):
-    """Patch load_cdp_config and return the mocked CdpDeClient instance."""
+@pytest.fixture
+def de_module_args(module_args):
+    """Pre-populate common DE module arguments."""
+
+    def wrapped_args(args=None):
+        if args is None:
+            args = {}
+        merged = {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": SERVICE_NAME,
+            "environment": ENV_NAME,
+            "wait": False,
+        }
+        merged.update(args)
+        return module_args(merged)
+
+    return wrapped_args
+
+
+@pytest.fixture
+def de_client(mocker):
+    """Patch load_cdp_config and CdpDeClient, returning the mocked client.
+
+    autospec replaces the class constants with mocks, so restore the real
+    status lists the module reads (C(REMOVABLE_STATUSES), C(STOPPED_STATUSES)).
+    """
     config = mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
     )
-    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+    config.return_value = (ACCESS_KEY, PRIVATE_KEY, "us-west-1")
 
-    client = mocker.patch(
-        "ansible_collections.cloudera.cloud.plugins.modules.de.CdpDeClient",
-        autospec=True,
-    ).return_value
-
-    return client
-
-
-def _patch_common_with_class(mocker):
-    """Patch load_cdp_config and return both the CdpDeClient class mock and its instance."""
-    config = mocker.patch(
-        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
-    )
-    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
-
-    mock_client_class = mocker.patch(
+    mock_class = mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.modules.de.CdpDeClient",
         autospec=True,
     )
-    return mock_client_class, mock_client_class.return_value
+    mock_class.CDE_SERVICE_REMOVABLE_STATUSES = CDE_SERVICE_REMOVABLE_STATUSES
+    mock_class.CDE_SERVICE_STOPPED_STATUSES = CDE_SERVICE_STOPPED_STATUSES
+    return mock_class.return_value
 
 
 def _existing_service(
@@ -77,19 +95,22 @@ def _existing_service(
     min_spot_instances="0",
     max_spot_instances="0",
 ):
-    return {
-        "clusterId": CLUSTER_ID,
-        "name": SERVICE_NAME,
-        "status": status,
-        "environmentName": ENV_NAME,
-        "resources": {
-            "instance_type": INSTANCE_TYPE,
-            "min_instances": min_instances,
-            "max_instances": max_instances,
-            "min_spot_instances": min_spot_instances,
-            "max_spot_instances": max_spot_instances,
+    return from_dict(
+        ServiceDescription,
+        {
+            "clusterId": CLUSTER_ID,
+            "name": SERVICE_NAME,
+            "status": status,
+            "environmentName": ENV_NAME,
+            "resources": {
+                "instance_type": INSTANCE_TYPE,
+                "min_instances": min_instances,
+                "max_instances": max_instances,
+                "min_spot_instances": min_spot_instances,
+                "max_spot_instances": max_spot_instances,
+            },
         },
-    }
+    )
 
 
 # ============================================================================
@@ -97,31 +118,20 @@ def _existing_service(
 # ============================================================================
 
 
-def test_de_service_enable_success(module_args, mocker):
-    """Test enabling a CDE service successfully."""
+def test_present_enable(de_module_args, de_client):
+    """A new service is enabled and its parameters are passed through."""
+    de_client.get_service_by_name.return_value = None
+    de_client.enable_service.return_value = _existing_service()
 
-    module_args(
+    de_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
             "instance_type": INSTANCE_TYPE,
             "minimum_instances": 1,
             "maximum_instances": 2,
             "minimum_spot_instances": 0,
             "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": False,
         },
     )
-
-    client = _patch_common(mocker)
-    client.get_service_by_name.return_value = None
-    client.enable_service.return_value = {
-        "service": _existing_service(),
-    }
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
@@ -130,8 +140,8 @@ def test_de_service_enable_success(module_args, mocker):
     assert result.value.service["name"] == SERVICE_NAME
     assert result.value.service["clusterId"] == CLUSTER_ID
 
-    client.enable_service.assert_called_once()
-    call_args = client.enable_service.call_args[1]
+    de_client.enable_service.assert_called_once()
+    call_args = de_client.enable_service.call_args.kwargs
     assert call_args["name"] == SERVICE_NAME
     assert call_args["env"] == ENV_NAME
     assert call_args["instance_type"] == INSTANCE_TYPE
@@ -140,37 +150,25 @@ def test_de_service_enable_success(module_args, mocker):
     assert call_args["minimum_spot_instances"] == 0
     assert call_args["maximum_spot_instances"] == 0
 
-    client.wait_for_service_state.assert_not_called()
+    de_client.wait_for_service_state.assert_not_called()
 
 
-def test_de_service_enable_with_wait(module_args, mocker):
-    """Test enabling a CDE service with wait enabled."""
+def test_present_enable_with_wait(de_module_args, de_client):
+    """Enabling with wait polls to REMOVABLE_STATUSES."""
+    de_client.get_service_by_name.return_value = None
+    de_client.enable_service.return_value = _existing_service(
+        status="ClusterCreationInProgress",
+    )
+    de_client.wait_for_service_state.return_value = _existing_service()
 
-    module_args(
+    de_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
             "instance_type": INSTANCE_TYPE,
             "minimum_instances": 1,
             "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
             "wait": True,
         },
     )
-
-    mock_client_class, client = _patch_common_with_class(mocker)
-    mock_client_class.REMOVABLE_STATUSES = ["ClusterCreationCompleted"]
-
-    client.get_service_by_name.return_value = None
-    client.enable_service.return_value = {
-        "service": _existing_service(status="ClusterCreationInProgress"),
-    }
-    client.wait_for_service_state.return_value = _existing_service()
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
@@ -178,60 +176,21 @@ def test_de_service_enable_with_wait(module_args, mocker):
     assert result.value.changed is True
     assert result.value.service["status"] == "ClusterCreationCompleted"
 
-    client.enable_service.assert_called_once()
-    client.wait_for_service_state.assert_called_once()
-    wait_args = client.wait_for_service_state.call_args[1]
+    de_client.enable_service.assert_called_once()
+    de_client.wait_for_service_state.assert_called_once()
+    wait_args = de_client.wait_for_service_state.call_args.kwargs
     assert wait_args["cluster_id"] == CLUSTER_ID
-    assert wait_args["target_statuses"] == ["ClusterCreationCompleted"]
+    assert wait_args["target_statuses"] == CDE_SERVICE_REMOVABLE_STATUSES
 
 
-def test_de_service_enable_check_mode(module_args, mocker):
-    """Test enabling a CDE service in check mode — changed=True but no API calls."""
+def test_present_enable_custom_params(de_module_args, de_client):
+    """Optional enable parameters are passed through to the client."""
+    de_client.get_service_by_name.return_value = None
+    de_client.enable_service.return_value = _existing_service()
 
-    module_args(
+    de_module_args(
         {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
             "instance_type": INSTANCE_TYPE,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "_ansible_check_mode": True,
-        },
-    )
-
-    client = _patch_common(mocker)
-    client.get_service_by_name.return_value = None
-
-    with pytest.raises(AnsibleExitJson) as result:
-        de.main()
-
-    assert result.value.changed is True
-    assert result.value.service == {}
-    client.enable_service.assert_not_called()
-    client.wait_for_service_state.assert_not_called()
-
-
-def test_de_service_enable_with_custom_params(module_args, mocker):
-    """Test enabling a CDE service with optional parameters passed through correctly."""
-
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "instance_type": INSTANCE_TYPE,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
             "enable_public_endpoint": False,
             "enable_workload_analytics": False,
             "whitelist_ips": ["10.0.0.0/8"],
@@ -239,24 +198,16 @@ def test_de_service_enable_with_custom_params(module_args, mocker):
             "tags": {"team": "de-team"},
             "skip_validation": True,
             "root_volume_size": 200,
-            "state": "present",
-            "wait": False,
         },
     )
-
-    client = _patch_common(mocker)
-    client.get_service_by_name.return_value = None
-    client.enable_service.return_value = {
-        "service": _existing_service(),
-    }
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
 
     assert result.value.changed is True
 
-    client.enable_service.assert_called_once()
-    call_args = client.enable_service.call_args[1]
+    de_client.enable_service.assert_called_once()
+    call_args = de_client.enable_service.call_args.kwargs
     assert call_args["enable_public_endpoint"] is False
     assert call_args["enable_workload_analytics"] is False
     assert call_args["whitelist_ips"] == ["10.0.0.0/8"]
@@ -266,39 +217,47 @@ def test_de_service_enable_with_custom_params(module_args, mocker):
     assert call_args["root_volume_size"] == 200
 
 
+def test_present_enable_check_mode(de_module_args, de_client):
+    """check_mode reports changed without enabling the service."""
+    de_client.get_service_by_name.return_value = None
+
+    de_module_args(
+        {
+            "instance_type": INSTANCE_TYPE,
+            "_ansible_check_mode": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        de.main()
+
+    assert result.value.changed is True
+    assert result.value.service == {}
+    de_client.enable_service.assert_not_called()
+    de_client.wait_for_service_state.assert_not_called()
+
+
 # ============================================================================
 # Update tests
 # ============================================================================
 
 
-def test_de_service_already_enabled(module_args, mocker):
-    """Test that no changes are made when service config already matches."""
-
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "instance_type": INSTANCE_TYPE,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": False,
-        },
-    )
-
-    client = _patch_common(mocker)
-    existing = _existing_service()
-    client.get_service_by_name.return_value = {"service": existing}
+def test_present_idempotent(de_module_args, de_client, mocker):
+    """A service already matching the desired state reports no change."""
+    de_client.get_service_by_name.return_value = _existing_service()
 
     check_updates = mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.modules.de.check_service_updates",
     )
     check_updates.return_value = {}
+
+    de_module_args(
+        {
+            "instance_type": INSTANCE_TYPE,
+            "minimum_instances": 1,
+            "maximum_instances": 2,
+        },
+    )
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
@@ -307,33 +266,14 @@ def test_de_service_already_enabled(module_args, mocker):
     assert result.value.service["clusterId"] == CLUSTER_ID
 
     check_updates.assert_called_once()
-    client.enable_service.assert_not_called()
-    client.update_service.assert_not_called()
+    de_client.enable_service.assert_not_called()
+    de_client.update_service.assert_not_called()
 
 
-def test_de_service_update_success(module_args, mocker):
-    """Test updating an existing CDE service's instance counts."""
-
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "instance_type": INSTANCE_TYPE,
-            "minimum_instances": 1,
-            "maximum_instances": 3,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": False,
-        },
-    )
-
-    client = _patch_common(mocker)
+def test_reconcile_update(de_module_args, de_client, mocker):
+    """A reconcilable difference triggers update_service with those params."""
     existing = _existing_service()
-    client.get_service_by_name.return_value = {"service": existing}
+    de_client.get_service_by_name.return_value = existing
 
     check_updates = mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.modules.de.check_service_updates",
@@ -342,8 +282,15 @@ def test_de_service_update_success(module_args, mocker):
         "cluster_id": CLUSTER_ID,
         "maximum_instances": 3,
     }
+    de_client.update_service.return_value = _existing_service(max_instances="3")
 
-    client.update_service.return_value = _existing_service(max_instances="3")
+    de_module_args(
+        {
+            "instance_type": INSTANCE_TYPE,
+            "minimum_instances": 1,
+            "maximum_instances": 3,
+        },
+    )
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
@@ -351,43 +298,22 @@ def test_de_service_update_success(module_args, mocker):
     assert result.value.changed is True
 
     check_updates.assert_called_once()
-    check_args = check_updates.call_args[1]
+    check_args = check_updates.call_args.kwargs
     assert check_args["cluster_id"] == CLUSTER_ID
     assert check_args["service_details"] == existing
     assert check_args["minimum_instances"] == 1
     assert check_args["maximum_instances"] == 3
-    assert check_args["minimum_spot_instances"] == 0
-    assert check_args["maximum_spot_instances"] == 0
 
-    client.update_service.assert_called_once()
-    client.wait_for_service_state.assert_not_called()
-
-
-def test_de_service_update_with_wait(module_args, mocker):
-    """Test updating a CDE service with wait enabled."""
-
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "instance_type": INSTANCE_TYPE,
-            "minimum_instances": 1,
-            "maximum_instances": 3,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": True,
-        },
+    de_client.update_service.assert_called_once_with(
+        cluster_id=CLUSTER_ID,
+        maximum_instances=3,
     )
+    de_client.wait_for_service_state.assert_not_called()
 
-    mock_client_class, client = _patch_common_with_class(mocker)
-    mock_client_class.REMOVABLE_STATUSES = ["ClusterCreationCompleted"]
 
-    existing = _existing_service()
-    client.get_service_by_name.return_value = {"service": existing}
+def test_reconcile_update_with_wait(de_module_args, de_client, mocker):
+    """Updating with wait polls to REMOVABLE_STATUSES."""
+    de_client.get_service_by_name.return_value = _existing_service()
 
     check_updates = mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.modules.de.check_service_updates",
@@ -396,12 +322,19 @@ def test_de_service_update_with_wait(module_args, mocker):
         "cluster_id": CLUSTER_ID,
         "maximum_instances": 3,
     }
-
-    client.update_service.return_value = _existing_service(
+    de_client.update_service.return_value = _existing_service(
         status="ClusterCreationInProgress",
         max_instances="3",
     )
-    client.wait_for_service_state.return_value = _existing_service(max_instances="3")
+    de_client.wait_for_service_state.return_value = _existing_service(max_instances="3")
+
+    de_module_args(
+        {
+            "instance_type": INSTANCE_TYPE,
+            "maximum_instances": 3,
+            "wait": True,
+        },
+    )
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
@@ -409,36 +342,16 @@ def test_de_service_update_with_wait(module_args, mocker):
     assert result.value.changed is True
     assert result.value.service["resources"]["max_instances"] == "3"
 
-    client.update_service.assert_called_once()
-    client.wait_for_service_state.assert_called_once()
-    wait_args = client.wait_for_service_state.call_args[1]
+    de_client.update_service.assert_called_once()
+    de_client.wait_for_service_state.assert_called_once()
+    wait_args = de_client.wait_for_service_state.call_args.kwargs
     assert wait_args["cluster_id"] == CLUSTER_ID
-    assert wait_args["target_statuses"] == ["ClusterCreationCompleted"]
+    assert wait_args["target_statuses"] == CDE_SERVICE_REMOVABLE_STATUSES
 
 
-def test_de_service_update_check_mode(module_args, mocker):
-    """Test updating a CDE service in check mode — changed=True but update_service not called."""
-
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "instance_type": INSTANCE_TYPE,
-            "minimum_instances": 1,
-            "maximum_instances": 3,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "_ansible_check_mode": True,
-        },
-    )
-
-    client = _patch_common(mocker)
-    existing = _existing_service()
-    client.get_service_by_name.return_value = {"service": existing}
+def test_reconcile_update_check_mode(de_module_args, de_client, mocker):
+    """check_mode reports changed without calling update_service."""
+    de_client.get_service_by_name.return_value = _existing_service()
 
     check_updates = mocker.patch(
         "ansible_collections.cloudera.cloud.plugins.modules.de.check_service_updates",
@@ -448,6 +361,14 @@ def test_de_service_update_check_mode(module_args, mocker):
         "maximum_instances": 3,
     }
 
+    de_module_args(
+        {
+            "instance_type": INSTANCE_TYPE,
+            "maximum_instances": 3,
+            "_ansible_check_mode": True,
+        },
+    )
+
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
 
@@ -455,48 +376,8 @@ def test_de_service_update_check_mode(module_args, mocker):
     assert result.value.service["clusterId"] == CLUSTER_ID
 
     check_updates.assert_called_once()
-    client.update_service.assert_not_called()
-    client.wait_for_service_state.assert_not_called()
-
-
-def test_de_service_update_no_changes(module_args, mocker):
-    """Test that update_service is not called when check_service_updates returns no changes."""
-
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "instance_type": INSTANCE_TYPE,
-            "minimum_instances": 1,
-            "maximum_instances": 2,
-            "minimum_spot_instances": 0,
-            "maximum_spot_instances": 0,
-            "state": "present",
-            "wait": True,
-        },
-    )
-
-    client = _patch_common(mocker)
-    existing = _existing_service()
-    client.get_service_by_name.return_value = {"service": existing}
-
-    check_updates = mocker.patch(
-        "ansible_collections.cloudera.cloud.plugins.modules.de.check_service_updates",
-    )
-    check_updates.return_value = {}
-
-    with pytest.raises(AnsibleExitJson) as result:
-        de.main()
-
-    assert result.value.changed is False
-    assert result.value.service["clusterId"] == CLUSTER_ID
-
-    check_updates.assert_called_once()
-    client.update_service.assert_not_called()
-    client.wait_for_service_state.assert_not_called()
+    de_client.update_service.assert_not_called()
+    de_client.wait_for_service_state.assert_not_called()
 
 
 # ============================================================================
@@ -504,62 +385,33 @@ def test_de_service_update_no_changes(module_args, mocker):
 # ============================================================================
 
 
-def test_de_service_disable_success(module_args, mocker):
-    """Test disabling a CDE service without wait."""
+def test_absent_disable(de_module_args, de_client):
+    """state=absent without wait disables the service directly."""
+    de_client.get_service_by_name.return_value = _existing_service()
 
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "state": "absent",
-            "wait": False,
-            "force": False,
-        },
-    )
-
-    client = _patch_common(mocker)
-    client.get_service_by_name.return_value = {"service": _existing_service()}
-    client.disable_service.return_value = {}
+    de_module_args({"state": "absent", "force": False})
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
 
     assert result.value.changed is True
 
-    client.disable_service.assert_called_once()
-    call_args = client.disable_service.call_args
+    de_client.disable_service.assert_called_once()
+    call_args = de_client.disable_service.call_args
     assert call_args[0][0] == CLUSTER_ID
-    assert call_args[1]["force"] is False
+    assert call_args.kwargs["force"] is False
 
-    client.wait_for_service_state.assert_not_called()
+    de_client.wait_for_service_state.assert_not_called()
 
 
-def test_de_service_disable_with_wait(module_args, mocker):
-    """Test disabling a CDE service with wait — uses wait_for_service_state with STOPPED_STATUSES."""
-
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "state": "absent",
-            "wait": True,
-            "force": False,
-        },
-    )
-
-    mock_client_class, client = _patch_common_with_class(mocker)
-    mock_client_class.STOPPED_STATUSES = ["ClusterDeletionCompleted"]
-
-    client.get_service_by_name.return_value = {"service": _existing_service()}
-    client.wait_for_service_state.return_value = _existing_service(
+def test_absent_disable_with_wait(de_module_args, de_client):
+    """state=absent with wait polls to STOPPED_STATUSES."""
+    de_client.get_service_by_name.return_value = _existing_service()
+    de_client.wait_for_service_state.return_value = _existing_service(
         status="ClusterDeletionCompleted",
     )
+
+    de_module_args({"state": "absent", "wait": True, "force": False})
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
@@ -567,36 +419,23 @@ def test_de_service_disable_with_wait(module_args, mocker):
     assert result.value.changed is True
     assert result.value.service["status"] == "ClusterDeletionCompleted"
 
-    client.wait_for_service_state.assert_called_once()
-    wait_args = client.wait_for_service_state.call_args[1]
+    de_client.disable_service.assert_called_once()
+    disable_args = de_client.disable_service.call_args
+    assert disable_args[0][0] == CLUSTER_ID
+    assert disable_args.kwargs["force"] is False
+
+    de_client.wait_for_service_state.assert_called_once()
+    wait_args = de_client.wait_for_service_state.call_args.kwargs
     assert wait_args["cluster_id"] == CLUSTER_ID
-    assert wait_args["target_statuses"] == ["ClusterDeletionCompleted"]
-    assert wait_args["force"] is False
-
-    client.disable_service.assert_not_called()
+    assert wait_args["target_statuses"] == CDE_SERVICE_STOPPED_STATUSES
 
 
-def test_de_service_disable_with_wait_returns_none(module_args, mocker):
-    """Test that service={} when wait_for_service_state returns None (service fully gone)."""
+def test_absent_disable_wait_returns_none(de_module_args, de_client):
+    """service is {} when the wait reports the service fully gone."""
+    de_client.get_service_by_name.return_value = _existing_service()
+    de_client.wait_for_service_state.return_value = None
 
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "state": "absent",
-            "wait": True,
-            "force": False,
-        },
-    )
-
-    mock_client_class, client = _patch_common_with_class(mocker)
-    mock_client_class.STOPPED_STATUSES = ["ClusterDeletionCompleted"]
-
-    client.get_service_by_name.return_value = {"service": _existing_service()}
-    client.wait_for_service_state.return_value = None
+    de_module_args({"state": "absent", "wait": True, "force": False})
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
@@ -605,24 +444,11 @@ def test_de_service_disable_with_wait_returns_none(module_args, mocker):
     assert result.value.service == {}
 
 
-def test_de_service_disable_check_mode(module_args, mocker):
-    """Test disabling a CDE service in check mode — changed=True but no API calls."""
+def test_absent_check_mode(de_module_args, de_client):
+    """check_mode reports changed without disabling the service."""
+    de_client.get_service_by_name.return_value = _existing_service()
 
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "state": "absent",
-            "_ansible_check_mode": True,
-        },
-    )
-
-    client = _patch_common(mocker)
-    existing = _existing_service()
-    client.get_service_by_name.return_value = {"service": existing}
+    de_module_args({"state": "absent", "_ansible_check_mode": True})
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
@@ -630,27 +456,15 @@ def test_de_service_disable_check_mode(module_args, mocker):
     assert result.value.changed is True
     assert result.value.service["clusterId"] == CLUSTER_ID
 
-    client.disable_service.assert_not_called()
-    client.wait_for_service_state.assert_not_called()
+    de_client.disable_service.assert_not_called()
+    de_client.wait_for_service_state.assert_not_called()
 
 
-def test_de_service_disable_already_disabled(module_args, mocker):
-    """Test that no changes are made when service does not exist and state=absent."""
+def test_absent_noop(de_module_args, de_client):
+    """state=absent is a no-op when the service does not exist."""
+    de_client.get_service_by_name.return_value = None
 
-    module_args(
-        {
-            "endpoint": BASE_URL,
-            "access_key": ACCESS_KEY,
-            "private_key": PRIVATE_KEY,
-            "name": SERVICE_NAME,
-            "environment": ENV_NAME,
-            "state": "absent",
-            "wait": False,
-        },
-    )
-
-    client = _patch_common(mocker)
-    client.get_service_by_name.return_value = None
+    de_module_args({"state": "absent"})
 
     with pytest.raises(AnsibleExitJson) as result:
         de.main()
@@ -658,5 +472,73 @@ def test_de_service_disable_already_disabled(module_args, mocker):
     assert result.value.changed is False
     assert result.value.service == {}
 
-    client.disable_service.assert_not_called()
-    client.wait_for_service_state.assert_not_called()
+    de_client.disable_service.assert_not_called()
+    de_client.wait_for_service_state.assert_not_called()
+
+
+# ============================================================================
+# Diff tests
+# ============================================================================
+
+
+def test_create_reports_diff(de_module_args, de_client):
+    """Creating a service populates diff.after under --diff (check_mode)."""
+    de_client.get_service_by_name.return_value = None
+
+    de_module_args(
+        {
+            "instance_type": INSTANCE_TYPE,
+            "_ansible_check_mode": True,
+            "_ansible_diff": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        de.main()
+
+    assert result.value.diff["before"] == {}
+    assert result.value.diff["after"] == {
+        "name": SERVICE_NAME,
+        "status": "ClusterCreationInProgress",
+    }
+
+
+def test_reconcile_reports_diff(de_module_args, de_client, mocker):
+    """Reconciling reports before/after under --diff."""
+    de_client.get_service_by_name.return_value = _existing_service()
+
+    check_updates = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.de.check_service_updates",
+    )
+    check_updates.return_value = {
+        "cluster_id": CLUSTER_ID,
+        "maximum_instances": 3,
+    }
+
+    de_module_args(
+        {
+            "instance_type": INSTANCE_TYPE,
+            "maximum_instances": 3,
+            "_ansible_check_mode": True,
+            "_ansible_diff": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        de.main()
+
+    assert result.value.diff["before"]["clusterId"] == CLUSTER_ID
+    assert result.value.diff["after"]["maximum_instances"] == 3
+
+
+def test_absent_reports_diff(de_module_args, de_client):
+    """Disabling reports the service representation in diff.before."""
+    de_client.get_service_by_name.return_value = _existing_service()
+
+    de_module_args({"state": "absent", "_ansible_diff": True})
+
+    with pytest.raises(AnsibleExitJson) as result:
+        de.main()
+
+    assert result.value.diff["before"]["clusterId"] == CLUSTER_ID
+    assert result.value.diff["after"] == {}
