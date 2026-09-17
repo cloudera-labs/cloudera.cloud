@@ -24,6 +24,7 @@ author:
   - "Ronald Suplina (@rsuplina)"
   - "Curtis Howard (@curtishoward)"
   - "Alan Silva (@acsjumpi)"
+  - "Webster Mudge (@wmudge)"
 version_added: "1.5.0"
 options:
   name:
@@ -57,19 +58,19 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# List basic information about all Data Engineering Services
-- cloudera.cloud.de_info:
+- name: List basic information about all Data Engineering Services
+  cloudera.cloud.de_info:
 
-# Gather detailed information about a named Data Engineering Service
-- cloudera.cloud.de_info:
+- name: Gather detailed information about a named Data Engineering Service
+  cloudera.cloud.de_info:
     name: example-de-service
 
-# Gather detailed information about a Data Engineering Service using a cluster ID
-- cloudera.cloud.de_info:
+- name: Gather detailed information about a Data Engineering Service using a cluster ID
+  cloudera.cloud.de_info:
     cluster_id: cluster-12345
 
-# Gather detailed information about a Data Engineering Service using an Environment name
-- cloudera.cloud.de_info:
+- name: Gather detailed information about a Data Engineering Service using an Environment name
+  cloudera.cloud.de_info:
     env_name: my-environment
 """
 
@@ -241,10 +242,15 @@ sdk_out_lines:
 """
 
 from typing import Any, Dict
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
+    to_dict,
 )
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import CdpDeClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CDE_SERVICE_FAILED_STATUSES,
+    CdpDeClient,
+)
 
 
 class DEServiceInfo(ServicesModule):
@@ -276,20 +282,20 @@ class DEServiceInfo(ServicesModule):
                 env_name=self.env_name,
             )
             if service:
-                self.services.append(service.get("service", {}))
+                self.services.append(to_dict(service))
         elif self.cluster_id:
-            service = self.de_client.get_service_by_cluster_id(self.cluster_id)
+            service = self.de_client.describe_service(self.cluster_id)
             if service:
-                self.services.append(service.get("service", {}))
+                self.services.append(to_dict(service))
         else:
-            response = self.de_client.list_services(env_name=self.env_name)
-            for svc in response.get("services", []):
-                if svc.get("status") in CdpDeClient.FAILED_STATUSES:
-                    self.services.append(svc)
+            services = self.de_client.list_services(env_name=self.env_name)
+            for svc in services:
+                if svc.status in CDE_SERVICE_FAILED_STATUSES:
+                    self.services.append(to_dict(svc))
                 else:
-                    service_details = self.de_client.describe_service(svc["clusterId"])
-                    if service_details.get("service"):
-                        self.services.append(service_details["service"])
+                    service_details = self.de_client.describe_service(svc.clusterId)
+                    if service_details:
+                        self.services.append(to_dict(service_details))
 
 
 def main():
