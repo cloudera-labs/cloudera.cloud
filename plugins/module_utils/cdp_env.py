@@ -397,3 +397,90 @@ class CdpEnvClient:
                     filtered_ids.append(subnet_id)
 
         return filtered_ids
+
+    # ========================================================================
+    # Default Compute Cluster Initialization Methods
+    # ========================================================================
+
+    def initialize_aws_compute_cluster(
+        self,
+        environment_name: str,
+        private_cluster: Optional[bool] = None,
+        kube_api_authorized_ip_ranges: Optional[List[str]] = None,
+        worker_node_subnets: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Initialize the default compute cluster for an AWS environment.
+
+        Args:
+            environment_name: Name of the CDP environment (name, not CRN)
+            private_cluster: If True, creates a private cluster. Mutually exclusive
+                with kube_api_authorized_ip_ranges.
+            kube_api_authorized_ip_ranges: Kubernetes API authorized IP ranges in
+                CIDR notation. Mutually exclusive with private_cluster.
+            worker_node_subnets: Subnet IDs for Kubernetes worker nodes.
+
+        Returns:
+            Dictionary containing:
+                - operationId: ID of the triggered operation
+        """
+        config: Dict[str, Any] = {}
+        if private_cluster is not None:
+            config["privateCluster"] = private_cluster
+        if kube_api_authorized_ip_ranges is not None:
+            config["kubeApiAuthorizedIpRanges"] = kube_api_authorized_ip_ranges
+        if worker_node_subnets is not None:
+            config["workerNodeSubnets"] = worker_node_subnets
+
+        data: Dict[str, Any] = {"environmentName": environment_name}
+        if config:
+            data["computeClusterConfiguration"] = config
+
+        return self.api_client.post(
+            "/api/v1/environments2/initializeAWSComputeCluster",
+            data=data,
+        )
+
+    def initialize_azure_compute_cluster(
+        self,
+        environment_name: str,
+        private_cluster: Optional[bool] = None,
+        kube_api_authorized_ip_ranges: Optional[List[str]] = None,
+        worker_node_subnets: Optional[List[str]] = None,
+        outbound_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Initialize the default compute cluster for an Azure environment.
+
+        Args:
+            environment_name: Name of the CDP environment (name, not CRN)
+            private_cluster: If True, creates a private cluster. Mutually exclusive
+                with kube_api_authorized_ip_ranges.
+            kube_api_authorized_ip_ranges: Kubernetes API authorized IP ranges in
+                CIDR notation. Mutually exclusive with private_cluster.
+            worker_node_subnets: Subnet IDs for Kubernetes worker nodes.
+            outbound_type: Customize cluster egress with defined outbound type in
+                Azure Kubernetes Service. Valid values: "udr".
+
+        Returns:
+            Dictionary containing:
+                - operationId: ID of the triggered operation
+        """
+        config: Dict[str, Any] = {}
+        if private_cluster is not None:
+            config["privateCluster"] = private_cluster
+        if kube_api_authorized_ip_ranges is not None:
+            config["kubeApiAuthorizedIpRanges"] = kube_api_authorized_ip_ranges
+        if worker_node_subnets is not None:
+            config["workerNodeSubnets"] = worker_node_subnets
+        if outbound_type is not None:
+            config["outboundType"] = outbound_type
+
+        data: Dict[str, Any] = {"environmentName": environment_name}
+        if config:
+            data["computeClusterConfiguration"] = config
+
+        return self.api_client.post(
+            "/api/v1/environments2/initializeAzureComputeCluster",
+            data=data,
+        )
