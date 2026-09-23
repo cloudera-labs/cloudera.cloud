@@ -185,7 +185,8 @@ def test_check_mode(env_user_sync_args, env_user_sync_client):
 
 
 def test_mutually_exclusive_name_and_current_user(
-    env_user_sync_args, env_user_sync_client
+    env_user_sync_args,
+    env_user_sync_client,
 ):
     """Fails when both name and current_user are specified."""
     env_user_sync_args({"name": ["env-1"], "current_user": True})

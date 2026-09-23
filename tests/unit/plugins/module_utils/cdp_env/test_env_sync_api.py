@@ -153,7 +153,9 @@ class TestCdpEnvClientWaitForSync:
         client = CdpEnvClient(api_client=api_client)
 
         mocker.patch.object(
-            client, "get_sync_status", return_value=completed_response
+            client,
+            "get_sync_status",
+            return_value=completed_response,
         )
 
         result = client.wait_for_sync(OPERATION_ID)
@@ -179,7 +181,7 @@ class TestCdpEnvClientWaitForSync:
             side_effect=[running_response, running_response, completed_response],
         )
         mock_sleep = mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env.time.sleep"
+            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env.time.sleep",
         )
 
         result = client.wait_for_sync(OPERATION_ID, delay=10, timeout=3600)
@@ -200,7 +202,9 @@ class TestCdpEnvClientWaitForSync:
         client = CdpEnvClient(api_client=api_client)
 
         mocker.patch.object(
-            client, "get_sync_status", return_value=failed_response
+            client,
+            "get_sync_status",
+            return_value=failed_response,
         )
 
         with pytest.raises(CdpError, match="FAILED"):
@@ -217,7 +221,9 @@ class TestCdpEnvClientWaitForSync:
         client = CdpEnvClient(api_client=api_client)
 
         mocker.patch.object(
-            client, "get_sync_status", return_value=timedout_response
+            client,
+            "get_sync_status",
+            return_value=timedout_response,
         )
 
         with pytest.raises(CdpError, match="TIMEDOUT"):
@@ -234,7 +240,9 @@ class TestCdpEnvClientWaitForSync:
         client = CdpEnvClient(api_client=api_client)
 
         mocker.patch.object(
-            client, "get_sync_status", return_value=rejected_response
+            client,
+            "get_sync_status",
+            return_value=rejected_response,
         )
 
         with pytest.raises(CdpError, match="REJECTED"):
@@ -248,10 +256,12 @@ class TestCdpEnvClientWaitForSync:
         client = CdpEnvClient(api_client=api_client)
 
         mocker.patch.object(
-            client, "get_sync_status", return_value=running_response
+            client,
+            "get_sync_status",
+            return_value=running_response,
         )
         mocker.patch(
-            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env.time.sleep"
+            "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env.time.sleep",
         )
         mocker.patch(
             "ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env.time.time",
@@ -271,7 +281,8 @@ class TestCdpEnvClientWaitForSync:
         mocker.patch.object(client, "get_sync_status", return_value=response)
 
         result = client.wait_for_sync(
-            OPERATION_ID, target_statuses={"CUSTOM_DONE"}
+            OPERATION_ID,
+            target_statuses={"CUSTOM_DONE"},
         )
 
         assert result == response

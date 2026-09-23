@@ -54,7 +54,9 @@ def test_sync_all_users_named_environment(test_cdp_client, sync_result):
     """sync_all_users() with a specific environment name."""
     env_name = os.getenv("CDP_ENVIRONMENT_NAME")
     if not env_name:
-        pytest.skip("CDP_ENVIRONMENT_NAME not set; skipping named-environment sync test")
+        pytest.skip(
+            "CDP_ENVIRONMENT_NAME not set; skipping named-environment sync test",
+        )
 
     client = CdpEnvClient(api_client=test_cdp_client)
     client.wait_for_sync(sync_result["operationId"], delay=5)
