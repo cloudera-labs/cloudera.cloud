@@ -16,29 +16,35 @@
 # limitations under the License.
 
 DOCUMENTATION = r"""
+---
 module: env_user_sync_info
 short_description: Get the status of a CDP Users and Groups sync
 description:
   - Get the status of a synchronization event for users and groups with one or more CDP environments.
-  - The module support check_mode.
+  - The module supports check_mode.
 author:
   - "Webster Mudge (@wmudge)"
   - "Daniel Chaffelson (@chaffelson)"
 version_added: "1.0.0"
-requirements:
-  - cdpy
+extends_documentation_fragment:
+  - ansible.builtin.action_common_attributes
+  - cloudera.cloud.cdp_client
 options:
   name:
     description:
-      - The C(operations id) for a User and Group sync event or the C(operations CRN) for the event if the C(WORKLOAD_IAM_SYNC) entitlement is enabled
+      - The C(operation id) for a User and Group sync event or the C(operation CRN) for the event if the C(WORKLOAD_IAM_SYNC) entitlement is enabled.
     aliases:
-      - operations_id
-      - operations_crn
+      - operation_id
+      - operation_crn
     required: True
     type: str
-extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+attributes:
+  check_mode:
+    support: full
+  diff_mode:
+    support: N/A
+  platform:
+    platforms: all
 """
 
 EXAMPLES = r"""
@@ -130,52 +136,52 @@ sdk_out_lines:
     elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any, Dict
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
+    CdpEnvClient,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+)
 
 
-class EnvironmentUserSyncInfo(CdpModule):
-    def __init__(self, module):
-        super(EnvironmentUserSyncInfo, self).__init__(module)
+class EnvironmentUserSyncInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(
+                    required=True,
+                    type="str",
+                    aliases=["operation_id", "operation_crn"],
+                ),
+            ),
+            supports_check_mode=True,
+        )
 
-        # Set variables
-        self.name = self.module.params["name"]
+        self.name = self.get_param("name")
+        self.sync: Dict[str, Any] = {}
 
-        # Initialize the return values
-        self.sync = {}
-        self.changed = False
-
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        self.sync = self.cdpy.environments.get_sync_status(self.name)
+        client = CdpEnvClient(api_client=self.api_client)
+        self.sync = client.get_sync_status(self.name)
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(
-                required=True,
-                type="str",
-                aliases=["operation_id", "operation_crn"],
-            ),
-        ),
-        supports_check_mode=True,
-    )
+    result = EnvironmentUserSyncInfo()
 
-    result = EnvironmentUserSyncInfo(module)
-
-    output = dict(
-        changed=result.changed,
+    output: Dict[str, Any] = dict(
+        changed=False,
         sync=result.sync,
     )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":

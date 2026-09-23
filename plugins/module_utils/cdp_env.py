@@ -18,11 +18,15 @@
 A REST client for the Cloudera on Cloud Platform (CDP) Environments API
 """
 
-from typing import Any, Dict, List, Optional
+import time
+
+from typing import Any, Dict, List, Optional, Set
+
 import re
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
+    CdpError,
 )
 
 
@@ -184,6 +188,10 @@ def filter_subnets_by_expression(
                 filtered_ids.append(subnet_id)
 
     return filtered_ids
+
+
+SYNC_COMPLETED_STATUSES: Set[str] = frozenset({"COMPLETED"})
+SYNC_FAILED_STATUSES: Set[str] = frozenset({"FAILED", "TIMEDOUT", "REJECTED"})
 
 
 class CdpEnvClient:
@@ -397,3 +405,122 @@ class CdpEnvClient:
                     filtered_ids.append(subnet_id)
 
         return filtered_ids
+
+    def sync_all_users(
+        self,
+        environment_names: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Sync all users and groups with CDP environments.
+
+        Args:
+            environment_names: List of environment names to sync. If None,
+                syncs all environments.
+
+        Returns:
+            Response dict with operationId, status, and sync details.
+        """
+        json_data: Dict[str, Any] = {}
+        if environment_names is not None:
+            json_data["environmentNames"] = environment_names
+
+        return self.api_client.post(
+            "/api/v1/environments2/syncAllUsers",
+            json_data=json_data,
+        )
+
+    def sync_user(self) -> Dict[str, Any]:
+        """
+        Sync the calling user with all CDP environments.
+
+        Returns:
+            Response dict with operationId, status, and sync details.
+        """
+        return self.api_client.post(
+            "/api/v1/environments2/syncUser",
+            json_data={},
+        )
+
+    def get_sync_status(self, operation_id: str) -> Dict[str, Any]:
+        """
+        Get the status of a user sync operation.
+
+        Args:
+            operation_id: The operation ID or CRN of the sync operation.
+
+        Returns:
+            Response dict with operationId, status, and sync details.
+        """
+        json_data: Dict[str, Any] = {"operationId": operation_id}
+
+        return self.api_client.post(
+            "/api/v1/environments2/syncStatus",
+            json_data=json_data,
+        )
+
+    def get_environment_user_sync_state(
+        self,
+        environment_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Get the user sync state for an environment.
+
+        Args:
+            environment_name: Name of the environment.
+
+        Returns:
+            Response dict with state and userSyncOperationId.
+        """
+        json_data: Dict[str, Any] = {"environmentName": environment_name}
+
+        return self.api_client.post(
+            "/api/v1/environments2/getEnvironmentUserSyncState",
+            json_data=json_data,
+        )
+
+    def wait_for_sync(
+        self,
+        operation_id: str,
+        target_statuses: Set[str] = SYNC_COMPLETED_STATUSES,
+        error_statuses: Set[str] = SYNC_FAILED_STATUSES,
+        timeout: int = 3600,
+        delay: int = 15,
+    ) -> Dict[str, Any]:
+        """
+        Poll a user sync operation until it reaches a target status.
+
+        Args:
+            operation_id: The operation ID to poll.
+            target_statuses: Set of acceptable target statuses.
+            error_statuses: Statuses treated as non-recoverable failures.
+            timeout: Maximum time to wait in seconds.
+            delay: Polling interval in seconds.
+
+        Returns:
+            Sync status response dict when a target status is reached.
+
+        Raises:
+            CdpError: If the timeout is reached or the operation enters
+                an error status.
+        """
+        start_time = time.time()
+        while True:
+            elapsed = time.time() - start_time
+            if elapsed > timeout:
+                raise CdpError(
+                    f"Timeout waiting for user sync to reach {target_statuses} "
+                    f"after {timeout} seconds.",
+                )
+
+            response = self.get_sync_status(operation_id)
+            current_status = response.get("status")
+
+            if current_status in target_statuses:
+                return response
+
+            if current_status in error_statuses:
+                raise CdpError(
+                    f"User sync entered failed status '{current_status}'.",
+                )
+
+            time.sleep(delay)
