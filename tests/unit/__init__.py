@@ -279,6 +279,7 @@ class CdpTestClient(CdpClient):
                 access_key=self.access_key,
                 private_key=self.private_key,
             ),
+            timeout=60,
         )
 
     @with_retry
@@ -302,6 +303,7 @@ class CdpTestClient(CdpClient):
                     private_key=self.private_key,
                 ),
                 data=body,
+                timeout=60,
             )
             # Parse successful response
             response_text = response.read().decode("utf-8")
@@ -349,6 +351,7 @@ class CdpTestClient(CdpClient):
                     url=redirect_url,
                     headers=redirect_headers,
                     data=redirect_body.encode("utf-8") if redirect_body else None,
+                    timeout=60,
                 )
 
                 # Parse redirect response
@@ -379,6 +382,7 @@ class CdpTestClient(CdpClient):
                 private_key=self.private_key,
             ),
             data=prepare_body(data, json_data),
+            timeout=60,
         )
 
     @with_retry
@@ -393,4 +397,5 @@ class CdpTestClient(CdpClient):
                 access_key=self.access_key,
                 private_key=self.private_key,
             ),
+            timeout=60,
         )
