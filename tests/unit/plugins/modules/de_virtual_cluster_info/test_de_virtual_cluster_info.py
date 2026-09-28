@@ -95,7 +95,10 @@ def _existing_service():
 
 
 def _vc_summary(vc_id, status="AppInstalled"):
-    return from_dict(VcSummary, {"vcId": vc_id, "clusterId": CLUSTER_ID, "status": status})
+    return from_dict(
+        VcSummary,
+        {"vcId": vc_id, "clusterId": CLUSTER_ID, "status": status},
+    )
 
 
 def _existing_vc(vc_id=VC_ID, vc_name=VC_NAME, status="AppInstalled"):
@@ -228,7 +231,6 @@ def test_list_all_skips_deleted(vc_info_module_args, de_client):
     assert result.value.changed is False
     assert len(result.value.virtual_clusters) == 1
     assert result.value.virtual_clusters[0]["vcId"] == "vc-1"
-
 
 
 def test_vc_details(vc_info_module_args, de_client):

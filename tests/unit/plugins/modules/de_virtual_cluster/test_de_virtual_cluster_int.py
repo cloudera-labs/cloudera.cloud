@@ -109,7 +109,6 @@ def test_present_aws(
     assert exc.value.virtual_cluster["status"] in CDE_VC_REMOVABLE_STATUSES
 
 
-
 def test_absent_aws(vc_module_args, de_client, disposable_de_virtual_cluster):
     """Delete an existing Virtual Cluster via the module, then verify idempotency.
 
@@ -146,7 +145,6 @@ def test_absent_aws(vc_module_args, de_client, disposable_de_virtual_cluster):
     with pytest.raises(AnsibleExitJson) as exc:
         de_virtual_cluster.main()
     assert exc.value.changed is False
-
 
 
 def test_suspend_resume_aws(vc_module_args, de_client, disposable_de_virtual_cluster):
@@ -198,7 +196,6 @@ def test_suspend_resume_aws(vc_module_args, de_client, disposable_de_virtual_clu
     with pytest.raises(AnsibleExitJson) as exc:
         de_virtual_cluster.main()
     assert exc.value.changed is False
-
 
 
 def test_update_vc_aws(vc_module_args, de_client, disposable_de_virtual_cluster):

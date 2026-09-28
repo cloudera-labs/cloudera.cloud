@@ -105,7 +105,9 @@ def test_vc_info_by_name(
     assert result.value.changed is False
     assert len(result.value.virtual_clusters) == 1
     assert result.value.virtual_clusters[0]["vcName"] == vc_name
-    assert result.value.virtual_clusters[0]["vcId"] == disposable_de_virtual_cluster.vcId
+    assert (
+        result.value.virtual_clusters[0]["vcId"] == disposable_de_virtual_cluster.vcId
+    )
 
 
 def test_vc_info_nonexistent_name(vc_info_module_args, existing_de_service):
