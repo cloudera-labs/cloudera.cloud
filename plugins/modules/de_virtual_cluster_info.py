@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright 2025 Cloudera, Inc. All Rights Reserved.
+# Copyright 2026 Cloudera, Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,224 +17,192 @@
 
 DOCUMENTATION = r"""
 module: de_virtual_cluster_info
-short_description: Gather information about CDP DE virtual clusters
+short_description: Gather information about CDP Data Engineering Virtual Clusters
 description:
-    - Gather information about CDP DE virtual clusters
+    - Gather information about CDP Data Engineering Virtual Clusters
 author:
   - "Curtis Howard (@curtishoward)"
+  - "Ronald Suplina (@rsuplina)"
 version_added: "1.5.0"
-requirements:
-  - cdpy
 options:
   name:
     description:
-      - If a name is provided, that DE virtual cluster will be described (if it exists)
-      - Note that there should be only 1 or 0 (non-deleted) virtual clusters with a given CDE service
+      - If a name is provided, that Virtual Cluster will be described (if it exists).
+      - Note that Virtual Cluster names are unique within a given CDE Service.
     type: str
     required: False
-    aliases:
-      - name
-  cluster_name:
+  environment:
     description:
-      - The ID of the service in which to find and describe the DE virtual clusters.
+      - The CDP environment name of the CDE Service containing the Virtual Cluster(s).
     type: str
-    required: False
+    required: True
     aliases:
       - env
+  service_name:
+    description:
+      - The name of the CDE Service containing the Virtual Cluster(s).
+    type: str
+    required: True
+    aliases:
+      - cluster_name
+
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# List basic information about all CDE virtual clusters within a CDE service
-- cloudera.cloud.de_virtual_cluster_info:
-    cluster_name: example-cluster-name
-    environment: example-environment
+- name: List basic information about all Virtual Clusters within a CDE Service
+  cloudera.cloud.de_virtual_cluster_info:
+    environment: my-environment
+    service_name: my-cde-service
 
-# Gather detailed information about a specific CDE virtual cluster
-- cloudera.cloud.de_info:
-    cluster_name: example-cluster-name
-    environment: example-environment
-    name: example-virtual-cluster-name
+- name: Gather detailed information about a named Virtual Cluster
+  cloudera.cloud.de_virtual_cluster_info:
+    environment: my-environment
+    service_name: my-cde-service
+    name: my-virtual-cluster
 """
 
 RETURN = r"""
-virtual_cluster:
-  description: DE virtual cluste
-  type: complex
+virtual_clusters:
+  description: The information about the named Virtual Cluster or Virtual Clusters.
+  type: list
   returned: always
+  elements: complex
   contains:
-    VcUiUrl:
-      description: URL of the CDE Virtual Cluster UI
-      returned: always
-      type: str
-    accessControl:
-      description: Access control object for the Virtual Cluster
-      returned: always
-      type: dict
-      contains:
-        users:
-          description: Workload usernames of CDP users granted access to the Virtual Cluster.
-          returned: always
-          type: list
-          elements: str
-    chartValueOverrides:
-      description: Chart overrides for the CDE virtual cluster.
-      returned: always
-      type: list
-      elements: complex
-      contains:
-        ChartValueOverridesResponse:
-          type: list
-          returned: always
-          contains:
-            chartName:
-              description: Name of the chart that has to be overridden.
-              returned: always
-              type: str
-            overrides:
-              description: Space separated key value-pairs for overriding chart values (colon separated)
-              returned: always
-              type: str
-    clusterId:
-      description: Cluster ID of the CDE service that contains the Virtual Cluster
-      returned: always
-      type: str
-    creationTime:
-      description: Time of creation of the virtual Cluster
-      returned: always
-      type: str
-    creatorEmail:
-      description: Email address of the creator of Virtual Cluster
-      returned: always
-      type: str
-    creatorID:
-      description: ID of the creator of Virtual Cluster
-      returned: always
-      type: str
-    creatorName:
-      description: Name of the creator of the Virtual Cluster
-      returned: always
-      type: str
-    historyServerUrl:
-      description: Spark History Server URL for the Virtual Cluster
-      returned: always
-      type: str
-    livyServerUrl:
-      description: Livy Server URL for the Virtual Cluster
-      returned: always
-      type: str
-    resources:
-      description: Resources details of CDE virtual cluster.
-      returned: always
-      type: complex
-      contains:
-        VcResources:
-          description: Object to store resources for a CDE service.
-          returned: always
-          type: complex
-          contains:
-            actualCpuRequests:
-              description: Actual CPU request for the VC. This accounts for other dex apps(eg. livy, airflow), that run in the virtual cluster.
-              returned: always
-              type: str
-            actualMemoryRequests:
-              description: Actual Memory request for the VC. This accounts for other dex apps(eg. livy, airflow), that run in the virtual cluster.
-              returned: always
-              type: str
-            cpuRequests:
-              description: The CPU requests for VC for running spark jobs.
-              returned: always
-              type: str
-            memRequests:
-              description: The Memory requests for VC for running spark jobs.
-              returned: always
-              type: str
-    safariUrl:
-      description: Safari URL for the Virtual Cluster
-      returned: always
-      type: str
-    sparkVersion:
-      description: Spark version for the virtual cluster
-      returned: always
-      type: str
-    status:
-      description: Status of the Virtual Cluster
-      returned: always
-      type: str
-    vcApiUrl:
-      description: Url for the Virtual Cluster APIs
-      returned: always
-      type: str
     vcId:
-      description: Virtual Cluster ID
+      description: Virtual Cluster ID.
       returned: always
       type: str
     vcName:
-      description: Name of the CDE Virtual Cluster
+      description: Name of the Virtual Cluster.
       returned: always
       type: str
+    clusterId:
+      description: Cluster ID of the CDE Service that contains the Virtual Cluster.
+      returned: always
+      type: str
+    status:
+      description: Status of the Virtual Cluster.
+      returned: always
+      type: str
+    vcTier:
+      description: Tier of the Virtual Cluster (ALLP or CORE).
+      returned: when available
+      type: str
+    sparkVersion:
+      description: Spark version for the Virtual Cluster.
+      returned: when available
+      type: str
+    creatorEmail:
+      description: Email address of the creator of the Virtual Cluster.
+      returned: when available
+      type: str
+    vcApiUrl:
+      description: URL for the Virtual Cluster APIs.
+      returned: when available
+      type: str
+    accessControl:
+      description: Access control details for the Virtual Cluster.
+      returned: when available
+      type: dict
+    resources:
+      description: Resource details of the Virtual Cluster.
+      returned: when available
+      type: dict
+    sparkConfigs:
+      description: Spark configurations applied to all jobs run in the Virtual Cluster.
+      returned: when available
+      type: dict
+sdk_out:
+  description: Returns the captured CDP SDK log.
+  returned: when supported
+  type: str
+sdk_out_lines:
+  description: Returns a list of each line of the captured CDP SDK log.
+  returned: when supported
+  type: list
+  elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any, Dict
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+    to_dict,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
+    CdpDeClient,
+)
 
 
-class DEVirtualClusterInfo(CdpModule):
-    def __init__(self, module):
-        super(DEVirtualClusterInfo, self).__init__(module)
+class DEVirtualClusterInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(required=False, type="str"),
+                environment=dict(required=True, type="str", aliases=["env"]),
+                service_name=dict(
+                    required=True,
+                    type="str",
+                    aliases=["cluster_name"],
+                ),
+            ),
+            supports_check_mode=True,
+        )
 
-        # Set variables
-        self.vc_name = self._get_param("name")
-        self.service_name = self._get_param("service_name")
-        self.env = self._get_param("environment")
+        # Set parameters
+        self.name = self.get_param("name")
+        self.environment = self.get_param("environment")
+        self.service_name = self.get_param("service_name")
 
         # Initialize return values
-        self.vcs = []
+        self.virtual_clusters = []
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        cluster_id = self.cdpy.de.get_service_id_by_name(self.service_name, self.env)
-        if cluster_id:
-            vcs = [
-                vc
-                for vc in self.cdpy.de.list_vcs(cluster_id)
-                if vc["status"] not in self.cdpy.sdk.STOPPED_STATES
-            ]
-            if self.vc_name:
-                name_match = [
-                    self.cdpy.de.describe_vc(cluster_id=cluster_id, vc_id=vc["vcId"])
-                    for vc in vcs
-                    if vc["vcName"] == self.vc_name
-                ]
-                self.vcs.extend(name_match)
-            else:
-                self.vcs.extend(vcs)
+        self.de_client = CdpDeClient(self.api_client)
+
+        service = self.de_client.get_service_by_name(
+            self.service_name,
+            env_name=self.environment,
+        )
+        if service is None:
+            return
+
+        cluster_id = service.clusterId
+
+        if self.name:
+            vc = self.de_client.get_virtual_cluster_by_name(cluster_id, self.name)
+            if vc:
+                self.virtual_clusters.append(to_dict(vc))
+        else:
+            for summary in self.de_client.list_virtual_clusters(cluster_id):
+                if summary.vcId:
+                    vc = self.de_client.describe_virtual_cluster(
+                        cluster_id,
+                        summary.vcId,
+                    )
+                    if vc:
+                        self.virtual_clusters.append(to_dict(vc))
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="str"),
-            environment=dict(required=True, type="str", aliases=["env"]),
-            service_name=dict(required=True, type="str", aliases=["cluster_name"]),
-        ),
-        supports_check_mode=True,
+    result = DEVirtualClusterInfo()
+
+    output: Dict[str, Any] = dict(
+        changed=False,
+        virtual_clusters=result.virtual_clusters,
     )
 
-    result = DEVirtualClusterInfo(module)
-    output = dict(changed=False, vcs=result.vcs)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
-
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
