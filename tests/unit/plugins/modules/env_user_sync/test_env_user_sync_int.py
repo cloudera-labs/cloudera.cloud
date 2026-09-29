@@ -29,6 +29,7 @@ from ansible_collections.cloudera.cloud.plugins.modules import env_user_sync
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
     AnsibleFailJson,
+    required_or_skip,
 )
 
 
@@ -48,7 +49,7 @@ def _wait_for_idle_sync(test_cdp_client):
     for _ in range(12):
         try:
             result = client.sync_all_users()
-            client.wait_for_sync(result.operationId, delay=5, timeout=180)
+            client.wait_for_sync(result.operationId, delay=5, timeout=600)
             return
         except Exception as exc:
             if "409" not in str(exc):
@@ -86,6 +87,36 @@ def test_sync_all_environments_no_wait(env_user_sync_module_args):
     assert isinstance(result.value.sync, dict)
     assert result.value.sync["operationId"] is not None
     assert result.value.sync["status"] is not None
+
+
+def test_sync_named_environment_no_wait(env_user_sync_module_args):
+    """Sync a specific named environment without waiting for completion."""
+    env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
+
+    env_user_sync_module_args({"name": [env_name], "wait": False})
+
+    with pytest.raises(AnsibleExitJson) as result:
+        env_user_sync.main()
+
+    assert result.value.changed is True
+    assert isinstance(result.value.sync, dict)
+    assert result.value.sync["operationId"] is not None
+    assert result.value.sync["status"] is not None
+
+
+def test_sync_named_environment_wait(env_user_sync_module_args):
+    """Sync a specific named environment and wait for completion."""
+    env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
+
+    env_user_sync_module_args({"name": [env_name], "wait": True, "delay": 5, "timeout": 600})
+
+    with pytest.raises(AnsibleExitJson) as result:
+        env_user_sync.main()
+
+    assert result.value.changed is True
+    assert isinstance(result.value.sync, dict)
+    assert result.value.sync["operationId"] is not None
+    assert result.value.sync["status"] == "COMPLETED"
 
 
 def test_check_mode_no_api_call(env_user_sync_module_args):
