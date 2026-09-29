@@ -108,7 +108,9 @@ def test_sync_named_environment_wait(env_user_sync_module_args):
     """Sync a specific named environment and wait for completion."""
     env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
 
-    env_user_sync_module_args({"name": [env_name], "wait": True, "delay": 5, "timeout": 600})
+    env_user_sync_module_args(
+        {"name": [env_name], "wait": True, "delay": 5, "timeout": 600},
+    )
 
     with pytest.raises(AnsibleExitJson) as result:
         env_user_sync.main()
