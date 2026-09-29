@@ -25,6 +25,7 @@ description:
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Jim Enright (@jimright)"
 version_added: "1.0.0"
 extends_documentation_fragment:
   - ansible.builtin.action_common_attributes
