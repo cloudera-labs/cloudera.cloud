@@ -123,6 +123,17 @@ class VcSummary:
 
 
 @dataclass
+class AccessControlResponse:
+    """Access control details for a Virtual Cluster, as returned by ``describeVc``."""
+
+    fullAccessGroups: Union[List[str], None, NULLABLE] = NULLABLE
+    fullAccessUsers: Union[List[str], None, NULLABLE] = NULLABLE
+    users: Union[List[str], None, NULLABLE] = NULLABLE
+    viewOnlyGroups: Union[List[str], None, NULLABLE] = NULLABLE
+    viewOnlyUsers: Union[List[str], None, NULLABLE] = NULLABLE
+
+
+@dataclass
 class VcDescription:
     """Full description of a Virtual Cluster as returned by ``describeVc``."""
 
@@ -133,10 +144,10 @@ class VcDescription:
     vcTier: Union[str, None, NULLABLE] = NULLABLE
     sparkVersion: Union[str, None, NULLABLE] = NULLABLE
     creatorEmail: Union[str, None, NULLABLE] = NULLABLE
-    creatorCrn: Union[str, None, NULLABLE] = NULLABLE
     vcApiUrl: Union[str, None, NULLABLE] = NULLABLE
-    accessControl: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    accessControl: Union[AccessControlResponse, None, NULLABLE] = NULLABLE
     resources: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    sparkConfigs: Union[Dict[str, str], None, NULLABLE] = NULLABLE
 
 
 def _coerce_int(value: Any) -> int:
@@ -150,6 +161,13 @@ def _coerce_str(value: Any) -> str:
     """Coerce a dataclass field to str, treating NULLABLE/None as empty."""
     if value is NULLABLE or value is None:
         return ""
+    return value
+
+
+def _coerce_list(value: Any) -> List[Any]:
+    """Coerce a dataclass field to a list, treating NULLABLE/None as empty."""
+    if value is NULLABLE or value is None:
+        return []
     return value
 
 
@@ -264,6 +282,75 @@ def check_service_updates(
     return {}
 
 
+def check_vc_updates(
+    cluster_id: str,
+    vc_id: str,
+    vc_details: "VcDescription",
+    full_access_users: Optional[List[str]] = None,
+    full_access_groups: Optional[List[str]] = None,
+    view_only_users: Optional[List[str]] = None,
+    view_only_groups: Optional[List[str]] = None,
+    spark_configs: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
+    """
+    Determine if a virtual cluster requires an update.
+
+    Compares desired configuration against the current virtual cluster state
+    and returns update parameters if any differences are detected.
+
+    Args:
+        cluster_id: The cluster ID of the service containing the virtual cluster
+        vc_id: The virtual cluster ID
+        vc_details: Current VcDescription from describe_virtual_cluster
+        full_access_users: Desired users with full access
+        full_access_groups: Desired groups with full access
+        view_only_users: Desired users with view-only access
+        view_only_groups: Desired groups with view-only access
+        spark_configs: Desired Spark configs applied to all jobs in the VC
+
+    Returns:
+        Dict of update parameters including cluster_id/vc_id if changes
+        detected, else empty dict
+    """
+    access_control = vc_details.accessControl
+    if not isinstance(access_control, AccessControlResponse):
+        access_control = AccessControlResponse()
+    updates = {}
+
+    if full_access_users is not None:
+        current = set(_coerce_list(access_control.fullAccessUsers))
+        if current != set(full_access_users):
+            updates["full_access_users"] = full_access_users
+
+    if full_access_groups is not None:
+        current = set(_coerce_list(access_control.fullAccessGroups))
+        if current != set(full_access_groups):
+            updates["full_access_groups"] = full_access_groups
+
+    if view_only_users is not None:
+        current = set(_coerce_list(access_control.viewOnlyUsers))
+        if current != set(view_only_users):
+            updates["view_only_users"] = view_only_users
+
+    if view_only_groups is not None:
+        current = set(_coerce_list(access_control.viewOnlyGroups))
+        if current != set(view_only_groups):
+            updates["view_only_groups"] = view_only_groups
+
+    if spark_configs is not None:
+        current_spark_configs = vc_details.sparkConfigs
+        if not isinstance(current_spark_configs, dict):
+            current_spark_configs = {}
+        if current_spark_configs != spark_configs:
+            updates["spark_configs"] = spark_configs
+
+    if updates:
+        updates["cluster_id"] = cluster_id
+        updates["vc_id"] = vc_id
+        return updates
+    return {}
+
+
 # """Service statuses that indicate a healthy running service (can be disabled)"""
 CDE_SERVICE_REMOVABLE_STATUSES = {"ClusterCreationCompleted"}
 
@@ -325,7 +412,13 @@ CDE_VC_TERMINATION_STATUSES = {"AppDeletionInitiated"}
 CDE_VC_FAILED_STATUSES = {
     "AppDeletionFailed",
     "AppInstallationFailed",
+    "AppResumeFailed",
+    "AppSuspendFailed",
 }
+
+
+# """Virtual cluster statuses that indicate the VC is suspended"""
+CDE_VC_SUSPENDED_STATUSES = {"AppSuspended"}
 
 
 class CdpDeClient:
@@ -772,11 +865,19 @@ class CdpDeClient:
         Returns:
             VcDescription, or None if not found
         """
-        vcs = self.list_virtual_clusters(cluster_id)
-        for vc in vcs:
-            if vc.vcName == vc_name and vc.vcId:
+        matches = [
+            vc
+            for vc in self.list_virtual_clusters(cluster_id)
+            if vc.vcName == vc_name and vc.vcId
+        ]
+        if not matches:
+            return None
+
+        # CDE retains records for deleted Virtual Clusters under their original name; prioritize active clusters over stopped records.
+        for vc in matches:
+            if vc.status not in CDE_VC_STOPPED_STATUSES:
                 return self.describe_virtual_cluster(cluster_id, vc.vcId)
-        return None
+        return self.describe_virtual_cluster(cluster_id, matches[0].vcId)
 
     def create_virtual_cluster(
         self,
@@ -927,3 +1028,112 @@ class CdpDeClient:
                     f"Virtual cluster entered failed status '{vc.status}'.",
                 )
             time.sleep(delay)
+
+    def suspend_virtual_cluster(self, cluster_id: str, vc_id: str) -> Dict[str, Any]:
+        """
+        Suspend a virtual cluster.
+
+        Args:
+            cluster_id: The cluster ID of the service
+            vc_id: The virtual cluster ID
+
+        Returns:
+            Dictionary containing the suspend operation status
+        """
+        return self.api_client.post(
+            "/api/v1/de/suspendVc",
+            data={"clusterId": cluster_id, "vcId": vc_id},
+        )
+
+    def resume_virtual_cluster(self, cluster_id: str, vc_id: str) -> Dict[str, Any]:
+        """
+        Resume a suspended virtual cluster.
+
+        Args:
+            cluster_id: The cluster ID of the service
+            vc_id: The virtual cluster ID
+
+        Returns:
+            Dictionary containing the resume operation status
+        """
+        return self.api_client.post(
+            "/api/v1/de/resumeVc",
+            data={"clusterId": cluster_id, "vcId": vc_id},
+        )
+
+    def get_suspend_resume_status(
+        self,
+        cluster_id: str,
+        vc_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get the status of an in-progress suspend or resume operation.
+
+        Args:
+            cluster_id: The cluster ID of the service
+            vc_id: Optional virtual cluster ID
+
+        Returns:
+            Dictionary containing allStepsCompleted/nextStep/statusMessage
+        """
+        data: Dict[str, Any] = {"clusterId": cluster_id}
+        if vc_id is not None:
+            data["vcId"] = vc_id
+        return self.api_client.post(
+            "/api/v1/de/getSuspendResumeStatus",
+            data=data,
+            squelch={404: {}},
+        )
+
+    def update_virtual_cluster(
+        self,
+        cluster_id: str,
+        vc_id: str,
+        acl_users: Optional[str] = None,
+        discard_spark_configs: Optional[bool] = None,
+        enable_compute_override: Optional[bool] = None,
+        full_access_groups: Optional[List[str]] = None,
+        full_access_users: Optional[List[str]] = None,
+        spark_configs: Optional[Dict[str, str]] = None,
+        view_only_groups: Optional[List[str]] = None,
+        view_only_users: Optional[List[str]] = None,
+    ) -> Optional[VcDescription]:
+        """
+        Update a virtual cluster.
+
+        Args:
+            cluster_id: The cluster ID of the service
+            vc_id: The virtual cluster ID
+            acl_users: Comma-separated workload usernames granted access
+            discard_spark_configs: Discard existing Spark configs instead of merging
+            enable_compute_override: Enable compute override for the virtual cluster
+            full_access_groups: Groups with full access
+            full_access_users: Users with full access
+            spark_configs: Spark configs applied to all jobs in the VC
+            view_only_groups: Groups with view-only access
+            view_only_users: Users with view-only access
+
+        Returns:
+            VcDescription for the updated virtual cluster, or None on failure
+        """
+        data: Dict[str, Any] = {"clusterId": cluster_id, "vcId": vc_id}
+        if acl_users is not None:
+            data["aclUsers"] = acl_users
+        if discard_spark_configs is not None:
+            data["discardSparkConfigs"] = discard_spark_configs
+        if enable_compute_override is not None:
+            data["enableComputeOverride"] = enable_compute_override
+        if full_access_groups is not None:
+            data["fullAccessGroups"] = full_access_groups
+        if full_access_users is not None:
+            data["fullAccessUsers"] = full_access_users
+        if spark_configs is not None:
+            data["sparkConfigs"] = spark_configs
+        if view_only_groups is not None:
+            data["viewOnlyGroups"] = view_only_groups
+        if view_only_users is not None:
+            data["viewOnlyUsers"] = view_only_users
+
+        result = self.api_client.post("/api/v1/de/updateVc", data=data)
+        vc = result.get("Vc") if result else None
+        return from_dict(VcDescription, vc) if vc else None

@@ -40,9 +40,13 @@ import pytest
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     CDE_SERVICE_REMOVABLE_STATUSES,
     CDE_SERVICE_STOPPED_STATUSES,
+    CDE_VC_REMOVABLE_STATUSES,
+    CDE_VC_STOPPED_STATUSES,
+    CDE_VC_TERMINATION_STATUSES,
     CdpDeClient,
     ServiceDescription,
     ServiceResources,
+    VcDescription,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
     CdpDwClient,
@@ -492,9 +496,9 @@ def existing_de_service(de_client) -> Generator[ServiceDescription, None, None]:
     """
     override = os.getenv("CDP_DE_SERVICE")
     if override:
-        service = de_client.get_service_by_name(
+        service = de_client.get_service_by_name(override) or de_client.describe_service(
             override,
-        ) or de_client.get_service_by_cluster_id(override)
+        )
         if service is None:
             pytest.skip(f"CDP_DE_SERVICE '{override}' not found")
         yield service
@@ -710,3 +714,111 @@ def resettable_de_service(
         warnings.warn(
             f"Failed to restore DE service {cluster_id} config during cleanup: {e}",
         )
+
+
+@pytest.fixture
+def cleanup_de_virtual_cluster(
+    de_client,
+) -> Generator[Callable[[str, str], None], None, None]:
+    """Register (cluster_id, vc_id) pairs for delete/removal after the test.
+
+    Call the returned function with a cluster id and virtual cluster id to
+    schedule that Virtual Cluster for teardown regardless of test outcome. Each
+    is deleted (from a removable state) and waited to a stopped status; ids
+    that no longer exist are skipped.
+    """
+    vc_refs = []
+
+    def register(cluster_id, vc_id):
+        vc_refs.append((cluster_id, vc_id))
+
+    try:
+        yield register
+    finally:
+        for cluster_id, vc_id in vc_refs:
+            existing = de_client.describe_virtual_cluster(cluster_id, vc_id)
+            if existing is None:
+                continue
+            try:
+                de_client.delete_virtual_cluster(cluster_id, vc_id)
+                de_client.wait_for_vc_state(
+                    cluster_id=cluster_id,
+                    vc_id=vc_id,
+                    target_statuses=CDE_VC_STOPPED_STATUSES,
+                )
+            except Exception as e:
+                warnings.warn(
+                    f"cleanup_de_virtual_cluster: failed to delete '{vc_id}': {e}",
+                )
+
+
+@pytest.fixture
+def disposable_de_virtual_cluster(
+    request,
+    de_client,
+    existing_de_service,
+) -> Generator[VcDescription, None, None]:
+    """Provision a net-new Virtual Cluster owned by a single test.
+
+    Created in the shared C(existing_de_service), so only the Virtual Cluster
+    itself is scoped to the requesting test; deleting it has no side effects on
+    the underlying DE service. Sizing is overridable via CDP_DE_VC_CPU_REQUESTS
+    and CDP_DE_VC_MEMORY_REQUESTS. If the test did not already remove it, the
+    Virtual Cluster is deleted at teardown.
+    """
+    cluster_id = existing_de_service.clusterId
+
+    name = "ansible-" + re.sub(r"[^a-z0-9]", "-", request.node.name.lower())[:20].strip(
+        "-",
+    )
+
+    # CDE retains stopped records instead of removing them; treat as absent to prevent indefinite waits for CDE_VC_REMOVABLE_STATUSES.
+    existing = de_client.get_virtual_cluster_by_name(cluster_id, name)
+    if existing is not None and existing.status in CDE_VC_STOPPED_STATUSES:
+        existing = None
+    if existing is not None:
+        warnings.warn(
+            f"Test Virtual Cluster {existing.vcId} already exists; will reuse and then teardown.",
+        )
+        ready = de_client.wait_for_vc_state(
+            cluster_id,
+            existing.vcId,
+            CDE_VC_REMOVABLE_STATUSES,
+        )
+    else:
+        created = de_client.create_virtual_cluster(
+            name=name,
+            cluster_id=cluster_id,
+            cpu_requests=os.getenv("CDP_DE_VC_CPU_REQUESTS", "20"),
+            memory_requests=os.getenv("CDP_DE_VC_MEMORY_REQUESTS", "80Gi"),
+            vc_tier="ALLP",
+            spark_version=os.getenv("CDP_DE_VC_SPARK_VERSION", "SPARK3_5_4"),
+        )
+        assert created is not None
+
+        ready = de_client.wait_for_vc_state(
+            cluster_id,
+            created.vcId,
+            CDE_VC_REMOVABLE_STATUSES,
+        )
+
+    try:
+        yield ready
+    finally:
+        cleanup = de_client.describe_virtual_cluster(cluster_id, ready.vcId)
+        if (
+            cleanup is not None
+            and cleanup.status
+            not in CDE_VC_STOPPED_STATUSES | CDE_VC_TERMINATION_STATUSES
+        ):
+            try:
+                de_client.delete_virtual_cluster(cluster_id, ready.vcId)
+                de_client.wait_for_vc_state(
+                    cluster_id=cluster_id,
+                    vc_id=ready.vcId,
+                    target_statuses=CDE_VC_STOPPED_STATUSES,
+                )
+            except Exception as e:
+                warnings.warn(
+                    f"Failed to delete test Virtual Cluster {ready.vcId} during cleanup: {e}",
+                )

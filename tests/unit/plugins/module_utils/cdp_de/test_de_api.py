@@ -27,6 +27,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     CDE_SERVICE_REMOVABLE_STATUSES,
     CDE_SERVICE_STOPPED_STATUSES,
+    CDE_VC_FAILED_STATUSES,
     CDE_VC_REMOVABLE_STATUSES,
     CDE_VC_STOPPED_STATUSES,
     AllPurposeInstanceGroupDetails,
@@ -614,6 +615,88 @@ class TestCdpDeClient:
         # Verify the methods were called
         client.list_virtual_clusters.assert_called_once_with(CLUSTER_ID)
 
+    def test_get_virtual_cluster_by_name_prefers_live_over_stopped(self, mocker):
+        """A live Virtual Cluster is returned over a stale, stopped duplicate.
+
+        CDE retains a record for every deleted Virtual Cluster under its
+        original name instead of removing it from listVcs, so a name can
+        match a stopped record from a prior run as well as a currently live
+        one; the live one must win regardless of list order.
+        """
+        list_mock = [
+            VcSummary(
+                vcId="vc-old",
+                vcName=VC_NAME,
+                clusterId=CLUSTER_ID,
+                status="AppDeleted",
+            ),
+            VcSummary(
+                vcId=VC_ID,
+                vcName=VC_NAME,
+                clusterId=CLUSTER_ID,
+                status="AppInstalled",
+            ),
+        ]
+
+        describe_mock = VcDescription(
+            vcId=VC_ID,
+            vcName=VC_NAME,
+            clusterId=CLUSTER_ID,
+            status="AppInstalled",
+        )
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        client = CdpDeClient(api_client=api_client)
+
+        mocker.patch.object(client, "list_virtual_clusters", return_value=list_mock)
+        mocker.patch.object(
+            client,
+            "describe_virtual_cluster",
+            return_value=describe_mock,
+        )
+
+        response = client.get_virtual_cluster_by_name(CLUSTER_ID, VC_NAME)
+
+        assert response.vcId == VC_ID
+        client.describe_virtual_cluster.assert_called_once_with(CLUSTER_ID, VC_ID)
+
+    def test_get_virtual_cluster_by_name_all_stopped_returns_one(self, mocker):
+        """When every matching record is stopped, one of them is still returned.
+
+        This keeps state=absent idempotent even when CDE has multiple stopped
+        records under the same name and no live one exists.
+        """
+        list_mock = [
+            VcSummary(
+                vcId="vc-old",
+                vcName=VC_NAME,
+                clusterId=CLUSTER_ID,
+                status="AppDeleted",
+            ),
+        ]
+
+        describe_mock = VcDescription(
+            vcId="vc-old",
+            vcName=VC_NAME,
+            clusterId=CLUSTER_ID,
+            status="AppDeleted",
+        )
+
+        api_client = mocker.create_autospec(CdpClient, instance=True)
+        client = CdpDeClient(api_client=api_client)
+
+        mocker.patch.object(client, "list_virtual_clusters", return_value=list_mock)
+        mocker.patch.object(
+            client,
+            "describe_virtual_cluster",
+            return_value=describe_mock,
+        )
+
+        response = client.get_virtual_cluster_by_name(CLUSTER_ID, VC_NAME)
+
+        assert response.vcId == "vc-old"
+        assert response.status in CDE_VC_STOPPED_STATUSES
+
     def test_create_virtual_cluster(self, mocker):
         """Test creating a virtual cluster returns an unwrapped VcDescription."""
 
@@ -750,7 +833,7 @@ class TestCdpDeClient:
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpDeClient(api_client=api_client)
 
-        for failed_status in ("AppInstallationFailed", "AppDeletionFailed"):
+        for failed_status in CDE_VC_FAILED_STATUSES:
             described = VcDescription(
                 vcId=VC_ID,
                 vcName=VC_NAME,
