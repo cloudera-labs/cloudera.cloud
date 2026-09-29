@@ -27,6 +27,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     CDE_SERVICE_REMOVABLE_STATUSES,
     CDE_SERVICE_STOPPED_STATUSES,
+    CDE_VC_FAILED_STATUSES,
     CDE_VC_REMOVABLE_STATUSES,
     CDE_VC_STOPPED_STATUSES,
     AllPurposeInstanceGroupDetails,
@@ -832,7 +833,7 @@ class TestCdpDeClient:
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpDeClient(api_client=api_client)
 
-        for failed_status in ("AppInstallationFailed", "AppDeletionFailed"):
+        for failed_status in CDE_VC_FAILED_STATUSES:
             described = VcDescription(
                 vcId=VC_ID,
                 vcName=VC_NAME,

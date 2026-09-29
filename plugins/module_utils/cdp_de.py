@@ -412,6 +412,8 @@ CDE_VC_TERMINATION_STATUSES = {"AppDeletionInitiated"}
 CDE_VC_FAILED_STATUSES = {
     "AppDeletionFailed",
     "AppInstallationFailed",
+    "AppResumeFailed",
+    "AppSuspendFailed",
 }
 
 
