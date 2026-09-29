@@ -42,6 +42,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     CDE_SERVICE_STOPPED_STATUSES,
     CDE_VC_REMOVABLE_STATUSES,
     CDE_VC_STOPPED_STATUSES,
+    CDE_VC_TERMINATION_STATUSES,
     CdpDeClient,
     ServiceDescription,
     ServiceResources,
@@ -804,7 +805,12 @@ def disposable_de_virtual_cluster(
     try:
         yield ready
     finally:
-        if de_client.describe_virtual_cluster(cluster_id, ready.vcId) is not None:
+        cleanup = de_client.describe_virtual_cluster(cluster_id, ready.vcId)
+        if (
+            cleanup is not None
+            and cleanup.status
+            not in CDE_VC_STOPPED_STATUSES | CDE_VC_TERMINATION_STATUSES
+        ):
             try:
                 de_client.delete_virtual_cluster(cluster_id, ready.vcId)
                 de_client.wait_for_vc_state(
