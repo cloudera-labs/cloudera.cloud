@@ -20,13 +20,18 @@ A REST client for the Cloudera on Cloud Platform (CDP) Environments API
 
 import time
 
-from typing import Any, Dict, List, Optional, Set
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Union
 
 import re
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
     CdpError,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
+    from_dict,
 )
 
 
@@ -188,6 +193,36 @@ def filter_subnets_by_expression(
                 filtered_ids.append(subnet_id)
 
     return filtered_ids
+
+
+@dataclass
+class SyncOperationDetail:
+    """Detail of a single environment's sync result (success or failure)."""
+
+    environmentCrn: Union[str, None, NULLABLE] = NULLABLE
+    message: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class SyncStatus:
+    """Status of a user sync operation."""
+
+    operationId: Union[str, None, NULLABLE] = NULLABLE
+    operationType: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    startTime: Union[str, None, NULLABLE] = NULLABLE
+    endTime: Union[str, None, NULLABLE] = NULLABLE
+    error: Union[str, None, NULLABLE] = NULLABLE
+    success: Union[List[SyncOperationDetail], None, NULLABLE] = NULLABLE
+    failure: Union[List[SyncOperationDetail], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class EnvironmentUserSyncState:
+    """User sync state for an environment."""
+
+    state: Union[str, None, NULLABLE] = NULLABLE
+    userSyncOperationId: Union[str, None, NULLABLE] = NULLABLE
 
 
 SYNC_COMPLETED_STATUSES: Set[str] = frozenset({"COMPLETED"})
@@ -409,7 +444,7 @@ class CdpEnvClient:
     def sync_all_users(
         self,
         environment_names: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+    ) -> SyncStatus:
         """
         Sync all users and groups with CDP environments.
 
@@ -418,30 +453,32 @@ class CdpEnvClient:
                 syncs all environments.
 
         Returns:
-            Response dict with operationId, status, and sync details.
+            SyncStatus with operationId, status, and sync details.
         """
         json_data: Dict[str, Any] = {}
         if environment_names is not None:
             json_data["environmentNames"] = environment_names
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/environments2/syncAllUsers",
             json_data=json_data,
         )
+        return from_dict(SyncStatus, response)
 
-    def sync_user(self) -> Dict[str, Any]:
+    def sync_user(self) -> SyncStatus:
         """
         Sync the calling user with all CDP environments.
 
         Returns:
-            Response dict with operationId, status, and sync details.
+            SyncStatus with operationId, status, and sync details.
         """
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/environments2/syncUser",
             json_data={},
         )
+        return from_dict(SyncStatus, response)
 
-    def get_sync_status(self, operation_id: str) -> Dict[str, Any]:
+    def get_sync_status(self, operation_id: str) -> SyncStatus:
         """
         Get the status of a user sync operation.
 
@@ -449,19 +486,20 @@ class CdpEnvClient:
             operation_id: The operation ID or CRN of the sync operation.
 
         Returns:
-            Response dict with operationId, status, and sync details.
+            SyncStatus with operationId, status, and sync details.
         """
         json_data: Dict[str, Any] = {"operationId": operation_id}
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/environments2/syncStatus",
             json_data=json_data,
         )
+        return from_dict(SyncStatus, response)
 
     def get_environment_user_sync_state(
         self,
         environment_name: str,
-    ) -> Dict[str, Any]:
+    ) -> EnvironmentUserSyncState:
         """
         Get the user sync state for an environment.
 
@@ -469,14 +507,15 @@ class CdpEnvClient:
             environment_name: Name of the environment.
 
         Returns:
-            Response dict with state and userSyncOperationId.
+            EnvironmentUserSyncState with state and userSyncOperationId.
         """
         json_data: Dict[str, Any] = {"environmentName": environment_name}
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/environments2/getEnvironmentUserSyncState",
             json_data=json_data,
         )
+        return from_dict(EnvironmentUserSyncState, response)
 
     def wait_for_sync(
         self,
@@ -485,7 +524,7 @@ class CdpEnvClient:
         error_statuses: Set[str] = SYNC_FAILED_STATUSES,
         timeout: int = 3600,
         delay: int = 15,
-    ) -> Dict[str, Any]:
+    ) -> SyncStatus:
         """
         Poll a user sync operation until it reaches a target status.
 
@@ -497,7 +536,7 @@ class CdpEnvClient:
             delay: Polling interval in seconds.
 
         Returns:
-            Sync status response dict when a target status is reached.
+            SyncStatus when a target status is reached.
 
         Raises:
             CdpError: If the timeout is reached or the operation enters
@@ -513,7 +552,7 @@ class CdpEnvClient:
                 )
 
             response = self.get_sync_status(operation_id)
-            current_status = response.get("status")
+            current_status = response.status
 
             if current_status in target_statuses:
                 return response

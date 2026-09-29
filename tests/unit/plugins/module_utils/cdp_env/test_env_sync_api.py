@@ -26,6 +26,8 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
+    EnvironmentUserSyncState,
+    SyncStatus,
     SYNC_COMPLETED_STATUSES,
     SYNC_FAILED_STATUSES,
 )
@@ -52,7 +54,10 @@ class TestCdpEnvClientSync:
         client = CdpEnvClient(api_client=api_client)
         result = client.sync_all_users(["env-1", "env-2"])
 
-        assert result == mock_response
+        assert isinstance(result, SyncStatus)
+        assert result.operationId == OPERATION_ID
+        assert result.operationType == "USER_SYNC"
+        assert result.status == "RUNNING"
         api_client.post.assert_called_once_with(
             "/api/v1/environments2/syncAllUsers",
             json_data={"environmentNames": ["env-1", "env-2"]},
@@ -71,7 +76,9 @@ class TestCdpEnvClientSync:
         client = CdpEnvClient(api_client=api_client)
         result = client.sync_all_users()
 
-        assert result == mock_response
+        assert isinstance(result, SyncStatus)
+        assert result.operationId == OPERATION_ID
+        assert result.status == "RUNNING"
         api_client.post.assert_called_once_with(
             "/api/v1/environments2/syncAllUsers",
             json_data={},
@@ -90,7 +97,9 @@ class TestCdpEnvClientSync:
         client = CdpEnvClient(api_client=api_client)
         result = client.sync_user()
 
-        assert result == mock_response
+        assert isinstance(result, SyncStatus)
+        assert result.operationId == OPERATION_ID
+        assert result.status == "RUNNING"
         api_client.post.assert_called_once_with(
             "/api/v1/environments2/syncUser",
             json_data={},
@@ -112,7 +121,11 @@ class TestCdpEnvClientSync:
         client = CdpEnvClient(api_client=api_client)
         result = client.get_sync_status(OPERATION_ID)
 
-        assert result == mock_response
+        assert isinstance(result, SyncStatus)
+        assert result.operationId == OPERATION_ID
+        assert result.status == "COMPLETED"
+        assert len(result.success) == 1
+        assert result.success[0].environmentCrn == "crn:env:1"
         api_client.post.assert_called_once_with(
             "/api/v1/environments2/syncStatus",
             json_data={"operationId": OPERATION_ID},
@@ -131,7 +144,9 @@ class TestCdpEnvClientSync:
         client = CdpEnvClient(api_client=api_client)
         result = client.get_environment_user_sync_state(ENV_NAME)
 
-        assert result == mock_response
+        assert isinstance(result, EnvironmentUserSyncState)
+        assert result.state == "SYNC_COMPLETED"
+        assert result.userSyncOperationId == OPERATION_ID
         api_client.post.assert_called_once_with(
             "/api/v1/environments2/getEnvironmentUserSyncState",
             json_data={"environmentName": ENV_NAME},
@@ -143,11 +158,10 @@ class TestCdpEnvClientWaitForSync:
 
     def test_wait_for_sync_already_completed(self, mocker):
         """Returns immediately when status is already in target_statuses."""
-        completed_response = {
-            "operationId": OPERATION_ID,
-            "status": "COMPLETED",
-            "success": [{"environmentCrn": "crn:env:1"}],
-        }
+        completed_response = SyncStatus(
+            operationId=OPERATION_ID,
+            status="COMPLETED",
+        )
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpEnvClient(api_client=api_client)
@@ -160,17 +174,20 @@ class TestCdpEnvClientWaitForSync:
 
         result = client.wait_for_sync(OPERATION_ID)
 
-        assert result == completed_response
-        assert result["status"] == "COMPLETED"
+        assert isinstance(result, SyncStatus)
+        assert result.status == "COMPLETED"
 
     def test_wait_for_sync_polls_until_completed(self, mocker):
         """Polls multiple times until target status is reached."""
-        running_response = {"operationId": OPERATION_ID, "status": "RUNNING"}
-        completed_response = {
-            "operationId": OPERATION_ID,
-            "status": "COMPLETED",
-            "endTime": "1602080301000",
-        }
+        running_response = SyncStatus(
+            operationId=OPERATION_ID,
+            status="RUNNING",
+        )
+        completed_response = SyncStatus(
+            operationId=OPERATION_ID,
+            status="COMPLETED",
+            endTime="1602080301000",
+        )
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpEnvClient(api_client=api_client)
@@ -186,17 +203,18 @@ class TestCdpEnvClientWaitForSync:
 
         result = client.wait_for_sync(OPERATION_ID, delay=10, timeout=3600)
 
-        assert result == completed_response
+        assert result.status == "COMPLETED"
+        assert result.endTime == "1602080301000"
         assert mock_sleep.call_count == 2
         mock_sleep.assert_called_with(10)
 
     def test_wait_for_sync_raises_on_error_status(self, mocker):
         """Raises CdpError when sync enters an error status."""
-        failed_response = {
-            "operationId": OPERATION_ID,
-            "status": "FAILED",
-            "error": "Sync failed due to network error",
-        }
+        failed_response = SyncStatus(
+            operationId=OPERATION_ID,
+            status="FAILED",
+            error="Sync failed due to network error",
+        )
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpEnvClient(api_client=api_client)
@@ -212,10 +230,10 @@ class TestCdpEnvClientWaitForSync:
 
     def test_wait_for_sync_raises_on_timedout_status(self, mocker):
         """Raises CdpError when sync status is TIMEDOUT."""
-        timedout_response = {
-            "operationId": OPERATION_ID,
-            "status": "TIMEDOUT",
-        }
+        timedout_response = SyncStatus(
+            operationId=OPERATION_ID,
+            status="TIMEDOUT",
+        )
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpEnvClient(api_client=api_client)
@@ -231,10 +249,10 @@ class TestCdpEnvClientWaitForSync:
 
     def test_wait_for_sync_raises_on_rejected_status(self, mocker):
         """Raises CdpError when sync status is REJECTED."""
-        rejected_response = {
-            "operationId": OPERATION_ID,
-            "status": "REJECTED",
-        }
+        rejected_response = SyncStatus(
+            operationId=OPERATION_ID,
+            status="REJECTED",
+        )
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpEnvClient(api_client=api_client)
@@ -250,7 +268,10 @@ class TestCdpEnvClientWaitForSync:
 
     def test_wait_for_sync_raises_on_timeout(self, mocker):
         """Raises CdpError when polling exceeds timeout."""
-        running_response = {"operationId": OPERATION_ID, "status": "RUNNING"}
+        running_response = SyncStatus(
+            operationId=OPERATION_ID,
+            status="RUNNING",
+        )
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpEnvClient(api_client=api_client)
@@ -273,7 +294,10 @@ class TestCdpEnvClientWaitForSync:
 
     def test_wait_for_sync_custom_target_statuses(self, mocker):
         """Accepts custom target_statuses."""
-        response = {"operationId": OPERATION_ID, "status": "CUSTOM_DONE"}
+        response = SyncStatus(
+            operationId=OPERATION_ID,
+            status="CUSTOM_DONE",
+        )
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpEnvClient(api_client=api_client)
@@ -285,4 +309,4 @@ class TestCdpEnvClientWaitForSync:
             target_statuses={"CUSTOM_DONE"},
         )
 
-        assert result == response
+        assert result.status == "CUSTOM_DONE"

@@ -136,13 +136,15 @@ sdk_out_lines:
     elements: str
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
+    SyncStatus,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
+    to_dict,
 )
 
 
@@ -160,7 +162,7 @@ class EnvironmentUserSyncInfo(ServicesModule):
         )
 
         self.name = self.get_param("name")
-        self.sync: Dict[str, Any] = {}
+        self.sync: Optional[SyncStatus] = None
 
     def process(self):
         client = CdpEnvClient(api_client=self.api_client)
@@ -172,7 +174,7 @@ def main():
 
     output: Dict[str, Any] = dict(
         changed=False,
-        sync=result.sync,
+        sync=to_dict(result.sync) if result.sync else {},
     )
 
     if result.debug_log:

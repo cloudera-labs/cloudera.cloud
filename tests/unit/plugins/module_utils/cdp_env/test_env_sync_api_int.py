@@ -19,11 +19,13 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 import os
+import time
 
 import pytest
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
+    SyncStatus,
 )
 
 
@@ -38,16 +40,28 @@ pytestmark = pytest.mark.integration_api
 
 @pytest.fixture(scope="module")
 def sync_result(test_cdp_client):
-    """Fire a single sync_all_users call shared across all tests in this module."""
+    """Fire a single sync_all_users call shared across all tests in this module.
+
+    Retries on 409 (sync already in progress) with backoff until the
+    previous operation finishes.
+    """
     client = CdpEnvClient(api_client=test_cdp_client)
-    return client.sync_all_users()
+    retries = 12
+    delay = 15
+    for attempt in range(retries):
+        try:
+            return client.sync_all_users()
+        except Exception as exc:
+            if "409" not in str(exc) or attempt == retries - 1:
+                raise
+            time.sleep(delay)
 
 
 def test_sync_all_users(sync_result):
-    """sync_all_users() returns a dict with operationId and status."""
-    assert isinstance(sync_result, dict)
-    assert "operationId" in sync_result
-    assert "status" in sync_result
+    """sync_all_users() returns a SyncStatus with operationId and status."""
+    assert isinstance(sync_result, SyncStatus)
+    assert sync_result.operationId is not None
+    assert sync_result.status is not None
 
 
 def test_sync_all_users_named_environment(test_cdp_client, sync_result):
@@ -59,22 +73,21 @@ def test_sync_all_users_named_environment(test_cdp_client, sync_result):
         )
 
     client = CdpEnvClient(api_client=test_cdp_client)
-    client.wait_for_sync(sync_result["operationId"], delay=5)
+    client.wait_for_sync(sync_result.operationId, delay=5)
 
     result = client.sync_all_users(environment_names=[env_name])
 
-    assert isinstance(result, dict)
-    assert "operationId" in result
-    assert "status" in result
+    assert isinstance(result, SyncStatus)
+    assert result.operationId is not None
+    assert result.status is not None
 
 
 def test_get_sync_status(test_cdp_client, sync_result):
     """get_sync_status() returns matching operationId after a sync."""
     client = CdpEnvClient(api_client=test_cdp_client)
-    operation_id = sync_result["operationId"]
 
-    status_result = client.get_sync_status(operation_id)
+    status_result = client.get_sync_status(sync_result.operationId)
 
-    assert isinstance(status_result, dict)
-    assert status_result["operationId"] == operation_id
-    assert "status" in status_result
+    assert isinstance(status_result, SyncStatus)
+    assert status_result.operationId == sync_result.operationId
+    assert status_result.status is not None

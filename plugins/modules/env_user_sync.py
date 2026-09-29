@@ -178,13 +178,15 @@ sdk_out_lines:
     elements: str
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
+    SyncStatus,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
+    to_dict,
 )
 
 
@@ -227,7 +229,7 @@ class EnvironmentUserSync(ServicesModule):
         self.delay = self.get_param("delay")
         self.timeout = self.get_param("timeout")
 
-        self.sync: Dict[str, Any] = {}
+        self.sync: Optional[SyncStatus] = None
         self.changed = False
 
     def process(self):
@@ -245,7 +247,7 @@ class EnvironmentUserSync(ServicesModule):
 
         if self.wait:
             self.sync = client.wait_for_sync(
-                operation_id=resp["operationId"],
+                operation_id=resp.operationId,
                 timeout=self.timeout,
                 delay=self.delay,
             )
@@ -258,7 +260,7 @@ def main():
 
     output: Dict[str, Any] = dict(
         changed=result.changed,
-        sync=result.sync,
+        sync=to_dict(result.sync) if result.sync else {},
     )
 
     if result.debug_log:

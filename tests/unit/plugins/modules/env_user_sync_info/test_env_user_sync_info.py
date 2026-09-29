@@ -23,6 +23,7 @@ import pytest
 # pylint: disable=redefined-outer-name,unused-argument
 
 from ansible_collections.cloudera.cloud.plugins.modules import env_user_sync_info
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import SyncStatus
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
     AnsibleFailJson,
@@ -71,13 +72,11 @@ def env_user_sync_info_client(mocker):
 
 def test_get_sync_status(env_user_sync_info_args, env_user_sync_info_client):
     """Retrieves sync operation status by operation ID."""
-    mock_sync = {
-        "operationId": OPERATION_ID,
-        "operationType": "USER_SYNC",
-        "status": "COMPLETED",
-        "success": [{"environmentCrn": "crn:cdp:env:1"}],
-        "failure": [],
-    }
+    mock_sync = SyncStatus(
+        operationId=OPERATION_ID,
+        operationType="USER_SYNC",
+        status="COMPLETED",
+    )
 
     env_user_sync_info_args({"name": OPERATION_ID})
     env_user_sync_info_client.get_sync_status.return_value = mock_sync
@@ -86,17 +85,19 @@ def test_get_sync_status(env_user_sync_info_args, env_user_sync_info_client):
         env_user_sync_info.main()
 
     assert result.value.changed is False
-    assert result.value.sync == mock_sync
+    assert result.value.sync["operationId"] == OPERATION_ID
+    assert result.value.sync["operationType"] == "USER_SYNC"
+    assert result.value.sync["status"] == "COMPLETED"
     env_user_sync_info_client.get_sync_status.assert_called_once_with(OPERATION_ID)
 
 
 def test_changed_is_always_false(env_user_sync_info_args, env_user_sync_info_client):
     """Info modules never report changed."""
     env_user_sync_info_args({"name": OPERATION_ID})
-    env_user_sync_info_client.get_sync_status.return_value = {
-        "operationId": OPERATION_ID,
-        "status": "RUNNING",
-    }
+    env_user_sync_info_client.get_sync_status.return_value = SyncStatus(
+        operationId=OPERATION_ID,
+        status="RUNNING",
+    )
 
     with pytest.raises(AnsibleExitJson) as result:
         env_user_sync_info.main()

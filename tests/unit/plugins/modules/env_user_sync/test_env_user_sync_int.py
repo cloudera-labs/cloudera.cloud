@@ -18,11 +18,17 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import time
+
 import pytest
 
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
+    CdpEnvClient,
+)
 from ansible_collections.cloudera.cloud.plugins.modules import env_user_sync
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
+    AnsibleFailJson,
 )
 
 
@@ -33,6 +39,21 @@ REQUIRED_ENV_VARS = [
 ]
 
 pytestmark = pytest.mark.integration_api
+
+
+@pytest.fixture(autouse=True)
+def _wait_for_idle_sync(test_cdp_client):
+    """Block until no sync is in flight so tests don't hit 409."""
+    client = CdpEnvClient(api_client=test_cdp_client)
+    for _ in range(12):
+        try:
+            result = client.sync_all_users()
+            client.wait_for_sync(result.operationId, delay=5, timeout=180)
+            return
+        except Exception as exc:
+            if "409" not in str(exc):
+                raise
+            time.sleep(15)
 
 
 @pytest.fixture
@@ -63,8 +84,8 @@ def test_sync_all_environments_no_wait(env_user_sync_module_args):
 
     assert result.value.changed is True
     assert isinstance(result.value.sync, dict)
-    assert "operationId" in result.value.sync
-    assert "status" in result.value.sync
+    assert result.value.sync["operationId"] is not None
+    assert result.value.sync["status"] is not None
 
 
 def test_check_mode_no_api_call(env_user_sync_module_args):

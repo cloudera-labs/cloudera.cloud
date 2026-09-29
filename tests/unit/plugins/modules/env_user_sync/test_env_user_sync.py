@@ -23,6 +23,7 @@ import pytest
 # pylint: disable=redefined-outer-name,unused-argument
 
 from ansible_collections.cloudera.cloud.plugins.modules import env_user_sync
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import SyncStatus
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
     AnsibleFailJson,
@@ -71,12 +72,11 @@ def env_user_sync_client(mocker):
 
 def test_sync_all_environments(env_user_sync_args, env_user_sync_client):
     """Syncs all environments when no name is specified."""
-    sync_response = {"operationId": OPERATION_ID, "status": "RUNNING"}
-    completed_response = {
-        "operationId": OPERATION_ID,
-        "status": "COMPLETED",
-        "success": [{"environmentCrn": "crn:cdp:env:1"}],
-    }
+    sync_response = SyncStatus(operationId=OPERATION_ID, status="RUNNING")
+    completed_response = SyncStatus(
+        operationId=OPERATION_ID,
+        status="COMPLETED",
+    )
 
     env_user_sync_args({})
     env_user_sync_client.sync_all_users.return_value = sync_response
@@ -86,7 +86,8 @@ def test_sync_all_environments(env_user_sync_args, env_user_sync_client):
         env_user_sync.main()
 
     assert result.value.changed is True
-    assert result.value.sync == completed_response
+    assert result.value.sync["operationId"] == OPERATION_ID
+    assert result.value.sync["status"] == "COMPLETED"
     env_user_sync_client.sync_all_users.assert_called_once_with(None)
     env_user_sync_client.wait_for_sync.assert_called_once()
 
@@ -94,11 +95,11 @@ def test_sync_all_environments(env_user_sync_args, env_user_sync_client):
 def test_sync_named_environments(env_user_sync_args, env_user_sync_client):
     """Syncs specific environments by name."""
     env_names = ["env-1", "env-2"]
-    sync_response = {"operationId": OPERATION_ID, "status": "RUNNING"}
-    completed_response = {
-        "operationId": OPERATION_ID,
-        "status": "COMPLETED",
-    }
+    sync_response = SyncStatus(operationId=OPERATION_ID, status="RUNNING")
+    completed_response = SyncStatus(
+        operationId=OPERATION_ID,
+        status="COMPLETED",
+    )
 
     env_user_sync_args({"name": env_names})
     env_user_sync_client.sync_all_users.return_value = sync_response
@@ -108,17 +109,18 @@ def test_sync_named_environments(env_user_sync_args, env_user_sync_client):
         env_user_sync.main()
 
     assert result.value.changed is True
-    assert result.value.sync == completed_response
+    assert result.value.sync["operationId"] == OPERATION_ID
+    assert result.value.sync["status"] == "COMPLETED"
     env_user_sync_client.sync_all_users.assert_called_once_with(env_names)
 
 
 def test_sync_current_user(env_user_sync_args, env_user_sync_client):
     """Syncs only the current user when current_user=True."""
-    sync_response = {"operationId": OPERATION_ID, "status": "RUNNING"}
-    completed_response = {
-        "operationId": OPERATION_ID,
-        "status": "COMPLETED",
-    }
+    sync_response = SyncStatus(operationId=OPERATION_ID, status="RUNNING")
+    completed_response = SyncStatus(
+        operationId=OPERATION_ID,
+        status="COMPLETED",
+    )
 
     env_user_sync_args({"current_user": True})
     env_user_sync_client.sync_user.return_value = sync_response
@@ -134,11 +136,11 @@ def test_sync_current_user(env_user_sync_args, env_user_sync_client):
 
 def test_sync_with_wait(env_user_sync_args, env_user_sync_client):
     """Wait=True (default) calls wait_for_sync with correct parameters."""
-    sync_response = {"operationId": OPERATION_ID, "status": "RUNNING"}
-    completed_response = {
-        "operationId": OPERATION_ID,
-        "status": "COMPLETED",
-    }
+    sync_response = SyncStatus(operationId=OPERATION_ID, status="RUNNING")
+    completed_response = SyncStatus(
+        operationId=OPERATION_ID,
+        status="COMPLETED",
+    )
 
     env_user_sync_args({"delay": 30, "timeout": 600})
     env_user_sync_client.sync_all_users.return_value = sync_response
@@ -147,7 +149,7 @@ def test_sync_with_wait(env_user_sync_args, env_user_sync_client):
     with pytest.raises(AnsibleExitJson) as result:
         env_user_sync.main()
 
-    assert result.value.sync == completed_response
+    assert result.value.sync["operationId"] == OPERATION_ID
     env_user_sync_client.wait_for_sync.assert_called_once_with(
         operation_id=OPERATION_ID,
         timeout=600,
@@ -157,7 +159,7 @@ def test_sync_with_wait(env_user_sync_args, env_user_sync_client):
 
 def test_sync_without_wait(env_user_sync_args, env_user_sync_client):
     """Wait=False returns the initial sync response without polling."""
-    sync_response = {"operationId": OPERATION_ID, "status": "RUNNING"}
+    sync_response = SyncStatus(operationId=OPERATION_ID, status="RUNNING")
 
     env_user_sync_args({"wait": False})
     env_user_sync_client.sync_all_users.return_value = sync_response
@@ -166,7 +168,8 @@ def test_sync_without_wait(env_user_sync_args, env_user_sync_client):
         env_user_sync.main()
 
     assert result.value.changed is True
-    assert result.value.sync == sync_response
+    assert result.value.sync["operationId"] == OPERATION_ID
+    assert result.value.sync["status"] == "RUNNING"
     env_user_sync_client.wait_for_sync.assert_not_called()
 
 
