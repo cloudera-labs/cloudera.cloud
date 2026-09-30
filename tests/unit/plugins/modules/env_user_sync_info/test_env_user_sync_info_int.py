@@ -26,6 +26,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
 from ansible_collections.cloudera.cloud.plugins.modules import env_user_sync_info
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
+    required_or_skip,
 )
 
 
@@ -59,10 +60,19 @@ def env_user_sync_info_module_args(module_args, env_context):
 
 @pytest.fixture
 def sync_operation_id(test_cdp_client):
-    """Fire a quick sync and return the operationId for the info module to query."""
+    """Return an operationId for the info module to query.
+
+    Reads the most recent sync operation from the environment named by
+    ``CDP_ENVIRONMENT_NAME`` via ``get_environment_user_sync_state``
+    instead of firing a new ``sync_all_users`` (which can 409 if a
+    sync is already in flight).
+    """
+    env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
     client = CdpEnvClient(api_client=test_cdp_client)
-    result = client.sync_all_users()
-    return result["operationId"]
+    state = client.get_environment_user_sync_state(env_name)
+    if not state.userSyncOperationId:
+        pytest.skip("No recent sync operation found for environment")
+    return state.userSyncOperationId
 
 
 def test_get_sync_status(env_user_sync_info_module_args, sync_operation_id):

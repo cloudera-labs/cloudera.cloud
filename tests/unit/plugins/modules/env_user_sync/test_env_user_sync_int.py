@@ -18,8 +18,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import time
-
 import pytest
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
@@ -42,19 +40,27 @@ REQUIRED_ENV_VARS = [
 pytestmark = pytest.mark.integration_api
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def _wait_for_idle_sync(test_cdp_client):
-    """Block until no sync is in flight so tests don't hit 409."""
+    """Block until the target environment has no sync in flight.
+
+    Polls ``get_environment_user_sync_state`` for the environment named
+    by ``CDP_ENVIRONMENT_NAME``.  When a sync is still running it waits
+    for the operation to finish via ``get_sync_status`` so the next test
+    won't hit a 409.
+    """
+    env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
     client = CdpEnvClient(api_client=test_cdp_client)
-    for _ in range(12):
-        try:
-            result = client.sync_all_users()
-            client.wait_for_sync(result.operationId, delay=5, timeout=600)
-            return
-        except Exception as exc:
-            if "409" not in str(exc):
-                raise
-            time.sleep(15)
+
+    state = client.get_environment_user_sync_state(env_name)
+    if state.userSyncOperationId:
+        status = client.get_sync_status(state.userSyncOperationId)
+        if status.status not in ("COMPLETED", "FAILED", "TIMEDOUT", "REJECTED"):
+            client.wait_for_sync(
+                state.userSyncOperationId,
+                delay=5,
+                timeout=600,
+            )
 
 
 @pytest.fixture
@@ -89,7 +95,7 @@ def test_sync_all_environments_no_wait(env_user_sync_module_args):
     assert result.value.sync["status"] is not None
 
 
-def test_sync_named_environment_no_wait(env_user_sync_module_args):
+def test_sync_named_environment_no_wait(env_user_sync_module_args, _wait_for_idle_sync):
     """Sync a specific named environment without waiting for completion."""
     env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
 
@@ -104,7 +110,7 @@ def test_sync_named_environment_no_wait(env_user_sync_module_args):
     assert result.value.sync["status"] is not None
 
 
-def test_sync_named_environment_wait(env_user_sync_module_args):
+def test_sync_named_environment_wait(env_user_sync_module_args, _wait_for_idle_sync):
     """Sync a specific named environment and wait for completion."""
     env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
 
