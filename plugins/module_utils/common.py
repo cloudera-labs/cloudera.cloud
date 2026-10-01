@@ -74,11 +74,11 @@ def from_dict(cls: Type[T], data: Any) -> T:
                 if union_arg is type(None):
                     continue
 
-                # Process only dataclasses (not instances) and Lists
-                if isinstance(union_arg, type) and (
-                    is_dataclass(union_arg) or get_origin(union_arg) in (list, List)
-                ):
-                    # If Union contains a dataclass or List, parse accordingly
+                # Process dataclasses and generic Lists (List[X] is not a
+                # type so get_origin must be checked independently)
+                if (
+                    isinstance(union_arg, type) and is_dataclass(union_arg)
+                ) or get_origin(union_arg) in (list, List):
                     return _from_dict_recursive(union_arg, current_data)
             # If a Union of primitives, return data as-is
             return current_data
