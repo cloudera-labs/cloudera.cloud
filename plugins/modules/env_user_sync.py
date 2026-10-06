@@ -16,17 +16,20 @@
 # limitations under the License.
 
 DOCUMENTATION = r"""
+---
 module: env_user_sync
 short_description: Sync CDP Users and Groups to Environments
 description:
   - Synchronize users and groups with one or more CDP environments.
-  - The module support check_mode.
+  - The module supports check_mode.
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Jim Enright (@jimright)"
 version_added: "1.0.0"
-requirements:
-  - cdpy
+extends_documentation_fragment:
+  - ansible.builtin.action_common_attributes
+  - cloudera.cloud.cdp_client
 options:
   name:
     description:
@@ -46,10 +49,15 @@ options:
       - user
     required: False
     type: bool
+  wait:
+    description:
+      - Flag to enable internal polling to wait for the user sync operation to complete.
+    type: bool
+    required: False
+    default: True
   delay:
     description:
-      - The internal polling interval (in seconds) while the module waits for the datalake to achieve the declared
-            state.
+      - The internal polling interval (in seconds) while the module waits for the sync operation to complete.
     type: int
     required: False
     default: 15
@@ -57,15 +65,19 @@ options:
       - polling_delay
   timeout:
     description:
-      - The internal polling timeout (in seconds) while the module waits for the datalake to achieve the declared state.
+      - The internal polling timeout (in seconds) while the module waits for the sync operation to complete.
     type: int
     required: False
     default: 3600
     aliases:
       - polling_timeout
-extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+attributes:
+  check_mode:
+    support: full
+  diff_mode:
+    support: N/A
+  platform:
+    platforms: all
 """
 
 EXAMPLES = r"""
@@ -167,81 +179,98 @@ sdk_out_lines:
     elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any, Dict, Optional
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
+    CdpEnvClient,
+    SyncStatus,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+    to_dict,
+)
 
 
-class EnvironmentUserSync(CdpModule):
-    def __init__(self, module):
-        super(EnvironmentUserSync, self).__init__(module)
+class EnvironmentUserSync(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                name=dict(
+                    required=False,
+                    type="list",
+                    elements="str",
+                    aliases=["environment"],
+                ),
+                current_user=dict(
+                    required=False,
+                    type="bool",
+                    aliases=["user"],
+                ),
+                wait=dict(required=False, type="bool", default=True),
+                delay=dict(
+                    required=False,
+                    type="int",
+                    aliases=["polling_delay"],
+                    default=15,
+                ),
+                timeout=dict(
+                    required=False,
+                    type="int",
+                    aliases=["polling_timeout"],
+                    default=3600,
+                ),
+            ),
+            mutually_exclusive=[["name", "current_user"]],
+            supports_check_mode=True,
+        )
 
-        # Set variables
-        self.name = self._get_param("name")
-        self.current_user = self._get_param("current_user")
-        self.wait = self._get_param("wait")
-        self.delay = self._get_param("delay")
-        self.timeout = self._get_param("timeout")
+        self.name = self.get_param("name")
+        self.current_user = self.get_param("current_user")
+        self.wait = self.get_param("wait")
+        self.delay = self.get_param("delay")
+        self.timeout = self.get_param("timeout")
 
-        # Initialize the return values
-        self.sync = {}
+        self.sync: Optional[SyncStatus] = None
+        self.changed = False
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
-        if not self.module.check_mode:
-            if self.current_user:
-                resp = self.cdpy.environments.sync_current_user()
-            else:
-                resp = self.cdpy.environments.sync_users(self.name)
-            self.changed = True
-            if self.wait:
-                self.sync = self.cdpy.sdk.wait_for_state(
-                    describe_func=self.cdpy.environments.get_sync_status,
-                    params=dict(operation=resp["operationId"]),
-                    state="COMPLETED",
-                    delay=self.delay,
-                    timeout=self.timeout,
-                )
-            else:
-                self.sync = resp
+        if self.module.check_mode:
+            return
+
+        client = CdpEnvClient(api_client=self.api_client)
+
+        if self.current_user:
+            resp = client.sync_user()
+        else:
+            resp = client.sync_all_users(self.name)
+
+        self.changed = True
+
+        if self.wait:
+            self.sync = client.wait_for_sync(
+                operation_id=resp.operationId,
+                timeout=self.timeout,
+                delay=self.delay,
+            )
+        else:
+            self.sync = resp
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            name=dict(required=False, type="list", aliases=["environment"]),
-            current_user=dict(required=False, type="bool", aliases=["user"]),
-            wait=dict(required=False, type="bool", default=True),
-            delay=dict(
-                required=False,
-                type="int",
-                aliases=["polling_delay"],
-                default=15,
-            ),
-            timeout=dict(
-                required=False,
-                type="int",
-                aliases=["polling_timeout"],
-                default=3600,
-            ),
-        ),
-        mutually_exclusive=(["name", "current_user"]),
-        supports_check_mode=True,
-    )
+    result = EnvironmentUserSync()
 
-    result = EnvironmentUserSync(module)
-
-    output = dict(
+    output: Dict[str, Any] = dict(
         changed=result.changed,
-        sync=result.sync,
+        sync=to_dict(result.sync) if result.sync else {},
     )
 
-    if result.debug:
-        output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
+    if result.debug_log:
+        output.update(
+            sdk_out=result.log_out,
+            sdk_out_lines=result.log_lines,
+        )
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":

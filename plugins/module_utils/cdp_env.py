@@ -18,11 +18,20 @@
 A REST client for the Cloudera on Cloud Platform (CDP) Environments API
 """
 
-from typing import Any, Dict, List, Optional
+import time
+
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Union
+
 import re
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
+    CdpError,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
+    from_dict,
 )
 
 
@@ -184,6 +193,40 @@ def filter_subnets_by_expression(
                 filtered_ids.append(subnet_id)
 
     return filtered_ids
+
+
+@dataclass
+class SyncOperationDetail:
+    """Detail of a single environment's sync result (success or failure)."""
+
+    environmentCrn: Union[str, None, NULLABLE] = NULLABLE
+    message: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class SyncStatus:
+    """Status of a user sync operation."""
+
+    operationId: Union[str, None, NULLABLE] = NULLABLE
+    operationType: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    startTime: Union[str, None, NULLABLE] = NULLABLE
+    endTime: Union[str, None, NULLABLE] = NULLABLE
+    error: Union[str, None, NULLABLE] = NULLABLE
+    success: Union[List[SyncOperationDetail], None, NULLABLE] = NULLABLE
+    failure: Union[List[SyncOperationDetail], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class EnvironmentUserSyncState:
+    """User sync state for an environment."""
+
+    state: Union[str, None, NULLABLE] = NULLABLE
+    userSyncOperationId: Union[str, None, NULLABLE] = NULLABLE
+
+
+SYNC_COMPLETED_STATUSES: Set[str] = frozenset({"COMPLETED"})
+SYNC_FAILED_STATUSES: Set[str] = frozenset({"FAILED", "TIMEDOUT", "REJECTED"})
 
 
 class CdpEnvClient:
@@ -397,3 +440,126 @@ class CdpEnvClient:
                     filtered_ids.append(subnet_id)
 
         return filtered_ids
+
+    def sync_all_users(
+        self,
+        environment_names: Optional[List[str]] = None,
+    ) -> SyncStatus:
+        """
+        Sync all users and groups with CDP environments.
+
+        Args:
+            environment_names: List of environment names to sync. If None,
+                syncs all environments.
+
+        Returns:
+            SyncStatus with operationId, status, and sync details.
+        """
+        json_data: Dict[str, Any] = {}
+        if environment_names is not None:
+            json_data["environmentNames"] = environment_names
+
+        response = self.api_client.post(
+            "/api/v1/environments2/syncAllUsers",
+            json_data=json_data,
+        )
+        return from_dict(SyncStatus, response)
+
+    def sync_user(self) -> SyncStatus:
+        """
+        Sync the calling user with all CDP environments.
+
+        Returns:
+            SyncStatus with operationId, status, and sync details.
+        """
+        response = self.api_client.post(
+            "/api/v1/environments2/syncUser",
+            json_data={},
+        )
+        return from_dict(SyncStatus, response)
+
+    def get_sync_status(self, operation_id: str) -> SyncStatus:
+        """
+        Get the status of a user sync operation.
+
+        Args:
+            operation_id: The operation ID or CRN of the sync operation.
+
+        Returns:
+            SyncStatus with operationId, status, and sync details.
+        """
+        json_data: Dict[str, Any] = {"operationId": operation_id}
+
+        response = self.api_client.post(
+            "/api/v1/environments2/syncStatus",
+            json_data=json_data,
+        )
+        return from_dict(SyncStatus, response)
+
+    def get_environment_user_sync_state(
+        self,
+        environment_name: str,
+    ) -> EnvironmentUserSyncState:
+        """
+        Get the user sync state for an environment.
+
+        Args:
+            environment_name: Name of the environment.
+
+        Returns:
+            EnvironmentUserSyncState with state and userSyncOperationId.
+        """
+        json_data: Dict[str, Any] = {"environmentName": environment_name}
+
+        response = self.api_client.post(
+            "/api/v1/environments2/getEnvironmentUserSyncState",
+            json_data=json_data,
+        )
+        return from_dict(EnvironmentUserSyncState, response)
+
+    def wait_for_sync(
+        self,
+        operation_id: str,
+        target_statuses: Set[str] = SYNC_COMPLETED_STATUSES,
+        error_statuses: Set[str] = SYNC_FAILED_STATUSES,
+        timeout: int = 3600,
+        delay: int = 15,
+    ) -> SyncStatus:
+        """
+        Poll a user sync operation until it reaches a target status.
+
+        Args:
+            operation_id: The operation ID to poll.
+            target_statuses: Set of acceptable target statuses.
+            error_statuses: Statuses treated as non-recoverable failures.
+            timeout: Maximum time to wait in seconds.
+            delay: Polling interval in seconds.
+
+        Returns:
+            SyncStatus when a target status is reached.
+
+        Raises:
+            CdpError: If the timeout is reached or the operation enters
+                an error status.
+        """
+        start_time = time.time()
+        while True:
+            elapsed = time.time() - start_time
+            if elapsed > timeout:
+                raise CdpError(
+                    f"Timeout waiting for user sync to reach {target_statuses} "
+                    f"after {timeout} seconds.",
+                )
+
+            response = self.get_sync_status(operation_id)
+            current_status = response.status
+
+            if current_status in target_statuses:
+                return response
+
+            if current_status in error_statuses:
+                raise CdpError(
+                    f"User sync entered failed status '{current_status}'.",
+                )
+
+            time.sleep(delay)
