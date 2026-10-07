@@ -110,6 +110,83 @@ def test_present_create_hive(dw_vw_module_args, dw_vw_client):
     dw_vw_client.update_vw.assert_not_called()
 
 
+def test_present_create_impala_autoscaling_and_ha(dw_vw_module_args, dw_vw_client):
+    """Autoscaling and HA options are sent to the API in camelCase."""
+    dw_vw_client.get_vw_by_name.return_value = None
+    dw_vw_client.create_vw.return_value = _running_vw(vwType="impala")
+
+    dw_vw_module_args(
+        {
+            "name": VW_NAME,
+            "type": "impala",
+            "catalog_id": CATALOG_ID,
+            "autoscaling": {
+                "min_clusters": 1,
+                "max_clusters": 2,
+                "disable_auto_suspend": False,
+                "auto_suspend_timeout_seconds": 600,
+                "impala_scale_up_delay_seconds": 20,
+                "impala_scale_down_delay_seconds": 300,
+            },
+            "impala_ha": {
+                "enable_catalog_high_availability": True,
+                "enable_shutdown_of_coordinator": False,
+                "high_availability_mode": "ACTIVE_PASSIVE",
+                "num_of_active_coordinators": 2,
+                "shutdown_of_coordinator_delay_seconds": 300,
+            },
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        dw_virtual_warehouse.main()
+
+    assert result.value.changed is True
+    dw_vw_client.create_vw.assert_called_once()
+    kwargs = dw_vw_client.create_vw.call_args.kwargs
+    assert kwargs["autoscaling"] == {
+        "minClusters": 1,
+        "maxClusters": 2,
+        "disableAutoSuspend": False,
+        "autoSuspendTimeoutSeconds": 600,
+        "impalaScaleUpDelaySeconds": 20,
+        "impalaScaleDownDelaySeconds": 300,
+    }
+    assert kwargs["impala_ha"] == {
+        "enableCatalogHighAvailability": True,
+        "enableShutdownOfCoordinator": False,
+        "highAvailabilityMode": "ACTIVE_PASSIVE",
+        "numOfActiveCoordinators": 2,
+        "shutdownOfCoordinatorDelaySeconds": 300,
+    }
+
+
+def test_present_create_autoscaling_node_aliases(dw_vw_module_args, dw_vw_client):
+    """The min_nodes and max_nodes aliases map to minClusters and maxClusters."""
+    dw_vw_client.get_vw_by_name.return_value = None
+    dw_vw_client.create_vw.return_value = _running_vw(vwType="impala")
+
+    dw_vw_module_args(
+        {
+            "name": VW_NAME,
+            "type": "impala",
+            "catalog_id": CATALOG_ID,
+            "autoscaling": {
+                "min_nodes": 1,
+                "max_nodes": 2,
+            },
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson):
+        dw_virtual_warehouse.main()
+
+    assert dw_vw_client.create_vw.call_args.kwargs["autoscaling"] == {
+        "minClusters": 1,
+        "maxClusters": 2,
+    }
+
+
 def test_present_create_trino_two_step(dw_vw_module_args, dw_vw_client):
     """A new Trino warehouse is created, then connectors are associated (step 2)."""
     dw_vw_client.get_vw_by_name.return_value = None
