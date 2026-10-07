@@ -50,9 +50,15 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
     CdpDwClient,
+    ClusterSummary,
     Connector,
+    DW_CLUSTER_FAILED_STATUSES,
+    DW_CLUSTER_RUNNING_STATUSES,
     DwSecret,
     VirtualWarehouse,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
+    CdpEnvClient,
 )
 from ansible_collections.cloudera.cloud.tests.unit import (
     required_or_skip,
@@ -96,6 +102,195 @@ def existing_dw_dbc_id() -> str:
     C(CDW_DBC_ID) being present in the environment.
     """
     return required_or_skip("CDW_DBC_ID")
+
+
+##
+# DW Cluster
+##
+
+
+_DW_INTTEST_NAME = "ansible-dw-inttest"
+
+
+@pytest.fixture(scope="session")
+def existing_dw_cluster(
+    dw_client,
+) -> Generator[ClusterSummary, None, None]:
+    """Provide a DW ClusterSummary for read-only integration tests.
+
+    Resolution strategy:
+    1. If CDW_CLUSTER_ID is set, describe that cluster directly (no teardown).
+    2. Elif CDP_ENVIRONMENT_NAME is set:
+       a. Find a cluster named ``ansible-dw-inttest`` -> reuse (no teardown).
+       b. No match -> create a minimal cluster, wait for Running, yield,
+          teardown at session end.
+    3. Neither set -> skip.
+    """
+    cluster_id = os.getenv("CDW_CLUSTER_ID")
+    if cluster_id:
+        cluster = dw_client.describe_cluster(cluster_id)
+        if cluster is None:
+            pytest.skip(f"CDW_CLUSTER_ID '{cluster_id}' not found")
+        yield cluster
+        return
+
+    env_name = os.getenv("CDP_ENVIRONMENT_NAME")
+    if not env_name:
+        pytest.skip("CDW_CLUSTER_ID or CDP_ENVIRONMENT_NAME required")
+
+    env_client = CdpEnvClient(api_client=dw_client.api_client)
+    env_crn = env_client.get_environment_crn(env_name)
+    if env_crn is None:
+        pytest.skip(f"Environment '{env_name}' not found")
+
+    existing = dw_client.get_cluster_by_name(_DW_INTTEST_NAME, env_crn=env_crn)
+    if existing is not None:
+        warnings.warn(
+            f"DW cluster '{_DW_INTTEST_NAME}' already exists; "
+            f"reusing {existing.id} without teardown",
+        )
+        yield existing
+        return
+
+    try:
+        created_id = _create_dw_cluster(dw_client, env_name)
+    except Exception as e:
+        pytest.skip(
+            f"Could not auto-provision DW cluster in '{env_name}': {e}",
+        )
+
+    cluster = dw_client.wait_for_cluster_state(
+        created_id,
+        target_statuses=DW_CLUSTER_RUNNING_STATUSES,
+    )
+
+    try:
+        yield cluster
+    finally:
+        try:
+            dw_client.delete_cluster(created_id, force=True)
+            dw_client.wait_for_cluster_state(
+                created_id,
+                target_statuses=set(),
+            )
+        except Exception as e:
+            warnings.warn(
+                f"Failed to delete auto-provisioned DW cluster {created_id}: {e}",
+            )
+
+
+@pytest.fixture
+def cleanup_dw_cluster(
+    dw_client,
+) -> Generator[Callable[[str], None], None, None]:
+    """Register DW cluster IDs for force-delete at teardown.
+
+    Call the returned function with a cluster ID to schedule it for cleanup
+    regardless of test outcome. Mirrors the C(cleanup_de_service) pattern.
+    """
+    cluster_ids = []
+
+    def register(cluster_id):
+        cluster_ids.append(cluster_id)
+
+    try:
+        yield register
+    finally:
+        for cluster_id in cluster_ids:
+            existing = dw_client.describe_cluster(cluster_id)
+            if existing is None:
+                continue
+            try:
+                dw_client.delete_cluster(cluster_id, force=True)
+                dw_client.wait_for_cluster_state(
+                    cluster_id=cluster_id,
+                    target_statuses=set(),
+                )
+            except Exception as e:
+                warnings.warn(
+                    f"cleanup_dw_cluster: failed to delete '{cluster_id}': {e}",
+                )
+
+
+def _create_dw_cluster(
+    dw_client: CdpDwClient,
+    env_name: str,
+) -> str:
+    """Create a DW cluster, auto-detecting platform. Returns the cluster ID."""
+    env_client = CdpEnvClient(api_client=dw_client.api_client)
+    env_crn = env_client.get_environment_crn(env_name)
+    if env_crn is None:
+        pytest.skip(f"Environment '{env_name}' not found")
+
+    platform = os.getenv("CDW_CLUSTER_CLOUD_PLATFORM", "auto")
+
+    if platform == "auto":
+        env = env_client.describe_environment(env_name)
+        if env is None:
+            pytest.skip(f"Could not describe environment '{env_name}'")
+        platform = env.get("cloudPlatform", "PRIVATE")
+
+    if platform == "AWS":
+        lb_subnets = (
+            os.getenv("CDW_AWS_LB_SUBNETS", "").split(",")
+            if os.getenv("CDW_AWS_LB_SUBNETS")
+            else None
+        )
+        worker_subnets = (
+            os.getenv("CDW_AWS_WORKER_SUBNETS", "").split(",")
+            if os.getenv("CDW_AWS_WORKER_SUBNETS")
+            else None
+        )
+        cluster_id = dw_client.create_aws_cluster(
+            env_crn=env_crn,
+            lb_subnet_ids=lb_subnets,
+            worker_subnet_ids=worker_subnets,
+        )
+    elif platform == "AZURE":
+        cluster_id = dw_client.create_azure_cluster(
+            env_crn=env_crn,
+            subnet_name=required_or_skip("CDW_AZURE_SUBNET_NAME"),
+            user_assigned_managed_identity=required_or_skip(
+                "CDW_AZURE_MANAGED_IDENTITY",
+            ),
+        )
+    else:
+        cluster_id = dw_client.create_private_cluster(env_crn=env_crn)
+
+    return cluster_id
+
+
+@pytest.fixture
+def disposable_dw_cluster(
+    dw_client,
+) -> Generator[ClusterSummary, None, None]:
+    """Create a throwaway DW cluster for a single test, cleaned up at teardown.
+
+    Gated on CDP_ENVIRONMENT_NAME. Cloud platform is auto-detected from the
+    environment unless CDW_CLUSTER_CLOUD_PLATFORM is set. DW cluster creation
+    is slow (20-40 min) so use sparingly.
+    """
+    env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
+    cluster_id = _create_dw_cluster(dw_client, env_name)
+
+    cluster = dw_client.wait_for_cluster_state(
+        cluster_id,
+        target_statuses=DW_CLUSTER_RUNNING_STATUSES,
+    )
+
+    try:
+        yield cluster
+    finally:
+        try:
+            dw_client.delete_cluster(cluster_id, force=True)
+            dw_client.wait_for_cluster_state(
+                cluster_id,
+                target_statuses=set(),
+            )
+        except Exception as e:
+            warnings.warn(
+                f"Failed to delete test DW cluster {cluster_id}: {e}",
+            )
 
 
 ##
