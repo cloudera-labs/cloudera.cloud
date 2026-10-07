@@ -112,7 +112,10 @@ class TestAwsOptionsResponse:
             },
         }
         opts = from_dict(AwsOptionsResponse, data)
-        assert isinstance(opts.nonTransparentProxy, AwsOptionsNonTransparentProxyResponse)
+        assert isinstance(
+            opts.nonTransparentProxy,
+            AwsOptionsNonTransparentProxyResponse,
+        )
         assert opts.nonTransparentProxy.use is True
         assert opts.nonTransparentProxy.bypassedDomains == ["internal.corp"]
 
@@ -393,7 +396,10 @@ class TestCreateAwsCluster:
             enable_spot_instances=True,
             reduced_permission_mode=True,
             node_role_cdw_managed_policy_arn="arn:aws:iam::policy/cdw",
-            custom_registry_options={"registryType": "ECR", "repositoryUrl": "https://ecr.example.com"},
+            custom_registry_options={
+                "registryType": "ECR",
+                "repositoryUrl": "https://ecr.example.com",
+            },
             non_transparent_proxy={"use": True, "bypassedDomains": ["internal.corp"]},
         )
 
@@ -413,8 +419,14 @@ class TestCreateAwsCluster:
         assert call_data["enableSpotInstances"] is True
         assert call_data["reducedPermissionMode"] is True
         assert call_data["nodeRoleCDWManagedPolicyArn"] == "arn:aws:iam::policy/cdw"
-        assert call_data["customRegistryOptions"] == {"registryType": "ECR", "repositoryUrl": "https://ecr.example.com"}
-        assert call_data["nonTransparentProxy"] == {"use": True, "bypassedDomains": ["internal.corp"]}
+        assert call_data["customRegistryOptions"] == {
+            "registryType": "ECR",
+            "repositoryUrl": "https://ecr.example.com",
+        }
+        assert call_data["nonTransparentProxy"] == {
+            "use": True,
+            "bypassedDomains": ["internal.corp"],
+        }
 
     def test_none_optionals_omitted(self, mocker):
         """Optional fields set to None must not appear in the request body."""
@@ -479,7 +491,10 @@ class TestCreateAzureCluster:
             private_sql_subnet_name="sql-subnet",
             aks_pod_cidr="10.0.0.0/16",
             outbound_type="udr",
-            custom_registry_options={"registryType": "ACR", "repositoryUrl": "https://acr.example.com"},
+            custom_registry_options={
+                "registryType": "ACR",
+                "repositoryUrl": "https://acr.example.com",
+            },
         )
 
         call_data = api_client.post.call_args[1]["data"]
@@ -496,7 +511,10 @@ class TestCreateAzureCluster:
         assert call_data["privateSQLSubnetName"] == "sql-subnet"
         assert call_data["aksPodCIDR"] == "10.0.0.0/16"
         assert call_data["outboundType"] == "udr"
-        assert call_data["customRegistryOptions"] == {"registryType": "ACR", "repositoryUrl": "https://acr.example.com"}
+        assert call_data["customRegistryOptions"] == {
+            "registryType": "ACR",
+            "repositoryUrl": "https://acr.example.com",
+        }
 
 
 class TestCreatePrivateCluster:
@@ -518,7 +536,10 @@ class TestCreatePrivateCluster:
         api_client = mocker.create_autospec(CdpClient, instance=True)
         api_client.post.return_value = {"clusterId": CLUSTER_ID}
 
-        creds = {"certificate": "-----BEGIN CERT-----", "privateKey": "-----BEGIN KEY-----"}
+        creds = {
+            "certificate": "-----BEGIN CERT-----",
+            "privateKey": "-----BEGIN KEY-----",
+        }
         client = CdpDwClient(api_client=api_client)
         client.create_private_cluster(
             env_crn=ENV_CRN,

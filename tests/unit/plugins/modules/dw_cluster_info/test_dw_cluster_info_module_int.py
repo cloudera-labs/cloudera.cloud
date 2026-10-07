@@ -76,9 +76,7 @@ def test_list_all_clusters(dw_info_module_args, existing_dw_cluster):
     assert result.value.changed is False
     assert isinstance(result.value.clusters, list)
     assert len(result.value.clusters) >= 1
-    assert any(
-        c.get("id") == existing_dw_cluster.id for c in result.value.clusters
-    )
+    assert any(c.get("id") == existing_dw_cluster.id for c in result.value.clusters)
 
 
 def test_describe_by_cluster_id(dw_info_module_args, existing_dw_cluster):
@@ -107,9 +105,7 @@ def test_list_by_environment(dw_info_module_args, existing_dw_cluster):
     assert result.value.changed is False
     assert isinstance(result.value.clusters, list)
     assert len(result.value.clusters) >= 1
-    assert any(
-        c.get("id") == existing_dw_cluster.id for c in result.value.clusters
-    )
+    assert any(c.get("id") == existing_dw_cluster.id for c in result.value.clusters)
 
 
 def test_nonexistent_cluster_id(dw_info_module_args):
