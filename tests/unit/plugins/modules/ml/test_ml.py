@@ -20,6 +20,11 @@ __metaclass__ = type
 
 import pytest
 
+from ansible.module_utils.common.warnings import (
+    _global_deprecations,
+    get_deprecation_messages,
+)
+
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleFailJson,
     AnsibleExitJson,
@@ -27,6 +32,14 @@ from ansible_collections.cloudera.cloud.tests.unit import (
 
 from ansible_collections.cloudera.cloud.plugins.modules import ml
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_ml import CdpMlClient
+
+
+@pytest.fixture(autouse=True)
+def clear_deprecation_warnings():
+    """Clear Ansible's global deprecation list between tests."""
+    _global_deprecations.clear()
+    yield
+    _global_deprecations.clear()
 
 
 BASE_URL = "https://cloudera.internal/api"
@@ -956,3 +969,272 @@ def test_ml_delete_workspace_with_diff(module_args, mocker):
     assert result.value.diff["after"] is None  # Workspace doesn't exist after
     assert result.value.diff["before"]["instanceName"] == WORKSPACE_NAME
     assert result.value.diff["before"]["crn"] == WORKSPACE_CRN
+
+
+def test_ml_create_workspace_with_resource_pool_new(module_args, mocker):
+    """Test creating workspace with new-form resource_pool (parent_pool_name + workspace_quota)."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "present",
+            "wait": False,
+            "resource_pool": {
+                "parent_pool_name": "root",
+                "workspace_quota": {
+                    "cpu_quota": "8",
+                    "gpu_quota": "1",
+                    "memory_quota": "16Gi",
+                },
+            },
+        },
+    )
+
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    ).return_value
+
+    client.describe_workspace.side_effect = [
+        {},
+        {"workspace": {"instanceName": WORKSPACE_NAME}},
+    ]
+    client.create_workspace.return_value = None
+
+    with pytest.raises(AnsibleExitJson) as result:
+        ml.main()
+
+    assert result.value.changed is True
+
+    call_args = client.create_workspace.call_args[1]
+    assert call_args["resource_pool_config"] == {
+        "parentPoolName": "root",
+        "workspaceQuota": {
+            "cpuQuota": "8",
+            "gpuQuota": "1",
+            "memoryQuota": "16Gi",
+        },
+    }
+
+    assert len(get_deprecation_messages()) == 0
+
+
+def test_ml_create_workspace_with_resource_pool_legacy(module_args, mocker):
+    """Test creating workspace with legacy resource_pool (cpu, gpu, memory) emits deprecation warnings."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "present",
+            "wait": False,
+            "resource_pool": {
+                "cpu": "8",
+                "gpu": "1",
+                "memory": "16Gi",
+            },
+        },
+    )
+
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    ).return_value
+
+    client.describe_workspace.side_effect = [
+        {},
+        {"workspace": {"instanceName": WORKSPACE_NAME}},
+    ]
+    client.create_workspace.return_value = None
+
+    with pytest.raises(AnsibleExitJson) as result:
+        ml.main()
+
+    assert result.value.changed is True
+
+    call_args = client.create_workspace.call_args[1]
+    assert call_args["resource_pool_config"] == {
+        "workspaceQuota": {
+            "cpuQuota": "8",
+            "gpuQuota": "1",
+            "memoryQuota": "16Gi",
+        },
+    }
+
+    deprecations = get_deprecation_messages()
+    deprecated_msgs = [d["msg"] for d in deprecations]
+    assert any("'cpu'" in m for m in deprecated_msgs)
+    assert any("'gpu'" in m for m in deprecated_msgs)
+    assert any("'memory'" in m for m in deprecated_msgs)
+
+
+def test_ml_create_workspace_with_resource_pool_legacy_aliases(module_args, mocker):
+    """Test creating workspace with legacy aliases (cpu_quota, gpu_quota, memory_quota)."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "present",
+            "wait": False,
+            "resource_pool": {
+                "cpu_quota": "4",
+                "gpu_quota": "2",
+                "memory_quota": "8Gi",
+            },
+        },
+    )
+
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    ).return_value
+
+    client.describe_workspace.side_effect = [
+        {},
+        {"workspace": {"instanceName": WORKSPACE_NAME}},
+    ]
+    client.create_workspace.return_value = None
+
+    with pytest.raises(AnsibleExitJson) as result:
+        ml.main()
+
+    assert result.value.changed is True
+
+    call_args = client.create_workspace.call_args[1]
+    assert call_args["resource_pool_config"] == {
+        "workspaceQuota": {
+            "cpuQuota": "4",
+            "gpuQuota": "2",
+            "memoryQuota": "8Gi",
+        },
+    }
+
+
+def test_ml_create_workspace_resource_pool_mixed_rejected(module_args, mocker):
+    """Test that mixing legacy and new resource_pool params is rejected."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "present",
+            "wait": False,
+            "resource_pool": {
+                "cpu": "8",
+                "workspace_quota": {
+                    "cpu_quota": "8",
+                    "memory_quota": "16Gi",
+                },
+            },
+        },
+    )
+
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    )
+
+    with pytest.raises(AnsibleFailJson, match="mutually exclusive"):
+        ml.main()
+
+
+def test_ml_create_workspace_resource_pool_legacy_missing_cpu(module_args, mocker):
+    """Test that legacy resource_pool without cpu fails."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "present",
+            "wait": False,
+            "resource_pool": {
+                "memory": "16Gi",
+            },
+        },
+    )
+
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    ).return_value
+
+    client.describe_workspace.return_value = {}
+
+    with pytest.raises(AnsibleFailJson, match="requires 'cpu'"):
+        ml.main()
+
+
+def test_ml_create_workspace_resource_pool_legacy_missing_memory(module_args, mocker):
+    """Test that legacy resource_pool without memory fails."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "present",
+            "wait": False,
+            "resource_pool": {
+                "cpu": "8",
+            },
+        },
+    )
+
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    ).return_value
+
+    client.describe_workspace.return_value = {}
+
+    with pytest.raises(AnsibleFailJson, match="requires 'memory'"):
+        ml.main()

@@ -18,18 +18,22 @@
 A REST client for the Cloudera Data Warehouse (CDW) API
 """
 
+import time
+
 from dataclasses import dataclass
 from typing import (
     Any,
     Dict,
     List,
     Optional,
+    Set,
     Union,
 )
 
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
+    CdpError,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     NULLABLE,
@@ -110,6 +114,87 @@ class DwSecret:
     secretProviderKey: Union[str, None, NULLABLE] = NULLABLE
     createdBy: Union[str, None, NULLABLE] = NULLABLE
     properties: Union[DwSecretProperties, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class ActorResponse:
+    """Identity details for the creator of a DW cluster."""
+
+    crn: Union[str, None, NULLABLE] = NULLABLE
+    email: Union[str, None, NULLABLE] = NULLABLE
+    workloadUsername: Union[str, None, NULLABLE] = NULLABLE
+    machineUsername: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class AwsOptionsNonTransparentProxyResponse:
+    """Non-transparent proxy settings for an AWS DW cluster."""
+
+    use: Union[bool, None, NULLABLE] = NULLABLE
+    bypassedDomains: Union[List[str], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class AwsOptionsResponse:
+    """AWS-specific configuration for a DW cluster."""
+
+    lbSubnetIds: Union[List[str], None, NULLABLE] = NULLABLE
+    workerSubnetIds: Union[List[str], None, NULLABLE] = NULLABLE
+    subnetIds: Union[List[str], None, NULLABLE] = NULLABLE
+    customAmiId: Union[str, None, NULLABLE] = NULLABLE
+    kmsKey: Union[str, None, NULLABLE] = NULLABLE
+    availabilityZones: Union[List[str], None, NULLABLE] = NULLABLE
+    reducedPermissionMode: Union[bool, None, NULLABLE] = NULLABLE
+    nonTransparentProxy: Union[
+        AwsOptionsNonTransparentProxyResponse,
+        None,
+        NULLABLE,
+    ] = NULLABLE
+
+
+@dataclass
+class AzureOptionsResponse:
+    """Azure-specific configuration for a DW cluster."""
+
+    subnetId: Union[str, None, NULLABLE] = NULLABLE
+    userAssignedManagedIdentity: Union[str, None, NULLABLE] = NULLABLE
+    enableAZ: Union[bool, None, NULLABLE] = NULLABLE
+    enablePrivateAKS: Union[bool, None, NULLABLE] = NULLABLE
+    enablePrivateSQL: Union[bool, None, NULLABLE] = NULLABLE
+    logAnalyticsWorkspaceId: Union[str, None, NULLABLE] = NULLABLE
+    outboundType: Union[str, None, NULLABLE] = NULLABLE
+    privateDNSZoneAKS: Union[str, None, NULLABLE] = NULLABLE
+    privateDNSZoneSQL: Union[str, None, NULLABLE] = NULLABLE
+    privateSQLSubnetName: Union[str, None, NULLABLE] = NULLABLE
+    aksPodCIDR: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class ClusterSummary:
+    """CDP Data Warehouse cluster summary."""
+
+    id: Union[str, None, NULLABLE] = NULLABLE
+    name: Union[str, None, NULLABLE] = NULLABLE
+    crn: Union[str, None, NULLABLE] = NULLABLE
+    environmentCrn: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    cloudPlatform: Union[str, None, NULLABLE] = NULLABLE
+    creationDate: Union[str, None, NULLABLE] = NULLABLE
+    creator: Union[ActorResponse, None, NULLABLE] = NULLABLE
+    description: Union[str, None, NULLABLE] = NULLABLE
+    version: Union[str, None, NULLABLE] = NULLABLE
+    enablePrivateLoadBalancer: Union[bool, None, NULLABLE] = NULLABLE
+    enableSpotInstances: Union[bool, None, NULLABLE] = NULLABLE
+    useOverlayNetwork: Union[bool, None, NULLABLE] = NULLABLE
+    resourcePool: Union[str, None, NULLABLE] = NULLABLE
+    whitelistK8sClusterAccessIpCIDRs: Union[str, None, NULLABLE] = NULLABLE
+    whitelistWorkloadAccessIpCIDRs: Union[str, None, NULLABLE] = NULLABLE
+    awsOptions: Union[AwsOptionsResponse, None, NULLABLE] = NULLABLE
+    azureOptions: Union[AzureOptionsResponse, None, NULLABLE] = NULLABLE
+
+
+DW_CLUSTER_RUNNING_STATUSES: Set[str] = {"Running"}
+DW_CLUSTER_FAILED_STATUSES: Set[str] = {"Error", "Failed"}
 
 
 class CdpDwClient:
@@ -678,3 +763,329 @@ class CdpDwClient:
             },
             squelch={404: {}},
         )
+
+    # ========================================================================
+    # Cluster Methods
+    # ========================================================================
+
+    def describe_cluster(self, cluster_id: str) -> Optional[ClusterSummary]:
+        """
+        Describe a Data Warehouse cluster.
+
+        Args:
+            cluster_id: The ID of the cluster
+
+        Returns:
+            ClusterSummary dataclass instance, or None if not found
+        """
+        response = self.api_client.post(
+            "/api/v1/dw/describeCluster",
+            data={"clusterId": cluster_id},
+            squelch={404: None},
+        )
+        if response is None:
+            return None
+        cluster = response.get("cluster")
+        return from_dict(ClusterSummary, cluster) if cluster else None
+
+    def list_clusters(
+        self,
+        env_crn: Optional[str] = None,
+    ) -> List[ClusterSummary]:
+        """
+        List Data Warehouse clusters.
+
+        Args:
+            env_crn: Optional environment CRN to filter by
+
+        Returns:
+            List of ClusterSummary dataclass instances
+        """
+        data: Dict[str, Any] = {}
+        if env_crn is not None:
+            data["environmentCrn"] = env_crn
+        response = self.api_client.post(
+            "/api/v1/dw/listClusters",
+            data=data,
+            squelch={404: {"clusters": []}},
+        )
+        return [from_dict(ClusterSummary, c) for c in response.get("clusters", [])]
+
+    def get_cluster_by_name(
+        self,
+        name: str,
+        env_crn: Optional[str] = None,
+    ) -> Optional[ClusterSummary]:
+        """
+        Get a Data Warehouse cluster by name.
+
+        Args:
+            name: The cluster name
+            env_crn: Optional environment CRN to narrow the search
+
+        Returns:
+            ClusterSummary dataclass instance, or None if not found
+        """
+        clusters = self.list_clusters(env_crn=env_crn)
+        for cluster in clusters:
+            if cluster.name == name:
+                return cluster
+        return None
+
+    def create_aws_cluster(
+        self,
+        env_crn: str,
+        use_overlay_network: Optional[bool] = None,
+        use_private_load_balancer: Optional[bool] = None,
+        use_public_worker_node: Optional[bool] = None,
+        lb_subnet_ids: Optional[List[str]] = None,
+        worker_subnet_ids: Optional[List[str]] = None,
+        custom_subdomain: Optional[str] = None,
+        database_backup_retention_period: Optional[int] = None,
+        whitelist_workload_access_ip_cidrs: Optional[List[str]] = None,
+        whitelist_k8s_cluster_access_ip_cidrs: Optional[List[str]] = None,
+        custom_ami_id: Optional[str] = None,
+        enable_private_eks: Optional[bool] = None,
+        enable_spot_instances: Optional[bool] = None,
+        reduced_permission_mode: Optional[bool] = None,
+        node_role_cdw_managed_policy_arn: Optional[str] = None,
+        custom_registry_options: Optional[Dict[str, Any]] = None,
+        non_transparent_proxy: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Create a Data Warehouse cluster on AWS.
+
+        Args:
+            env_crn: The CRN of the environment
+            use_overlay_network: Use overlay network
+            use_private_load_balancer: Use a private load balancer
+            use_public_worker_node: Use public worker nodes
+            lb_subnet_ids: Load balancer subnet IDs
+            worker_subnet_ids: Worker node subnet IDs
+            custom_subdomain: Custom subdomain
+            database_backup_retention_period: Database backup retention in days
+            whitelist_workload_access_ip_cidrs: Workload access IP CIDRs
+            whitelist_k8s_cluster_access_ip_cidrs: K8s cluster access IP CIDRs
+            custom_ami_id: Custom AMI ID for cluster nodes
+            enable_private_eks: Enable private EKS mode
+            enable_spot_instances: Enable spot instances
+            reduced_permission_mode: Use reduced IAM permissions
+            node_role_cdw_managed_policy_arn: Managed policy ARN for the node role
+            custom_registry_options: Custom ACR/ECR registry options
+            non_transparent_proxy: Non-transparent proxy settings
+
+        Returns:
+            The ID of the created cluster
+        """
+        data: Dict[str, Any] = {"environmentCrn": env_crn}
+        optional = {
+            "useOverlayNetwork": use_overlay_network,
+            "usePrivateLoadBalancer": use_private_load_balancer,
+            "usePublicWorkerNode": use_public_worker_node,
+            "lbSubnetIds": lb_subnet_ids,
+            "workerSubnetIds": worker_subnet_ids,
+            "customSubdomain": custom_subdomain,
+            "databaseBackupRetentionPeriod": database_backup_retention_period,
+            "whitelistWorkloadAccessIpCIDRs": whitelist_workload_access_ip_cidrs,
+            "whitelistK8sClusterAccessIpCIDRs": whitelist_k8s_cluster_access_ip_cidrs,
+            "customAmiId": custom_ami_id,
+            "enablePrivateEKS": enable_private_eks,
+            "enableSpotInstances": enable_spot_instances,
+            "reducedPermissionMode": reduced_permission_mode,
+            "nodeRoleCDWManagedPolicyArn": node_role_cdw_managed_policy_arn,
+            "customRegistryOptions": custom_registry_options,
+            "nonTransparentProxy": non_transparent_proxy,
+        }
+        data.update({k: v for k, v in optional.items() if v is not None})
+        response = self.api_client.post(
+            "/api/v1/dw/createAwsCluster",
+            data=data,
+        )
+        return response["clusterId"]
+
+    def create_azure_cluster(
+        self,
+        env_crn: str,
+        subnet_name: str,
+        user_assigned_managed_identity: str,
+        use_overlay_networking: Optional[bool] = None,
+        use_internal_load_balancer: Optional[bool] = None,
+        enable_az: Optional[bool] = None,
+        enable_private_aks: Optional[bool] = None,
+        enable_private_sql: Optional[bool] = None,
+        enable_spot_instances: Optional[bool] = None,
+        log_analytics_workspace_id: Optional[str] = None,
+        outbound_type: Optional[str] = None,
+        private_dns_zone_aks: Optional[str] = None,
+        private_dns_zone_sql: Optional[str] = None,
+        private_sql_subnet_name: Optional[str] = None,
+        aks_pod_cidr: Optional[str] = None,
+        custom_subdomain: Optional[str] = None,
+        database_backup_retention_period: Optional[int] = None,
+        whitelist_workload_access_ip_cidrs: Optional[List[str]] = None,
+        whitelist_k8s_cluster_access_ip_cidrs: Optional[List[str]] = None,
+        custom_registry_options: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Create a Data Warehouse cluster on Azure.
+
+        Args:
+            env_crn: The CRN of the environment
+            subnet_name: Azure subnet name
+            user_assigned_managed_identity: AKS managed identity resource ID
+            use_overlay_networking: Use overlay networking
+            use_internal_load_balancer: Use an internal load balancer
+            enable_az: Enable availability zones
+            enable_private_aks: Enable private AKS
+            enable_private_sql: Enable private SQL
+            enable_spot_instances: Enable spot instances
+            log_analytics_workspace_id: Log Analytics workspace ID
+            outbound_type: Network outbound type
+            private_dns_zone_aks: Private DNS zone for AKS
+            private_dns_zone_sql: Private DNS zone for SQL
+            private_sql_subnet_name: Private SQL subnet name
+            aks_pod_cidr: AKS pod CIDR
+            custom_subdomain: Custom subdomain
+            database_backup_retention_period: Database backup retention in days
+            whitelist_workload_access_ip_cidrs: Workload access IP CIDRs
+            whitelist_k8s_cluster_access_ip_cidrs: K8s cluster access IP CIDRs
+            custom_registry_options: Custom ACR/ECR registry options
+
+        Returns:
+            The ID of the created cluster
+        """
+        data: Dict[str, Any] = {
+            "environmentCrn": env_crn,
+            "subnetName": subnet_name,
+            "userAssignedManagedIdentity": user_assigned_managed_identity,
+        }
+        optional = {
+            "useOverlayNetworking": use_overlay_networking,
+            "useInternalLoadBalancer": use_internal_load_balancer,
+            "enableAZ": enable_az,
+            "enablePrivateAks": enable_private_aks,
+            "enablePrivateSQL": enable_private_sql,
+            "enableSpotInstances": enable_spot_instances,
+            "logAnalyticsWorkspaceId": log_analytics_workspace_id,
+            "outboundType": outbound_type,
+            "privateDNSZoneAKS": private_dns_zone_aks,
+            "privateDNSZoneSQL": private_dns_zone_sql,
+            "privateSQLSubnetName": private_sql_subnet_name,
+            "aksPodCIDR": aks_pod_cidr,
+            "customSubdomain": custom_subdomain,
+            "databaseBackupRetentionPeriod": database_backup_retention_period,
+            "whitelistWorkloadAccessIpCIDRs": whitelist_workload_access_ip_cidrs,
+            "whitelistK8sClusterAccessIpCIDRs": whitelist_k8s_cluster_access_ip_cidrs,
+            "customRegistryOptions": custom_registry_options,
+        }
+        data.update({k: v for k, v in optional.items() if v is not None})
+        response = self.api_client.post(
+            "/api/v1/dw/createAzureCluster",
+            data=data,
+        )
+        return response["clusterId"]
+
+    def create_private_cluster(
+        self,
+        env_crn: str,
+        storage_class: Optional[str] = None,
+        db_client_credentials: Optional[Dict[str, str]] = None,
+        custom_kerberos_principal_hostname: Optional[str] = None,
+    ) -> str:
+        """
+        Create a Data Warehouse cluster on Private Cloud.
+
+        Args:
+            env_crn: The CRN of the environment
+            storage_class: Storage class for the cluster
+            db_client_credentials: Dict with 'certificate' and 'privateKey' keys
+            custom_kerberos_principal_hostname: Custom Kerberos principal hostname
+
+        Returns:
+            The ID of the created cluster
+        """
+        data: Dict[str, Any] = {"environmentCrn": env_crn}
+        optional: Dict[str, Any] = {
+            "storageClass": storage_class,
+            "dbClientCredentials": db_client_credentials,
+            "customKerberosPrincipalHostname": custom_kerberos_principal_hostname,
+        }
+        data.update({k: v for k, v in optional.items() if v is not None})
+        response = self.api_client.post(
+            "/api/v1/dw/createPrivateCluster",
+            data=data,
+        )
+        return response["clusterId"]
+
+    def delete_cluster(
+        self,
+        cluster_id: str,
+        force: bool = False,
+    ) -> None:
+        """
+        Delete a Data Warehouse cluster.
+
+        Args:
+            cluster_id: The ID of the cluster to delete
+            force: Force delete even if errors occur
+        """
+        data: Dict[str, Any] = {"clusterId": cluster_id}
+        if force:
+            data["force"] = True
+        self.api_client.post(
+            "/api/v1/dw/deleteCluster",
+            data=data,
+            squelch={404: {}},
+        )
+
+    def wait_for_cluster_state(
+        self,
+        cluster_id: str,
+        target_statuses: Set[str],
+        error_statuses: Set[str] = DW_CLUSTER_FAILED_STATUSES,
+        timeout: int = 3600,
+        delay: int = 15,
+    ) -> Optional[ClusterSummary]:
+        """
+        Poll a Data Warehouse cluster until it reaches a target status.
+
+        Args:
+            cluster_id: The ID of the cluster
+            target_statuses: Set of acceptable target statuses
+            error_statuses: Statuses treated as non-recoverable failures
+            timeout: Maximum time to wait in seconds
+            delay: Polling interval in seconds
+
+        Returns:
+            ClusterSummary when a target status is reached, or None if the
+            cluster is no longer visible (fully deleted).
+
+        Raises:
+            CdpError: If the timeout is reached or the cluster enters an error
+                status.
+        """
+        start_time = time.time()
+        while True:
+            elapsed = time.time() - start_time
+            if elapsed > timeout:
+                raise CdpError(
+                    f"Timeout waiting for DW cluster to reach {target_statuses} "
+                    f"after {timeout} seconds.",
+                )
+
+            cluster = self.describe_cluster(cluster_id)
+
+            if cluster is None:
+                return None
+
+            current_status = cluster.status
+
+            if current_status in target_statuses:
+                return cluster
+
+            if current_status in error_statuses:
+                raise CdpError(
+                    f"DW cluster entered failed status '{current_status}'.",
+                )
+
+            time.sleep(delay)
