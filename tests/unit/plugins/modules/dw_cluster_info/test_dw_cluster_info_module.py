@@ -276,13 +276,17 @@ class TestMutualExclusivity:
     """Tests that cluster_id and environment are mutually exclusive."""
 
     def test_cluster_id_and_environment_mutually_exclusive(
-        self, dw_info_module_args, dw_info_clients
+        self,
+        dw_info_module_args,
+        dw_info_clients,
     ):
         """Providing both cluster_id and environment fails."""
-        dw_info_module_args({
-            "cluster_id": "cluster-abc123",
-            "environment": ENV_NAME,
-        })
+        dw_info_module_args(
+            {
+                "cluster_id": "cluster-abc123",
+                "environment": ENV_NAME,
+            },
+        )
 
         with pytest.raises(AnsibleFailJson):
             dw_cluster_info.main()
@@ -295,10 +299,12 @@ class TestCheckMode:
         """Check mode still returns data (info modules are read-only)."""
         dw_client, env_client = dw_info_clients
 
-        dw_info_module_args({
-            "cluster_id": "cluster-abc123",
-            "_ansible_check_mode": True,
-        })
+        dw_info_module_args(
+            {
+                "cluster_id": "cluster-abc123",
+                "_ansible_check_mode": True,
+            },
+        )
         dw_client.describe_cluster.return_value = CLUSTER_ONE
 
         with pytest.raises(AnsibleExitJson) as result:

@@ -197,17 +197,13 @@ class TestDwClusterLifecycle:
         if platform:
             create_args["cloud_platform"] = platform
 
-        if platform == "AZURE" or (
-            not platform and os.getenv("CDW_AZURE_SUBNET_NAME")
-        ):
+        if platform == "AZURE" or (not platform and os.getenv("CDW_AZURE_SUBNET_NAME")):
             create_args["azure"] = {
                 "subnet": required_or_skip("CDW_AZURE_SUBNET_NAME"),
                 "managed_identity": required_or_skip("CDW_AZURE_MANAGED_IDENTITY"),
             }
 
-        if platform == "AWS" or (
-            not platform and os.getenv("CDW_AWS_LB_SUBNETS")
-        ):
+        if platform == "AWS" or (not platform and os.getenv("CDW_AWS_LB_SUBNETS")):
             aws_opts = {}
             lb = os.getenv("CDW_AWS_LB_SUBNETS")
             worker = os.getenv("CDW_AWS_WORKER_SUBNETS")
