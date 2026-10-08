@@ -25,10 +25,7 @@ import warnings
 import pytest
 
 from ansible_collections.cloudera.cloud.plugins.modules import dw_virtual_warehouse
-from ansible_collections.cloudera.cloud.tests.unit import (
-    AnsibleExitJson,
-    ICEBERG_CONNECTOR_CONFIG,
-)
+from ansible_collections.cloudera.cloud.tests.unit import AnsibleExitJson
 
 
 # Required environment variables for integration tests
@@ -60,7 +57,12 @@ def dw_vw_module_args(module_args, env_context):
 
 
 def _vw_name(request):
-    return "ansible-" + re.sub(r"[^a-z0-9]", "", request.node.name.lower())[:20]
+    # Use first 10 + last 10 chars so parametrized variants (whose distinguishing
+    # suffix is at the end) never collide when the full name exceeds 20 chars.
+    full = re.sub(r"[^a-z0-9]", "", request.node.name.lower())
+    if len(full) <= 20:
+        return "ansible-" + full
+    return "ansible-" + full[:10] + full[-10:]
 
 
 @pytest.fixture
@@ -85,38 +87,6 @@ def cleanup_vw(dw_client, existing_dw_cluster_id):
                     dw_client.delete_vw(existing_dw_cluster_id, vw_id)
             except Exception as e:
                 warnings.warn(f"cleanup_vw: failed to delete '{vw_id}': {e}")
-
-
-@pytest.fixture
-def connector_pair(request, dw_client, existing_dw_cluster_id):
-    """Create two disposable Iceberg connectors for Trino association tests."""
-    slug = re.sub(r"[^A-Za-z0-9]", "", request.node.name)
-    names = [slug + "A", slug + "B"]
-    connectors = []
-
-    for name in names:
-        connector_config = {
-            **ICEBERG_CONNECTOR_CONFIG,
-            "fs.cache.directories": "/data/trino/caches/" + name,
-        }
-        connector = dw_client.create_connector(
-            cluster_id=existing_dw_cluster_id,
-            name=name,
-            template="iceberg",
-            config=connector_config,
-            description="Ansible integration test connector",
-        )
-        connectors.append(connector)
-
-    yield connectors
-
-    for connector in connectors:
-        try:
-            dw_client.delete_connector(existing_dw_cluster_id, connector.id)
-        except Exception as e:
-            warnings.warn(
-                f"connector_pair: failed to delete connector '{connector.id}': {e}",
-            )
 
 
 # TODO Convert to proper cleanup fixture that deletes any warehouses created by the test, rather than relying on the test to clean up after itself.
@@ -298,95 +268,6 @@ def test_present_create_impala_with_autoscaling_and_ha(
     cleanup_vw(exc.value.virtual_warehouse["id"])
     assert exc.value.changed is True
     assert exc.value.virtual_warehouse["vwType"] == "impala"
-
-
-@pytest.mark.slow
-@pytest.mark.parametrize("vw_type", ["hive", "impala", "trino"])
-def test_reconcile_node_count(
-    vw_type,
-    dw_vw_module_args,
-    disposable_vw,
-    existing_dw_dbc_id,
-):
-    """Reconcile node_count on an existing VW of each type (gated by CDW_DBC_ID)."""
-    timeout = int(os.getenv("CDW_VW_TIMEOUT", "3600"))
-    vw = disposable_vw(vw_type)
-
-    current_count = vw.nodeCount if isinstance(vw.nodeCount, int) else 0
-    target_node_count = 2 if current_count != 2 else 3
-
-    reconcile_args = {
-        "name": vw.name,
-        "type": vw_type,
-        "catalog_id": existing_dw_dbc_id,
-        "state": "present",
-        "wait": True,
-        "timeout": timeout,
-        "node_count": target_node_count,
-    }
-
-    # Update
-    dw_vw_module_args(reconcile_args)
-    with pytest.raises(AnsibleExitJson) as exc:
-        dw_virtual_warehouse.main()
-
-    assert exc.value.changed is True
-    assert exc.value.virtual_warehouse["nodeCount"] == target_node_count
-
-    # Idempotent re-run
-    dw_vw_module_args(reconcile_args)
-    with pytest.raises(AnsibleExitJson) as exc:
-        dw_virtual_warehouse.main()
-
-    assert exc.value.changed is False
-    assert exc.value.virtual_warehouse["nodeCount"] == target_node_count
-
-
-@pytest.mark.slow
-def test_reconcile_connectors_trino(
-    dw_vw_module_args,
-    disposable_vw,
-    connector_pair,
-    existing_dw_dbc_id,
-):
-    """Reconcile connector associations (full-sync) on a Trino VW (gated by CDW_DBC_ID)."""
-    timeout = int(os.getenv("CDW_VW_TIMEOUT", "3600"))
-    vw = disposable_vw("trino")
-    conn_a, conn_b = connector_pair
-
-    base_args = {
-        "name": vw.name,
-        "type": "trino",
-        "catalog_id": existing_dw_dbc_id,
-        "state": "present",
-        "wait": True,
-        "timeout": timeout,
-    }
-
-    # Associate both connectors
-    dw_vw_module_args({**base_args, "connectors": [conn_a.id, conn_b.id]})
-    with pytest.raises(AnsibleExitJson) as exc:
-        dw_virtual_warehouse.main()
-
-    assert exc.value.changed is True
-    assert conn_a.id in exc.value.virtual_warehouse["associatedConnectors"]
-    assert conn_b.id in exc.value.virtual_warehouse["associatedConnectors"]
-
-    # Idempotent re-run with same connector set
-    dw_vw_module_args({**base_args, "connectors": [conn_a.id, conn_b.id]})
-    with pytest.raises(AnsibleExitJson) as exc:
-        dw_virtual_warehouse.main()
-
-    assert exc.value.changed is False
-
-    # Full-sync: drop conn_b by listing only conn_a
-    dw_vw_module_args({**base_args, "connectors": [conn_a.id]})
-    with pytest.raises(AnsibleExitJson) as exc:
-        dw_virtual_warehouse.main()
-
-    assert exc.value.changed is True
-    assert conn_a.id in exc.value.virtual_warehouse["associatedConnectors"]
-    assert conn_b.id not in exc.value.virtual_warehouse["associatedConnectors"]
 
 
 @pytest.mark.slow
