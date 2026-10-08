@@ -319,6 +319,23 @@ def _wait_vw_stable(
     )
 
 
+def _wait_vw_absent(
+    client: CdpDwClient,
+    cluster_id: str,
+    vw_id: str,
+) -> None:
+    """Poll until the Virtual Warehouse no longer exists, or fail."""
+    timeout = int(os.getenv("CDW_VW_TIMEOUT", "3600"))
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if client.get_vw_by_id(cluster_id, vw_id) is None:
+            return
+        time.sleep(15)
+    raise AssertionError(
+        f"Timed out waiting for Virtual Warehouse {vw_id} to be deleted",
+    )
+
+
 def _create_vw(
     client: CdpDwClient,
     cluster_id: str,
@@ -443,6 +460,21 @@ def disposable_vw(
     def _make(vw_type="trino") -> VirtualWarehouse:
         slug = re.sub(r"[^a-z0-9]", "", request.node.name.lower())[:12]
         name = f"ansible-{vw_type}-{slug}"
+        # Pre-delete any leftover VW with this name from a prior run so the
+        # create below does not get a 400 Bad Request for a duplicate name.
+        leftover = dw_client.get_vw_by_name(existing_dw_cluster_id, name)
+        if leftover is not None:
+            warnings.warn(
+                f"disposable_vw: found leftover VW '{name}' ({leftover.id}); "
+                "deleting before test",
+            )
+            try:
+                dw_client.delete_vw(existing_dw_cluster_id, leftover.id)
+                _wait_vw_absent(dw_client, existing_dw_cluster_id, leftover.id)
+            except Exception as e:
+                warnings.warn(
+                    f"disposable_vw: pre-delete of '{name}' failed: {e}",
+                )
         vw = _create_vw(
             dw_client,
             existing_dw_cluster_id,
