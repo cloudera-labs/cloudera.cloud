@@ -25,9 +25,7 @@ import warnings
 import pytest
 
 from ansible_collections.cloudera.cloud.plugins.modules import dw_virtual_warehouse
-from ansible_collections.cloudera.cloud.tests.unit import (
-    AnsibleExitJson,
-)
+from ansible_collections.cloudera.cloud.tests.unit import AnsibleExitJson
 
 
 # Required environment variables for integration tests
@@ -59,7 +57,36 @@ def dw_vw_module_args(module_args, env_context):
 
 
 def _vw_name(request):
-    return "ansible-" + re.sub(r"[^a-z0-9]", "", request.node.name.lower())[:20]
+    # Use first 10 + last 10 chars so parametrized variants (whose distinguishing
+    # suffix is at the end) never collide when the full name exceeds 20 chars.
+    full = re.sub(r"[^a-z0-9]", "", request.node.name.lower())
+    if len(full) <= 20:
+        return "ansible-" + full
+    return "ansible-" + full[:10] + full[-10:]
+
+
+@pytest.fixture
+def cleanup_vw(dw_client, existing_dw_cluster_id):
+    """Register VW ids for deletion at teardown.
+
+    Call the returned function with a vw_id to schedule it for cleanup
+    regardless of test outcome.
+    """
+    vw_ids = []
+
+    def register(vw_id):
+        vw_ids.append(vw_id)
+
+    try:
+        yield register
+    finally:
+        for vw_id in vw_ids:
+            try:
+                existing = dw_client.get_vw_by_id(existing_dw_cluster_id, vw_id)
+                if existing:
+                    dw_client.delete_vw(existing_dw_cluster_id, vw_id)
+            except Exception as e:
+                warnings.warn(f"cleanup_vw: failed to delete '{vw_id}': {e}")
 
 
 # TODO Convert to proper cleanup fixture that deletes any warehouses created by the test, rather than relying on the test to clean up after itself.
@@ -131,3 +158,143 @@ def test_present_create_then_absent(
                 dw_client.delete_vw(existing_dw_cluster_id, vw_id)
             except Exception as e:
                 warnings.warn(f"Cleanup failed for Virtual Warehouse {vw_id}: {e}")
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("vw_type", ["hive", "impala", "trino"])
+def test_present_create_with_autoscaling(
+    request,
+    vw_type,
+    dw_vw_module_args,
+    cleanup_vw,
+    existing_dw_dbc_id,
+):
+    """Create a VW of each type with autoscaling options (gated by CDW_DBC_ID)."""
+    name = _vw_name(request)
+    timeout = int(os.getenv("CDW_VW_TIMEOUT", "3600"))
+
+    dw_vw_module_args(
+        {
+            "name": name,
+            "type": vw_type,
+            "catalog_id": existing_dw_dbc_id,
+            "state": "present",
+            "wait": True,
+            "timeout": timeout,
+            "autoscaling": {
+                "min_clusters": 1,
+                "max_clusters": 3,
+            },
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_virtual_warehouse.main()
+
+    cleanup_vw(exc.value.virtual_warehouse["id"])
+    assert exc.value.changed is True
+    assert exc.value.virtual_warehouse["vwType"] == vw_type
+
+
+@pytest.mark.slow
+def test_present_create_impala_with_ha(
+    request,
+    dw_vw_module_args,
+    cleanup_vw,
+    existing_dw_dbc_id,
+):
+    """Create an Impala VW with HA settings at creation time (gated by CDW_DBC_ID)."""
+    name = _vw_name(request)
+    timeout = int(os.getenv("CDW_VW_TIMEOUT", "3600"))
+
+    dw_vw_module_args(
+        {
+            "name": name,
+            "type": "impala",
+            "catalog_id": existing_dw_dbc_id,
+            "state": "present",
+            "wait": True,
+            "timeout": timeout,
+            "impala_ha": {
+                "high_availability_mode": "ACTIVE_PASSIVE",
+                "enable_catalog_high_availability": True,
+            },
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_virtual_warehouse.main()
+
+    cleanup_vw(exc.value.virtual_warehouse["id"])
+    assert exc.value.changed is True
+    assert exc.value.virtual_warehouse["vwType"] == "impala"
+
+
+@pytest.mark.slow
+def test_present_create_impala_with_autoscaling_and_ha(
+    request,
+    dw_vw_module_args,
+    cleanup_vw,
+    existing_dw_dbc_id,
+):
+    """Create an Impala VW with both autoscaling and HA settings (gated by CDW_DBC_ID)."""
+    name = _vw_name(request)
+    timeout = int(os.getenv("CDW_VW_TIMEOUT", "3600"))
+
+    dw_vw_module_args(
+        {
+            "name": name,
+            "type": "impala",
+            "catalog_id": existing_dw_dbc_id,
+            "state": "present",
+            "wait": True,
+            "timeout": timeout,
+            "autoscaling": {
+                "min_clusters": 1,
+                "max_clusters": 3,
+                "impala_scale_down_delay_seconds": 60,
+                "impala_scale_up_delay_seconds": 30,
+            },
+            "impala_ha": {
+                "high_availability_mode": "ACTIVE_PASSIVE",
+                "enable_catalog_high_availability": True,
+            },
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_virtual_warehouse.main()
+
+    cleanup_vw(exc.value.virtual_warehouse["id"])
+    assert exc.value.changed is True
+    assert exc.value.virtual_warehouse["vwType"] == "impala"
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("vw_type", ["hive", "impala", "trino"])
+def test_reconcile_no_drift_is_idempotent(
+    vw_type,
+    dw_vw_module_args,
+    disposable_vw,
+    existing_dw_dbc_id,
+):
+    """Re-running state=present with no reconcilable drift reports changed=False."""
+    timeout = int(os.getenv("CDW_VW_TIMEOUT", "3600"))
+    vw = disposable_vw(vw_type)
+
+    dw_vw_module_args(
+        {
+            "name": vw.name,
+            "type": vw_type,
+            "catalog_id": existing_dw_dbc_id,
+            "state": "present",
+            "wait": True,
+            "timeout": timeout,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        dw_virtual_warehouse.main()
+
+    assert exc.value.changed is False
+    assert exc.value.virtual_warehouse["id"] == vw.id
