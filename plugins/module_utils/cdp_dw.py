@@ -195,6 +195,13 @@ class ClusterSummary:
 
 DW_CLUSTER_RUNNING_STATUSES: Set[str] = {"Running"}
 DW_CLUSTER_FAILED_STATUSES: Set[str] = {"Error", "Failed"}
+DW_CLUSTER_REMOVABLE_STATUSES: Set[str] = {
+    "Running",
+    "Error",
+    "Failed",
+    "Stopped",
+    "Deleting",
+}
 
 
 class CdpDwClient:

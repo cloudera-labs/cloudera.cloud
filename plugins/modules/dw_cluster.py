@@ -479,19 +479,11 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
     ClusterSummary,
     DW_CLUSTER_RUNNING_STATUSES,
     DW_CLUSTER_FAILED_STATUSES,
+    DW_CLUSTER_REMOVABLE_STATUSES,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
 )
-
-
-DW_CLUSTER_REMOVABLE_STATUSES = {
-    "Running",
-    "Error",
-    "Failed",
-    "Stopped",
-    "Deleting",
-}
 
 
 class DwCluster(ServicesModule):
