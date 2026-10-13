@@ -105,12 +105,16 @@ options:
       - Applied at creation only; not reconciled.
     type: dict
     suboptions:
-      min_nodes:
-        description: The minimum number of available nodes for autoscaling.
+      min_clusters:
+        description: The minimum number of Executor Groups for autoscaling.
         type: int
-      max_nodes:
-        description: The maximum number of available nodes for autoscaling.
+        aliases:
+          - min_nodes
+      max_clusters:
+        description: The maximum number of Executor Groups for autoscaling.
         type: int
+        aliases:
+          - max_nodes
       auto_suspend_timeout_seconds:
         description: Auto suspend threshold for the Virtual Warehouse.
         type: int
@@ -397,6 +401,9 @@ import time
 
 from typing import Any, Dict, List, Optional
 
+from ansible.module_utils.common.dict_transformations import (
+    snake_dict_to_camel_dict,
+)
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
     to_dict,
@@ -432,8 +439,8 @@ class DwVirtualWarehouse(ServicesModule):
                 autoscaling=dict(
                     type="dict",
                     options=dict(
-                        min_nodes=dict(type="int"),
-                        max_nodes=dict(type="int"),
+                        min_clusters=dict(type="int", aliases=["min_nodes"]),
+                        max_clusters=dict(type="int", aliases=["max_nodes"]),
                         auto_suspend_timeout_seconds=dict(type="int"),
                         disable_auto_suspend=dict(type="bool"),
                         hive_desired_free_capacity=dict(type="int"),
@@ -611,9 +618,9 @@ class DwVirtualWarehouse(ServicesModule):
             tshirt_size=self.tshirt_size,
             node_count=self.node_count,
             instance_type=self.instance_type,
-            autoscaling=self.autoscaling,
+            autoscaling=self._build_autoscaling(),
             config=self._build_service_config(),
-            impala_ha=self.impala_ha,
+            impala_ha=self._build_impala_ha(),
             tags=self.tags,
             enable_unified_analytics=self.enable_unified_analytics,
             enable_platform_jwt_auth=self.enable_platform_jwt_auth,
@@ -718,6 +725,24 @@ class DwVirtualWarehouse(ServicesModule):
         if self.enable_sso is not None:
             config["enableSSO"] = self.enable_sso
         return config or None
+
+    def _build_autoscaling(self) -> Optional[Dict[str, Any]]:
+        """Assemble the AutoscalingOptionsCreateRequest payload."""
+        if self.autoscaling is None:
+            return None
+        # Ansible keeps alias keys alongside the canonical suboption names.
+        options = self.module.argument_spec["autoscaling"]["options"]
+        autoscaling = {
+            k: v for k, v in self.autoscaling.items() if k in options and v is not None
+        }
+        return snake_dict_to_camel_dict(autoscaling) or None
+
+    def _build_impala_ha(self) -> Optional[Dict[str, Any]]:
+        """Assemble the ImpalaHASettingsCreateRequest payload."""
+        if self.impala_ha is None:
+            return None
+        impala_ha = {k: v for k, v in self.impala_ha.items() if v is not None}
+        return snake_dict_to_camel_dict(impala_ha) or None
 
     def _wait_for_presence(self, client, vw_id):
         """Poll until the Virtual Warehouse reaches a running state or fails.
