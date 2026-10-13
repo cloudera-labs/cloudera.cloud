@@ -8,7 +8,7 @@ You can start work on issues that are not yet part of a [Milestone](https://gith
 
 Before you start working, please announce that you want to do so by commenting on the issue. _([Create an issue](https://github.com/cloudera-labs/cloudera.cloud/issues/new?labels=enhancement) if there isn't one yet, and you can also check out our [Discussions](https://github.com/cloudera-labs/cloudera.cloud/discussions) for ideas.)_ We try to ensure that all active work is assigned to a Milestone in order to keep our backlog accurate.
 
-**When your work is ready for review, create a branch in your own forked repository from the `devel` branch and submit a pull request against `devel`, referencing your the issue.**
+**When your work is ready for review, create a branch in your own forked repository from the `main` branch and submit a pull request against `main`, referencing your the issue.**
 
 As a _best practice_, you can prefix your branches with:
 
@@ -17,9 +17,6 @@ As a _best practice_, you can prefix your branches with:
 |`feature/`|A new feature or changes existing to existing code or documentation|`feature/update-this-modules-params`|
 |`fix/`|A non-urgent bug fix|`fix/refactor-module-output-params`|
 |`hotfix/`|An urgent bug fix|`hotfix/patch-insecure-module`|
-
-> [!NOTE]
-> :fire_extinguisher: A **hotfix** should branch from `main`. It will then be committed to both the `main` and `devel` branches.
 
 ## Running pre-commit
 
@@ -33,7 +30,8 @@ Lastly, you can run the hooks prior to committing changes (and PR submission) by
 
 ## Signing your commits
 
-Note that we require signed commits inline with [Developer Certificate of Origin](https://developercertificate.org/) best-practices for open source collaboration.
+Note that we require signed commits inline with [Developer Certificate of Origin](https://developercertificate.org/) best-practices for open source collaboration. To manage commit signature verification online, please review the [Managing commit signature verification](https://docs.github.com/en/authentication/managing-commit-signature-verification) instructions on the
+GitHub Docs site.
 
 A signed commit is a simple one-liner at the end of your commit message that states that you wrote the patch or otherwise have the right to pass the change into open source.  Signing your commits means you agree to:
 
