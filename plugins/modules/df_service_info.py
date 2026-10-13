@@ -77,15 +77,15 @@ services:
   elements: complex
   contains:
     crn:
-      description:  The DataFlow Service's CRN.
-      returned: always
-      type: str
-    environmentCrn:
-      description:  The DataFlow Service's Parent Environment CRN.
+      description: The DataFlow Service's CRN.
       returned: always
       type: str
     name:
       description: The DataFlow Service's parent environment name.
+      returned: always
+      type: str
+    environmentCrn:
+      description: The DataFlow Service's Parent Environment CRN.
       returned: always
       type: str
     cloudPlatform:
@@ -99,15 +99,15 @@ services:
     deploymentCount:
       description: The deployment count.
       returned: always
-      type: str
+      type: int
     minK8sNodeCount:
-      description: The  minimum  number  of Kubernetes nodes that need to be provisioned in the environment.
+      description: The minimum number of Kubernetes nodes that need to be provisioned in the environment.
       returned: always
       type: int
     maxK8sNodeCount:
-      description:  The maximum number of  kubernetes  nodes  that  environment  may scale up under high-demand situations.
+      description: The maximum number of Kubernetes nodes that the environment may scale up to under high-demand situations.
       returned: always
-      type: str
+      type: int
     status:
       description: The status of a DataFlow enabled environment.
       returned: always
@@ -121,22 +121,38 @@ services:
           description: A status message for the environment.
           returned: always
           type: str
-    k8sNodeCount:
-      description: The  number of kubernetes nodes currently in use by DataFlow for this environment.
+        detailedState:
+          description: A detailed state of the environment.
+          returned: when available
+          type: str
+    clusterId:
+      description: Cluster id of the environment.
+      returned: if enabled
+      type: str
+    instanceType:
+      description: The instance type of the kubernetes nodes currently in use by DataFlow for this environment.
+      returned: always
+      type: str
+    proxyName:
+      description: The name of the proxy configuration used by the service.
+      returned: when available
+      type: str
+    enforceProject:
+      description: Whether project enforcement is enabled for the service.
+      returned: when available
+      type: bool
+    runningK8sNodeCount:
+      description: The number of kubernetes nodes currently in use by DataFlow for this environment.
       returned: always
       type: int
-    instanceType:
-      description: The instance type of the kubernetes nodes currently  in  use  by DataFlow for this environment.
+    creatingK8sNodeCount:
+      description: The number of kubernetes nodes currently being created by DataFlow for this environment.
       returned: always
-      type: str
-    dfLocalUrl:
-      description: The URL of the environment local DataFlow application.
+      type: int
+    terminatingK8sNodeCount:
+      description: The number of kubernetes nodes currently being terminated by DataFlow for this environment.
       returned: always
-      type: str
-    authorizedIpRanges:
-      description:  The authorized IP Ranges.
-      returned: always
-      type: list
+      type: int
     activeWarningAlertCount:
       description: Current count of active alerts classified as a warning.
       returned: always
@@ -145,10 +161,87 @@ services:
       description: Current count of active alerts classified as an error.
       returned: always
       type: int
-    clusterId:
-      description: Cluster id of the environment.
-      returned: if enabled
+    activeInfoAlertCount:
+      description: Current count of active alerts classified as informational.
+      returned: always
+      type: int
+    upgradeDeploymentsNiFiVersion:
+      description: The NiFi version used when upgrading deployments.
+      returned: when available
       type: str
+    validActions:
+      description: The list of actions currently valid for the service.
+      returned: when available
+      type: list
+    workloadVersion:
+      description: The workload version of the service.
+      returned: when available
+      type: str
+    availableK8sVersionUpgrade:
+      description: The Kubernetes version available for upgrade, if any.
+      returned: when available
+      type: str
+    k8sServerVersion:
+      description: The Kubernetes server version in use by the service.
+      returned: when available
+      type: str
+    dfLocalUrl:
+      description: The URL of the environment local DataFlow application.
+      returned: always
+      type: str
+    clusterSubnets:
+      description: The list of subnet IDs used by the Kubernetes cluster.
+      returned: when available
+      type: list
+    loadBalancerSubnets:
+      description: The list of subnet IDs used by the load balancer.
+      returned: when available
+      type: list
+    kubeApiAuthorizedIpRanges:
+      description: The authorized IP ranges for the Kubernetes API.
+      returned: always
+      type: list
+    loadBalancerAuthorizedIpRanges:
+      description: The authorized IP ranges for the load balancer.
+      returned: always
+      type: list
+    podCidr:
+      description: The CIDR block used for Kubernetes pods.
+      returned: when available
+      type: str
+    serviceCidr:
+      description: The CIDR block used for Kubernetes services.
+      returned: when available
+      type: str
+    privateCluster:
+      description: Whether the Kubernetes cluster is private.
+      returned: when available
+      type: bool
+    usePublicLoadBalancer:
+      description: Whether a public load balancer is used.
+      returned: when available
+      type: bool
+    userDefinedRouting:
+      description: Whether user-defined routing is enabled.
+      returned: when available
+      type: bool
+    tags:
+      description: Custom tags applied to the service.
+      returned: when available
+      type: dict
+    encryptionParameters:
+      description: The encryption parameters of the service.
+      returned: when available
+      type: dict
+      contains:
+        encryptionKeyArn:
+          description: The ARN of the encryption key.
+          returned: when available
+          type: str
+        encryptionStrategy:
+          description: The encryption strategy used.
+          returned: when available
+          type: str
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
@@ -161,10 +254,15 @@ sdk_out_lines:
 """
 
 from typing import Any, Dict
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
+    to_dict,
 )
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import CdpDfClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
+    CdpDfClient,
+    DataFlowServiceStatus,
+)
 
 
 class DFServiceInfo(ServicesModule):
@@ -192,21 +290,38 @@ class DFServiceInfo(ServicesModule):
 
         if self.name:
             service = self.df_client.get_service_by_name(self.name)
+            if service:
+                self.services.append(to_dict(service))
         elif self.df_crn:
             service = self.df_client.get_service_by_crn(self.df_crn)
+            if service:
+                self.services.append(to_dict(service))
         elif self.env_crn:
             service = self.df_client.get_service_by_env_crn(self.env_crn)
+            if service:
+                self.services.append(to_dict(service))
         else:
-            response = self.df_client.list_services()
-            self.services = [
-                self.df_client.describe_service(svc["crn"]).get("service", {})
-                for svc in response.get("services", [])
-                if svc.get("status", {}).get("state") not in CdpDfClient.DISABLED_STATES
-            ]
-            return
-
-        if service:
-            self.services.append(service.get("service", {}))
+            summaries = self.df_client.list_services()
+            for summary in summaries:
+                status = summary.status
+                state = (
+                    status.state if isinstance(status, DataFlowServiceStatus) else None
+                )
+                if state in CdpDfClient.DISABLED_STATES:
+                    continue
+                # describeService can return a server-side 500 for a listed service
+                # (e.g. null privateCluster); fall back to the list summary.
+                service_details = self.df_client.describe_service(
+                    summary.crn,
+                    squelch={500: {}},
+                )
+                if not service_details:
+                    self.module.warn(
+                        f"Unable to describe DataFlow service '{summary.crn}'; "
+                        "returning list summary only.",
+                    )
+                    service_details = summary
+                self.services.append(to_dict(service_details))
 
 
 def main():

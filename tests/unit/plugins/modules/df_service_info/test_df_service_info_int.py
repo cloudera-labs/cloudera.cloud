@@ -66,12 +66,12 @@ def test_df_service_info_list_all(module_args):
 def test_df_service_info_list_by_name(module_args, df_client):
     """Test listing DataFlow services by environment name with real API calls."""
 
-    response = df_client.list_services()
+    services = df_client.list_services()
 
-    if len(response.get("services", [])) == 0:
+    if len(services) == 0:
         pytest.skip("No DataFlow services available for testing")
 
-    service_name = response["services"][0]["name"]
+    service_name = services[0].name
 
     module_args(
         {
@@ -92,12 +92,12 @@ def test_df_service_info_list_by_name(module_args, df_client):
 def test_df_service_info_by_crn(module_args, df_client):
     """Test getting DataFlow service by CRN with real API calls."""
 
-    response = df_client.list_services()
+    services = df_client.list_services()
 
-    if len(response.get("services", [])) == 0:
+    if len(services) == 0:
         pytest.skip("No DataFlow services available for testing")
 
-    service_crn = response["services"][0]["crn"]
+    service_crn = services[0].crn
 
     module_args(
         {
@@ -118,12 +118,12 @@ def test_df_service_info_by_crn(module_args, df_client):
 def test_df_service_info_by_env_crn(module_args, df_client):
     """Test getting DataFlow service by environment CRN with real API calls."""
 
-    response = df_client.list_services()
+    services = df_client.list_services()
 
-    if len(response.get("services", [])) == 0:
+    if len(services) == 0:
         pytest.skip("No DataFlow services available for testing")
 
-    env_crn = response["services"][0]["environmentCrn"]
+    env_crn = services[0].environmentCrn
 
     module_args(
         {

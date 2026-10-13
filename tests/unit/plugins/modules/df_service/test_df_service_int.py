@@ -18,7 +18,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import os
 import pytest
 
 from typing import Callable, Generator, Optional
@@ -27,7 +26,9 @@ from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
 )
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import CdpDfClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
+    CdpDfClient,
+)
 from ansible_collections.cloudera.cloud.plugins.modules import df_service
 
 # Required environment variables for integration tests
@@ -117,81 +118,6 @@ def df_service_disable(df_client) -> Generator[Optional[str], None, None]:
             )
 
 
-@pytest.fixture
-def df_service_enable(
-    df_client,
-    df_service_disable,
-    env_context,
-) -> Callable[[str, dict], dict]:
-    """
-    Fixture to enable DataFlow service for tests.
-
-    Returns a function that enables the service and registers it for cleanup.
-    """
-
-    def _enable_service(env_crn: str = None, **kwargs) -> dict:
-        """Enable DataFlow service and register for cleanup."""
-        if env_crn is None:
-            env_crn = env_context["ENV_CRN"]
-
-        # Check if service is already enabled for this environment
-        services = df_client.list_services().get("services", [])
-        existing_service = None
-        for service in services:
-            if service.get("environmentCrn") == env_crn:
-                existing_service = service
-                break
-
-        if existing_service:
-            # Service already exists, get full details
-            service_crn = existing_service.get("crn")
-            result = {"service": df_client.describe_service(service_crn)}
-
-            # Register for cleanup
-            df_service_disable(service_crn)
-
-            # Wait for service to be in a healthy state if it's still enabling
-            current_state = existing_service.get("status", {}).get("state")
-            if current_state not in df_client.REMOVABLE_STATES:
-                # Service exists but is not yet in a stable state (e.g., still ENABLING)
-                df_client.wait_for_service_state(
-                    service_crn=service_crn,
-                    target_states=df_client.REMOVABLE_STATES,
-                    timeout=1800,  # 30 minutes
-                    delay=30,
-                )
-        else:
-            # Merge default kwargs with provided ones
-            enable_params = {
-                "environment_crn": env_crn,
-                "min_k8s_node_count": TEST_MIN_NODES,
-                "max_k8s_node_count": TEST_MAX_NODES,
-                "use_public_load_balancer": TEST_USE_PUBLIC_LB,
-                "private_cluster": TEST_PRIVATE_CLUSTER,
-                "skip_preflight_checks": False,
-                "user_defined_routing": False,
-                "tags": TEST_TAGS,
-            }
-            enable_params.update(kwargs)
-
-            result = df_client.enable_service(**enable_params)
-
-            # Wait for service to be enabled
-            service_crn = result.get("service", {}).get("crn")
-            if service_crn:
-                df_service_disable(service_crn)
-                df_client.wait_for_service_state(
-                    service_crn=service_crn,
-                    target_states=["ENABLED"],
-                    timeout=1800,  # 30 minutes
-                    delay=30,
-                )
-
-        return result
-
-    return _enable_service
-
-
 @pytest.mark.data_service
 def test_df_service_enable(df_module_args, df_service_disable):
     """Test enabling DataFlow service with subnet filters."""
@@ -277,29 +203,20 @@ def test_df_service_enable_with_jmespath_filters(
 
 
 @pytest.mark.data_service
-def test_df_service_disable(
-    df_module_args,
-    df_service_enable,
-    df_service_disable,
-    df_client,
-):
-    """
-    Test disabling DataFlow service with real API calls.
+def test_df_service_update(df_module_args, df_service_disable):
+    """Enable a service, bump its maximum node count, re-check idempotency, then disable it."""
 
-    NOTE: This test will disable the DataFlow service if one exists on the environment.
-    If you don't want to disable an existing service, skip this test.
-    """
-
-    # Enable the service first (or get existing one)
-    enable_result = df_service_enable()
-    service_crn = enable_result["service"].get("service", {}).get("crn")
-
-    # Execute module to disable the service
+    # Enable the service (same setup as test_df_service_enable)
     df_module_args(
         {
-            "df_crn": service_crn,
-            "state": "absent",
-            "terminate": True,
+            "state": "present",
+            "nodes_min": TEST_MIN_NODES,
+            "nodes_max": TEST_MAX_NODES,
+            "cluster_subnets_filter": TEST_CLUSTER_SUBNET_FILTER,
+            "loadbalancer_subnets_filter": TEST_LB_SUBNET_FILTER,
+            "public_loadbalancer": TEST_USE_PUBLIC_LB,
+            "private_cluster": TEST_PRIVATE_CLUSTER,
+            "tags": TEST_TAGS,
             "wait": True,
         },
     )
@@ -307,15 +224,87 @@ def test_df_service_disable(
     with pytest.raises(AnsibleExitJson) as result:
         df_service.main()
 
-    # Verify the result
+    service_crn = result.value.service.get("crn")
+    assert service_crn is not None
+    df_service_disable(service_crn)
     assert result.value.changed is True
 
-    # Clear the registered CRN since we've already disabled the service
-    # This prevents the fixture cleanup from trying to disable again
+    new_max = TEST_MAX_NODES + 1
+    update_args = {
+        "nodes_min": TEST_MIN_NODES,
+        "nodes_max": new_max,
+        "wait": True,
+    }
+
+    # Update maximum node count
+    df_module_args(update_args)
+    with pytest.raises(AnsibleExitJson) as result:
+        df_service.main()
+    assert result.value.changed is True
+    assert int(result.value.service["maxK8sNodeCount"]) == new_max
+
+    # Idempotent re-run after update
+    df_module_args(update_args)
+    with pytest.raises(AnsibleExitJson) as result:
+        df_service.main()
+    assert result.value.changed is False
+    assert int(result.value.service["maxK8sNodeCount"]) == new_max
+
+    # Disable the service via the module; the fixture no longer needs to do it
+    df_module_args(
+        {"df_crn": service_crn, "state": "absent", "terminate": True, "wait": True},
+    )
+    with pytest.raises(AnsibleExitJson) as result:
+        df_service.main()
+    assert result.value.changed is True
     df_service_disable(None)
 
-    # Idempotency check - running again should not change anything
+
+@pytest.mark.data_service
+def test_df_service_absent(df_module_args, df_service_disable, df_client):
+    """Enable a service, then disable it via the module and verify idempotency."""
+
+    # Enable the service (same setup as test_df_service_enable)
+    df_module_args(
+        {
+            "state": "present",
+            "nodes_min": TEST_MIN_NODES,
+            "nodes_max": TEST_MAX_NODES,
+            "cluster_subnets_filter": TEST_CLUSTER_SUBNET_FILTER,
+            "loadbalancer_subnets_filter": TEST_LB_SUBNET_FILTER,
+            "public_loadbalancer": TEST_USE_PUBLIC_LB,
+            "private_cluster": TEST_PRIVATE_CLUSTER,
+            "tags": TEST_TAGS,
+            "wait": True,
+        },
+    )
+
     with pytest.raises(AnsibleExitJson) as result:
         df_service.main()
 
+    service_crn = result.value.service.get("crn")
+    assert service_crn is not None
+    df_service_disable(service_crn)
+    assert result.value.changed is True
+
+    absent_args = {
+        "df_crn": service_crn,
+        "state": "absent",
+        "terminate": True,
+        "wait": True,
+    }
+
+    # Disable
+    df_module_args(absent_args)
+    with pytest.raises(AnsibleExitJson) as result:
+        df_service.main()
+    assert result.value.changed is True
+
+    assert df_client.get_service_by_crn(service_crn) is None
+    df_service_disable(None)
+
+    # Idempotent re-run of absent (service already gone)
+    df_module_args(absent_args)
+    with pytest.raises(AnsibleExitJson) as result:
+        df_service.main()
     assert result.value.changed is False
