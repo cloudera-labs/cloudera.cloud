@@ -281,7 +281,10 @@ class TestCdpDfClient:
                 status=DataFlowServiceStatus(state="GOOD_HEALTH"),
             ),
         ]
-        describe_mock = DataFlowServiceDescription(crn=SERVICE_CRN, environmentCrn=ENV_CRN)
+        describe_mock = DataFlowServiceDescription(
+            crn=SERVICE_CRN,
+            environmentCrn=ENV_CRN,
+        )
 
         api_client = mocker.create_autospec(CdpClient, instance=True)
         client = CdpDfClient(api_client=api_client)
