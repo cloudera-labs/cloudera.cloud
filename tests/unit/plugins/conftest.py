@@ -152,7 +152,7 @@ def existing_dw_cluster(
         )
         yield existing
         return
-    else: 
+    else:
         # Query for the singleton DW cluster for public cloud
         existing_clusters = dw_client.list_clusters(env_crn=env_crn)
         if existing_clusters:
@@ -263,7 +263,7 @@ def _create_dw_cluster(
             lb_subnet_ids=lb_subnets,
             worker_subnet_ids=worker_subnets,
             use_overlay_network=True,
-            use_public_worker_node=True
+            use_public_worker_node=True,
         )
     elif platform == "AZURE":
         cluster_id = dw_client.create_azure_cluster(
