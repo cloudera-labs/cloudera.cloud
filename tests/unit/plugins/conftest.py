@@ -143,6 +143,7 @@ def existing_dw_cluster(
     if env_crn is None:
         pytest.skip(f"Environment '{env_name}' not found")
 
+    # Query for a possible private cloud DW cluster with the inttest name
     existing = dw_client.get_cluster_by_name(_DW_INTTEST_NAME, env_crn=env_crn)
     if existing is not None:
         warnings.warn(
@@ -151,11 +152,27 @@ def existing_dw_cluster(
         )
         yield existing
         return
+    else: 
+        # Query for the singleton DW cluster for public cloud
+        existing_clusters = dw_client.list_clusters(env_crn=env_crn)
+        if existing_clusters:
+            if len(existing_clusters) == 1:
+                warnings.warn(
+                    f"DW cluster '{existing_clusters[0].name}' already exists; "
+                    f"reusing {existing_clusters[0].id} without teardown",
+                )
+                yield existing_clusters[0]
+                return
+            else:
+                pytest.fail(
+                    f"Multiple DW clusters exist in environment '{env_name}'; "
+                    f"cannot auto-select",
+                )
 
     try:
         created_id = _create_dw_cluster(dw_client, env_name)
     except Exception as e:
-        pytest.skip(
+        pytest.fail(
             f"Could not auto-provision DW cluster in '{env_name}': {e}",
         )
 
@@ -174,7 +191,7 @@ def existing_dw_cluster(
                 target_statuses=set(),
             )
         except Exception as e:
-            warnings.warn(
+            pytest.fail(
                 f"Failed to delete auto-provisioned DW cluster {created_id}: {e}",
             )
 
@@ -245,6 +262,8 @@ def _create_dw_cluster(
             env_crn=env_crn,
             lb_subnet_ids=lb_subnets,
             worker_subnet_ids=worker_subnets,
+            use_overlay_network=True,
+            use_public_worker_node=True
         )
     elif platform == "AZURE":
         cluster_id = dw_client.create_azure_cluster(
