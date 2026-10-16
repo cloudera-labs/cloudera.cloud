@@ -19,31 +19,33 @@ DOCUMENTATION = r"""
 module: dw_cluster_info
 short_description: Gather information about CDP Data Warehouse Clusters
 description:
-    - Gather information about CDP Data Warehouse Clusters
+    - Gather information about CDP Data Warehouse Clusters.
+    - Returns a single cluster when O(cluster_id) is specified, all clusters in an
+      environment when O(environment) is specified, or all clusters when neither is
+      specified.
+    - The module supports C(check_mode).
 author:
   - "Webster Mudge (@wmudge)"
   - "Dan Chaffelson (@chaffelson)"
+  - "Jim Enright (@jenright)"
 version_added: "1.0.0"
-requirements:
-  - cdpy
 options:
   cluster_id:
     description:
       - The identifier of the Data Warehouse Cluster.
-      - Mutually exclusive with I(environment).
+      - Mutually exclusive with O(environment).
     type: str
     aliases:
       - id
   environment:
     description:
       - The name or CRN of the Environment in which to find and describe Data Warehouse Clusters.
-      - Mutually exclusive with I(cluster_id).
+      - Mutually exclusive with O(cluster_id).
     type: str
     aliases:
       - env
 extends_documentation_fragment:
-  - cloudera.cloud.cdp_sdk_options
-  - cloudera.cloud.cdp_auth_options
+  - cloudera.cloud.cdp_client
 """
 
 EXAMPLES = r"""
@@ -124,55 +126,68 @@ sdk_out_lines:
   elements: str
 """
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_common import CdpModule
+from typing import Any, Dict, List
+
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
+    CdpDwClient,
+    ClusterSummary,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
+    CdpEnvClient,
+)
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+    to_dict,
+)
 
 
-class DwClusterInfo(CdpModule):
-    def __init__(self, module):
-        super(DwClusterInfo, self).__init__(module)
+class DwClusterInfo(ServicesModule):
+    def __init__(self):
+        super().__init__(
+            argument_spec=dict(
+                cluster_id=dict(type="str", aliases=["id"]),
+                environment=dict(type="str", aliases=["env"]),
+            ),
+            mutually_exclusive=[["cluster_id", "environment"]],
+            supports_check_mode=True,
+        )
 
-        # Set variables
-        self.cluster_id = self._get_param("cluster_id")
-        self.environment = self._get_param("environment")
+        self.cluster_id = self.get_param("cluster_id")
+        self.environment = self.get_param("environment")
 
-        # Initialize return values
-        self.clusters = []
+        self.clusters: List[ClusterSummary] = []
 
-        # Execute logic process
-        self.process()
-
-    @CdpModule._Decorators.process_debug
     def process(self):
+        client = CdpDwClient(api_client=self.api_client)
+
         if self.cluster_id is not None:
-            cluster_single = self.cdpy.dw.describe_cluster(self.cluster_id)
-            if cluster_single is not None:
-                self.clusters.append(cluster_single)
+            cluster = client.describe_cluster(cluster_id=self.cluster_id)
+            if cluster is not None:
+                self.clusters = [cluster]
         elif self.environment is not None:
-            env_crn = self.cdpy.environments.resolve_environment_crn(self.environment)
+            env_client = CdpEnvClient(api_client=self.api_client)
+            if self.environment.startswith("crn:"):
+                env_crn = self.environment
+            else:
+                env_crn = env_client.get_environment_crn(self.environment)
             if env_crn:
-                self.clusters = self.cdpy.dw.list_clusters(env_crn=env_crn)
+                self.clusters = client.list_clusters(env_crn=env_crn)
         else:
-            self.clusters = self.cdpy.dw.list_clusters()
+            self.clusters = client.list_clusters()
 
 
 def main():
-    module = AnsibleModule(
-        argument_spec=CdpModule.argument_spec(
-            cluster_id=dict(type="str", aliases=["id"]),
-            environment=dict(type="str", aliases=["env"]),
-        ),
-        mutually_exclusive=[["cluster_id", "environment"]],
-        supports_check_mode=True,
+    result = DwClusterInfo()
+
+    output: Dict[str, Any] = dict(
+        changed=False,
+        clusters=[to_dict(c) for c in result.clusters],
     )
 
-    result = DwClusterInfo(module)
-    output = dict(changed=False, clusters=result.clusters)
-
-    if result.debug:
+    if result.debug_log:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
 
-    module.exit_json(**output)
+    result.module.exit_json(**output)
 
 
 if __name__ == "__main__":
