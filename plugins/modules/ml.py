@@ -350,25 +350,54 @@ options:
     suboptions:
       cpu:
         description:
-          - The CPU resource pool configuration.
+          - The CPU resource pool quota.
+          - B(Deprecated.) Use I(workspace_quota.cpu_quota) instead. Will be removed in version 4.0.0.
         type: str
-        required: True
+        required: False
         aliases:
           - cpu_quota
       gpu:
         description:
-          - The GPU resource pool configuration.
+          - The GPU resource pool quota.
+          - B(Deprecated.) Use I(workspace_quota.gpu_quota) instead. Will be removed in version 4.0.0.
         type: str
         required: False
         aliases:
           - gpu_quota
       memory:
         description:
-          - The memory resource pool configuration.
+          - The memory resource pool quota.
+          - B(Deprecated.) Use I(workspace_quota.memory_quota) instead. Will be removed in version 4.0.0.
         type: str
-        required: True
+        required: False
         aliases:
           - memory_quota
+      parent_pool_name:
+        description:
+          - The name of the parent resource pool.
+        type: str
+        required: False
+      workspace_quota:
+        description:
+          - The resource quota for the workspace.
+        type: dict
+        required: False
+        suboptions:
+          cpu_quota:
+            description:
+              - The quota for the CPU resource.
+            type: str
+            required: True
+          gpu_quota:
+            description:
+              - The quota for the GPU resource.
+            type: str
+            required: False
+          memory_quota:
+            description:
+              - The quota for the memory resource.
+            type: str
+            required: True
   outbound_type:
     description:
       - Outbound type for the ML Workspace.
@@ -456,6 +485,28 @@ EXAMPLES = r"""
           rootVolume:
             size: 40
       wait: true
+
+# Create a ML Workspace with resource pool quota (recommended)
+- cloudera.cloud.ml:
+    name: ml-example
+    env: cdp-env
+    resource_pool:
+      parent_pool_name: root
+      workspace_quota:
+        cpu_quota: "8"
+        gpu_quota: "1"
+        memory_quota: "16Gi"
+    wait: true
+
+# Create a ML Workspace with resource pool quota (deprecated legacy form)
+- cloudera.cloud.ml:
+    name: ml-example
+    env: cdp-env
+    resource_pool:
+      cpu: "8"
+      gpu: "1"
+      memory: "16Gi"
+    wait: true
 
 # Remove a ML Workspace, but return immediately
 - cloudera.cloud.ml:
@@ -863,14 +914,37 @@ class MLWorkspace(ServicesModule):
                     required=False,
                     type="dict",
                     options=dict(
-                        cpu=dict(required=True, type="str", aliases=["cpu_quota"]),
-                        gpu=dict(required=False, type="str", aliases=["gpu_quota"]),
+                        cpu=dict(
+                            required=False,
+                            type="str",
+                            aliases=["cpu_quota"],
+                        ),
+                        gpu=dict(
+                            required=False,
+                            type="str",
+                            aliases=["gpu_quota"],
+                        ),
                         memory=dict(
-                            required=True,
+                            required=False,
                             type="str",
                             aliases=["memory_quota"],
                         ),
+                        parent_pool_name=dict(required=False, type="str"),
+                        workspace_quota=dict(
+                            required=False,
+                            type="dict",
+                            options=dict(
+                                cpu_quota=dict(required=True, type="str"),
+                                gpu_quota=dict(required=False, type="str"),
+                                memory_quota=dict(required=True, type="str"),
+                            ),
+                        ),
                     ),
+                    mutually_exclusive=[
+                        ["cpu", "workspace_quota"],
+                        ["gpu", "workspace_quota"],
+                        ["memory", "workspace_quota"],
+                    ],
                 ),
                 outbound_type=dict(
                     required=False,
@@ -1060,6 +1134,57 @@ class MLWorkspace(ServicesModule):
                     if self.database:
                         database_config = snake_dict_to_camel_dict(self.database)
 
+                    resource_pool_config = None
+                    if self.resource_pool:
+                        legacy_keys = {
+                            k: v
+                            for k, v in self.resource_pool.items()
+                            if k in ("cpu", "gpu", "memory") and v is not None
+                        }
+
+                        if legacy_keys:
+                            deprecation_map = {
+                                "cpu": "workspace_quota.cpu_quota",
+                                "gpu": "workspace_quota.gpu_quota",
+                                "memory": "workspace_quota.memory_quota",
+                            }
+                            for key in legacy_keys:
+                                self.module.deprecate(
+                                    msg=(
+                                        "The '%s' suboption of 'resource_pool' is "
+                                        "deprecated. Use '%s' instead."
+                                        % (key, deprecation_map[key])
+                                    ),
+                                    version="4.0.0",
+                                    collection_name="cloudera.cloud",
+                                )
+
+                            if "cpu" not in legacy_keys:
+                                self.module.fail_json(
+                                    msg="resource_pool requires 'cpu' when using legacy parameters.",
+                                )
+                            if "memory" not in legacy_keys:
+                                self.module.fail_json(
+                                    msg="resource_pool requires 'memory' when using legacy parameters.",
+                                )
+
+                            workspace_quota = {
+                                "cpuQuota": legacy_keys["cpu"],
+                                "memoryQuota": legacy_keys["memory"],
+                            }
+                            if "gpu" in legacy_keys:
+                                workspace_quota["gpuQuota"] = legacy_keys["gpu"]
+
+                            resource_pool_config = {"workspaceQuota": workspace_quota}
+                        else:
+                            resource_pool_config = snake_dict_to_camel_dict(
+                                {
+                                    k: v
+                                    for k, v in self.resource_pool.items()
+                                    if v is not None
+                                },
+                            )
+
                     client.create_workspace(
                         workspace_name=self.name,
                         environment_name=self.env,
@@ -1079,7 +1204,7 @@ class MLWorkspace(ServicesModule):
                         enable_enhanced_performance=self.enhanced_volume_performance,
                         enable_global_access_loadbalancer=self.global_access_loadbalancer,
                         static_subdomain=self.subdomain,
-                        resource_pool_config=self.resource_pool,
+                        resource_pool_config=resource_pool_config,
                         outbound_types=self.outbound_type,
                     )
 
