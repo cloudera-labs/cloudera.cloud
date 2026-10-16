@@ -338,6 +338,23 @@ def _wait_vw_stable(
     )
 
 
+def _wait_vw_absent(
+    client: CdpDwClient,
+    cluster_id: str,
+    vw_id: str,
+) -> None:
+    """Poll until the Virtual Warehouse no longer exists, or fail."""
+    timeout = int(os.getenv("CDW_VW_TIMEOUT", "3600"))
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if client.get_vw_by_id(cluster_id, vw_id) is None:
+            return
+        time.sleep(15)
+    raise AssertionError(
+        f"Timed out waiting for Virtual Warehouse {vw_id} to be deleted",
+    )
+
+
 def _create_vw(
     client: CdpDwClient,
     cluster_id: str,
