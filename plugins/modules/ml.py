@@ -1182,7 +1182,7 @@ class MLWorkspace(ServicesModule):
                                     k: v
                                     for k, v in self.resource_pool.items()
                                     if v is not None
-                                }
+                                },
                             )
 
                     client.create_workspace(
