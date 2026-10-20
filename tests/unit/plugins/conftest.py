@@ -51,6 +51,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
     CdpDfClient,
     DataFlowServiceDescription,
+    DataFlowServiceStatus,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
     CdpDwClient,
@@ -1309,27 +1310,20 @@ def _provisioned_df_service(
 
 
 @pytest.fixture(scope="module")
-def existing_df_service(
-    df_client,
-    test_cdp_client,
-) -> Generator[DataFlowServiceDescription, None, None]:
-    """Provide a Data Flow service for read-only tests, provisioning if needed.
+def existing_df_service(df_client) -> DataFlowServiceDescription:
+    """Return any healthy, already-enabled Data Flow service for read-only tests.
 
-    If ENV_CRN already has an enabled service, that service is returned as-is and
-    never torn down. Otherwise a service is enabled in ENV_CRN, shared across the
-    module, and disabled at module teardown.
-
-    Module-scoped (not session) so a service this fixture created is released
-    before other modules that enable their own service in the same environment.
+    Never provisions or tears down anything; skips if no service is in GOOD_HEALTH.
     """
-    env_crn = required_or_skip("ENV_CRN")
+    for summary in df_client.list_services():
+        status = summary.status
+        state = status.state if isinstance(status, DataFlowServiceStatus) else None
+        if state == "GOOD_HEALTH" and summary.crn:
+            service = df_client.get_service_by_crn(summary.crn)
+            if service is not None:
+                return service
 
-    existing = df_client.get_service_by_env_crn(env_crn)
-    if existing is not None:
-        yield existing
-        return
-
-    yield from _provisioned_df_service(df_client, test_cdp_client, env_crn)
+    pytest.skip("No Data Flow service in GOOD_HEALTH found to run read-only tests against")
 
 
 @pytest.fixture
