@@ -1323,7 +1323,9 @@ def existing_df_service(df_client) -> DataFlowServiceDescription:
             if service is not None:
                 return service
 
-    pytest.skip("No Data Flow service in GOOD_HEALTH found to run read-only tests against")
+    pytest.skip(
+        "No Data Flow service in GOOD_HEALTH found to run read-only tests against",
+    )
 
 
 @pytest.fixture
