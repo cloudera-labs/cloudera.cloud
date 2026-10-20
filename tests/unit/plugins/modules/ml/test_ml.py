@@ -263,8 +263,9 @@ def test_ml_create_workspace_check_mode(module_args, mocker):
     with pytest.raises(AnsibleExitJson) as result:
         ml.main()
 
-    # In check mode, changed should be False and no actual creation
-    assert result.value.changed is False
+    # In check mode, changed should be True (a create would occur) but no actual creation
+    assert result.value.changed is True
+    assert result.value.workspace == {}
 
     # Verify create_workspace was NOT called
     client.create_workspace.assert_not_called()
@@ -781,6 +782,80 @@ def test_ml_workspace_invalid_k8s_request(module_args, mocker):
     # Expect the module to fail due to missing required field in k8s_request
     with pytest.raises(AnsibleFailJson, match="environment_name"):
         ml.main()
+
+
+def test_ml_create_workspace_resource_pool_missing_cpu(module_args, mocker):
+    """Legacy resource_pool form without 'cpu' fails before any API call."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "present",
+            "resource_pool": {
+                "gpu": "1",
+                "memory": "8Gi",
+            },
+        },
+    )
+
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpMlClient
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    ).return_value
+    client.describe_workspace.return_value = {}
+
+    with pytest.raises(AnsibleFailJson, match="requires 'cpu'"):
+        ml.main()
+
+    client.create_workspace.assert_not_called()
+
+
+def test_ml_create_workspace_resource_pool_missing_memory(module_args, mocker):
+    """Legacy resource_pool form without 'memory' fails before any API call."""
+
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "name": WORKSPACE_NAME,
+            "environment": ENV_NAME,
+            "state": "present",
+            "resource_pool": {
+                "cpu": "4",
+                "gpu": "1",
+            },
+        },
+    )
+
+    # Patch load_cdp_config
+    config = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.module_utils.common.load_cdp_config",
+    )
+    config.return_value = (FILE_ACCESS_KEY, FILE_PRIVATE_KEY, FILE_REGION)
+
+    # Patch CdpMlClient
+    client = mocker.patch(
+        "ansible_collections.cloudera.cloud.plugins.modules.ml.CdpMlClient",
+        autospec=True,
+    ).return_value
+    client.describe_workspace.return_value = {}
+
+    with pytest.raises(AnsibleFailJson, match="requires 'memory'"):
+        ml.main()
+
+    client.create_workspace.assert_not_called()
 
 
 def test_ml_workspace_wait_timeout(module_args, mocker):

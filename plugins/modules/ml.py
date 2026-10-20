@@ -1116,6 +1116,7 @@ class MLWorkspace(ServicesModule):
                 )
             # Create the Workspace
             elif self.state == "present":
+                self.changed = True
                 if not self.module.check_mode:
                     # Process k8s_request and convert snake_case to camelCase for API
                     k8s_request = None
@@ -1223,7 +1224,6 @@ class MLWorkspace(ServicesModule):
                         )
 
                     self.workspace = result.get("workspace") if result else {}
-                    self.changed = True
                     if self.module._diff:
                         self.diff = dict(before=None, after=self.workspace)
             else:

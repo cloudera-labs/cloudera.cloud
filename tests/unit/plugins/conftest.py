@@ -60,6 +60,9 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
 )
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_ml import (
+    CdpMlClient,
+)
 from ansible_collections.cloudera.cloud.tests.unit import (
     required_or_skip,
     CdpTestClient,
@@ -1036,3 +1039,203 @@ def disposable_de_virtual_cluster(
                 warnings.warn(
                     f"Failed to delete test Virtual Cluster {ready.vcId} during cleanup: {e}",
                 )
+
+
+##
+# ML Workspace
+##
+
+
+_ML_INTTEST_NAME = "ansible-ml-inttest"
+
+
+@pytest.fixture(scope="session")
+def ml_client() -> CdpMlClient:
+    """Provide a live ML client, skipping when credentials are absent."""
+    api_client = CdpTestClient(
+        endpoint=required_or_skip("CDP_API_ENDPOINT"),
+        access_key=required_or_skip("CDP_ACCESS_KEY_ID"),
+        private_key=required_or_skip("CDP_PRIVATE_KEY"),
+    )
+    return CdpMlClient(api_client=api_client)
+
+
+def _create_ml_workspace(
+    ml_client: CdpMlClient,
+    env_name: str,
+    workspace_name: str,
+    **overrides,
+) -> dict:
+    """Create an ML workspace with a minimal k8s_request, wait for ready, and
+    return the C(describeWorkspace) response."""
+    create_params = {
+        "workspace_name": workspace_name,
+        "environment_name": env_name,
+        "provision_k8s_request": {
+            "environmentName": env_name,
+            "instanceGroups": [
+                {
+                    "name": "cpu_settings",
+                    "instanceCount": 1,
+                    "instanceType": os.getenv("CDP_ML_INSTANCE_TYPE", "m5.2xlarge"),
+                    "instanceTier": "ON_DEMAND",
+                    "autoscaling": {
+                        "minInstances": 0,
+                        "maxInstances": 1,
+                        "enabled": True,
+                    },
+                    "rootVolume": {"size": 300},
+                },
+            ],
+        },
+    }
+    create_params.update(overrides)
+
+    ml_client.create_workspace(**create_params)
+
+    return ml_client.wait_for_workspace_state(
+        environment=env_name,
+        workspace_name=workspace_name,
+        target_states=CdpMlClient.READY_STATES,
+        delay=30,
+        timeout=3600,
+    )
+
+
+def _delete_ml_workspace(
+    ml_client: CdpMlClient,
+    workspace_name: str,
+    env_name: str,
+) -> None:
+    """Force-delete an ML workspace and wait for it to be gone."""
+    ml_client.delete_workspace(
+        force=True,
+        workspace_name=workspace_name,
+        environment_name=env_name,
+        remove_storage=True,
+    )
+    ml_client.wait_for_workspace_state(
+        environment=env_name,
+        workspace_name=workspace_name,
+        target_states=None,
+        delay=30,
+        timeout=3600,
+    )
+
+
+@pytest.fixture(scope="session")
+def existing_ml_workspace(ml_client) -> Generator[dict, None, None]:
+    """Provide an ML Workspace C(describeWorkspace) response for read-only integration tests.
+
+    Resolution strategy:
+    1. If CDP_ML_WORKSPACE_NAME is set, describe that workspace directly (no teardown).
+    2. Elif CDP_ENVIRONMENT_NAME is set:
+       a. Find a workspace named ``ansible-ml-inttest`` -> reuse (no teardown).
+       b. No match -> create a minimal workspace, wait for ready, yield,
+          teardown at session end.
+    3. Neither set -> skip.
+    """
+    workspace_name = os.getenv("CDP_ML_WORKSPACE_NAME")
+    env_name = os.getenv("CDP_ENVIRONMENT_NAME")
+
+    if workspace_name:
+        workspace = ml_client.describe_workspace(name=workspace_name, env=env_name)
+        if not workspace or workspace.get("workspace") is None:
+            pytest.skip(f"CDP_ML_WORKSPACE_NAME '{workspace_name}' not found")
+        yield workspace
+        return
+
+    if not env_name:
+        pytest.skip("CDP_ML_WORKSPACE_NAME or CDP_ENVIRONMENT_NAME required")
+
+    listing = ml_client.list_workspaces(env=env_name)
+    existing = None
+    for ws in listing.get("workspaces", []):
+        if ws.get("instanceName") == _ML_INTTEST_NAME:
+            existing = ws
+            break
+
+    if existing is not None:
+        warnings.warn(
+            f"ML workspace '{_ML_INTTEST_NAME}' already exists; "
+            f"reusing without teardown",
+        )
+        yield ml_client.describe_workspace(crn=existing["crn"])
+        return
+
+    try:
+        created = _create_ml_workspace(ml_client, env_name, _ML_INTTEST_NAME)
+    except Exception as e:
+        pytest.fail(f"Could not auto-provision ML workspace in '{env_name}': {e}")
+
+    try:
+        yield created
+    finally:
+        try:
+            _delete_ml_workspace(ml_client, _ML_INTTEST_NAME, env_name)
+        except Exception as e:
+            pytest.fail(
+                f"Failed to delete auto-provisioned ML workspace {_ML_INTTEST_NAME}: {e}",
+            )
+
+
+@pytest.fixture
+def cleanup_ml_workspace(
+    ml_client,
+) -> Generator[Callable[[str, str], None], None, None]:
+    """Register (name, env) pairs for force-delete at teardown.
+
+    Call the returned function with a workspace name and environment name to
+    schedule it for cleanup regardless of test outcome. Mirrors
+    C(cleanup_dw_cluster)/C(cleanup_de_service).
+    """
+    refs = []
+
+    def register(name, env):
+        refs.append((name, env))
+
+    try:
+        yield register
+    finally:
+        for name, env in refs:
+            existing = ml_client.describe_workspace(name=name, env=env)
+            if not existing or existing.get("workspace") is None:
+                continue
+            try:
+                _delete_ml_workspace(ml_client, name, env)
+            except Exception as e:
+                warnings.warn(
+                    f"cleanup_ml_workspace: failed to delete '{name}': {e}",
+                )
+
+
+@pytest.fixture
+def disposable_ml_workspace(
+    request,
+    ml_client,
+) -> Generator[dict, None, None]:
+    """Create a throwaway ML workspace for a single test, cleaned up at teardown.
+
+    Gated on CDP_ENVIRONMENT_NAME. ML workspace creation is slow (20-40 min)
+    so use sparingly.
+    """
+    env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
+    workspace_name = "ansible-" + re.sub(
+        r"[^a-z0-9]",
+        "-",
+        request.node.name.lower(),
+    )[
+        :40
+    ].strip("-")
+
+    created = _create_ml_workspace(ml_client, env_name, workspace_name)
+
+    try:
+        yield created
+    finally:
+        try:
+            _delete_ml_workspace(ml_client, workspace_name, env_name)
+        except Exception as e:
+            warnings.warn(
+                f"Failed to delete test ML workspace {workspace_name} during cleanup: {e}",
+            )
