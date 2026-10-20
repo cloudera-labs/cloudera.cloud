@@ -48,6 +48,11 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     ServiceResources,
     VcDescription,
 )
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
+    CdpDfClient,
+    DataFlowServiceDescription,
+    DataFlowServiceStatus,
+)
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
     CdpDwClient,
     ClusterSummary,
@@ -59,6 +64,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_dw import (
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
+    filter_subnets_by_expression,
 )
 from ansible_collections.cloudera.cloud.tests.unit import (
     required_or_skip,
@@ -1036,3 +1042,113 @@ def disposable_de_virtual_cluster(
                 warnings.warn(
                     f"Failed to delete test Virtual Cluster {ready.vcId} during cleanup: {e}",
                 )
+
+
+##
+# Data Flow (DF) Service
+##
+
+
+@pytest.fixture(scope="session")
+def df_client(test_cdp_client) -> CdpDfClient:
+    """Provide a live Data Flow client, skipping when credentials are absent."""
+    return CdpDfClient(api_client=test_cdp_client)
+
+
+def _disable_df_service(df_client: CdpDfClient, service_crn: str) -> None:
+    """Disable a service and its deployments, waiting for NOT_ENABLED; no-op if already gone."""
+    try:
+        # get_service_by_crn() returns None once the service is NOT_ENABLED
+        if df_client.get_service_by_crn(service_crn) is not None:
+            df_client.wait_for_service_state(
+                service_crn=service_crn,
+                target_states=["NOT_ENABLED"],
+                timeout=1800,  # 30 minutes
+                delay=30,
+                terminate_deployments=True,
+            )
+    except Exception as e:
+        pytest.fail(f"Failed to clean up DataFlow service: {service_crn}. {e}")
+
+
+def _provisioned_df_service(
+    df_client: CdpDfClient,
+    test_cdp_client,
+    env_crn: str,
+) -> Generator[DataFlowServiceDescription, None, None]:
+    """Enable a service in env_crn, yield it once healthy, and disable it on exit.
+
+    Fixtures delegate to this with ``yield from``.
+    """
+    subnets = CdpEnvClient(api_client=test_cdp_client).get_environment_subnets(env_crn)
+    subnet_ids = filter_subnets_by_expression(subnets, "pub")
+
+    enabled = df_client.enable_service(
+        environment_crn=env_crn,
+        min_k8s_node_count=3,
+        max_k8s_node_count=10,
+        use_public_load_balancer=True,
+        private_cluster=False,
+        cluster_subnet_ids=subnet_ids,
+        load_balancer_subnet_ids=subnet_ids,
+    )
+    assert enabled is not None and enabled.crn
+    service_crn = enabled.crn
+
+    # try/finally so a failed wait still triggers cleanup of the half-enabled service
+    try:
+        service = df_client.wait_for_service_state(
+            service_crn=service_crn,
+            target_states=["GOOD_HEALTH"],
+            timeout=3600,  # 60 minutes
+            delay=30,
+        )
+        assert service is not None
+        yield service
+    finally:
+        _disable_df_service(df_client, service_crn)
+
+
+@pytest.fixture(scope="module")
+def existing_df_service(df_client) -> DataFlowServiceDescription:
+    """Return any healthy, already-enabled Data Flow service for read-only tests.
+
+    Never provisions or tears down anything; skips if no service is in GOOD_HEALTH.
+    """
+    for summary in df_client.list_services():
+        status = summary.status
+        state = status.state if isinstance(status, DataFlowServiceStatus) else None
+        if state == "GOOD_HEALTH" and summary.crn:
+            service = df_client.get_service_by_crn(summary.crn)
+            if service is not None:
+                return service
+
+    pytest.skip(
+        "No Data Flow service in GOOD_HEALTH found to run read-only tests against",
+    )
+
+
+@pytest.fixture
+def deletable_df_service(
+    df_client,
+    test_cdp_client,
+) -> Generator[DataFlowServiceDescription, None, None]:
+    """Provision a healthy Data Flow service per test, for update/delete tests.
+
+    Enabled through the client (not the module under test) and disabled on
+    teardown unless the test already removed it.
+    """
+    env_crn = required_or_skip("ENV_CRN")
+
+    yield from _provisioned_df_service(df_client, test_cdp_client, env_crn)
+
+
+@pytest.fixture
+def df_service_disable(df_client) -> Generator[Callable[[str], None], None, None]:
+    """Register a service CRN a test enabled, to be disabled on teardown."""
+    crns = []
+
+    yield crns.append
+
+    for service_crn in crns:
+        _disable_df_service(df_client, service_crn)

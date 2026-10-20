@@ -253,18 +253,21 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
-services:
-  description: The information about the named DataFlow Service or DataFlow Services
-  type: list
+service:
+  description: Description of the DataFlow Service.
+  type: dict
   returned: always
-  elements: complex
   contains:
     crn:
-      description:  The DataFlow Service's parent environment CRN.
+      description: The CRN of the DataFlow Service.
       returned: always
       type: str
     name:
       description: The DataFlow Service's parent environment name.
+      returned: always
+      type: str
+    environmentCrn:
+      description: The CRN of the DataFlow Service's parent environment.
       returned: always
       type: str
     cloudPlatform:
@@ -278,15 +281,15 @@ services:
     deploymentCount:
       description: The deployment count.
       returned: always
-      type: str
+      type: int
     minK8sNodeCount:
-      description: The  minimum number of Kubernetes nodes that need to be provisioned in the environment.
+      description: The minimum number of Kubernetes nodes that need to be provisioned in the environment.
       returned: always
       type: int
     maxK8sNodeCount:
-      description:  The maximum number of kubernetes nodes that environment may scale up under high-demand situations.
+      description: The maximum number of kubernetes nodes that environment may scale up under high-demand situations.
       returned: always
-      type: str
+      type: int
     status:
       description: The status of a DataFlow enabled environment.
       returned: always
@@ -300,22 +303,38 @@ services:
           description: A status message for the environment.
           returned: always
           type: str
-    k8sNodeCount:
-      description: The number of kubernetes nodes currently in use by DataFlow for this environment.
-      returned: always
-      type: int
+        detailedState:
+          description: A more detailed state of the environment.
+          returned: always
+          type: str
+    clusterId:
+      description: Cluster id of the environment.
+      returned: if enabled
+      type: str
     instanceType:
       description: The instance type of the kubernetes nodes currently in use by DataFlow for this environment.
       returned: always
       type: str
-    dfLocalUrl:
-      description: The URL of the environment local DataFlow application.
+    proxyName:
+      description: The name of the proxy configuration used by the environment, if any.
       returned: always
       type: str
-    authorizedIpRanges:
-      description: The authorized IP Ranges.
+    enforceProject:
+      description: Whether project enforcement is enabled for the environment.
       returned: always
-      type: list
+      type: bool
+    runningK8sNodeCount:
+      description: The number of kubernetes nodes currently running for this environment.
+      returned: always
+      type: int
+    creatingK8sNodeCount:
+      description: The number of kubernetes nodes currently being created for this environment.
+      returned: always
+      type: int
+    terminatingK8sNodeCount:
+      description: The number of kubernetes nodes currently being terminated for this environment.
+      returned: always
+      type: int
     activeWarningAlertCount:
       description: Current count of active alerts classified as a warning.
       returned: always
@@ -324,10 +343,92 @@ services:
       description: Current count of active alerts classified as an error.
       returned: always
       type: int
-    clusterId:
-      description: Cluster id of the environment.
-      returned: if enabled
+    activeInfoAlertCount:
+      description: Current count of active alerts classified as informational.
+      returned: always
+      type: int
+    upgradeDeploymentsNiFiVersion:
+      description: Whether deployments are to be upgraded to the latest NiFi version.
+      returned: always
+      type: bool
+    validActions:
+      description: The list of valid actions that can currently be performed on the service.
+      returned: always
+      type: list
+      elements: str
+    workloadVersion:
+      description: The workload version of the DataFlow Service.
+      returned: always
       type: str
+    availableK8sVersionUpgrade:
+      description: The Kubernetes version available for upgrade, if any.
+      returned: always
+      type: str
+    k8sServerVersion:
+      description: The current Kubernetes server version.
+      returned: always
+      type: str
+    dfLocalUrl:
+      description: The URL of the environment local DataFlow application.
+      returned: always
+      type: str
+    clusterSubnets:
+      description: The subnet ids assigned to the Kubernetes cluster.
+      returned: always
+      type: list
+      elements: str
+    loadBalancerSubnets:
+      description: The subnet ids assigned to the load balancer.
+      returned: always
+      type: list
+      elements: str
+    kubeApiAuthorizedIpRanges:
+      description: The IP ranges authorized to connect to the Kubernetes API server.
+      returned: always
+      type: list
+      elements: str
+    loadBalancerAuthorizedIpRanges:
+      description: The IP ranges authorized to connect to the load balancer.
+      returned: always
+      type: list
+      elements: str
+    podCidr:
+      description: The CIDR range from which pod IPs are assigned in the Kubernetes cluster.
+      returned: always
+      type: str
+    serviceCidr:
+      description: The CIDR range from which internal Kubernetes service IPs are assigned.
+      returned: always
+      type: str
+    privateCluster:
+      description: Whether the Kubernetes cluster is private.
+      returned: always
+      type: bool
+    usePublicLoadBalancer:
+      description: Whether a public load balancer is used.
+      returned: always
+      type: bool
+    userDefinedRouting:
+      description: Whether User Defined Routing (UDR) mode is enabled for AKS clusters.
+      returned: always
+      type: bool
+    tags:
+      description: Tags applied to the DataFlow Service.
+      returned: always
+      type: dict
+    encryptionParameters:
+      description: Encryption parameters for Kubernetes secrets and attached volumes.
+      returned: always
+      type: dict
+      contains:
+        encryptionKeyArn:
+          description: The ARN of the encryption key, if applicable.
+          returned: always
+          type: str
+        encryptionStrategy:
+          description: The encryption strategy used.
+          returned: always
+          type: str
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
@@ -339,11 +440,16 @@ sdk_out_lines:
   elements: str
 """
 
+from typing import Any, Dict, Optional
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
+    to_dict,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import (
     CdpDfClient,
+    DataFlowServiceDescription,
+    DataFlowServiceStatus,
     check_service_updates,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
@@ -440,128 +546,182 @@ class DFService(ServicesModule):
         # Initialize return values
         self.service = {}
         self.changed = False
+        self.diff: Dict[str, Any] = {"before": {}, "after": {}}
 
     def process(self):
-        existing_service = None
+        existing = self._find_existing()
+
+        if existing is None:
+            if self.state == "present":
+                self._handle_create()
+            return
+
+        if self.state == "absent":
+            self._handle_absent(existing)
+        elif self.state == "present":
+            self._handle_update(existing)
+
+    def _find_existing(self) -> Optional[DataFlowServiceDescription]:
         if self.df_crn:
-            existing_service = self.df_client.get_service_by_crn(self.df_crn)
+            return self.df_client.get_service_by_crn(self.df_crn)
         elif self.env_crn:
-            existing_service = self.df_client.get_service_by_env_crn(self.env_crn)
+            return self.df_client.get_service_by_env_crn(self.env_crn)
+        return None
 
-        if existing_service:
-            existing_service = existing_service.get("service", existing_service)
+    def _handle_absent(self, existing: DataFlowServiceDescription) -> None:
+        service_crn = existing.crn
+        status = existing.status
+        current_state = (
+            status.state if isinstance(status, DataFlowServiceStatus) else None
+        )
 
-            if not self.df_crn:
-                self.df_crn = existing_service.get("crn")
+        self.changed = True
+        self.service = to_dict(existing)
 
-            if self.state == "absent":
-                current_state = existing_service.get("status", {}).get("state")
-                self.changed = True
+        if self.module._diff:
+            self.diff["before"] = to_dict(existing)
 
-                if not self.module.check_mode:
-                    if self.force and current_state in CdpDfClient.DISABLED_STATES:
-                        self.df_client.reset_service(crn=self.df_crn)
+        if self.module.check_mode:
+            return
 
-                    elif current_state not in CdpDfClient.DISABLED_STATES:
-                        if self.wait:
-                            self.df_client.wait_for_service_state(
-                                service_crn=self.df_crn,
-                                target_states=CdpDfClient.DISABLED_STATES,
-                                timeout=self.timeout,
-                                delay=self.delay,
-                                terminate_deployments=self.terminate,
-                                persist=self.persist,
-                            )
-                        else:
-                            self.df_client.disable_service(
-                                crn=self.df_crn,
-                                terminate_deployments=self.terminate,
-                                persist=self.persist,
-                            )
-
-            elif self.state == "present":
-
-                update_params = check_service_updates(
-                    service_crn=self.df_crn,
-                    service_details=existing_service,
-                    min_k8s_node_count=self.nodes_min,
-                    max_k8s_node_count=self.nodes_max,
-                    kubernetes_ip_cidr_blocks=self.k8s_ip_ranges,
-                    load_balancer_ip_cidr_blocks=self.loadbalancer_ip_ranges,
-                    skip_preflight_checks=self.skip_preflight_checks,
+        if self.force and current_state in CdpDfClient.DISABLED_STATES:
+            self.df_client.reset_service(crn=service_crn)
+        elif current_state not in CdpDfClient.DISABLED_STATES:
+            if self.wait:
+                result = self.df_client.wait_for_service_state(
+                    service_crn=service_crn,
+                    target_states=CdpDfClient.DISABLED_STATES,
+                    timeout=self.timeout,
+                    delay=self.delay,
+                    terminate_deployments=self.terminate,
+                    persist=self.persist,
+                )
+                if result:
+                    self.service = to_dict(result)
+            else:
+                self.df_client.disable_service(
+                    crn=service_crn,
+                    terminate_deployments=self.terminate,
+                    persist=self.persist,
                 )
 
-                if update_params:
-                    self.changed = True
-                    self.service = existing_service
+        if self.module._diff:
+            self.diff["after"] = self.service
 
-                    if not self.module.check_mode:
-                        result = self.df_client.update_service(**update_params)
-                        self.service = result.get("service", result)
+    def _handle_create(self) -> None:
+        # Apply subnet filtering if filter parameters are provided
+        if self.cluster_subnets_filter or self.loadbalancer_subnets_filter:
+            subnets = self.env_client.get_environment_subnets(self.env_crn)
 
-                        if self.wait:
-                            self.service = self.df_client.wait_for_service_state(
-                                service_crn=self.df_crn,
-                                target_states=["GOOD_HEALTH"],
-                                timeout=self.timeout,
-                                delay=self.delay,
-                            )
-                else:
-                    self.service = existing_service
-        else:
-            # Service doesn't exist (or is already disabled)
-            if self.state == "present":
-                # Apply subnet filtering if filter parameters are provided
-                if self.cluster_subnets_filter or self.loadbalancer_subnets_filter:
-                    subnets = self.env_client.get_environment_subnets(self.env_crn)
+            if self.cluster_subnets_filter:
+                self.cluster_subnets = filter_subnets_by_expression(
+                    subnets,
+                    self.cluster_subnets_filter,
+                )
 
-                    if self.cluster_subnets_filter:
-                        self.cluster_subnets = filter_subnets_by_expression(
-                            subnets,
-                            self.cluster_subnets_filter,
-                        )
+            if self.loadbalancer_subnets_filter:
+                self.loadbalancer_subnets = filter_subnets_by_expression(
+                    subnets,
+                    self.loadbalancer_subnets_filter,
+                )
 
-                    if self.loadbalancer_subnets_filter:
-                        self.loadbalancer_subnets = filter_subnets_by_expression(
-                            subnets,
-                            self.loadbalancer_subnets_filter,
-                        )
+        self.changed = True
 
-                if not self.module.check_mode:
-                    result = self.df_client.enable_service(
-                        environment_crn=self.env_crn,
-                        min_k8s_node_count=self.nodes_min,
-                        max_k8s_node_count=self.nodes_max,
-                        use_public_load_balancer=self.public_loadbalancer,
-                        private_cluster=self.private_cluster,
-                        load_balancer_ip_cidr_blocks=self.loadbalancer_ip_ranges,
-                        kubernetes_ip_cidr_blocks=self.k8s_ip_ranges,
-                        cluster_subnet_ids=self.cluster_subnets,
-                        load_balancer_subnet_ids=self.loadbalancer_subnets,
-                        pod_cidr=self.pod_cidr,
-                        service_cidr=self.service_cidr,
-                        instance_type=self.instance_type,
-                        skip_preflight_checks=self.skip_preflight_checks,
-                        user_defined_routing=self.user_defined_routing,
-                        tags=self.tags,
-                    )
-                    self.service = result.get("service", result)
-                    self.changed = True
+        if self.module._diff:
+            self.diff["after"] = {
+                "environmentCrn": self.env_crn,
+                "status": {"state": "ENABLING"},
+            }
 
-                    if self.wait:
-                        service_crn = self.service.get("crn")
-                        if service_crn:
-                            self.service = self.df_client.wait_for_service_state(
-                                service_crn=service_crn,
-                                target_states=["GOOD_HEALTH"],
-                                timeout=self.timeout,
-                                delay=self.delay,
-                            )
+        if self.module.check_mode:
+            return
+
+        result = self.df_client.enable_service(
+            environment_crn=self.env_crn,
+            min_k8s_node_count=self.nodes_min,
+            max_k8s_node_count=self.nodes_max,
+            use_public_load_balancer=self.public_loadbalancer,
+            private_cluster=self.private_cluster,
+            load_balancer_ip_cidr_blocks=self.loadbalancer_ip_ranges,
+            kubernetes_ip_cidr_blocks=self.k8s_ip_ranges,
+            cluster_subnet_ids=self.cluster_subnets,
+            load_balancer_subnet_ids=self.loadbalancer_subnets,
+            pod_cidr=self.pod_cidr,
+            service_cidr=self.service_cidr,
+            instance_type=self.instance_type,
+            skip_preflight_checks=self.skip_preflight_checks,
+            user_defined_routing=self.user_defined_routing,
+            tags=self.tags,
+        )
+
+        if result:
+            self.service = to_dict(result)
+
+            if self.wait and result.crn:
+                wait_result = self.df_client.wait_for_service_state(
+                    service_crn=result.crn,
+                    target_states=["GOOD_HEALTH"],
+                    timeout=self.timeout,
+                    delay=self.delay,
+                )
+                if wait_result:
+                    self.service = to_dict(wait_result)
+
+        if self.module._diff:
+            self.diff["after"] = self.service
+
+    def _handle_update(self, existing: DataFlowServiceDescription) -> None:
+        service_crn = existing.crn
+
+        update_params = check_service_updates(
+            service_crn=service_crn,
+            service_details=existing,
+            min_k8s_node_count=self.nodes_min,
+            max_k8s_node_count=self.nodes_max,
+            kubernetes_ip_cidr_blocks=self.k8s_ip_ranges,
+            load_balancer_ip_cidr_blocks=self.loadbalancer_ip_ranges,
+            skip_preflight_checks=self.skip_preflight_checks,
+        )
+
+        if not update_params:
+            self.service = to_dict(existing)
+            return
+
+        self.changed = True
+        self.service = to_dict(existing)
+
+        if self.module._diff:
+            self.diff["before"] = to_dict(existing)
+            self.diff["after"] = to_dict(existing)
+            self.diff["after"].update(update_params)
+
+        if self.module.check_mode:
+            return
+
+        result = self.df_client.update_service(**update_params)
+        if result:
+            self.service = to_dict(result)
+
+        if self.wait:
+            wait_result = self.df_client.wait_for_service_state(
+                service_crn=service_crn,
+                target_states=["GOOD_HEALTH"],
+                timeout=self.timeout,
+                delay=self.delay,
+            )
+            if wait_result:
+                self.service = to_dict(wait_result)
+
+        if self.module._diff:
+            self.diff["after"] = self.service
 
 
 def main():
     result = DFService()
     output = dict(changed=result.changed, service=result.service)
+
+    if result.diff["before"] or result.diff["after"]:
+        output["diff"] = result.diff
 
     if result.debug_log:
         output.update(sdk_out=result.log_out, sdk_out_lines=result.log_lines)
