@@ -14,20 +14,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Integration tests for the ml module.
+
+Read-only tests use the session-scoped ``existing_ml_workspace`` fixture.
+Create/delete tests are slow (~20-40 min) and gated on ``CDP_ENVIRONMENT_NAME``.
+
+Required environment variables:
+    CDP_API_ENDPOINT, CDP_ACCESS_KEY_ID, CDP_PRIVATE_KEY, CDP_ENVIRONMENT_NAME
+"""
+
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
 import os
+import re
+
 import pytest
 
-from typing import Callable, Generator, Optional
+from typing import Callable
+
+from ansible.module_utils import basic
 
 from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
 )
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_ml import CdpMlClient
 from ansible_collections.cloudera.cloud.plugins.modules import ml
 
 # Required environment variables for integration tests
@@ -40,6 +52,32 @@ REQUIRED_ENV_VARS = [
 
 # Mark all tests in this module as integration tests requiring API credentials
 pytestmark = pytest.mark.integration_api
+
+
+_K8S_INSTANCE_GROUP = {
+    "name": "cpu_settings",
+    "instanceCount": 1,
+    "instanceTier": "ON_DEMAND",
+    "autoscaling": {
+        "minInstances": 0,
+        "maxInstances": 1,
+        "enabled": True,
+    },
+    "rootVolume": {"size": 300},
+}
+
+
+def _k8s_request(env_name: str) -> dict:
+    """Build a minimal provisioning request for module-level create tests."""
+    return {
+        "environmentName": env_name,
+        "instanceGroups": [
+            {
+                **_K8S_INSTANCE_GROUP,
+                "instanceType": os.getenv("CDP_ML_INSTANCE_TYPE", "m5.2xlarge"),
+            },
+        ],
+    }
 
 
 @pytest.fixture
@@ -63,248 +101,295 @@ def ml_module_args(module_args, env_context) -> Callable[[dict], None]:
     return wrapped_args
 
 
-@pytest.fixture
-def ml_client(test_cdp_client) -> CdpMlClient:
-    """Fixture to provide a Machine Learning client for tests."""
-    return CdpMlClient(api_client=test_cdp_client)
+def test_present_idempotent(ml_module_args, existing_ml_workspace):
+    """Re-run state=present on the shared workspace; verify changed=False."""
+    workspace = existing_ml_workspace["workspace"]
+
+    ml_module_args(
+        {
+            "state": "present",
+            "name": workspace["instanceName"],
+            "wait": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        ml.main()
+
+    assert exc.value.changed is False
+    assert exc.value.workspace.get("instanceName") == workspace["instanceName"]
 
 
-@pytest.fixture
-def ml_workspace_create(
-    ml_client: CdpMlClient,
-    ml_workspace_delete,
+def test_check_mode_present(ml_module_args, ml_client, env_context, request):
+    """check_mode with state=present on a nonexistent name reports changed, makes no call."""
+    env_name = env_context["CDP_ENVIRONMENT_NAME"]
+    workspace_name = "ansible-" + re.sub(
+        r"[^a-z0-9]",
+        "-",
+        request.node.name.lower(),
+    )[
+        :40
+    ].strip("-")
+
+    assert (
+        ml_client.describe_workspace(name=workspace_name, env=env_name).get(
+            "workspace",
+        )
+        is None
+    )
+
+    ml_module_args(
+        {
+            "state": "present",
+            "name": workspace_name,
+            "wait": False,
+            "_ansible_check_mode": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        ml.main()
+
+    assert exc.value.changed is True
+    assert exc.value.workspace == {}
+
+    # No API call was made: the workspace is still absent.
+    assert (
+        ml_client.describe_workspace(name=workspace_name, env=env_name).get(
+            "workspace",
+        )
+        is None
+    )
+
+
+def test_check_mode_absent(ml_module_args, existing_ml_workspace):
+    """check_mode with state=absent against the shared workspace reports changed=False.
+
+    Per the module's absent-path semantics (ml.py), check_mode on an
+    existing+removable workspace sets C(workspace) but does not flip
+    C(changed) unless deletion would actually occur.
+    """
+    workspace = existing_ml_workspace["workspace"]
+
+    ml_module_args(
+        {
+            "state": "absent",
+            "name": workspace["instanceName"],
+            "wait": False,
+            "_ansible_check_mode": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        ml.main()
+
+    assert exc.value.changed is False
+
+
+def test_absent_idempotent(ml_module_args, request):
+    """Re-run state=absent against a name that does not exist; verify changed=False."""
+    workspace_name = "ansible-" + re.sub(
+        r"[^a-z0-9]",
+        "-",
+        request.node.name.lower(),
+    )[
+        :40
+    ].strip("-")
+
+    ml_module_args(
+        {
+            "state": "absent",
+            "name": workspace_name,
+            "wait": False,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        ml.main()
+
+    assert exc.value.changed is False
+
+
+@pytest.mark.slow
+class TestMlWorkspaceLifecycle:
+    """Full create -> present-idempotent -> absent -> absent-idempotent lifecycle.
+
+    Tests within this class must run in definition order (pytest default).
+    The class shares a single workspace created by the first test.
+    """
+
+    _workspace_name = None
+
+    def test_present_creates(
+        self,
+        ml_module_args,
+        cleanup_ml_workspace,
+        env_context,
+        request,
+    ):
+        """state=present creates a new workspace."""
+        env_name = env_context["CDP_ENVIRONMENT_NAME"]
+        workspace_name = request.node.name.replace("_", "-")
+
+        ml_module_args(
+            {
+                "state": "present",
+                "name": workspace_name,
+                "wait": True,
+                "timeout": 3600,
+                "k8s_request": _k8s_request(env_name),
+            },
+        )
+
+        cleanup_ml_workspace(workspace_name, env_name)
+
+        with pytest.raises(AnsibleExitJson) as exc:
+            ml.main()
+
+        assert exc.value.changed is True
+        assert exc.value.workspace.get("instanceName") == workspace_name
+
+        TestMlWorkspaceLifecycle._workspace_name = workspace_name
+
+    def test_present_idempotent(self, ml_module_args):
+        """Re-running state=present on the just-created workspace -> changed=False."""
+        workspace_name = TestMlWorkspaceLifecycle._workspace_name
+        if workspace_name is None:
+            pytest.skip("No workspace created by test_present_creates")
+
+        ml_module_args(
+            {
+                "state": "present",
+                "name": workspace_name,
+                "wait": True,
+            },
+        )
+
+        with pytest.raises(AnsibleExitJson) as exc:
+            ml.main()
+
+        assert exc.value.changed is False
+        assert exc.value.workspace.get("instanceName") == workspace_name
+
+    def test_absent_deletes(self, ml_module_args, ml_client, env_context):
+        """state=absent deletes the workspace -> changed=True."""
+        workspace_name = TestMlWorkspaceLifecycle._workspace_name
+        if workspace_name is None:
+            pytest.skip("No workspace created by test_present_creates")
+
+        ml_module_args(
+            {
+                "state": "absent",
+                "name": workspace_name,
+                "wait": True,
+                "timeout": 3600,
+            },
+        )
+
+        with pytest.raises(AnsibleExitJson) as exc:
+            ml.main()
+
+        assert exc.value.changed is True
+        assert (
+            ml_client.describe_workspace(
+                name=workspace_name,
+                env=env_context["CDP_ENVIRONMENT_NAME"],
+            ).get("workspace")
+            is None
+        )
+
+    def test_absent_idempotent(self, ml_module_args):
+        """Re-running state=absent on the deleted workspace -> changed=False."""
+        workspace_name = TestMlWorkspaceLifecycle._workspace_name
+        if workspace_name is None:
+            pytest.skip("No workspace created by test_present_creates")
+
+        ml_module_args(
+            {
+                "state": "absent",
+                "name": workspace_name,
+                "wait": False,
+            },
+        )
+
+        with pytest.raises(AnsibleExitJson) as exc:
+            ml.main()
+
+        assert exc.value.changed is False
+
+
+@pytest.mark.slow
+def test_present_create_with_workspace_quota(
+    ml_module_args,
+    cleanup_ml_workspace,
     env_context,
-) -> Callable[[str, dict], dict]:
-    """
-    Fixture to create ML workspace for tests.
-
-    Returns a function that creates the workspace and registers it for cleanup.
-    """
-
-    def _create_workspace(workspace_name: str, **kwargs) -> dict:
-        """Create ML workspace and register for cleanup."""
-        environment_name = env_context["CDP_ENVIRONMENT_NAME"]
-
-        # Check if workspace already exists for this environment
-        workspaces = ml_client.list_workspaces(env=environment_name)
-        existing_workspace = None
-        for ws in workspaces.get("workspaces", []):
-            if ws.get("instanceName") == workspace_name:
-                existing_workspace = ws
-                break
-
-        if existing_workspace:
-            # Workspace already exists
-            # Register for cleanup
-            ml_workspace_delete(name=workspace_name, env=environment_name)
-
-            # Wait for workspace to be in a healthy state if it's still creating
-            current_state = existing_workspace.get("instanceStatus")
-            if current_state not in ml_client.READY_STATES:
-                # Workspace exists but is not yet in a stable state
-                result = ml_client.wait_for_workspace_state(
-                    environment=environment_name,
-                    workspace_name=workspace_name,
-                    target_states=ml_client.READY_STATES,
-                    timeout=3600,  # 60 minutes
-                    poll_interval=30,
-                )
-            else:
-                # Already in ready state, just return workspace details
-                result = {"workspace": existing_workspace}
-        else:
-            # Merge default kwargs with provided ones
-            create_params = {
-                "workspace_name": workspace_name,
-                "environment_name": environment_name,
-                "provision_k8s_request": {
-                    "environmentName": environment_name,
-                    "instanceGroups": [
-                        {
-                            "name": "cpu_settings",
-                            "instanceCount": 1,
-                            "instanceType": "m5.2xlarge",
-                            "instanceTier": "ON_DEMAND",
-                            "autoscaling": {
-                                "minInstances": 0,
-                                "maxInstances": 1,
-                                "enabled": True,
-                            },
-                            "rootVolume": {"size": 300},
-                        },
-                    ],
-                },
-            }
-            create_params.update(kwargs)
-
-            ml_client.create_workspace(**create_params)
-
-            # Register for cleanup
-            ml_workspace_delete(name=workspace_name, env=environment_name)
-
-            # Wait for workspace to be created
-            result = ml_client.wait_for_workspace_state(
-                environment=environment_name,
-                workspace_name=workspace_name,
-                target_states=ml_client.READY_STATES,
-                timeout=3600,  # 60 minutes
-                poll_interval=30,
-            )
-
-        return result
-
-    return _create_workspace
-
-
-@pytest.fixture
-def ml_workspace_delete(
-    ml_client: CdpMlClient,
-    env_context,
-) -> Generator[Optional[dict], None, None]:
-    """
-    Fixture to track and clean up ML workspace.
-
-    Yields a setter function to register workspace details for cleanup.
-    Ensures cleanup by deleting the workspace after test completion.
-    """
-    workspace_info = {"value": None}
-
-    def _set_workspace(name: str = None, env: str = None):
-        """Register workspace for cleanup by name+env."""
-        # If all parameters are None, clear the registration
-        if name is None and env is None:
-            workspace_info["value"] = None
-        else:
-            workspace_info["value"] = {
-                "name": name,
-                "env": env or env_context["CDP_ENVIRONMENT_NAME"],
-            }
-
-    # Yield the setter function
-    yield _set_workspace
-
-    # Cleanup: delete workspace if it was registered
-    if workspace_info["value"]:
-        try:
-            ws_info = workspace_info["value"]
-
-            # Delete the workspace
-            ml_client.delete_workspace(
-                force=True,
-                workspace_name=ws_info.get("name"),
-                environment_name=ws_info.get("env"),
-                remove_storage=True,
-            )
-
-            # Wait for workspace to be fully deleted
-            if ws_info.get("name") and ws_info.get("env"):
-                ml_client.wait_for_workspace_state(
-                    environment=ws_info["env"],
-                    workspace_name=ws_info["name"],
-                    target_states=None,  # Wait for deletion
-                    timeout=3600,  # 60 minutes
-                    poll_interval=30,
-                    ignore_failures=True,
-                )
-        except Exception as e:
-            pytest.fail(
-                f"Failed to clean up ML workspace: {workspace_info['value']}. {e}",
-            )
-
-
-def test_ml_create_workspace(ml_module_args, ml_workspace_delete, env_context, request):
-    """Integration test for creating a Cloudera AI workspace."""
-
-    # Generate a unique workspace name from the pytest node name
+    request,
+):
+    """resource_pool.parent_pool_name + workspace_quota creates successfully."""
+    env_name = env_context["CDP_ENVIRONMENT_NAME"]
     workspace_name = request.node.name.replace("_", "-")
+    parent_pool = os.getenv("CDP_ML_RESOURCE_POOL_PARENT", "root")
 
     ml_module_args(
         {
             "state": "present",
             "name": workspace_name,
             "wait": True,
-            "k8s_request": {
-                "environmentName": env_context["CDP_ENVIRONMENT_NAME"],
-                "instanceGroups": [
-                    {
-                        "name": "cpu_settings",
-                        "instanceCount": 1,
-                        "instanceType": "m5.2xlarge",
-                        "instanceTier": "ON_DEMAND",
-                        "autoscaling": {
-                            "minInstances": 0,
-                            "maxInstances": 1,
-                            "enabled": True,
-                        },
-                        "rootVolume": {
-                            "size": 300,
-                        },
-                    },
-                ],
+            "timeout": 3600,
+            "k8s_request": _k8s_request(env_name),
+            "resource_pool": {
+                "parent_pool_name": parent_pool,
+                "workspace_quota": {
+                    "cpu_quota": "4",
+                    "memory_quota": "8Gi",
+                },
             },
         },
     )
 
-    with pytest.raises(AnsibleExitJson) as result:
+    cleanup_ml_workspace(workspace_name, env_name)
+
+    with pytest.raises(AnsibleExitJson) as exc:
         ml.main()
 
-    # Register the workspace for cleanup
-    ml_workspace_delete(name=workspace_name, env=env_context["CDP_ENVIRONMENT_NAME"])
-
-    # Verify the result
-    assert hasattr(result.value, "workspace")
-    assert isinstance(result.value.workspace, dict)
-    assert result.value.changed is True
-
-    # Idempotency check: run the same create again and expect no changes
-    with pytest.raises(AnsibleExitJson) as idempotent_result:
-        ml.main()
-
-    assert hasattr(idempotent_result.value, "workspace")
-    assert isinstance(idempotent_result.value.workspace, dict)
-    assert idempotent_result.value.changed is False
+    assert exc.value.changed is True
+    assert exc.value.workspace.get("instanceName") == workspace_name
 
 
-def test_ml_delete_workspace(
+@pytest.mark.slow
+def test_present_create_with_legacy_resource_pool(
     ml_module_args,
-    ml_workspace_create,
-    ml_workspace_delete,
-    ml_client,
+    cleanup_ml_workspace,
+    env_context,
     request,
+    mocker,
 ):
-    """Integration test for deleting a Cloudera AI workspace."""
+    """Deprecated resource_pool.{cpu,gpu,memory} form creates successfully and warns."""
+    env_name = env_context["CDP_ENVIRONMENT_NAME"]
+    workspace_name = request.node.name.replace("_", "-")
 
-    # Generate a unique workspace name from the pytest node name
-    workspace_name = request.node.name.replace("_", "-") + "v2"
+    deprecate_spy = mocker.spy(basic.AnsibleModule, "deprecate")
 
-    # Create the workspace first (or get existing one)
-    ml_workspace_create(workspace_name)
-
-    # Execute module to delete the workspace
     ml_module_args(
         {
-            "state": "absent",
+            "state": "present",
             "name": workspace_name,
             "wait": True,
+            "timeout": 3600,
+            "k8s_request": _k8s_request(env_name),
+            "resource_pool": {
+                "cpu": "4",
+                "gpu": "1",
+                "memory": "8Gi",
+            },
         },
     )
 
-    with pytest.raises(AnsibleExitJson) as result:
+    cleanup_ml_workspace(workspace_name, env_name)
+
+    with pytest.raises(AnsibleExitJson) as exc:
         ml.main()
 
-    # Verify the result
-    assert hasattr(result.value, "workspace")
-    assert isinstance(result.value.workspace, dict)
-    assert result.value.changed is True
-
-    # Clear the registered workspace since we've already deleted it
-    # This prevents the fixture cleanup from trying to delete again
-    ml_workspace_delete()
-
-    # Idempotency check: running again should not change anything
-    with pytest.raises(AnsibleExitJson) as idempotent_result:
-        ml.main()
-
-    assert hasattr(idempotent_result.value, "workspace")
-    assert isinstance(idempotent_result.value.workspace, dict)
-    assert idempotent_result.value.changed is False
+    assert exc.value.changed is True
+    assert exc.value.workspace.get("instanceName") == workspace_name
+    assert deprecate_spy.call_count >= 2
