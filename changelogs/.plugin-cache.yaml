@@ -128,7 +128,7 @@ plugins:
       namespace: ''
       version_added: 1.0.0
     de:
-      description: Enable and Disable CDP Data Engineering Services
+      description: Enable, disable or update CDP Data Engineering Services
       name: de
       namespace: ''
       version_added: 1.5.0
@@ -138,12 +138,12 @@ plugins:
       namespace: ''
       version_added: 1.5.0
     de_virtual_cluster:
-      description: Create or delete CDP Data Engineering Virtual Clusters
+      description: Manage CDP Data Engineering Virtual Clusters
       name: de_virtual_cluster
       namespace: ''
       version_added: 1.5.0
     de_virtual_cluster_info:
-      description: Gather information about CDP DE virtual clusters
+      description: Gather information about CDP Data Engineering Virtual Clusters
       name: de_virtual_cluster_info
       namespace: ''
       version_added: 1.5.0
@@ -193,7 +193,7 @@ plugins:
       namespace: ''
       version_added: 1.2.0
     dw_cluster:
-      description: Create or Delete CDP Data Warehouse Clusters
+      description: Create or delete CDP Data Warehouse clusters
       name: dw_cluster
       namespace: ''
       version_added: 1.0.0
@@ -202,6 +202,16 @@ plugins:
       name: dw_cluster_info
       namespace: ''
       version_added: 1.0.0
+    dw_connector:
+      description: Create, update, delete, and test CDP Data Warehouse Database Connectors
+      name: dw_connector
+      namespace: ''
+      version_added: 3.4.0
+    dw_connector_info:
+      description: Gather information about CDP Data Warehouse Connectors
+      name: dw_connector_info
+      namespace: ''
+      version_added: 3.4.0
     dw_data_visualization:
       description: Create or Delete CDP Data Visualization Instance
       name: dw_data_visualization
@@ -222,6 +232,16 @@ plugins:
       name: dw_database_catalog_info
       namespace: ''
       version_added: 1.5.0
+    dw_secret:
+      description: Create, register, and delete CDP Data Warehouse secrets
+      name: dw_secret
+      namespace: ''
+      version_added: 3.4.0
+    dw_secret_info:
+      description: Gather information about CDP Data Warehouse secrets
+      name: dw_secret_info
+      namespace: ''
+      version_added: 3.4.0
     dw_virtual_warehouse:
       description: Create, manage, and destroy CDP Data Warehouse Virtual Warehouses
       name: dw_virtual_warehouse
@@ -393,4 +413,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 3.3.0
+version: 3.4.0
