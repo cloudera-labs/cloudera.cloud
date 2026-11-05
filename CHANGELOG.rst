@@ -4,6 +4,39 @@ cloudera.cloud Release Notes
 
 .. contents:: Topics
 
+v3.4.0
+======
+
+Minor Changes
+-------------
+
+- Add AGENT.md instructions (https://github.com/cloudera-labs/cloudera.cloud/pull/289)
+- Add additional integration tests for virtual warehouse creation (https://github.com/cloudera-labs/cloudera.cloud/pull/321)
+- Add cloudera.cloud.dw_connector_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/290)
+- Add dw_secret module and unit and integration tests (https://github.com/cloudera-labs/cloudera.cloud/pull/305)
+- Add dw_secret_info module and unit and integration tests (https://github.com/cloudera-labs/cloudera.cloud/pull/304)
+- Create dw_connector module and unit and integration tests (https://github.com/cloudera-labs/cloudera.cloud/pull/303)
+- Refactor data engineering service module (https://github.com/cloudera-labs/cloudera.cloud/pull/297)
+- Refactor de_virtual_cluster module (https://github.com/cloudera-labs/cloudera.cloud/pull/315)
+- Update CDW cluster modules to use direct API calls (https://github.com/cloudera-labs/cloudera.cloud/pull/320)
+- Update de_info module for mutually exclusive parameters (https://github.com/cloudera-labs/cloudera.cloud/pull/298)
+- Update dw_virtual_warehouse to support Trino and adopt ServiceModule architecture (https://github.com/cloudera-labs/cloudera.cloud/pull/307)
+- Update user synchronization module to use direct API calls (https://github.com/cloudera-labs/cloudera.cloud/pull/314)
+
+Bugfixes
+--------
+
+- Fix dw_virtual_warehouse autoscaling and impala_ha request payloads (https://github.com/cloudera-labs/cloudera.cloud/pull/319)
+- Refactor ML resource pool configuration to include workspace quota structure (https://github.com/cloudera-labs/cloudera.cloud/pull/296)
+
+New Modules
+-----------
+
+- cloudera.cloud.dw_connector - Create, update, delete, and test CDP Data Warehouse Database Connectors.
+- cloudera.cloud.dw_connector_info - Gather information about CDP Data Warehouse Connectors.
+- cloudera.cloud.dw_secret - Create, register, and delete CDP Data Warehouse secrets.
+- cloudera.cloud.dw_secret_info - Gather information about CDP Data Warehouse secrets.
+
 v3.3.0
 ======
 

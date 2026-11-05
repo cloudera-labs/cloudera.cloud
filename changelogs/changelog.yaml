@@ -1,6 +1,45 @@
 ---
 ancestor:
 releases:
+  3.4.0:
+    changes:
+      minor_changes:
+        - Add additional integration tests for virtual warehouse creation (https://github.com/cloudera-labs/cloudera.cloud/pull/321)
+        - Update CDW cluster modules to use direct API calls (https://github.com/cloudera-labs/cloudera.cloud/pull/320)
+        - Refactor de_virtual_cluster module (https://github.com/cloudera-labs/cloudera.cloud/pull/315)
+        - Update user synchronization module to use direct API calls (https://github.com/cloudera-labs/cloudera.cloud/pull/314)
+        - Update dw_virtual_warehouse to support Trino and adopt ServiceModule architecture
+          (https://github.com/cloudera-labs/cloudera.cloud/pull/307)
+        - Add dw_secret module and unit and integration tests (https://github.com/cloudera-labs/cloudera.cloud/pull/305)
+        - Add dw_secret_info module and unit and integration tests (https://github.com/cloudera-labs/cloudera.cloud/pull/304)
+        - Create dw_connector module and unit and integration tests (https://github.com/cloudera-labs/cloudera.cloud/pull/303)
+        - Update de_info module for mutually exclusive parameters (https://github.com/cloudera-labs/cloudera.cloud/pull/298)
+        - Refactor data engineering service module (https://github.com/cloudera-labs/cloudera.cloud/pull/297)
+        - Add cloudera.cloud.dw_connector_info module (https://github.com/cloudera-labs/cloudera.cloud/pull/290)
+        - Add AGENT.md instructions (https://github.com/cloudera-labs/cloudera.cloud/pull/289)
+      bugfixes:
+        - Fix dw_virtual_warehouse autoscaling and impala_ha request payloads (https://github.com/cloudera-labs/cloudera.cloud/pull/319)
+        - Refactor ML resource pool configuration to include workspace quota structure
+          (https://github.com/cloudera-labs/cloudera.cloud/pull/296)
+      trivial:
+        - Update CONTRIBUTING.md for trunk development and signature verification
+          (https://github.com/cloudera-labs/cloudera.cloud/pull/322)
+        - Add CLAUDE.md pointer file to AGENTS.md (https://github.com/cloudera-labs/cloudera.cloud/pull/306)
+    modules:
+      - description: Create, update, delete, and test CDP Data Warehouse Database
+          Connectors.
+        name: dw_connector
+        namespace: ''
+      - description: Gather information about CDP Data Warehouse Connectors.
+        name: dw_connector_info
+        namespace: ''
+      - description: Create, register, and delete CDP Data Warehouse secrets.
+        name: dw_secret
+        namespace: ''
+      - description: Gather information about CDP Data Warehouse secrets.
+        name: dw_secret_info
+        namespace: ''
+    release_date: '2026-11-05'
   3.3.0:
     changes:
       minor_changes:
