@@ -18,7 +18,8 @@
 A REST client for the Cloudera on Cloud Platform (CDP) DataFlow API
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple, Union
 import time
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
@@ -27,6 +28,104 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df_client import (
     CdpDfApiClient,
 )
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
+    from_dict,
+    to_dict,
+)
+
+
+@dataclass
+class DataFlowServiceStatus:
+    """The status of a DataFlow enabled service, as returned by the API's ServiceStatus."""
+
+    state: Union[str, None, NULLABLE] = NULLABLE
+    message: Union[str, None, NULLABLE] = NULLABLE
+    detailedState: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class DataFlowEncryptionParameters:
+    """Encryption parameters for K8s secrets and EBS volumes, as returned by the API's EncryptionParameters."""
+
+    encryptionKeyArn: Union[str, None, NULLABLE] = NULLABLE
+    encryptionStrategy: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class DataFlowServiceSummary:
+    """Summary of a DataFlow service as returned by ``listServices``."""
+
+    crn: Union[str, None, NULLABLE] = NULLABLE
+    name: Union[str, None, NULLABLE] = NULLABLE
+    environmentCrn: Union[str, None, NULLABLE] = NULLABLE
+    cloudPlatform: Union[str, None, NULLABLE] = NULLABLE
+    region: Union[str, None, NULLABLE] = NULLABLE
+    deploymentCount: Union[int, None, NULLABLE] = NULLABLE
+    minK8sNodeCount: Union[int, None, NULLABLE] = NULLABLE
+    maxK8sNodeCount: Union[int, None, NULLABLE] = NULLABLE
+    status: Union[DataFlowServiceStatus, None, NULLABLE] = NULLABLE
+    clusterId: Union[str, None, NULLABLE] = NULLABLE
+    instanceType: Union[str, None, NULLABLE] = NULLABLE
+    proxyName: Union[str, None, NULLABLE] = NULLABLE
+    enforceProject: Union[bool, None, NULLABLE] = NULLABLE
+    runningK8sNodeCount: Union[int, None, NULLABLE] = NULLABLE
+    activeErrorAlertCount: Union[int, None, NULLABLE] = NULLABLE
+    activeInfoAlertCount: Union[int, None, NULLABLE] = NULLABLE
+    activeWarningAlertCount: Union[int, None, NULLABLE] = NULLABLE
+    upgradeDeploymentsNiFiVersion: Union[bool, None, NULLABLE] = NULLABLE
+    validActions: Union[List[str], None, NULLABLE] = NULLABLE
+    workloadVersion: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class DataFlowServiceDescription:
+    """Full description of a DataFlow service, as returned by ``describeService``,
+    ``enableService``, and ``updateService``."""
+
+    crn: Union[str, None, NULLABLE] = NULLABLE
+    name: Union[str, None, NULLABLE] = NULLABLE
+    environmentCrn: Union[str, None, NULLABLE] = NULLABLE
+    cloudPlatform: Union[str, None, NULLABLE] = NULLABLE
+    region: Union[str, None, NULLABLE] = NULLABLE
+    deploymentCount: Union[int, None, NULLABLE] = NULLABLE
+    minK8sNodeCount: Union[int, None, NULLABLE] = NULLABLE
+    maxK8sNodeCount: Union[int, None, NULLABLE] = NULLABLE
+    status: Union[DataFlowServiceStatus, None, NULLABLE] = NULLABLE
+    clusterId: Union[str, None, NULLABLE] = NULLABLE
+    instanceType: Union[str, None, NULLABLE] = NULLABLE
+    proxyName: Union[str, None, NULLABLE] = NULLABLE
+    enforceProject: Union[bool, None, NULLABLE] = NULLABLE
+    runningK8sNodeCount: Union[int, None, NULLABLE] = NULLABLE
+    activeErrorAlertCount: Union[int, None, NULLABLE] = NULLABLE
+    activeInfoAlertCount: Union[int, None, NULLABLE] = NULLABLE
+    activeWarningAlertCount: Union[int, None, NULLABLE] = NULLABLE
+    upgradeDeploymentsNiFiVersion: Union[bool, None, NULLABLE] = NULLABLE
+    validActions: Union[List[str], None, NULLABLE] = NULLABLE
+    workloadVersion: Union[str, None, NULLABLE] = NULLABLE
+    availableK8sVersionUpgrade: Union[str, None, NULLABLE] = NULLABLE
+    clusterSubnets: Union[List[str], None, NULLABLE] = NULLABLE
+    creatingK8sNodeCount: Union[int, None, NULLABLE] = NULLABLE
+    terminatingK8sNodeCount: Union[int, None, NULLABLE] = NULLABLE
+    dfLocalUrl: Union[str, None, NULLABLE] = NULLABLE
+    encryptionParameters: Union[DataFlowEncryptionParameters, None, NULLABLE] = NULLABLE
+    k8sServerVersion: Union[str, None, NULLABLE] = NULLABLE
+    kubeApiAuthorizedIpRanges: Union[List[str], None, NULLABLE] = NULLABLE
+    loadBalancerAuthorizedIpRanges: Union[List[str], None, NULLABLE] = NULLABLE
+    loadBalancerSubnets: Union[List[str], None, NULLABLE] = NULLABLE
+    podCidr: Union[str, None, NULLABLE] = NULLABLE
+    privateCluster: Union[bool, None, NULLABLE] = NULLABLE
+    serviceCidr: Union[str, None, NULLABLE] = NULLABLE
+    tags: Union[Dict[str, str], None, NULLABLE] = NULLABLE
+    usePublicLoadBalancer: Union[bool, None, NULLABLE] = NULLABLE
+    userDefinedRouting: Union[bool, None, NULLABLE] = NULLABLE
+
+
+def _coerce_list(value: Any) -> List[Any]:
+    """Coerce a dataclass field to a list, treating NULLABLE/None as empty."""
+    if value is NULLABLE or value is None:
+        return []
+    return value
 
 
 class DataFlowModule:
@@ -47,7 +146,7 @@ class DataFlowModule:
 
 def check_service_updates(
     service_crn: str,
-    service_details: Dict[str, Any],
+    service_details: "DataFlowServiceDescription",
     min_k8s_node_count: Optional[int] = None,
     max_k8s_node_count: Optional[int] = None,
     kubernetes_ip_cidr_blocks: Optional[List[str]] = None,
@@ -59,7 +158,7 @@ def check_service_updates(
 
     Args:
         service_crn: The CRN of the service to update
-        service_details: Current service details from API
+        service_details: Current DataFlowServiceDescription from describe_service
         min_k8s_node_count: Desired minimum number of Kubernetes nodes
         max_k8s_node_count: Desired maximum number of Kubernetes nodes
         kubernetes_ip_cidr_blocks: Desired CIDR blocks for Kubernetes API access
@@ -73,12 +172,11 @@ def check_service_updates(
     changes = []
 
     param_mappings = [
-        (min_k8s_node_count, "minK8sNodeCount", "min_k8s_node_count"),
-        (max_k8s_node_count, "maxK8sNodeCount", "max_k8s_node_count"),
+        (min_k8s_node_count, service_details.minK8sNodeCount, "min_k8s_node_count"),
+        (max_k8s_node_count, service_details.maxK8sNodeCount, "max_k8s_node_count"),
     ]
 
-    for desired_value, service_key, api_param in param_mappings:
-        current_value = service_details.get(service_key)
+    for desired_value, current_value, api_param in param_mappings:
         if desired_value is not None and desired_value != current_value:
             update_params[api_param] = desired_value
             changes.append(api_param)
@@ -86,20 +184,19 @@ def check_service_updates(
     ip_range_mappings = [
         (
             kubernetes_ip_cidr_blocks,
-            "kubeApiAuthorizedIpRanges",
+            service_details.kubeApiAuthorizedIpRanges,
             "kubernetes_ip_cidr_blocks",
         ),
         (
             load_balancer_ip_cidr_blocks,
-            "loadBalancerAuthorizedIpRanges",
+            service_details.loadBalancerAuthorizedIpRanges,
             "load_balancer_ip_cidr_blocks",
         ),
     ]
 
-    for desired_ranges, service_key, api_param in ip_range_mappings:
+    for desired_ranges, current_ranges, api_param in ip_range_mappings:
         if desired_ranges is not None:
-            current_ranges = service_details.get(service_key, [])
-            if set(desired_ranges) != set(current_ranges):
+            if set(desired_ranges) != set(_coerce_list(current_ranges)):
                 update_params[api_param] = desired_ranges
                 changes.append(api_param)
 
@@ -108,52 +205,17 @@ def check_service_updates(
 
     if changes:
         if "min_k8s_node_count" not in update_params:
-            current_min = service_details.get("minK8sNodeCount")
-            if current_min is not None:
+            current_min = service_details.minK8sNodeCount
+            if current_min is not None and current_min is not NULLABLE:
                 update_params["min_k8s_node_count"] = current_min
         if "max_k8s_node_count" not in update_params:
-            current_max = service_details.get("maxK8sNodeCount")
-            if current_max is not None:
+            current_max = service_details.maxK8sNodeCount
+            if current_max is not None and current_max is not NULLABLE:
                 update_params["max_k8s_node_count"] = current_max
 
         return update_params
     else:
         return {}
-
-
-def format_tags_for_api(
-    tags: Optional[List[Dict[str, Any]]],
-) -> Optional[List[Dict[str, str]]]:
-    """
-    Convert tags from Ansible format to API format.
-
-    Transforms tags from Ansible parameter format (snake_case keys) to
-    API format (camelCase keys), filtering out None values.
-
-    Args:
-        tags: List of tags in Ansible format with keys 'tag_name' and 'tag_color'
-
-    Returns:
-        List of tags in API format with keys 'tagName' and 'tagColor', or None if input is None
-
-    Example:
-        Input:  [{'tag_name': 'production', 'tag_color': 'blue'}, {'tag_name': 'stable'}]
-        Output: [{'tagName': 'production', 'tagColor': 'blue'}, {'tagName': 'stable'}]
-    """
-    if tags is None:
-        return None
-
-    return [
-        {
-            k: v
-            for k, v in {
-                "tagName": tag.get("tag_name"),
-                "tagColor": tag.get("tag_color"),
-            }.items()
-            if v is not None
-        }
-        for tag in tags
-    ]
 
 
 class CdpDfClient:
@@ -179,23 +241,12 @@ class CdpDfClient:
         """
         self.api_client = api_client
 
-    # Service state constants
-    FAILED_STATES = ["BAD_HEALTH", "UNKNOWN"]
-    REMOVABLE_STATES = [
-        "GOOD_HEALTH",
-        "CONCERNING_HEALTH",
-        "BAD_HEALTH",
-        "UNKNOWN",
-    ]
-    TERMINATION_STATES = ["DISABLING"]
-    DISABLED_STATES = ["NOT_ENABLED"]
-
     # ========================================================================
     # Service Management Methods
     # ========================================================================
 
     @CdpClient.paginated()
-    def list_services(
+    def _list_services_raw(
         self,
         search_term: Optional[str] = None,
         pageToken: Optional[str] = None,
@@ -203,7 +254,11 @@ class CdpDfClient:
         sorts: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
-        List DataFlow services.
+        List DataFlow services (raw API response, paginated).
+
+        Kept separate from the public `list_services()` so that the pagination
+        decorator can merge the `services` list across pages as plain dicts
+        before conversion to DataFlowServiceSummary.
 
         Args:
             search_term: Search term to filter by name
@@ -213,7 +268,7 @@ class CdpDfClient:
 
         Returns:
             Dictionary containing:
-                - services: List of ServiceSummary objects
+                - services: List of raw ServiceSummary dicts
                 - nextToken: Token for next page (if available)
         """
         data: Dict[str, Any] = {}
@@ -232,24 +287,77 @@ class CdpDfClient:
             squelch={404: {"services": []}},
         )
 
-    def describe_service(self, crn: str) -> Dict[str, Any]:
+    def list_services(
+        self,
+        search_term: Optional[str] = None,
+        sorts: Optional[List[str]] = None,
+    ) -> List[DataFlowServiceSummary]:
+        """
+        List DataFlow services.
+
+        Args:
+            search_term: Search term to filter by name
+            sorts: Sort criteria
+
+        Returns:
+            List of DataFlowServiceSummary objects.
+        """
+        result = self._list_services_raw(search_term=search_term, sorts=sorts)
+        return [
+            from_dict(DataFlowServiceSummary, s) for s in result.get("services", [])
+        ]
+
+    def describe_service(
+        self,
+        crn: str,
+        squelch: Optional[Dict[int, Any]] = None,
+    ) -> Optional[DataFlowServiceDescription]:
         """
         Describe a DataFlow service.
 
         Args:
             crn: The CRN of the service
+            squelch: Additional HTTP status codes to tolerate, mapped to the
+                value returned in place of the response (e.g. ``{500: {}}``).
+                404 is always tolerated.
 
         Returns:
-            Dictionary containing service details
+            DataFlowServiceDescription for the service, or None if not found
+            or if a squelched status code was returned
         """
         data = {"serviceCrn": crn}
-        return self.api_client.post(
+        result = self.api_client.post(
             "/api/v1/df/describeService",
             data=data,
-            squelch={404: {}},
+            squelch={404: {}, **(squelch or {})},
         )
+        service = result.get("service") if result else None
+        return from_dict(DataFlowServiceDescription, service) if service else None
 
-    def get_service_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+    def _describe_or_summary(
+        self,
+        summary: DataFlowServiceSummary,
+    ) -> DataFlowServiceDescription:
+        """
+        Describe a listed service, falling back to its list summary.
+
+        describeService can return a server-side 500 for a listed service whose
+        backing environment record is incomplete (e.g. an orphaned service whose
+        CDP environment was deleted). In that case the summary fields are returned
+        as a DataFlowServiceDescription with the detail-only fields unset.
+
+        Args:
+            summary: The service summary returned by ``listServices``
+
+        Returns:
+            DataFlowServiceDescription for the service
+        """
+        details = self.describe_service(summary.crn, squelch={500: {}})
+        if details is None:
+            return from_dict(DataFlowServiceDescription, to_dict(summary))
+        return details
+
+    def get_service_by_name(self, name: str) -> Optional[DataFlowServiceDescription]:
         """
         Get service details by environment name.
 
@@ -257,17 +365,21 @@ class CdpDfClient:
             name: The environment name
 
         Returns:
-            Service details dict, or None if not found or disabled
+            DataFlowServiceDescription, or None if not found or disabled
         """
         services = self.list_services(search_term=name)
-        for service in services.get("services", []):
-            if service.get("name") == name:
-                if service.get("status", {}).get("state") in self.DISABLED_STATES:
+        for service in services:
+            if service.name == name:
+                status = service.status
+                state = (
+                    status.state if isinstance(status, DataFlowServiceStatus) else None
+                )
+                if state in self.DISABLED_STATES:
                     return None
-                return self.describe_service(service.get("crn"))
+                return self._describe_or_summary(service)
         return None
 
-    def get_service_by_crn(self, crn: str) -> Optional[Dict[str, Any]]:
+    def get_service_by_crn(self, crn: str) -> Optional[DataFlowServiceDescription]:
         """
         Get service details by service CRN.
 
@@ -275,18 +387,25 @@ class CdpDfClient:
             crn: The service CRN
 
         Returns:
-            Service details dict, or None if not found or disabled
+            DataFlowServiceDescription, or None if not found or disabled
         """
         services = self.list_services()
-        for service in services.get("services", []):
-            if service.get("crn") == crn:
+        for service in services:
+            if service.crn == crn:
                 # Skip describe for disabled services (returns 500)
-                if service.get("status", {}).get("state") in self.DISABLED_STATES:
+                status = service.status
+                state = (
+                    status.state if isinstance(status, DataFlowServiceStatus) else None
+                )
+                if state in self.DISABLED_STATES:
                     return None
-                return self.describe_service(crn)
+                return self._describe_or_summary(service)
         return None
 
-    def get_service_by_env_crn(self, env_crn: str) -> Optional[Dict[str, Any]]:
+    def get_service_by_env_crn(
+        self,
+        env_crn: str,
+    ) -> Optional[DataFlowServiceDescription]:
         """
         Get service details by environment CRN.
 
@@ -294,15 +413,19 @@ class CdpDfClient:
             env_crn: The environment CRN
 
         Returns:
-            Service details dict, or None if not found or disabled
+            DataFlowServiceDescription, or None if not found or disabled
         """
         services = self.list_services()
-        for service in services.get("services", []):
-            if service.get("environmentCrn") == env_crn:
+        for service in services:
+            if service.environmentCrn == env_crn:
                 # Skip describe for disabled services (returns 500)
-                if service.get("status", {}).get("state") in self.DISABLED_STATES:
+                status = service.status
+                state = (
+                    status.state if isinstance(status, DataFlowServiceStatus) else None
+                )
+                if state in self.DISABLED_STATES:
                     return None
-                return self.describe_service(service.get("crn"))
+                return self._describe_or_summary(service)
         return None
 
     def enable_service(
@@ -324,7 +447,7 @@ class CdpDfClient:
         skip_preflight_checks: Optional[bool] = None,
         user_defined_routing: Optional[bool] = None,
         tags: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
+    ) -> Optional[DataFlowServiceDescription]:
         """
         Enable DataFlow service for an environment.
 
@@ -348,7 +471,7 @@ class CdpDfClient:
             tags: Tags to apply to service-related resources
 
         Returns:
-            Dictionary containing service details
+            DataFlowServiceDescription for the enabled service, or None
         """
         data: Dict[str, Any] = {"environmentCrn": environment_crn}
 
@@ -385,7 +508,9 @@ class CdpDfClient:
         if tags is not None:
             data["tags"] = tags
 
-        return self.api_client.post("/api/v1/df/enableService", data=data)
+        result = self.api_client.post("/api/v1/df/enableService", data=data)
+        service = result.get("service") if result else None
+        return from_dict(DataFlowServiceDescription, service) if service else None
 
     def update_service(
         self,
@@ -395,7 +520,7 @@ class CdpDfClient:
         kubernetes_ip_cidr_blocks: Optional[List[str]] = None,
         load_balancer_ip_cidr_blocks: Optional[List[str]] = None,
         skip_preflight_checks: Optional[bool] = None,
-    ) -> Dict[str, Any]:
+    ) -> Optional[DataFlowServiceDescription]:
         """
         Update a DataFlow service configuration.
 
@@ -408,7 +533,7 @@ class CdpDfClient:
             skip_preflight_checks: Whether to skip pre-flight checks during update
 
         Returns:
-            Dictionary containing updated service details
+            DataFlowServiceDescription for the updated service, or None
 
         Note:
             Not all parameters from enable_service are updatable.
@@ -434,14 +559,16 @@ class CdpDfClient:
         if skip_preflight_checks is not None:
             data["skipPreflightChecks"] = skip_preflight_checks
 
-        return self.api_client.post("/api/v1/df/updateService", data=data)
+        result = self.api_client.post("/api/v1/df/updateService", data=data)
+        service = result.get("service") if result else None
+        return from_dict(DataFlowServiceDescription, service) if service else None
 
     def disable_service(
         self,
         crn: str,
         terminate_deployments: bool = False,
         persist: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> Optional[DataFlowServiceStatus]:
         """
         Disable a DataFlow service.
 
@@ -451,14 +578,16 @@ class CdpDfClient:
             persist: Whether to retain the database records of related entities
 
         Returns:
-            Empty dictionary on success
+            DataFlowServiceStatus describing the disablement, or None
         """
         data = {
             "serviceCrn": crn,
             "terminateDeployments": terminate_deployments,
             "persist": persist,
         }
-        return self.api_client.post("/api/v1/df/disableService", data=data)
+        result = self.api_client.post("/api/v1/df/disableService", data=data)
+        status = result.get("status") if result else None
+        return from_dict(DataFlowServiceStatus, status) if status else None
 
     def reset_service(self, crn: str) -> Dict[str, Any]:
         """
@@ -479,7 +608,7 @@ class CdpDfClient:
     def _get_service_state(
         self,
         service_crn: str,
-    ) -> Optional[Tuple[str, Dict[str, Any]]]:
+    ) -> Optional[Tuple[Optional[str], DataFlowServiceDescription]]:
         """
         Helper method to get current service state.
 
@@ -489,17 +618,15 @@ class CdpDfClient:
         Returns:
             Tuple of (state, service_details) or None if service doesn't exist
         """
-        service = self.get_service_by_crn(service_crn)
-        if not service:
+        service_details = self.get_service_by_crn(service_crn)
+        if not service_details:
             return None
 
-        service_details = service.get("service", service)
-
-        try:
-            current_state = service_details["status"]["state"]
-            return (current_state, service_details)
-        except (KeyError, TypeError):
-            return (None, service_details)
+        status = service_details.status
+        current_state = (
+            status.state if isinstance(status, DataFlowServiceStatus) else None
+        )
+        return (current_state, service_details)
 
     def wait_for_service_state(
         self,
@@ -509,7 +636,7 @@ class CdpDfClient:
         delay: int = 60,
         terminate_deployments: bool = False,
         persist: bool = False,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[DataFlowServiceDescription]:
         """
         Wait for a DataFlow service to reach a target state.
 
@@ -596,7 +723,12 @@ class CdpDfClient:
 
             # Check if in failed state
             if current_state in self.FAILED_STATES:
-                msg = service_details.get("status", {}).get("message", "Unknown error")
+                status = service_details.status
+                msg = (
+                    status.message
+                    if isinstance(status, DataFlowServiceStatus) and status.message
+                    else "Unknown error"
+                )
                 raise CdpError(
                     f"DataFlow service entered failed state '{current_state}': {msg}",
                 )
