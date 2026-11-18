@@ -153,10 +153,13 @@ options:
       - absent
     default: present
 extends_documentation_fragment:
+  - ansible.builtin.action_common_attributes
   - cloudera.cloud.cdp_client
 attributes:
   check_mode:
     support: full
+  diff_mode:
+    support: none
   platform:
     platforms: all
 """
@@ -351,7 +354,7 @@ class ComputeCluster(ServicesModule):
             supports_check_mode=True,
             required_if=[
                 ("state", "present", ("name", "environment")),
-                ("state", "absent", ("crn", "name"), False),
+                ("state", "absent", ("crn", "name"), True),
             ],
         )
 
