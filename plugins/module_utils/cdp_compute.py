@@ -19,23 +19,158 @@ A REST client for the Cloudera on Cloud Platform (CDP) Compute API
 """
 
 import time
-from typing import Any, Dict, List, Optional
+
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Union
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
     CdpError,
 )
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
+    from_dict,
+    to_dict,
+)
+
+
+@dataclass
+class CommonNetwork:
+    """Network settings of a compute cluster (API ``CommonNetwork``)."""
+
+    subnets: Union[List[str], None, NULLABLE] = NULLABLE
+    podCidr: Union[str, None, NULLABLE] = NULLABLE
+    serviceCidr: Union[str, None, NULLABLE] = NULLABLE
+    outboundType: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class CommonStatusMessage:
+    """Status of a compute cluster as returned by create/delete (``CommonStatusMessage``)."""
+
+    status: Union[str, None, NULLABLE] = NULLABLE
+    message: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class ComputeClusterSummary:
+    """A compute cluster as returned by ``listClusters`` (``ListClusterItem``)."""
+
+    clusterCrn: Union[str, None, NULLABLE] = NULLABLE
+    clusterId: Union[str, None, NULLABLE] = NULLABLE
+    clusterName: Union[str, None, NULLABLE] = NULLABLE
+    clusterOwner: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    clusterShape: Union[str, None, NULLABLE] = NULLABLE
+    clusterSize: Union[str, None, NULLABLE] = NULLABLE
+    clusterStateVersion: Union[int, None, NULLABLE] = NULLABLE
+    clusterType: Union[str, None, NULLABLE] = NULLABLE
+    computePlatform: Union[str, None, NULLABLE] = NULLABLE
+    creationTime: Union[str, None, NULLABLE] = NULLABLE
+    deletionTime: Union[str, None, NULLABLE] = NULLABLE
+    updateTime: Union[str, None, NULLABLE] = NULLABLE
+    account: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    availableUpgrades: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    envCloudProvider: Union[str, None, NULLABLE] = NULLABLE
+    envCrn: Union[str, None, NULLABLE] = NULLABLE
+    envName: Union[str, None, NULLABLE] = NULLABLE
+    imageCatalog: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    isDefault: Union[bool, None, NULLABLE] = NULLABLE
+    kubernetesVersion: Union[str, None, NULLABLE] = NULLABLE
+    labels: Union[Dict[str, str], None, NULLABLE] = NULLABLE
+    message: Union[str, None, NULLABLE] = NULLABLE
+    operationItems: Union[List[Any], None, NULLABLE] = NULLABLE
+    proxiedServices: Union[List[Any], None, NULLABLE] = NULLABLE
+    region: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    storage: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class ComputeCluster:
+    """A compute cluster as returned by ``describeCluster`` (``DescribeClusterResponse``)."""
+
+    clusterCrn: Union[str, None, NULLABLE] = NULLABLE
+    clusterId: Union[str, None, NULLABLE] = NULLABLE
+    clusterName: Union[str, None, NULLABLE] = NULLABLE
+    clusterOwner: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    clusterShape: Union[str, None, NULLABLE] = NULLABLE
+    clusterSize: Union[str, None, NULLABLE] = NULLABLE
+    clusterStateVersion: Union[int, None, NULLABLE] = NULLABLE
+    clusterType: Union[str, None, NULLABLE] = NULLABLE
+    computePlatform: Union[str, None, NULLABLE] = NULLABLE
+    computePlatformVersion: Union[str, None, NULLABLE] = NULLABLE
+    creationTime: Union[str, None, NULLABLE] = NULLABLE
+    deletionTime: Union[str, None, NULLABLE] = NULLABLE
+    updateTime: Union[str, None, NULLABLE] = NULLABLE
+    description: Union[str, None, NULLABLE] = NULLABLE
+    account: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    apiEndPoint: Union[str, None, NULLABLE] = NULLABLE
+    availableUpgrades: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    defaultGatewayHostname: Union[str, None, NULLABLE] = NULLABLE
+    eks: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    envCloudProvider: Union[str, None, NULLABLE] = NULLABLE
+    envCrn: Union[str, None, NULLABLE] = NULLABLE
+    envName: Union[str, None, NULLABLE] = NULLABLE
+    failedEvents: Union[List[Any], None, NULLABLE] = NULLABLE
+    imageCatalog: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    isClouderaManaged: Union[bool, None, NULLABLE] = NULLABLE
+    isDefault: Union[bool, None, NULLABLE] = NULLABLE
+    kubernetesVersion: Union[str, None, NULLABLE] = NULLABLE
+    labels: Union[Dict[str, str], None, NULLABLE] = NULLABLE
+    message: Union[str, None, NULLABLE] = NULLABLE
+    nodeImageUpgradeAvailable: Union[bool, None, NULLABLE] = NULLABLE
+    nodeImageUpgrades: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    region: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    storage: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    workloads: Union[List[str], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class CreateClusterResponse:
+    """Response of ``createCluster``."""
+
+    clusterCrn: Union[str, None, NULLABLE] = NULLABLE
+    clusterId: Union[str, None, NULLABLE] = NULLABLE
+    clusterStatus: Union[CommonStatusMessage, None, NULLABLE] = NULLABLE
+    uri: Union[str, None, NULLABLE] = NULLABLE
+    validationResponse: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class DeleteClusterResponse:
+    """Response of ``deleteCluster``."""
+
+    clusterStatus: Union[CommonStatusMessage, None, NULLABLE] = NULLABLE
+    validationResponse: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+
+
+# Cluster status values. RUNNING, CREATING and DELETED are verified against the
+# live API; the remaining values are assumptions (the API does not document the
+# enum) and must be confirmed (see compute_module_plan.md, P5.3).
+COMPUTE_CLUSTER_ACTIVE_STATUSES: Set[str] = {"RUNNING"}
+COMPUTE_CLUSTER_CREATING_STATUSES: Set[str] = {"CREATING"}
+COMPUTE_CLUSTER_TERMINATION_STATUSES: Set[str] = {"DELETING"}
+COMPUTE_CLUSTER_DELETED_STATUSES: Set[str] = {"DELETED"}
+COMPUTE_CLUSTER_FAILED_STATUSES: Set[str] = {
+    "FAILED",
+    "CREATE_FAILED",
+    "DELETE_FAILED",
+}
+COMPUTE_CLUSTER_REMOVABLE_STATUSES: Set[str] = {"RUNNING", "FAILED", "CREATE_FAILED"}
+
+EXTERNALIZED_SHAPE = "Externalized"
 
 
 class CdpComputeClient:
     """CDP Compute API client."""
 
-    # Cluster lifecycle state constants
-    ACTIVE_STATES = ["RUNNING"]
-    REMOVABLE_STATES = ["RUNNING", "FAILED", "CREATE_FAILED"]
-    TERMINATION_STATES = ["DELETING"]
-    DELETED_STATES = ["DELETED"]
-    FAILED_STATES = ["FAILED", "CREATE_FAILED", "DELETE_FAILED"]
+    # Aliases kept for existing callers
+    ACTIVE_STATES = COMPUTE_CLUSTER_ACTIVE_STATUSES
+    REMOVABLE_STATES = COMPUTE_CLUSTER_REMOVABLE_STATUSES
+    TERMINATION_STATES = COMPUTE_CLUSTER_TERMINATION_STATUSES
+    DELETED_STATES = COMPUTE_CLUSTER_DELETED_STATUSES
+    FAILED_STATES = COMPUTE_CLUSTER_FAILED_STATUSES
 
     def __init__(self, api_client: CdpClient):
         """
@@ -64,6 +199,9 @@ class CdpComputeClient:
     ) -> Dict[str, Any]:
         """
         List all compute clusters, optionally filtered by environment.
+
+        Returns the raw (page-merged) API response; use get_all_clusters or
+        get_clusters_by_env for typed results.
 
         Args:
             env_name_or_crn: Environment name or CRN to filter clusters by
@@ -106,24 +244,28 @@ class CdpComputeClient:
             squelch={404: {"clusters": []}},
         )
 
-    def describe_cluster(self, cluster_crn: str) -> Dict[str, Any]:
+    def describe_cluster(self, cluster_crn: str) -> Optional[ComputeCluster]:
         """
         Describe a compute cluster by CRN.
+
+        A deleted cluster is still returned (with status DELETED).
 
         Args:
             cluster_crn: The CRN of the compute cluster
 
         Returns:
-            Dictionary containing DescribeClusterResponse fields, or empty dict if not found
+            ComputeCluster, or None if the cluster is not found
         """
-        data = {"clusterCrn": cluster_crn}
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/compute/describeCluster",
-            data=data,
+            data={"clusterCrn": cluster_crn},
             squelch={404: {}},
         )
+        if not response:
+            return None
+        return from_dict(ComputeCluster, response)
 
-    def get_cluster_by_crn(self, cluster_crn: str) -> Optional[Dict[str, Any]]:
+    def get_cluster_by_crn(self, cluster_crn: str) -> Optional[ComputeCluster]:
         """
         Get detailed cluster information by CRN.
 
@@ -131,18 +273,15 @@ class CdpComputeClient:
             cluster_crn: The CRN of the compute cluster
 
         Returns:
-            Cluster details dict (DescribeClusterResponse), or None if not found
+            ComputeCluster, or None if not found
         """
-        response = self.describe_cluster(cluster_crn)
-        if not response:
-            return None
-        return response
+        return self.describe_cluster(cluster_crn)
 
     def get_clusters_by_env(
         self,
         env_name_or_crn: str,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[ComputeClusterSummary]:
         """
         List clusters filtered by environment name or CRN.
 
@@ -151,12 +290,14 @@ class CdpComputeClient:
             **kwargs: Additional filter arguments passed to list_clusters
 
         Returns:
-            List of ListClusterItem objects
+            List of ComputeClusterSummary
         """
         response = self.list_clusters(env_name_or_crn=env_name_or_crn, **kwargs)
-        return response.get("clusters", [])
+        return [
+            from_dict(ComputeClusterSummary, c) for c in response.get("clusters", [])
+        ]
 
-    def get_all_clusters(self, **kwargs: Any) -> List[Dict[str, Any]]:
+    def get_all_clusters(self, **kwargs: Any) -> List[ComputeClusterSummary]:
         """
         List all compute clusters.
 
@@ -164,34 +305,67 @@ class CdpComputeClient:
             **kwargs: Optional filter arguments passed to list_clusters
 
         Returns:
-            List of ListClusterItem objects
+            List of ComputeClusterSummary
         """
         response = self.list_clusters(**kwargs)
-        return response.get("clusters", [])
+        return [
+            from_dict(ComputeClusterSummary, c) for c in response.get("clusters", [])
+        ]
+
+    def get_cluster_by_name_and_env(
+        self,
+        name: str,
+        env_name_or_crn: str,
+    ) -> Optional[ComputeClusterSummary]:
+        """
+        Find a user-managed externalized cluster by name within an environment.
+
+        Default clusters, Embedded clusters and DELETED records are never
+        returned, so callers cannot accidentally manage them.
+
+        Args:
+            name: Cluster name to search for
+            env_name_or_crn: Environment name or CRN to filter by
+
+        Returns:
+            First matching ComputeClusterSummary, or None if not found
+        """
+        clusters = self.get_clusters_by_env(
+            env_name_or_crn,
+            cluster_shape=EXTERNALIZED_SHAPE,
+        )
+        for cluster in clusters:
+            if (
+                cluster.clusterName == name
+                and cluster.clusterShape == EXTERNALIZED_SHAPE
+                and cluster.isDefault is not True
+                and cluster.status not in COMPUTE_CLUSTER_DELETED_STATUSES
+            ):
+                return cluster
+        return None
 
     def create_cluster(
         self,
         name: str,
         environment: str,
         description: Optional[str] = None,
-        network: Optional[Dict[str, Any]] = None,
+        network: Optional[CommonNetwork] = None,
         tags: Optional[Dict[str, str]] = None,
         skip_validation: Optional[bool] = None,
-    ) -> Dict[str, Any]:
+    ) -> CreateClusterResponse:
         """
         Create an externalized compute cluster.
 
         Args:
             name: Name for the new cluster
-            environment: CRN of the CDP environment
+            environment: CRN of the CDP environment (the API requires a CRN)
             description: Optional description
-            network: Optional CommonNetwork dict (subnets, podCidr, serviceCidr, outboundType)
+            network: Optional CommonNetwork
             tags: Optional map of string tags
             skip_validation: If True, skip pre-flight validation
 
         Returns:
-            Dictionary containing CreateClusterResponse fields:
-                - clusterCrn, clusterId, clusterStatus, uri, validationResponse
+            CreateClusterResponse
         """
         data: Dict[str, Any] = {
             "name": name,
@@ -200,16 +374,17 @@ class CdpComputeClient:
         if description is not None:
             data["description"] = description
         if network is not None:
-            data["network"] = network
+            data["network"] = to_dict(network)
         if tags is not None:
             data["tags"] = tags
         if skip_validation is not None:
             data["skipValidation"] = skip_validation
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/compute/createCluster",
             data=data,
         )
+        return from_dict(CreateClusterResponse, response)
 
     def delete_cluster(
         self,
@@ -217,7 +392,7 @@ class CdpComputeClient:
         force: Optional[bool] = None,
         skip_validation: Optional[bool] = None,
         skip_workloads_validation: Optional[bool] = None,
-    ) -> Dict[str, Any]:
+    ) -> DeleteClusterResponse:
         """
         Delete an externalized compute cluster.
 
@@ -228,8 +403,7 @@ class CdpComputeClient:
             skip_workloads_validation: If True, skip workload validation checks
 
         Returns:
-            Dictionary containing DeleteClusterResponse fields:
-                - clusterStatus, validationResponse
+            DeleteClusterResponse
         """
         data: Dict[str, Any] = {"clusterCrn": cluster_crn}
         if force is not None:
@@ -239,78 +413,69 @@ class CdpComputeClient:
         if skip_workloads_validation is not None:
             data["skipWorkloadsValidation"] = skip_workloads_validation
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/compute/deleteCluster",
             data=data,
         )
-
-    def get_cluster_by_name_and_env(
-        self,
-        name: str,
-        env_name_or_crn: str,
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Find an externalized cluster by name within an environment.
-
-        Calls list_clusters filtered by environment and scans for a matching name.
-
-        Args:
-            name: Cluster name to search for
-            env_name_or_crn: Environment name or CRN to filter by
-
-        Returns:
-            First matching cluster dict, or None if not found
-        """
-        clusters = self.get_clusters_by_env(env_name_or_crn)
-        for cluster in clusters:
-            if cluster.get("clusterName") == name:
-                return cluster
-        return None
+        return from_dict(DeleteClusterResponse, response)
 
     def wait_for_cluster_state(
         self,
         cluster_crn: str,
-        target_states: List[str],
+        target_states: Set[str],
+        error_states: Set[str] = COMPUTE_CLUSTER_FAILED_STATUSES,
         timeout: int = 3600,
         delay: int = 15,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[ComputeCluster]:
         """
         Wait for a compute cluster to reach one of the target states.
 
+        If the cluster cannot be found, it is treated as gone (returns None)
+        only when a deleted status is one of the targets; otherwise polling
+        continues, since a freshly created cluster may not be visible yet.
+
         Args:
             cluster_crn: CRN of the cluster to monitor
-            target_states: List of acceptable target state strings
+            target_states: Acceptable target status strings
+            error_states: Statuses treated as non-recoverable failures
             timeout: Maximum seconds to wait before raising CdpError
             delay: Polling interval in seconds
 
         Returns:
-            Cluster details dict when target state is reached, or None if cluster is gone
+            ComputeCluster when a target state is reached, or None if the
+            cluster is gone and a deleted status was a target
 
         Raises:
-            CdpError: If timeout is reached or cluster enters a failed state
+            CdpError: On timeout or when the cluster enters an error state
         """
         start_time = time.time()
+        waiting_for_delete = bool(set(target_states) & COMPUTE_CLUSTER_DELETED_STATUSES)
 
         while True:
             elapsed = time.time() - start_time
             if elapsed > timeout:
                 raise CdpError(
-                    f"Timeout waiting for compute cluster to reach {target_states} "
+                    f"Timeout waiting for compute cluster to reach {sorted(target_states)} "
                     f"after {timeout} seconds",
                 )
 
             cluster = self.get_cluster_by_crn(cluster_crn)
 
             if cluster is None:
-                return None
+                if waiting_for_delete:
+                    return None
+                time.sleep(delay)
+                continue
 
-            current_state = cluster.get("status")
+            current_state = cluster.status
 
             if current_state in target_states:
                 return cluster
 
-            if current_state in self.FAILED_STATES:
-                msg = cluster.get("statusMessage", "Unknown error")
+            if current_state in error_states:
+                msg = cluster.message
+                if msg is NULLABLE or msg is None:
+                    msg = "Unknown error"
                 raise CdpError(
                     f"Compute cluster entered failed state '{current_state}': {msg}",
                 )
