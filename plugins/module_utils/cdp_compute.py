@@ -23,6 +23,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Union
 
+from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
     CdpError,
@@ -32,6 +34,12 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     from_dict,
     to_dict,
 )
+
+
+# NOTE: fields holding lists of opaque objects are typed as a bare ``list`` on
+# purpose. ``from_dict`` recurses into ``List[X]`` items and fails with an
+# IndexError on ``List[Any]`` when an item is a dict; a bare ``list`` is passed
+# through unchanged.
 
 
 @dataclass
@@ -50,6 +58,7 @@ class CommonStatusMessage:
 
     status: Union[str, None, NULLABLE] = NULLABLE
     message: Union[str, None, NULLABLE] = NULLABLE
+    cloudProviderDetails: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
 
 
 @dataclass
@@ -61,15 +70,15 @@ class ComputeClusterSummary:
     clusterName: Union[str, None, NULLABLE] = NULLABLE
     clusterOwner: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
     clusterShape: Union[str, None, NULLABLE] = NULLABLE
-    clusterSize: Union[str, None, NULLABLE] = NULLABLE
+    clusterSize: Union[int, None, NULLABLE] = NULLABLE
     clusterStateVersion: Union[int, None, NULLABLE] = NULLABLE
     clusterType: Union[str, None, NULLABLE] = NULLABLE
     computePlatform: Union[str, None, NULLABLE] = NULLABLE
     creationTime: Union[str, None, NULLABLE] = NULLABLE
     deletionTime: Union[str, None, NULLABLE] = NULLABLE
     updateTime: Union[str, None, NULLABLE] = NULLABLE
-    account: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
-    availableUpgrades: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    account: Union[str, None, NULLABLE] = NULLABLE
+    availableUpgrades: Union[list, None, NULLABLE] = NULLABLE
     envCloudProvider: Union[str, None, NULLABLE] = NULLABLE
     envCrn: Union[str, None, NULLABLE] = NULLABLE
     envName: Union[str, None, NULLABLE] = NULLABLE
@@ -78,8 +87,8 @@ class ComputeClusterSummary:
     kubernetesVersion: Union[str, None, NULLABLE] = NULLABLE
     labels: Union[Dict[str, str], None, NULLABLE] = NULLABLE
     message: Union[str, None, NULLABLE] = NULLABLE
-    operationItems: Union[List[Any], None, NULLABLE] = NULLABLE
-    proxiedServices: Union[List[Any], None, NULLABLE] = NULLABLE
+    operationItems: Union[list, None, NULLABLE] = NULLABLE
+    proxiedServices: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
     region: Union[str, None, NULLABLE] = NULLABLE
     status: Union[str, None, NULLABLE] = NULLABLE
     storage: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
@@ -94,7 +103,7 @@ class ComputeCluster:
     clusterName: Union[str, None, NULLABLE] = NULLABLE
     clusterOwner: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
     clusterShape: Union[str, None, NULLABLE] = NULLABLE
-    clusterSize: Union[str, None, NULLABLE] = NULLABLE
+    clusterSize: Union[int, None, NULLABLE] = NULLABLE
     clusterStateVersion: Union[int, None, NULLABLE] = NULLABLE
     clusterType: Union[str, None, NULLABLE] = NULLABLE
     computePlatform: Union[str, None, NULLABLE] = NULLABLE
@@ -103,15 +112,15 @@ class ComputeCluster:
     deletionTime: Union[str, None, NULLABLE] = NULLABLE
     updateTime: Union[str, None, NULLABLE] = NULLABLE
     description: Union[str, None, NULLABLE] = NULLABLE
-    account: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    account: Union[str, None, NULLABLE] = NULLABLE
     apiEndPoint: Union[str, None, NULLABLE] = NULLABLE
-    availableUpgrades: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    availableUpgrades: Union[list, None, NULLABLE] = NULLABLE
     defaultGatewayHostname: Union[str, None, NULLABLE] = NULLABLE
     eks: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
     envCloudProvider: Union[str, None, NULLABLE] = NULLABLE
     envCrn: Union[str, None, NULLABLE] = NULLABLE
     envName: Union[str, None, NULLABLE] = NULLABLE
-    failedEvents: Union[List[Any], None, NULLABLE] = NULLABLE
+    failedEvents: Union[list, None, NULLABLE] = NULLABLE
     imageCatalog: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
     isClouderaManaged: Union[bool, None, NULLABLE] = NULLABLE
     isDefault: Union[bool, None, NULLABLE] = NULLABLE
@@ -119,11 +128,22 @@ class ComputeCluster:
     labels: Union[Dict[str, str], None, NULLABLE] = NULLABLE
     message: Union[str, None, NULLABLE] = NULLABLE
     nodeImageUpgradeAvailable: Union[bool, None, NULLABLE] = NULLABLE
-    nodeImageUpgrades: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
+    nodeImageUpgrades: Union[list, None, NULLABLE] = NULLABLE
     region: Union[str, None, NULLABLE] = NULLABLE
     status: Union[str, None, NULLABLE] = NULLABLE
     storage: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
     workloads: Union[List[str], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class ComputeClusterSpec:
+    """Desired state for a new externalized compute cluster (``createCluster`` input)."""
+
+    name: Union[str, None, NULLABLE] = NULLABLE
+    environment: Union[str, None, NULLABLE] = NULLABLE
+    description: Union[str, None, NULLABLE] = NULLABLE
+    network: Union[CommonNetwork, None, NULLABLE] = NULLABLE
+    tags: Union[Dict[str, str], None, NULLABLE] = NULLABLE
 
 
 @dataclass
@@ -145,32 +165,39 @@ class DeleteClusterResponse:
     validationResponse: Union[Dict[str, Any], None, NULLABLE] = NULLABLE
 
 
-# Cluster status values. RUNNING, CREATING and DELETED are verified against the
-# live API; the remaining values are assumptions (the API does not document the
-# enum) and must be confirmed (see compute_module_plan.md, P5.3).
+# Cluster status values. Verified against the live API (create -> run -> delete):
+#   CREATING -> DEPLOYING_SERVICES -> RUNNING, then DELETING -> DELETED.
+# Transitional statuses can carry a non-null "Runtime Status" ``message``; that is
+# progress text, not an error. ``DEPLOYMENT_FAILED`` was observed live (reason in
+# ``message``, ``failedEvents`` stayed empty); the other FAILED values are assumptions
+# as the API does not document the enum. ``describeCluster`` can also briefly return
+# ``status: null`` with an ``INTERNAL: ...`` message and then recover; callers must
+# treat a null status as "unknown, keep polling".
 COMPUTE_CLUSTER_ACTIVE_STATUSES: Set[str] = {"RUNNING"}
-COMPUTE_CLUSTER_CREATING_STATUSES: Set[str] = {"CREATING"}
+COMPUTE_CLUSTER_CREATING_STATUSES: Set[str] = {"CREATING", "DEPLOYING_SERVICES"}
 COMPUTE_CLUSTER_TERMINATION_STATUSES: Set[str] = {"DELETING"}
 COMPUTE_CLUSTER_DELETED_STATUSES: Set[str] = {"DELETED"}
 COMPUTE_CLUSTER_FAILED_STATUSES: Set[str] = {
+    "DEPLOYMENT_FAILED",
     "FAILED",
     "CREATE_FAILED",
     "DELETE_FAILED",
 }
-COMPUTE_CLUSTER_REMOVABLE_STATUSES: Set[str] = {"RUNNING", "FAILED", "CREATE_FAILED"}
 
 EXTERNALIZED_SHAPE = "Externalized"
 
 
+def cluster_to_result(
+    cluster: Union[ComputeCluster, ComputeClusterSummary, None],
+) -> Dict[str, Any]:
+    """Render a cluster dataclass as a snake_case dict (label keys are preserved)."""
+    if cluster is None:
+        return {}
+    return camel_dict_to_snake_dict(to_dict(cluster), ignore_list=("labels",))
+
+
 class CdpComputeClient:
     """CDP Compute API client."""
-
-    # Aliases kept for existing callers
-    ACTIVE_STATES = COMPUTE_CLUSTER_ACTIVE_STATUSES
-    REMOVABLE_STATES = COMPUTE_CLUSTER_REMOVABLE_STATUSES
-    TERMINATION_STATES = COMPUTE_CLUSTER_TERMINATION_STATUSES
-    DELETED_STATES = COMPUTE_CLUSTER_DELETED_STATUSES
-    FAILED_STATES = COMPUTE_CLUSTER_FAILED_STATUSES
 
     def __init__(self, api_client: CdpClient):
         """

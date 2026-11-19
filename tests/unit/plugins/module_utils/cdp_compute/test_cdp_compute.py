@@ -27,14 +27,17 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_compute import (
     COMPUTE_CLUSTER_ACTIVE_STATUSES,
+    COMPUTE_CLUSTER_CREATING_STATUSES,
     COMPUTE_CLUSTER_DELETED_STATUSES,
     COMPUTE_CLUSTER_FAILED_STATUSES,
+    COMPUTE_CLUSTER_TERMINATION_STATUSES,
     CdpComputeClient,
     CommonNetwork,
     ComputeCluster,
     ComputeClusterSummary,
     CreateClusterResponse,
     DeleteClusterResponse,
+    cluster_to_result,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     NULLABLE,
@@ -80,6 +83,13 @@ def test_status_constants_are_verified_upper_case_sets():
     assert isinstance(COMPUTE_CLUSTER_FAILED_STATUSES, set)
 
 
+def test_status_constants_match_observed_lifecycle():
+    """Lifecycle verified against the live API: CREATING -> DEPLOYING_SERVICES -> RUNNING,
+    DELETING -> DELETED."""
+    assert COMPUTE_CLUSTER_CREATING_STATUSES == {"CREATING", "DEPLOYING_SERVICES"}
+    assert COMPUTE_CLUSTER_TERMINATION_STATUSES == {"DELETING"}
+
+
 def test_compute_cluster_from_api_ignores_unknown_keys():
     client, api_client = make_client()
     api_client.post.return_value = {**summary(), "someFutureField": {"a": 1}}
@@ -102,6 +112,42 @@ def test_compute_cluster_unset_fields_are_nullable():
     assert result.status is NULLABLE
     assert result.message is None  # explicit null from the API
     assert to_dict(result) == {"clusterCrn": CLUSTER_CRN, "message": None}
+
+
+def test_models_parse_live_shaped_payload():
+    """Field shapes as returned by the live API (values fabricated)."""
+    client, api_client = make_client()
+    api_client.post.return_value = {
+        **summary(),
+        "account": "tenant-uuid",
+        "availableUpgrades": ["1.30"],
+        "clusterSize": 3,
+        "clusterOwner": {"email": "user@example.com"},
+        "proxiedServices": {"svc": "https://example.invalid"},
+        "nodeImageUpgrades": [{"version": "v2"}],
+        "failedEvents": [],
+        "labels": {"k": "v"},
+        "workloads": ["ml"],
+    }
+
+    result = client.describe_cluster(CLUSTER_CRN)
+
+    assert result.account == "tenant-uuid"
+    assert result.availableUpgrades == ["1.30"]
+    assert result.clusterSize == 3
+    assert result.nodeImageUpgrades == [{"version": "v2"}]
+    assert result.workloads == ["ml"]
+    assert result.labels == {"k": "v"}
+
+
+def test_cluster_to_result_snake_cases_but_keeps_label_keys():
+    cluster = ComputeCluster(clusterCrn=CLUSTER_CRN, labels={"myLabel": "v"})
+
+    assert cluster_to_result(cluster) == {
+        "cluster_crn": CLUSTER_CRN,
+        "labels": {"myLabel": "v"},
+    }
+    assert cluster_to_result(None) == {}
 
 
 # ============================================================================
@@ -433,6 +479,34 @@ def test_delete_cluster_with_all_options():
     }
 
 
+def test_create_and_delete_parse_live_response_shapes():
+    """Live createCluster/deleteCluster responses carry cloudProviderDetails, no validationResponse."""
+    client, api_client = make_client()
+    api_client.post.return_value = {
+        "clusterId": "liftie-abc",
+        "clusterStatus": {
+            "status": "CREATING",
+            "cloudProviderDetails": {"azureLogs": []},
+        },
+        "uri": "/liftie/api/v1/cluster/liftie-abc",
+        "clusterCrn": CLUSTER_CRN,
+    }
+    created = client.create_cluster(name="n", environment=ENV_CRN)
+    assert created.clusterStatus.status == "CREATING"
+    assert created.clusterStatus.cloudProviderDetails == {"azureLogs": []}
+    assert created.uri == "/liftie/api/v1/cluster/liftie-abc"
+    assert created.validationResponse is NULLABLE
+
+    api_client.post.return_value = {
+        "clusterStatus": {
+            "status": "DELETING",
+            "cloudProviderDetails": {"azureLogs": []},
+        },
+    }
+    deleted = client.delete_cluster(CLUSTER_CRN)
+    assert deleted.clusterStatus.status == "DELETING"
+
+
 # ============================================================================
 # wait_for_cluster_state tests
 # ============================================================================
@@ -538,3 +612,76 @@ def test_wait_for_cluster_state_timeout(mocker):
             COMPUTE_CLUSTER_ACTIVE_STATUSES,
             timeout=60,
         )
+
+
+def test_wait_for_cluster_state_polls_through_deploying_services(mocker):
+    """Transitional statuses carry a non-null 'Runtime Status' message; that is not a failure."""
+    client, api_client = make_client()
+    mocker.patch("time.sleep")
+    runtime = "\nRuntime Status:\nEKS cluster status is 'CREATING'\n"
+    api_client.post.side_effect = [
+        summary(status="CREATING", message=runtime),
+        summary(status="DEPLOYING_SERVICES", message=None),
+        summary(status="RUNNING", message=None),
+    ]
+
+    result = client.wait_for_cluster_state(CLUSTER_CRN, COMPUTE_CLUSTER_ACTIVE_STATUSES)
+
+    assert result.status == "RUNNING"
+    assert api_client.post.call_count == 3
+
+
+def test_wait_for_cluster_state_polls_through_deleting(mocker):
+    client, api_client = make_client()
+    mocker.patch("time.sleep")
+    api_client.post.side_effect = [
+        summary(status="DELETING", message="\nRuntime Status:\nstack deleting\n"),
+        summary(status="DELETING", message=None),
+        summary(status="DELETED", message=None),
+    ]
+
+    result = client.wait_for_cluster_state(
+        CLUSTER_CRN,
+        COMPUTE_CLUSTER_DELETED_STATUSES,
+    )
+
+    assert result.status == "DELETED"
+
+
+def test_wait_for_cluster_state_raises_on_deployment_failed(mocker):
+    """Live API: a failed create ends in DEPLOYMENT_FAILED with the reason in ``message``."""
+    client, api_client = make_client()
+    mocker.patch("time.sleep")
+    api_client.post.return_value = summary(
+        status="DEPLOYMENT_FAILED",
+        message="Post cluster liftie-x setup failed: [error installing charts]",
+        failedEvents=[],
+    )
+
+    with pytest.raises(CdpError, match="DEPLOYMENT_FAILED.*error installing charts"):
+        client.wait_for_cluster_state(CLUSTER_CRN, COMPUTE_CLUSTER_ACTIVE_STATUSES)
+
+
+def test_wait_for_cluster_state_polls_through_null_status(mocker):
+    """Live API: describe can briefly return status=null with an INTERNAL message, then recover."""
+    client, api_client = make_client()
+    sleep = mocker.patch("time.sleep")
+    api_client.post.side_effect = [
+        summary(status="DEPLOYING_SERVICES"),
+        summary(
+            status=None,
+            message="INTERNAL: info: [error getting cluster status] connection reset by peer",
+            clusterStateVersion=None,
+            failedEvents=None,
+        ),
+        summary(status="RUNNING", message=None),
+    ]
+
+    result = client.wait_for_cluster_state(CLUSTER_CRN, COMPUTE_CLUSTER_ACTIVE_STATUSES)
+
+    assert result.status == "RUNNING"
+    assert sleep.call_count == 2
+
+
+def test_deployment_failed_is_a_failed_status():
+    assert "DEPLOYMENT_FAILED" in COMPUTE_CLUSTER_FAILED_STATUSES

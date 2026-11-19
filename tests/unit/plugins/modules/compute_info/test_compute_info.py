@@ -27,7 +27,8 @@ from ansible_collections.cloudera.cloud.tests.unit import (
 
 from ansible_collections.cloudera.cloud.plugins.modules import compute_info
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_compute import (
-    CdpComputeClient,
+    ComputeCluster,
+    ComputeClusterSummary,
 )
 
 
@@ -42,31 +43,34 @@ CLUSTER_CRN = "crn:cdp:compute:us-west-1:tenant-uuid:cluster:cluster-uuid"
 ENV_CRN = "crn:cdp:environments:us-west-1:tenant-uuid:environment:env-uuid"
 ENV_NAME = "test-environment"
 
-SAMPLE_CLUSTER_LIST_ITEM = {
-    "clusterCrn": CLUSTER_CRN,
-    "clusterId": "cluster-uuid",
-    "clusterName": "my-cluster",
-    "status": "RUNNING",
-    "envCrn": ENV_CRN,
-    "envName": ENV_NAME,
-    "computePlatform": "EKS",
-    "isDefault": False,
-}
+SAMPLE_CLUSTER_LIST_ITEM = ComputeClusterSummary(
+    clusterCrn=CLUSTER_CRN,
+    clusterId="cluster-uuid",
+    clusterName="my-cluster",
+    status="RUNNING",
+    envCrn=ENV_CRN,
+    envName=ENV_NAME,
+    computePlatform="EKS",
+    isDefault=False,
+    clusterShape="Externalized",
+    labels={"myLabel": "value"},
+)
 
-SAMPLE_CLUSTER_DESCRIBE = {
-    "clusterCrn": CLUSTER_CRN,
-    "clusterId": "cluster-uuid",
-    "clusterName": "my-cluster",
-    "status": "RUNNING",
-    "envCrn": ENV_CRN,
-    "envName": ENV_NAME,
-    "computePlatform": "EKS",
-    "kubernetesVersion": "1.28",
-    "isClouderaManaged": True,
-    "isDefault": False,
-    "clusterSize": 3,
-    "region": "us-west-1",
-}
+SAMPLE_CLUSTER_DESCRIBE = ComputeCluster(
+    clusterCrn=CLUSTER_CRN,
+    clusterId="cluster-uuid",
+    clusterName="my-cluster",
+    status="RUNNING",
+    envCrn=ENV_CRN,
+    envName=ENV_NAME,
+    computePlatform="EKS",
+    kubernetesVersion="1.28",
+    isClouderaManaged=True,
+    isDefault=False,
+    clusterSize=3,
+    region="us-west-1",
+    message=None,
+)
 
 
 def _patch_config(mocker):
@@ -338,3 +342,77 @@ def test_compute_info_with_status_filter(module_args, mocker):
     assert len(result.value.clusters) == 1
     call_kwargs = client.get_all_clusters.call_args[1]
     assert call_kwargs.get("status") == "RUNNING"
+
+
+# ============================================================================
+# Output shape
+# ============================================================================
+
+
+def test_compute_info_list_omits_unset_fields_and_keeps_label_keys(module_args, mocker):
+    """Unset (NULLABLE) fields are not returned; label keys are not snake-cased."""
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+        },
+    )
+
+    _patch_config(mocker)
+    client = _patch_client(mocker)
+    client.get_all_clusters.return_value = [SAMPLE_CLUSTER_LIST_ITEM]
+
+    with pytest.raises(AnsibleExitJson) as result:
+        compute_info.main()
+
+    cluster = result.value.clusters[0]
+    assert cluster["labels"] == {"myLabel": "value"}
+    assert cluster["is_default"] is False
+    assert "kubernetes_version" not in cluster
+    assert "deletion_time" not in cluster
+
+
+def test_compute_info_describe_keeps_explicit_null(module_args, mocker):
+    """An explicit null from the API (message) is returned as None."""
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "crn": CLUSTER_CRN,
+        },
+    )
+
+    _patch_config(mocker)
+    client = _patch_client(mocker)
+    client.get_cluster_by_crn.return_value = SAMPLE_CLUSTER_DESCRIBE
+
+    with pytest.raises(AnsibleExitJson) as result:
+        compute_info.main()
+
+    assert result.value.clusters[0]["message"] is None
+    assert result.value.clusters[0]["cluster_size"] == 3
+
+
+def test_compute_info_shape_and_default_filters(module_args, mocker):
+    module_args(
+        {
+            "endpoint": BASE_URL,
+            "access_key": ACCESS_KEY,
+            "private_key": PRIVATE_KEY,
+            "cluster_shape": "Externalized",
+            "default": False,
+        },
+    )
+
+    _patch_config(mocker)
+    client = _patch_client(mocker)
+    client.get_all_clusters.return_value = []
+
+    with pytest.raises(AnsibleExitJson):
+        compute_info.main()
+
+    kwargs = client.get_all_clusters.call_args[1]
+    assert kwargs["cluster_shape"] == "Externalized"
+    assert kwargs["default"] is False

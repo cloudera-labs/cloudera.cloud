@@ -37,6 +37,11 @@ from urllib.error import HTTPError
 
 import pytest
 
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_compute import (
+    COMPUTE_CLUSTER_DELETED_STATUSES,
+    CdpComputeClient,
+    ComputeClusterSummary,
+)
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     CDE_SERVICE_REMOVABLE_STATUSES,
     CDE_SERVICE_STOPPED_STATUSES,
@@ -1256,3 +1261,73 @@ def disposable_ml_workspace(
             warnings.warn(
                 f"Failed to delete test ML workspace {workspace_name} during cleanup: {e}",
             )
+
+
+##
+# Compute (externalized compute clusters)
+##
+
+
+@pytest.fixture(scope="session")
+def compute_client() -> CdpComputeClient:
+    """Provide a live Compute client, skipping when credentials are absent."""
+    api_client = CdpTestClient(
+        endpoint=required_or_skip("CDP_API_ENDPOINT"),
+        access_key=required_or_skip("CDP_ACCESS_KEY_ID"),
+        private_key=required_or_skip("CDP_PRIVATE_KEY"),
+    )
+    return CdpComputeClient(api_client=api_client)
+
+
+@pytest.fixture(scope="session")
+def existing_compute_cluster(compute_client) -> ComputeClusterSummary:
+    """Provide an existing, non-deleted compute cluster for read-only tests (never torn down).
+
+    Gated on CDP_ENVIRONMENT_NAME. Any externalized or embedded cluster in the
+    environment will do; the environment's default cluster is the usual choice.
+    """
+    env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
+    clusters = [
+        c
+        for c in compute_client.get_clusters_by_env(env_name)
+        if c.status not in COMPUTE_CLUSTER_DELETED_STATUSES
+    ]
+    if not clusters:
+        pytest.skip(f"No compute clusters found in environment '{env_name}'")
+    return clusters[0]
+
+
+@pytest.fixture
+def cleanup_compute_cluster(
+    compute_client,
+) -> Generator[Callable[[str], None], None, None]:
+    """Register compute cluster CRNs for deletion at teardown, whatever the test outcome.
+
+    Call the returned function with a cluster CRN as soon as it is known. Only
+    clusters that still exist and are not yet DELETED/DELETING are deleted.
+    """
+    crns = []
+
+    def register(cluster_crn):
+        crns.append(cluster_crn)
+
+    try:
+        yield register
+    finally:
+        for crn in crns:
+            try:
+                cluster = compute_client.describe_cluster(crn)
+                if cluster is None or cluster.status in (
+                    COMPUTE_CLUSTER_DELETED_STATUSES | {"DELETING"}
+                ):
+                    continue
+                compute_client.delete_cluster(crn)
+                compute_client.wait_for_cluster_state(
+                    crn,
+                    COMPUTE_CLUSTER_DELETED_STATUSES,
+                    timeout=3600,
+                )
+            except Exception as e:
+                warnings.warn(
+                    f"cleanup_compute_cluster: failed to delete '{crn}': {e}",
+                )

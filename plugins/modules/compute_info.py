@@ -20,9 +20,11 @@ module: compute_info
 short_description: Gather information about CDP Compute Clusters
 description:
     - Gather information about CDP Compute Clusters.
-    - When O(cluster_crn) is provided, describes that single cluster in detail.
+    - When O(crn) is provided, describes that single cluster in detail.
     - When O(environment) is provided, lists all clusters in that environment.
     - When neither is provided, lists all compute clusters.
+    - Clusters listed by environment or without a filter are summaries and carry fewer
+      fields than a cluster described by O(crn).
     - The module supports check_mode.
 author:
     - "Jim Enright (@jimright)"
@@ -77,7 +79,15 @@ options:
     type: str
     required: false
 extends_documentation_fragment:
+  - ansible.builtin.action_common_attributes
   - cloudera.cloud.cdp_client
+attributes:
+  check_mode:
+    support: full
+  diff_mode:
+    support: none
+  platform:
+    platforms: all
 """
 
 EXAMPLES = r"""
@@ -105,95 +115,106 @@ EXAMPLES = r"""
 
 RETURN = r"""
 clusters:
-  description: The information about the named Cluster or Clusters.
+  description:
+    - The information about the named cluster or clusters.
+    - Fields that the API did not return are omitted.
   returned: always
   type: list
   elements: dict
   contains:
     cluster_crn:
       description: Compute cluster CRN.
-      returned: always
+      returned: when available
       type: str
     cluster_id:
       description: Compute cluster ID.
-      returned: always
+      returned: when available
       type: str
     cluster_name:
       description: Compute cluster name.
-      returned: always
+      returned: when available
       type: str
     status:
-      description: Compute cluster status.
-      returned: always
+      description: Compute cluster status (for example C(CREATING), C(RUNNING), C(DELETED)).
+      returned: when available
       type: str
     message:
       description: Message with additional details about the cluster status.
       returned: when available
       type: str
-    env_crn:
-      description: CDP environment CRN.
-      returned: always
-      type: str
-    env_name:
-      description: CDP environment name.
-      returned: always
-      type: str
-    env_cloud_provider:
-      description: CDP environment cloud provider.
+    cluster_shape:
+      description: Shape of the cluster (C(Externalized) or C(Embedded)).
       returned: when available
       type: str
+    is_default:
+      description: Whether this is the default cluster for its environment.
+      returned: when available
+      type: bool
+    cluster_type:
+      description: Cluster type (for example C(Shared) or C(Dedicated)).
+      returned: when available
+      type: str
+    cluster_size:
+      description: Cluster size.
+      returned: when available
+      type: int
+    cluster_state_version:
+      description: State version of the cluster.
+      returned: when available
+      type: int
     compute_platform:
-      description: Compute cluster platform provider.
-      returned: when available
-      type: str
-    compute_platform_version:
-      description: Compute cluster platform version.
+      description: Underlying compute platform (for example C(EKS), C(AKS)).
       returned: when available
       type: str
     kubernetes_version:
       description: Kubernetes version.
       returned: when available
       type: str
-    cluster_type:
-      description: Compute cluster type.
+    env_crn:
+      description: CRN of the CDP environment.
       returned: when available
       type: str
-    cluster_shape:
-      description: The shape of the cluster (Embedded or Externalized).
+    env_name:
+      description: Name of the CDP environment.
       returned: when available
       type: str
-    cluster_size:
-      description: Number of nodes in the cluster.
-      returned: when available
-      type: int
-    is_default:
-      description: Whether the cluster is the default cluster for its environment.
-      returned: when available
-      type: bool
-    is_cloudera_managed:
-      description: Whether the cluster is Cloudera managed.
-      returned: when describe is used
-      type: bool
-    creation_time:
-      description: Compute cluster creation time in ISO format.
-      returned: when available
-      type: str
-    update_time:
-      description: Compute cluster update time in ISO format.
-      returned: when available
-      type: str
-    deletion_time:
-      description: Compute cluster deletion time in ISO format.
+    env_cloud_provider:
+      description: Cloud provider of the CDP environment.
       returned: when available
       type: str
     region:
-      description: Region.
+      description: Cloud region.
+      returned: when available
+      type: str
+    creation_time:
+      description: Cluster creation time in ISO format.
+      returned: when available
+      type: str
+    update_time:
+      description: Time of the last cluster update in ISO format.
+      returned: when available
+      type: str
+    deletion_time:
+      description: Cluster deletion time in ISO format.
       returned: when available
       type: str
     labels:
-      description: Map of labels associated with this cluster.
+      description: Labels on the cluster. Keys are returned as provided.
       returned: when available
       type: dict
+    workloads:
+      description: Workloads running on the cluster.
+      returned: when described by O(crn)
+      type: list
+      elements: str
+    is_cloudera_managed:
+      description: Whether the cluster is managed by Cloudera.
+      returned: when described by O(crn)
+      type: bool
+    api_end_point:
+      description: Kubernetes API endpoint of the cluster.
+      returned: when described by O(crn)
+      type: str
     cluster_owner:
       description: Cluster owner details.
       returned: when available
@@ -224,10 +245,10 @@ clusters:
           type: str
           returned: when available
     available_upgrades:
-      description: List of available Kubernetes upgrades.
+      description: Available Kubernetes upgrades.
       returned: when available
       type: list
-      elements: str
+      elements: raw
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
@@ -241,13 +262,12 @@ sdk_out_lines:
 
 from typing import Any, Dict
 
-from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
-
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_compute import (
     CdpComputeClient,
+    cluster_to_result,
 )
 
 
@@ -292,7 +312,7 @@ class ComputeClusterInfo(ServicesModule):
         if self.cluster_crn:
             cluster = compute_client.get_cluster_by_crn(self.cluster_crn)
             if cluster:
-                self.clusters.append(camel_dict_to_snake_dict(cluster))
+                self.clusters.append(cluster_to_result(cluster))
         else:
             filter_kwargs: Dict[str, Any] = {}
             if self.cluster_shape is not None:
@@ -312,7 +332,7 @@ class ComputeClusterInfo(ServicesModule):
             else:
                 clusters = compute_client.get_all_clusters(**filter_kwargs)
 
-            self.clusters = [camel_dict_to_snake_dict(c) for c in clusters]
+            self.clusters = [cluster_to_result(c) for c in clusters]
 
 
 def main():

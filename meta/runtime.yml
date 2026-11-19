@@ -22,6 +22,8 @@ action_groups:
     - account_auth
     - account_auth_info
     - account_cred_info
+    - compute
+    - compute_info
     - datahub_cluster
     - datahub_cluster_info
     - datahub_cluster_recipe
