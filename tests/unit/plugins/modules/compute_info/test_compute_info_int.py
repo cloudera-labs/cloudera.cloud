@@ -108,6 +108,7 @@ def test_info_default_false_includes_shared_cluster(
     compute_info_module_args,
     existing_compute_cluster,
 ):
+    """default=False is not an exclusion filter: the API only filters on default=True."""
     compute_info_module_args(
         {"environment": existing_compute_cluster.envName, "default": False},
     )
@@ -118,7 +119,6 @@ def test_info_default_false_includes_shared_cluster(
     assert existing_compute_cluster.clusterCrn in [
         c["cluster_crn"] for c in exc.value.clusters
     ]
-    assert all(c["is_default"] is not True for c in exc.value.clusters)
 
 
 def test_info_shape_externalized_includes_shared_cluster(
