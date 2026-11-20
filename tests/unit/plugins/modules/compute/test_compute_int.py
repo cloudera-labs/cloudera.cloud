@@ -16,9 +16,13 @@
 
 """Integration tests for the compute module.
 
-These tests hit the live CDP API. Read-only and check-mode tests use the
-session-scoped ``existing_compute_cluster`` fixture and never change anything.
-The lifecycle class is slow (~50 min) and bills real cloud resources.
+These tests hit the live CDP API. Read-only, check-mode and idempotency tests
+share the session-scoped ``existing_compute_cluster`` fixture: a RUNNING,
+externalized, non-default cluster named ``ansible-compute-inttest``. If it already
+exists in the environment it is reused and left in place; otherwise the fixture
+creates it (~35 min) and deletes it at the end of the session (~15 min). No extra
+environment variables are needed. The lifecycle class creates its own cluster, is
+slow (~50 min) and bills real cloud resources.
 
 Required environment variables:
     CDP_API_ENDPOINT, CDP_ACCESS_KEY_ID, CDP_PRIVATE_KEY
@@ -136,19 +140,45 @@ def test_check_mode_present_new_cluster(compute_module_args, existing_compute_cl
     assert exc.value.diff["after"]["name"] == "ansible-inttest-check-mode"
 
 
-def test_crn_of_default_or_embedded_cluster_is_refused(
+def test_present_existing_cluster_is_idempotent(
     compute_module_args,
     existing_compute_cluster,
+    mocker,
 ):
-    """Safety: the module never acts on default or embedded clusters (check mode only)."""
-    if not existing_compute_cluster.isDefault and (
-        existing_compute_cluster.clusterShape == "Externalized"
-    ):
-        pytest.skip("existing cluster is a user-managed externalized cluster")
+    """state=present for the shared running cluster -> changed=False, no warning."""
+    warn = mocker.patch("ansible.module_utils.basic.AnsibleModule.warn")
 
     compute_module_args(
         {
-            "crn": existing_compute_cluster.clusterCrn,
+            "name": existing_compute_cluster.clusterName,
+            "environment": existing_compute_cluster.envName,
+            "state": "present",
+            "wait": False,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        compute.main()
+
+    assert exc.value.changed is False
+    assert exc.value.cluster["cluster_crn"] == existing_compute_cluster.clusterCrn
+    warn.assert_not_called()
+
+
+def test_crn_of_default_cluster_is_refused(
+    compute_module_args,
+    compute_client,
+    existing_compute_cluster,
+):
+    """Safety: the module never acts on a default cluster (check mode only)."""
+    env = existing_compute_cluster.envName
+    defaults = [c for c in compute_client.get_clusters_by_env(env) if c.isDefault]
+    if not defaults:
+        pytest.skip(f"No default compute cluster in environment '{env}'")
+
+    compute_module_args(
+        {
+            "crn": defaults[0].clusterCrn,
             "state": "absent",
             "_ansible_check_mode": True,
         },
@@ -158,7 +188,33 @@ def test_crn_of_default_or_embedded_cluster_is_refused(
         compute.main()
 
 
-@pytest.mark.slow
+def test_crn_of_embedded_cluster_is_refused(
+    compute_module_args,
+    compute_client,
+    existing_compute_cluster,
+):
+    """Safety: the module never acts on an embedded cluster (check mode only)."""
+    env = existing_compute_cluster.envName
+    embedded = [
+        c
+        for c in compute_client.get_clusters_by_env(env)
+        if c.clusterShape == "Embedded"
+    ]
+    if not embedded:
+        pytest.skip(f"No embedded compute cluster in environment '{env}'")
+
+    compute_module_args(
+        {
+            "crn": embedded[0].clusterCrn,
+            "state": "absent",
+            "_ansible_check_mode": True,
+        },
+    )
+
+    with pytest.raises(AnsibleFailJson):
+        compute.main()
+
+
 class TestComputeLifecycle:
     """Full create -> present-idempotent -> absent -> absent-idempotent lifecycle.
 
@@ -171,7 +227,11 @@ class TestComputeLifecycle:
     _crn = None
     _tags = {"purpose": "ansible-inttest", "Mixed_Case": "Value"}
 
-    def test_present_creates(self, compute_module_args, cleanup_compute_cluster):
+    def test_present_creates(
+        self,
+        compute_module_args,
+        cleanup_compute_cluster_class,
+    ):
         env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
 
         compute_module_args(
@@ -190,7 +250,7 @@ class TestComputeLifecycle:
 
         crn = exc.value.cluster.get("cluster_crn")
         if crn:
-            cleanup_compute_cluster(crn)
+            cleanup_compute_cluster_class(crn)
 
         assert exc.value.changed is True
         assert exc.value.cluster["status"] == "RUNNING"

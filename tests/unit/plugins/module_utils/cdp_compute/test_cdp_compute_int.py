@@ -17,9 +17,13 @@
 """Integration tests for CdpComputeClient.
 
 These tests hit the live CDP API and are gated on environment variables.
-Read-only tests use the session-scoped ``existing_compute_cluster`` fixture
-(never torn down). The create/delete test is slow (~35 min create + ~15 min
-delete) and bills real cloud resources; it is marked ``slow``.
+Read-only tests share the session-scoped ``existing_compute_cluster`` fixture:
+a RUNNING, externalized, non-default cluster named ``ansible-compute-inttest``.
+If that cluster already exists in the environment it is reused and left in place;
+otherwise the fixture creates it (~35 min) and deletes it at the end of the
+session (~15 min). No extra environment variables are needed. The create/delete
+test creates its own cluster, is slow (~50 min) and bills real cloud resources;
+it is marked ``slow``.
 
 Required environment variables:
     CDP_API_ENDPOINT, CDP_ACCESS_KEY_ID, CDP_PRIVATE_KEY
@@ -91,7 +95,7 @@ class TestComputeReadIntegration:
         assert isinstance(cluster, ComputeCluster)
         assert cluster.clusterCrn == existing_compute_cluster.clusterCrn
         assert cluster.clusterName == existing_compute_cluster.clusterName
-        assert cluster.status == existing_compute_cluster.status
+        assert cluster.status == "RUNNING"
         assert cluster.envCrn is not None
 
     def test_describe_nonexistent_cluster(
@@ -104,24 +108,35 @@ class TestComputeReadIntegration:
 
         assert compute_client.describe_cluster(f"{prefix}:nonexistent-12345") is None
 
-    def test_get_cluster_by_name_and_env_skips_default_and_embedded(
+    def test_get_cluster_by_name_and_env_finds_externalized(
         self,
         compute_client,
         existing_compute_cluster,
     ):
-        """Name lookup only ever returns user-managed externalized clusters."""
+        """An externalized cluster is found by name within its environment."""
         found = compute_client.get_cluster_by_name_and_env(
             existing_compute_cluster.clusterName,
             existing_compute_cluster.envName,
         )
 
-        if existing_compute_cluster.isDefault or (
-            existing_compute_cluster.clusterShape != "Externalized"
-        ):
-            assert found is None
-        else:
-            assert found is not None
-            assert found.clusterCrn == existing_compute_cluster.clusterCrn
+        assert found is not None
+        assert found.clusterCrn == existing_compute_cluster.clusterCrn
+
+    def test_get_cluster_by_name_and_env_skips_default(
+        self,
+        compute_client,
+        existing_compute_cluster,
+    ):
+        """Name lookup never returns the environment's default cluster."""
+        env = existing_compute_cluster.envName
+        defaults = [c for c in compute_client.get_clusters_by_env(env) if c.isDefault]
+        if not defaults:
+            pytest.skip(f"No default compute cluster in environment '{env}'")
+
+        assert (
+            compute_client.get_cluster_by_name_and_env(defaults[0].clusterName, env)
+            is None
+        )
 
     def test_get_cluster_by_name_and_env_not_found(
         self,
@@ -137,7 +152,6 @@ class TestComputeReadIntegration:
         )
 
 
-@pytest.mark.slow
 class TestComputeCreateDeleteIntegration:
     """Create -> round trip -> delete. Slow (~50 min) and bills cloud resources."""
 

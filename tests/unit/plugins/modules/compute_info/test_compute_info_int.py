@@ -16,6 +16,12 @@
 
 """Integration tests for the compute_info module (read-only).
 
+Tests share the session-scoped ``existing_compute_cluster`` fixture: a RUNNING,
+externalized, non-default cluster named ``ansible-compute-inttest``. If it already
+exists in the environment it is reused and left in place; otherwise the fixture
+creates it (~35 min) and deletes it at the end of the session (~15 min). No extra
+environment variables are needed.
+
 Required environment variables:
     CDP_API_ENDPOINT, CDP_ACCESS_KEY_ID, CDP_PRIVATE_KEY
     CDP_ENVIRONMENT_NAME
@@ -80,10 +86,11 @@ def test_info_by_crn(compute_info_module_args, existing_compute_cluster):
     ]
 
 
-def test_info_default_cluster_filter(
+def test_info_default_true_excludes_shared_cluster(
     compute_info_module_args,
     existing_compute_cluster,
 ):
+    """default=True returns only default clusters, never the shared externalized one."""
     compute_info_module_args(
         {"environment": existing_compute_cluster.envName, "default": True},
     )
@@ -92,6 +99,45 @@ def test_info_default_cluster_filter(
         compute_info.main()
 
     assert all(c["is_default"] is True for c in exc.value.clusters)
+    assert existing_compute_cluster.clusterCrn not in [
+        c["cluster_crn"] for c in exc.value.clusters
+    ]
+
+
+def test_info_default_false_includes_shared_cluster(
+    compute_info_module_args,
+    existing_compute_cluster,
+):
+    compute_info_module_args(
+        {"environment": existing_compute_cluster.envName, "default": False},
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        compute_info.main()
+
+    assert existing_compute_cluster.clusterCrn in [
+        c["cluster_crn"] for c in exc.value.clusters
+    ]
+    assert all(c["is_default"] is not True for c in exc.value.clusters)
+
+
+def test_info_shape_externalized_includes_shared_cluster(
+    compute_info_module_args,
+    existing_compute_cluster,
+):
+    compute_info_module_args(
+        {
+            "environment": existing_compute_cluster.envName,
+            "cluster_shape": "Externalized",
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as exc:
+        compute_info.main()
+
+    assert existing_compute_cluster.clusterCrn in [
+        c["cluster_crn"] for c in exc.value.clusters
+    ]
 
 
 def test_info_unknown_crn_returns_empty(

@@ -38,9 +38,11 @@ from urllib.error import HTTPError
 import pytest
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_compute import (
+    COMPUTE_CLUSTER_ACTIVE_STATUSES,
+    COMPUTE_CLUSTER_CREATING_STATUSES,
     COMPUTE_CLUSTER_DELETED_STATUSES,
     CdpComputeClient,
-    ComputeClusterSummary,
+    ComputeCluster,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_de import (
     CDE_SERVICE_REMOVABLE_STATUSES,
@@ -1279,33 +1281,139 @@ def compute_client() -> CdpComputeClient:
     return CdpComputeClient(api_client=api_client)
 
 
+_COMPUTE_INTTEST_NAME = "ansible-compute-inttest"
+
+
+def _create_compute_cluster(
+    compute_client: CdpComputeClient,
+    env_name: str,
+    name: str,
+    timeout: int = 5400,
+    **overrides,
+) -> ComputeCluster:
+    """Create an externalized compute cluster, wait for RUNNING, and return it described.
+
+    No network arguments are sent: the API defaults work for the test environment.
+    """
+    env_crn = CdpEnvClient(api_client=compute_client.api_client).get_environment_crn(
+        env_name,
+    )
+    if env_crn is None:
+        pytest.skip(f"Environment '{env_name}' not found")
+
+    create_params = {
+        "name": name,
+        "environment": env_crn,
+        "description": "ansible integration test",
+        "tags": {"purpose": "ansible-inttest"},
+    }
+    create_params.update(overrides)
+
+    created = compute_client.create_cluster(**create_params)
+
+    return compute_client.wait_for_cluster_state(
+        created.clusterCrn,
+        COMPUTE_CLUSTER_ACTIVE_STATUSES,
+        timeout=timeout,
+    )
+
+
+def _delete_compute_cluster(
+    compute_client: CdpComputeClient,
+    cluster_crn: str,
+    timeout: int = 3600,
+) -> None:
+    """Delete a compute cluster and wait for DELETED. Raises on failure."""
+    cluster = compute_client.describe_cluster(cluster_crn)
+    if cluster is None or cluster.status in COMPUTE_CLUSTER_DELETED_STATUSES:
+        return
+
+    if cluster.status != "DELETING":
+        compute_client.delete_cluster(cluster_crn)
+
+    compute_client.wait_for_cluster_state(
+        cluster_crn,
+        COMPUTE_CLUSTER_DELETED_STATUSES,
+        timeout=timeout,
+    )
+
+
 @pytest.fixture(scope="session")
-def existing_compute_cluster(compute_client) -> ComputeClusterSummary:
-    """Provide an existing, non-deleted compute cluster for read-only tests (never torn down).
-
-    Gated on CDP_ENVIRONMENT_NAME. Any externalized or embedded cluster in the
-    environment will do; the environment's default cluster is the usual choice.
-    """
-    env_name = required_or_skip("CDP_ENVIRONMENT_NAME")
-    clusters = [
-        c
-        for c in compute_client.get_clusters_by_env(env_name)
-        if c.status not in COMPUTE_CLUSTER_DELETED_STATUSES
-    ]
-    if not clusters:
-        pytest.skip(f"No compute clusters found in environment '{env_name}'")
-    return clusters[0]
-
-
-@pytest.fixture
-def cleanup_compute_cluster(
+def existing_compute_cluster(
     compute_client,
-) -> Generator[Callable[[str], None], None, None]:
-    """Register compute cluster CRNs for deletion at teardown, whatever the test outcome.
+) -> Generator[ComputeCluster, None, None]:
+    """Provide a RUNNING, externalized, non-default compute cluster for integration tests.
 
-    Call the returned function with a cluster CRN as soon as it is known. Only
-    clusters that still exist and are not yet DELETED/DELETING are deleted.
+    Resolution strategy (gated on CDP_ENVIRONMENT_NAME, otherwise skip):
+    1. A cluster named ``ansible-compute-inttest`` already exists in the
+       environment -> reuse it (no teardown); wait if it is still creating,
+       fail if it is in any other status than RUNNING.
+    2. No match -> create one (~35 min), wait for RUNNING, yield, and delete it
+       at session end (~15 min).
     """
+    env_name = os.getenv("CDP_ENVIRONMENT_NAME")
+    if not env_name:
+        pytest.skip("CDP_ENVIRONMENT_NAME required")
+
+    existing = compute_client.get_cluster_by_name_and_env(
+        _COMPUTE_INTTEST_NAME,
+        env_name,
+    )
+
+    if existing is not None:
+        warnings.warn(
+            f"Compute cluster '{_COMPUTE_INTTEST_NAME}' already exists; "
+            f"reusing without teardown",
+        )
+        if existing.status in COMPUTE_CLUSTER_CREATING_STATUSES:
+            try:
+                cluster = compute_client.wait_for_cluster_state(
+                    existing.clusterCrn,
+                    COMPUTE_CLUSTER_ACTIVE_STATUSES,
+                    timeout=5400,
+                )
+            except Exception as e:
+                pytest.fail(
+                    f"Existing compute cluster '{_COMPUTE_INTTEST_NAME}' did not reach "
+                    f"RUNNING: {e}",
+                )
+        else:
+            cluster = compute_client.describe_cluster(existing.clusterCrn)
+        if cluster is None or cluster.status not in COMPUTE_CLUSTER_ACTIVE_STATUSES:
+            status = cluster.status if cluster is not None else "not found"
+            pytest.fail(
+                f"Existing compute cluster '{_COMPUTE_INTTEST_NAME}' is not RUNNING "
+                f"(status: {status}); delete it or wait for it to finish",
+            )
+        yield cluster
+        return
+
+    try:
+        created = _create_compute_cluster(
+            compute_client,
+            env_name,
+            _COMPUTE_INTTEST_NAME,
+            timeout=5400,
+        )
+    except Exception as e:
+        pytest.fail(f"Could not auto-provision compute cluster in '{env_name}': {e}")
+
+    try:
+        yield created
+    finally:
+        try:
+            _delete_compute_cluster(compute_client, created.clusterCrn)
+        except Exception as e:
+            pytest.fail(
+                f"Failed to delete auto-provisioned compute cluster "
+                f"{_COMPUTE_INTTEST_NAME}: {e}",
+            )
+
+
+def _compute_cluster_cleanup(
+    compute_client: CdpComputeClient,
+) -> Generator[Callable[[str], None], None, None]:
+    """Shared body of the cleanup_compute_cluster fixtures (warn-only on failure)."""
     crns = []
 
     def register(cluster_crn):
@@ -1316,18 +1424,32 @@ def cleanup_compute_cluster(
     finally:
         for crn in crns:
             try:
-                cluster = compute_client.describe_cluster(crn)
-                if cluster is None or cluster.status in (
-                    COMPUTE_CLUSTER_DELETED_STATUSES | {"DELETING"}
-                ):
-                    continue
-                compute_client.delete_cluster(crn)
-                compute_client.wait_for_cluster_state(
-                    crn,
-                    COMPUTE_CLUSTER_DELETED_STATUSES,
-                    timeout=3600,
-                )
+                _delete_compute_cluster(compute_client, crn)
             except Exception as e:
                 warnings.warn(
                     f"cleanup_compute_cluster: failed to delete '{crn}': {e}",
                 )
+
+
+@pytest.fixture
+def cleanup_compute_cluster(
+    compute_client,
+) -> Generator[Callable[[str], None], None, None]:
+    """Register compute cluster CRNs for deletion at test teardown, whatever the outcome.
+
+    Call the returned function with a cluster CRN as soon as it is known. Clusters
+    that no longer exist or are already DELETED are skipped; failures only warn.
+    """
+    yield from _compute_cluster_cleanup(compute_client)
+
+
+@pytest.fixture(scope="class")
+def cleanup_compute_cluster_class(
+    compute_client,
+) -> Generator[Callable[[str], None], None, None]:
+    """Like cleanup_compute_cluster, but deletes at the end of the test class.
+
+    Use for ordered lifecycle classes whose tests share one cluster; the
+    function-scoped fixture would delete it after the first test.
+    """
+    yield from _compute_cluster_cleanup(compute_client)
