@@ -36,13 +36,17 @@ options:
       - machine_user_name
   purge:
     description:
-      - Flag to replace C(roles) and C(resource_roles) with their specified values.
+      - Flag to replace O(roles) and O(resource_roles) with their specified values.
+      - If True, any roles or resource roles not specified will be removed.
+      - Only applies to an attribute (O(roles), O(resource_roles)) when that attribute is also specified; an omitted attribute is never purged.
     type: bool
     required: False
     default: False
   resource_roles:
     description:
       - A list of resource role assignments.
+      - If not specified, the machine user's existing resource role assignments are left untouched, regardless of O(purge).
+      - If specified, assignments are reconciled against this list; with O(purge=True), assignments not in this list are removed.
     type: list
     required: False
     elements: dict
@@ -65,6 +69,8 @@ options:
     description:
       - A single role or list of roles assigned to the machine user.
       - The role must be identified by its full CRN.
+      - If not specified, the machine user's existing role assignments are left untouched, regardless of O(purge).
+      - If specified, roles are reconciled against this list; with O(purge=True), roles not in this list are removed.
     type: list
     elements: str
     required: False
@@ -113,6 +119,12 @@ EXAMPLES = r"""
       - resource: crn:cdp:environments:us-west-1:altus:environment:prod-env
         role: crn:cdp:iam:us-west-1:altus:resourceRole:EnvironmentAdmin
     purge: true
+
+# Remove every role from a machine user (an explicit empty list with purge)
+- cloudera.cloud.iam_machine_user:
+    name: my-machine-user
+    roles: []
+    purge: true
 """
 
 RETURN = r"""
@@ -144,6 +156,23 @@ machine_user:
       description: The username used in all the workload clusters of the machine user.
       returned: on success
       type: str
+    workload_password_details:
+      description: Details about the workload password of the machine user.
+      returned: on success
+      type: dict
+      contains:
+        is_password_set:
+          description: Whether a workload password has been set.
+          returned: on success
+          type: bool
+        password_expiration_date:
+          description: The date when the workload password expires.
+          returned: when set
+          type: str
+        password_min_lifetime_date:
+          description: The date until which the workload password cannot be changed again.
+          returned: when set
+          type: str
     roles:
       description: List of Role CRNs assigned to the machine user.
       returned: on success
@@ -174,16 +203,40 @@ sdk_out_lines:
   elements: str
 """
 
-from typing import Any, Dict
+from dataclasses import replace
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
     ServicesModule,
+    diff_dict,
+    to_dict,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
     CdpIamClient,
+    MachineUserDetails,
+    ResourceAssignment,
 )
+
+
+def _coerce_list(value: Any) -> List[Any]:
+    """Treat an unset (NULLABLE) or null list field as empty."""
+    return [] if value is NULLABLE or value is None else value
+
+
+def _assignment_pairs(
+    assignments: Optional[List[ResourceAssignment]],
+) -> Set[Tuple[Any, Any]]:
+    return {(a.resourceCrn, a.resourceRoleCrn) for a in assignments or []}
+
+
+def _assignments_from_pairs(pairs: Set[Tuple[Any, Any]]) -> List[ResourceAssignment]:
+    return [
+        ResourceAssignment(resourceCrn=resource, resourceRoleCrn=role)
+        for resource, role in sorted(pairs)
+    ]
 
 
 class IAMMachineUser(ServicesModule):
@@ -223,79 +276,156 @@ class IAMMachineUser(ServicesModule):
         # Set parameters
         self.state = self.get_param("state")
         self.name = self.get_param("name")
-        self.roles = self.get_param("roles")
-        self.resource_roles = self.get_param("resource_roles")
+        self.roles: Optional[List[str]] = self.get_param("roles")
         self.purge = self.get_param("purge")
 
+        resource_roles = self.get_param("resource_roles")
+        self.resource_roles: Optional[List[ResourceAssignment]] = (
+            [
+                ResourceAssignment(
+                    resourceCrn=item["resource"],
+                    resourceRoleCrn=item["role"],
+                )
+                for item in resource_roles
+            ]
+            if resource_roles is not None
+            else None
+        )
+
         # Initialize return values
-        self.machine_user = {}
+        self.machine_user: Dict[str, Any] = {}
         self.changed = False
+        self.diff: Dict[str, Any] = {"before": {}, "after": {}}
 
         # Initialize client
         self.client = CdpIamClient(api_client=self.api_client)
 
-    def process(self):
-        current_machine_user = self.client.get_machine_user_details(
-            machine_user_name=self.name,
+    @property
+    def _manages_roles(self) -> bool:
+        return self.roles is not None
+
+    @property
+    def _manages_resource_roles(self) -> bool:
+        return self.resource_roles is not None
+
+    def _expected_new_machine_user(self) -> MachineUserDetails:
+        """The machine user as requested by the task, for the 'after' side of a create diff."""
+        expected = MachineUserDetails(machineUserName=self.name)
+        if self.roles is not None:
+            expected.roles = self.roles
+        if self.resource_roles is not None:
+            expected.resourceAssignments = self.resource_roles
+        return expected
+
+    def _plan_update(
+        self,
+        existing: MachineUserDetails,
+    ) -> Tuple[MachineUserDetails, MachineUserDetails]:
+        """
+        Build comparable (current, desired) views of an existing machine user.
+
+        Lists are sorted so ordering differences never register as changes, and
+        an attribute the task does not specify is left identical on both sides.
+        """
+        current_roles = _coerce_list(existing.roles)
+        current_pairs = _assignment_pairs(_coerce_list(existing.resourceAssignments))
+
+        current = replace(
+            existing,
+            roles=sorted(current_roles),
+            resourceAssignments=_assignments_from_pairs(current_pairs),
         )
+        desired = replace(current)
+
+        if self._manages_roles:
+            wanted_roles = set(self.roles or [])
+            desired.roles = sorted(
+                wanted_roles if self.purge else set(current_roles) | wanted_roles,
+            )
+
+        if self._manages_resource_roles:
+            wanted_pairs = _assignment_pairs(self.resource_roles)
+            desired.resourceAssignments = _assignments_from_pairs(
+                wanted_pairs if self.purge else current_pairs | wanted_pairs,
+            )
+
+        return current, desired
+
+    def _apply(self, machine_user: MachineUserDetails) -> bool:
+        """Reconcile roles and resource roles. Returns True if anything changed."""
+        changed = False
+
+        if self._manages_roles:
+            if self.client.manage_machine_user_roles(
+                machine_user_name=self.name,
+                current_roles=_coerce_list(machine_user.roles),
+                desired_roles=self.roles or [],
+                purge=self.purge,
+            ):
+                changed = True
+
+        if self._manages_resource_roles:
+            if self.client.manage_machine_user_resource_roles(
+                machine_user_name=self.name,
+                current_assignments=_coerce_list(machine_user.resourceAssignments),
+                desired_assignments=self.resource_roles or [],
+                purge=self.purge,
+            ):
+                changed = True
+
+        return changed
+
+    def process(self):
+        existing = self.client.get_machine_user_details(machine_user_name=self.name)
+        final: Optional[MachineUserDetails] = None
 
         if self.state == "absent":
-            if current_machine_user:
-                if not self.module.check_mode:
-                    self.client.delete_machine_user(machine_user_name=self.name)
-                    self.machine_user = {}
+            if existing:
+                self.changed = True
+                if self.module._diff:
+                    self.diff["before"] = camel_dict_to_snake_dict(to_dict(existing))
+                if self.module.check_mode:
+                    final = existing
                 else:
-                    self.machine_user = current_machine_user
-                self.changed = True
-            else:
-                self.machine_user = {}
+                    self.client.delete_machine_user(machine_user_name=self.name)
 
-        if self.state == "present":
-            if not current_machine_user:
-                if not self.module.check_mode:
-                    response = self.client.create_machine_user(
-                        machine_user_name=self.name,
-                    )
-                    self.machine_user = response.get("machineUser", {})
-                    current_machine_user = self.client.get_machine_user_details(
-                        machine_user_name=self.name,
-                    )
-                self.changed = True
-
-            if not self.module.check_mode and current_machine_user:
-
-                if self.roles is not None or self.purge:
-                    if self.client.manage_machine_user_roles(
-                        machine_user_name=self.name,
-                        current_roles=current_machine_user.get("roles", []),
-                        desired_roles=self.roles or [],
-                        purge=self.purge,
-                    ):
-                        self.changed = True
-
-                if self.resource_roles is not None or self.purge:
-                    if self.client.manage_machine_user_resource_roles(
-                        machine_user_name=self.name,
-                        current_assignments=current_machine_user.get(
-                            "resourceAssignments",
-                            [],
-                        ),
-                        desired_assignments=(self.resource_roles or []),
-                        purge=self.purge,
-                    ):
-                        self.changed = True
-
-            if self.changed and not self.module.check_mode:
-                self.machine_user = self.client.get_machine_user_details(
+        elif not existing:
+            self.changed = True
+            if self.module._diff:
+                self.diff["after"] = camel_dict_to_snake_dict(
+                    to_dict(self._expected_new_machine_user()),
+                )
+            if not self.module.check_mode:
+                self.client.create_machine_user(machine_user_name=self.name)
+                details = self.client.get_machine_user_details(
                     machine_user_name=self.name,
                 )
-            else:
-                self.machine_user = current_machine_user
+                self._apply(details)
+                final = self.client.get_machine_user_details(
+                    machine_user_name=self.name,
+                )
 
-        if self.machine_user:
-            self.machine_user = camel_dict_to_snake_dict(self.machine_user)
         else:
-            self.machine_user = {}
+            current, desired = self._plan_update(existing)
+            before, after = diff_dict(current, desired)
+
+            if before or after:
+                self.changed = True
+                if self.module._diff:
+                    self.diff["before"] = camel_dict_to_snake_dict(before)
+                    self.diff["after"] = camel_dict_to_snake_dict(after)
+
+            final = existing
+            if not self.module.check_mode:
+                if self._apply(existing):
+                    self.changed = True
+                if self.changed:
+                    final = self.client.get_machine_user_details(
+                        machine_user_name=self.name,
+                    )
+
+        if final:
+            self.machine_user = camel_dict_to_snake_dict(to_dict(final))
 
 
 def main():
@@ -305,6 +435,9 @@ def main():
         changed=result.changed,
         machine_user=result.machine_user,
     )
+
+    if result.diff["before"] or result.diff["after"]:
+        output.update(diff=result.diff)
 
     if result.debug_log:
         output.update(

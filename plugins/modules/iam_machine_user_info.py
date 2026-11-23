@@ -87,6 +87,19 @@ machine_users:
       description: Information about the workload password for the machine user.
       returned: when supported
       type: dict
+      contains:
+        is_password_set:
+          description: Whether a workload password has been set.
+          returned: on success
+          type: bool
+        password_expiration_date:
+          description: The date when the workload password expires.
+          returned: when set
+          type: str
+        password_min_lifetime_date:
+          description: The date until which the workload password cannot be changed again.
+          returned: when set
+          type: str
     workload_username:
       description: The username used in all the workload clusters of the machine user.
       returned: when supported
@@ -102,12 +115,13 @@ sdk_out_lines:
   elements: str
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
+    to_dict,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
     CdpIamClient,
@@ -132,14 +146,15 @@ class IAMMachineUserInfo(ServicesModule):
         self.name = self.get_param("name")
 
         # Initialize the return values
-        self.machine_users = []
+        self.machine_users: List[Dict[str, Any]] = []
 
     def process(self):
         client = CdpIamClient(api_client=self.api_client)
-        result = client.list_machine_users(machine_user_names=self.name)
         self.machine_users = [
-            camel_dict_to_snake_dict(machine_user)
-            for machine_user in result.get("machineUsers", [])
+            camel_dict_to_snake_dict(to_dict(machine_user))
+            for machine_user in client.list_machine_users(
+                machine_user_names=self.name,
+            )
         ]
 
 

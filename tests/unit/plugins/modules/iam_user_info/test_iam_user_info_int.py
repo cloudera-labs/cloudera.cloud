@@ -26,7 +26,10 @@ from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
 )
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import CdpIamClient
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
+    CdpIamClient,
+    User,
+)
 from ansible_collections.cloudera.cloud.plugins.modules import iam_user_info
 
 
@@ -67,13 +70,13 @@ def iam_client(test_cdp_client) -> CdpIamClient:
 
 
 @pytest.fixture
-def current_user(iam_client) -> dict:
+def current_user(iam_client) -> User:
     """Fixture to get the current authenticated user for test setup."""
     user = iam_client.get_user()
     return user
 
 
-@pytest.mark.slow
+# @pytest.mark.slow
 def test_iam_user_info_list_all(iam_module_args):
     """Test listing all IAM users returns at least one user with expected fields."""
 
@@ -122,7 +125,7 @@ def test_iam_user_info_current_user(iam_module_args):
 def test_iam_user_info_get_by_name(iam_module_args, current_user):
     """Test retrieving a user by workload username."""
 
-    workload_username = current_user.get("workloadUsername")
+    workload_username = current_user.workloadUsername
 
     iam_module_args({"name": [workload_username]})
 
@@ -148,7 +151,7 @@ def test_iam_user_info_get_by_name(iam_module_args, current_user):
 def test_iam_user_info_get_by_user_id(iam_module_args, current_user):
     """Test retrieving a user by user ID."""
 
-    user_id = current_user.get("userId")
+    user_id = current_user.userId
 
     iam_module_args({"user_id": [user_id]})
 
@@ -170,7 +173,7 @@ def test_iam_user_info_get_by_user_id(iam_module_args, current_user):
 def test_iam_user_info_filter_by_workload_username(iam_module_args, current_user):
     """Test filtering users by workload username regex."""
 
-    workload_username = current_user.get("workloadUsername")
+    workload_username = current_user.workloadUsername
 
     # Use a regex that matches the known username
     iam_module_args({"filter": {"workloadUsername": f"^{workload_username}$"}})

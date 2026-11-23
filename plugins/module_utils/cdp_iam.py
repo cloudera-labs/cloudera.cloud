@@ -19,11 +19,113 @@ A REST client for the Cloudera on Cloud Platform (CDP) IAM API
 """
 
 import re
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Union
+
+from ansible.module_utils.common.dict_transformations import snake_dict_to_camel_dict
+
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
     CdpClient,
     CdpError,
 )
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
+    from_dict,
+)
+
+
+@dataclass
+class WorkloadPasswordDetails:
+    """Information about the workload password for a user or machine user."""
+
+    isPasswordSet: Union[bool, None, NULLABLE] = NULLABLE
+    passwordExpirationDate: Union[str, None, NULLABLE] = NULLABLE
+    passwordMinLifetimeDate: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class ResourceAssignment:
+    """A resource role assigned on a resource."""
+
+    resourceCrn: Union[str, None, NULLABLE] = NULLABLE
+    resourceRoleCrn: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class User:
+    """Information about a CDP user (as returned by listUsers/getUser/createUser/updateUser)."""
+
+    accountAdmin: Union[bool, None, NULLABLE] = NULLABLE
+    creationDate: Union[str, None, NULLABLE] = NULLABLE
+    crn: Union[str, None, NULLABLE] = NULLABLE
+    email: Union[str, None, NULLABLE] = NULLABLE
+    firstName: Union[str, None, NULLABLE] = NULLABLE
+    identityProviderCrn: Union[str, None, NULLABLE] = NULLABLE
+    lastInteractiveLogin: Union[str, None, NULLABLE] = NULLABLE
+    lastName: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    userId: Union[str, None, NULLABLE] = NULLABLE
+    workloadPasswordDetails: Union[WorkloadPasswordDetails, None, NULLABLE] = NULLABLE
+    workloadUsername: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class UserDetails(User):
+    """
+    A User enriched with its role, resource role and group assignments.
+
+    The extra fields are not part of the IAM User type; they are assembled from the
+    listUserAssignedRoles, listUserAssignedResourceRoles and listGroupsForUser calls.
+    """
+
+    roles: Union[List[str], None, NULLABLE] = NULLABLE
+    resourceAssignments: Union[List[ResourceAssignment], None, NULLABLE] = NULLABLE
+    groups: Union[List[str], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class DeleteUserResponse:
+    """Resources that were released when a user was deleted."""
+
+    accessKeysDeleted: Union[List[str], None, NULLABLE] = NULLABLE
+    groupsModified: Union[List[str], None, NULLABLE] = NULLABLE
+    resourcesUnassigned: Union[List[ResourceAssignment], None, NULLABLE] = NULLABLE
+    rolesUnassigned: Union[List[str], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class MachineUser:
+    """Information about a CDP machine user (as returned by listMachineUsers/createMachineUser)."""
+
+    creationDate: Union[str, None, NULLABLE] = NULLABLE
+    crn: Union[str, None, NULLABLE] = NULLABLE
+    machineUserName: Union[str, None, NULLABLE] = NULLABLE
+    status: Union[str, None, NULLABLE] = NULLABLE
+    workloadPasswordDetails: Union[WorkloadPasswordDetails, None, NULLABLE] = NULLABLE
+    workloadUsername: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class MachineUserDetails(MachineUser):
+    """
+    A MachineUser enriched with its role and resource role assignments.
+
+    The extra fields are not part of the IAM MachineUser type; they are assembled from the
+    listMachineUserAssignedRoles and listMachineUserAssignedResourceRoles calls.
+    """
+
+    roles: Union[List[str], None, NULLABLE] = NULLABLE
+    resourceAssignments: Union[List[ResourceAssignment], None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class DeleteMachineUserResponse:
+    """Resources that were released when a machine user was deleted."""
+
+    accessKeysDeleted: Union[List[str], None, NULLABLE] = NULLABLE
+    groupsModified: Union[List[str], None, NULLABLE] = NULLABLE
+    resourcesUnassigned: Union[List[ResourceAssignment], None, NULLABLE] = NULLABLE
+    rolesUnassigned: Union[List[str], None, NULLABLE] = NULLABLE
 
 
 class CdpIamClient:
@@ -37,29 +139,6 @@ class CdpIamClient:
             api_client: CdpClient instance for managing HTTP method calls
         """
         self.api_client = api_client
-
-    @staticmethod
-    def get_user_diff_exclude_keys() -> List[str]:
-        """
-        Get list of user fields to exclude from diff calculations.
-
-        These fields are read-only or system-managed and should not appear
-        in Ansible diff output as they cannot be modified by users.
-
-        Returns:
-            List of field names to exclude from diffs (in snake_case format)
-        """
-        return [
-            "user_id",
-            "crn",
-            "creation_date",
-            "account_admin",
-            "status",
-            "workload_username",
-            "workload_password_details",
-            "last_interactive_login",
-            "identity_provider_crn",
-        ]
 
     @staticmethod
     def get_group_diff_exclude_keys() -> List[str]:
@@ -341,30 +420,18 @@ class CdpIamClient:
         )
 
     @CdpClient.paginated()
-    def list_users(
+    def _list_users_page(
         self,
         user_ids: Optional[List[str]] = None,
         pageToken: Optional[str] = None,
         pageSize: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        List IAM users with automatic pagination.
-
-        Args:
-            user_ids: Optional list of user IDs or CRNs to filter by
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Response with automatic pagination handling containing users list
-        """
+        """Raw listUsers call; pagination across pages is handled by the decorator."""
         json_data: Dict[str, Any] = {}
 
-        # Add user IDs filter if provided
         if user_ids is not None:
             json_data["userIds"] = user_ids
 
-        # Add pagination parameters if provided
         # Note: IAM API uses "startingToken" for requests, but decorator uses "pageToken"
         if pageToken is not None:
             json_data["startingToken"] = pageToken
@@ -376,10 +443,23 @@ class CdpIamClient:
             json_data=json_data,
         )
 
+    def list_users(self, user_ids: Optional[List[str]] = None) -> List[User]:
+        """
+        List IAM users with automatic pagination.
+
+        Args:
+            user_ids: Optional list of user IDs or CRNs to filter by
+
+        Returns:
+            List of basic User objects (no roles, resource roles or groups)
+        """
+        result = self._list_users_page(user_ids=user_ids)
+        return [from_dict(User, user) for user in result.get("users", [])]
+
     def list_users_filtered(
         self,
         filters: Dict[str, str],
-    ) -> List[Dict[str, Any]]:
+    ) -> List[User]:
         """
         List IAM users filtered by regex patterns on user fields.
 
@@ -387,26 +467,30 @@ class CdpIamClient:
         matches the corresponding regex pattern.
 
         Args:
-            filters: Dict mapping a User field name to a regex pattern string.
-                     A user is included only when all patterns match.
+            filters: Dict mapping a User field name to a regex pattern string. Field
+                     names may be snake_case ("workload_username") or the API's
+                     camelCase ("workloadUsername"). A user is included only when
+                     all patterns match. Unknown fields never match.
 
         Returns:
-            List of matching basic User dicts from the listUsers response.
+            List of matching basic User objects.
         """
 
-        compiled = {k: re.compile(v) for k, v in filters.items()}
-        result = self.list_users()
+        compiled = {
+            field: re.compile(pattern)
+            for field, pattern in snake_dict_to_camel_dict(filters).items()
+        }
         matched = []
-        for user in result.get("users", []):
+        for user in self.list_users():
             for field, pattern in compiled.items():
-                value = user.get(field)
-                if not (value and re.search(pattern, str(value))):
+                value = getattr(user, field, NULLABLE)
+                if value is NULLABLE or not (value and re.search(pattern, str(value))):
                     break
             else:
                 matched.append(user)
         return matched
 
-    def get_user(self, user_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_user(self, user_id: Optional[str] = None) -> Optional[User]:
         """
         Get information about a user.
 
@@ -414,11 +498,10 @@ class CdpIamClient:
             user_id: Optional user ID or CRN. If not provided, gets the current user.
 
         Returns:
-            Response containing user information
+            The User, or None if the user does not exist
         """
         json_data: Dict[str, Any] = {}
 
-        # Add user ID if provided
         if user_id is not None:
             json_data["userId"] = user_id
 
@@ -428,7 +511,8 @@ class CdpIamClient:
             squelch={404: {}},
         )
 
-        return response.get("user", {})
+        user = response.get("user") if response else None
+        return from_dict(User, user) if user else None
 
     @CdpClient.paginated()
     def list_group_assigned_resource_roles(
@@ -551,23 +635,13 @@ class CdpIamClient:
         )
 
     @CdpClient.paginated()
-    def list_groups_for_user(
+    def _list_groups_for_user_page(
         self,
         user_id: str,
         pageToken: Optional[str] = None,
         pageSize: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        List groups for a user with automatic pagination.
-
-        Args:
-            user_id: User ID or CRN
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Response with automatic pagination handling containing group CRNs
-        """
+        """Raw listGroupsForUser call; pagination across pages is handled by the decorator."""
         json_data: Dict[str, Any] = {"userId": user_id}
 
         if pageToken is not None:
@@ -580,35 +654,18 @@ class CdpIamClient:
             json_data=json_data,
         )
 
-    @CdpClient.paginated()
-    def list_machine_user_assigned_resource_roles(
-        self,
-        machine_user_name: str,
-        pageToken: Optional[str] = None,
-        pageSize: Optional[int] = None,
-    ) -> Dict[str, Any]:
+    def list_groups_for_user(self, user_id: str) -> List[str]:
         """
-        List resource roles assigned to a machine user with automatic pagination.
+        List the groups a user belongs to with automatic pagination.
 
         Args:
-            machine_user_name: Machine user name or CRN
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
+            user_id: User ID or CRN
 
         Returns:
-            Response with automatic pagination handling containing resource assignments
+            List of group CRNs
         """
-        json_data: Dict[str, Any] = {"machineUserName": machine_user_name}
-
-        if pageToken is not None:
-            json_data["startingToken"] = pageToken
-        if pageSize is not None:
-            json_data["pageSize"] = pageSize
-
-        return self.api_client.post(
-            "/api/v1/iam/listMachineUserAssignedResourceRoles",
-            json_data=json_data,
-        )
+        result = self._list_groups_for_user_page(user_id=user_id)
+        return result.get("groupCrns", [])
 
     # ========================================================================
     # User Management Methods
@@ -621,7 +678,7 @@ class CdpIamClient:
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
         saml_provider_name: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> User:
         """
         Create a user in CDP.
 
@@ -638,12 +695,12 @@ class CdpIamClient:
                                If not provided, the default identity provider will be used.
 
         Returns:
-            Response containing the created user information
+            The created User
         """
         # If saml_provider_name not provided, use default identity provider
         if saml_provider_name is None:
             default_idp = self.get_default_identity_provider()
-            saml_provider_name = default_idp.get("crn", {})
+            saml_provider_name = default_idp.get("crn")
 
         json_data: Dict[str, Any] = {
             "email": email,
@@ -657,12 +714,14 @@ class CdpIamClient:
         if saml_provider_name is not None:
             json_data["samlProviderName"] = saml_provider_name
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/iam/createUser",
             json_data=json_data,
         )
 
-    def delete_user(self, user_id: str) -> Dict[str, Any]:
+        return from_dict(User, response.get("user", {}))
+
+    def delete_user(self, user_id: str) -> DeleteUserResponse:
         """
         Delete a user and all associated resources.
 
@@ -673,22 +732,24 @@ class CdpIamClient:
             user_id: The user ID or CRN to delete
 
         Returns:
-            Response containing information about deleted resources
+            The resources that were released by the deletion
         """
         json_data: Dict[str, Any] = {
             "userId": user_id,
         }
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/iam/deleteUser",
             json_data=json_data,
         )
+
+        return from_dict(DeleteUserResponse, response or {})
 
     def update_user(
         self,
         user_id: str,
         active: Optional[bool] = None,
-    ) -> Dict[str, Any]:
+    ) -> User:
         """
         Update a user.
 
@@ -697,7 +758,7 @@ class CdpIamClient:
             active: Set user active state (True to activate, False to deactivate)
 
         Returns:
-            Response containing updated user information
+            The updated User
         """
         json_data: Dict[str, Any] = {
             "user": user_id,
@@ -706,12 +767,14 @@ class CdpIamClient:
         if active is not None:
             json_data["active"] = active
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/iam/updateUser",
             json_data=json_data,
         )
 
-    def get_user_details(self, user_id: str) -> Optional[Dict[str, Any]]:
+        return from_dict(User, response.get("user", {}))
+
+    def get_user_details(self, user_id: str) -> Optional[UserDetails]:
         """
         Get complete user information including roles and resource assignments.
 
@@ -725,40 +788,20 @@ class CdpIamClient:
             user_id: The user ID or CRN
 
         Returns:
-            Complete user information dict, or None if user doesn't exist
+            The UserDetails, or None if the user doesn't exist
         """
-        try:
-            user_info = self.get_user(user_id=user_id)
-            if not user_info:
-                return None
-
-            roles_response = self.list_user_assigned_roles(user=user_id)
-            roles = roles_response.get("roleCrns", [])
-
-            resource_roles_response = self.list_user_assigned_resource_roles(
-                user=user_id,
-            )
-            resource_assignments = resource_roles_response.get(
-                "resourceAssignments",
-                [],
-            )
-
-            groups_response = self.list_groups_for_user(user_id=user_id)
-            groups = groups_response.get("groupCrns", [])
-
-            result = user_info
-            result.update(
-                {
-                    "roles": roles,
-                    "resourceAssignments": resource_assignments,
-                    "groups": groups,
-                },
-            )
-            return result
-        except Exception:
+        user = self.get_user(user_id=user_id)
+        if not user:
             return None
 
-    def get_user_details_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        return UserDetails(
+            **vars(user),
+            roles=self.list_user_assigned_roles(user=user_id),
+            resourceAssignments=self.list_user_assigned_resource_roles(user=user_id),
+            groups=self.list_groups_for_user(user_id=user_id),
+        )
+
+    def get_user_details_by_email(self, email: str) -> Optional[UserDetails]:
         """
         Get complete user information by email address.
 
@@ -769,19 +812,33 @@ class CdpIamClient:
             email: The email address of the user to find
 
         Returns:
-            Complete user information dict, or None if user doesn't exist
+            The UserDetails, or None if the user doesn't exist
         """
-        try:
-            users_response = self.list_users()
-            users = users_response.get("users", [])
+        for user in self.list_users():
+            user_id = user.userId
+            if user.email == email and isinstance(user_id, str) and user_id:
+                return self.get_user_details(user_id=user_id)
+        return None
 
-            for user in users:
-                if user.get("email") == email:
-                    user_id = user.get("userId")
-                    return self.get_user_details(user_id=user_id)
-            return None
-        except Exception:
-            return None
+    def get_group_names(self, group_crns: List[str]) -> List[str]:
+        """
+        Resolve group CRNs to group names.
+
+        Args:
+            group_crns: List of group CRNs (e.g. from list_groups_for_user)
+
+        Returns:
+            List of group names, in the order returned by the API
+        """
+        if not group_crns:
+            return []
+
+        groups_response = self.list_groups(group_names=group_crns)
+        return [
+            group["groupName"]
+            for group in groups_response.get("groups", [])
+            if group.get("groupName")
+        ]
 
     def manage_user_groups(
         self,
@@ -811,13 +868,7 @@ class CdpIamClient:
         changed = False
 
         # Fetch actual group names for current group CRNs
-        current_group_names = set()
-        if current_groups:
-            groups_response = self.list_groups(group_names=current_groups)
-            for group in groups_response.get("groups", []):
-                group_name = group.get("groupName")
-                if group_name:
-                    current_group_names.add(group_name)
+        current_group_names = set(self.get_group_names(current_groups))
 
         desired_group_names = set(desired_groups)
 
@@ -880,8 +931,8 @@ class CdpIamClient:
     def manage_user_resource_roles(
         self,
         user_id: str,
-        current_assignments: List[Dict[str, str]],
-        desired_assignments: List[Dict[str, str]],
+        current_assignments: List[ResourceAssignment],
+        desired_assignments: List[ResourceAssignment],
         purge: bool = False,
     ) -> bool:
         """
@@ -898,14 +949,8 @@ class CdpIamClient:
         """
         changed = False
 
-        # Normalize current assignments for comparison
-        def normalize_assignment(assignment: Dict[str, str]) -> tuple:
-            resource = assignment.get("resource") or assignment.get("resourceCrn")
-            role = assignment.get("role") or assignment.get("resourceRoleCrn")
-            return (resource, role)
-
-        current_set = {normalize_assignment(a) for a in current_assignments}
-        desired_set = {normalize_assignment(a) for a in desired_assignments}
+        current_set = {(a.resourceCrn, a.resourceRoleCrn) for a in current_assignments}
+        desired_set = {(a.resourceCrn, a.resourceRoleCrn) for a in desired_assignments}
 
         if purge:
             assignments_to_remove = current_set - desired_set
@@ -1059,69 +1104,6 @@ class CdpIamClient:
         )
 
     @CdpClient.paginated()
-    def list_machine_user_assigned_roles(
-        self,
-        machine_user_name: str,
-        pageToken: Optional[str] = None,
-        pageSize: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        """
-        List roles assigned to a machine user with automatic pagination.
-
-        Args:
-            machine_user_name: Machine user name or CRN
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Response with automatic pagination handling containing role CRNs
-        """
-        json_data: Dict[str, Any] = {"machineUserName": machine_user_name}
-
-        if pageToken is not None:
-            json_data["startingToken"] = pageToken
-        if pageSize is not None:
-            json_data["pageSize"] = pageSize
-
-        return self.api_client.post(
-            "/api/v1/iam/listMachineUserAssignedRoles",
-            json_data=json_data,
-        )
-
-    @CdpClient.paginated()
-    def list_machine_users(
-        self,
-        machine_user_names: Optional[List[str]] = None,
-        pageToken: Optional[str] = None,
-        pageSize: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        """
-        List machine users with automatic pagination.
-
-        Args:
-            machine_user_names: Optional list of machine user names or CRNs to filter by
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Response with automatic pagination handling containing machine users list
-        """
-        json_data: Dict[str, Any] = {}
-
-        if machine_user_names is not None:
-            json_data["machineUserNames"] = machine_user_names
-
-        if pageToken is not None:
-            json_data["startingToken"] = pageToken
-        if pageSize is not None:
-            json_data["pageSize"] = pageSize
-
-        return self.api_client.post(
-            "/api/v1/iam/listMachineUsers",
-            json_data=json_data,
-        )
-
-    @CdpClient.paginated()
     def list_resource_assignees(
         self,
         resource_crn: str,
@@ -1220,23 +1202,13 @@ class CdpIamClient:
         )
 
     @CdpClient.paginated()
-    def list_user_assigned_resource_roles(
+    def _list_user_assigned_resource_roles_page(
         self,
         user: Optional[str] = None,
         pageToken: Optional[str] = None,
         pageSize: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        List resource roles assigned to a user with automatic pagination.
-
-        Args:
-            user: Optional user CRN or ID. If not provided, defaults to the user making the request.
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Response with automatic pagination handling containing resource assignments
-        """
+        """Raw listUserAssignedResourceRoles call; pagination is handled by the decorator."""
         json_data: Dict[str, Any] = {}
 
         if user is not None:
@@ -1252,24 +1224,33 @@ class CdpIamClient:
             json_data=json_data,
         )
 
+    def list_user_assigned_resource_roles(
+        self,
+        user: Optional[str] = None,
+    ) -> List[ResourceAssignment]:
+        """
+        List resource roles assigned to a user with automatic pagination.
+
+        Args:
+            user: Optional user CRN or ID. If not provided, defaults to the user making the request.
+
+        Returns:
+            List of ResourceAssignment objects
+        """
+        result = self._list_user_assigned_resource_roles_page(user=user)
+        return [
+            from_dict(ResourceAssignment, assignment)
+            for assignment in result.get("resourceAssignments", [])
+        ]
+
     @CdpClient.paginated()
-    def list_user_assigned_roles(
+    def _list_user_assigned_roles_page(
         self,
         user: Optional[str] = None,
         pageToken: Optional[str] = None,
         pageSize: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        List roles assigned to a user with automatic pagination.
-
-        Args:
-            user: Optional user CRN or ID. If not provided, defaults to the user making the request.
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Response with automatic pagination handling containing role CRNs
-        """
+        """Raw listUserAssignedRoles call; pagination is handled by the decorator."""
         json_data: Dict[str, Any] = {}
 
         if user is not None:
@@ -1284,6 +1265,19 @@ class CdpIamClient:
             "/api/v1/iam/listUserAssignedRoles",
             json_data=json_data,
         )
+
+    def list_user_assigned_roles(self, user: Optional[str] = None) -> List[str]:
+        """
+        List roles assigned to a user with automatic pagination.
+
+        Args:
+            user: Optional user CRN or ID. If not provided, defaults to the user making the request.
+
+        Returns:
+            List of role CRNs
+        """
+        result = self._list_user_assigned_roles_page(user=user)
+        return result.get("roleCrns", [])
 
     # Group Lifecycle Management Methods
 
@@ -1552,30 +1546,18 @@ class CdpIamClient:
         )
 
     @CdpClient.paginated()
-    def list_machine_users(
+    def _list_machine_users_page(
         self,
         machine_user_names: Optional[List[str]] = None,
         pageToken: Optional[str] = None,
         pageSize: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        List IAM machine users with automatic pagination.
-
-        Args:
-            machine_user_names: Optional list of machine user names or CRNs to filter by
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Response with automatic pagination handling containing machineUsers list
-        """
+        """Raw listMachineUsers call; pagination is handled by the decorator."""
         json_data: Dict[str, Any] = {}
 
-        # Add machine user names filter if provided
         if machine_user_names is not None:
             json_data["machineUserNames"] = machine_user_names
 
-        # Add pagination parameters if provided
         if pageToken is not None:
             json_data["startingToken"] = pageToken
         if pageSize is not None:
@@ -1587,10 +1569,29 @@ class CdpIamClient:
             squelch={404: {}},
         )
 
+    def list_machine_users(
+        self,
+        machine_user_names: Optional[List[str]] = None,
+    ) -> List[MachineUser]:
+        """
+        List IAM machine users with automatic pagination.
+
+        Args:
+            machine_user_names: Optional list of machine user names or CRNs to filter by
+
+        Returns:
+            List of machine users
+        """
+        result = self._list_machine_users_page(machine_user_names=machine_user_names)
+        return [
+            from_dict(MachineUser, machine_user)
+            for machine_user in result.get("machineUsers", [])
+        ]
+
     def get_machine_user_details(
         self,
         machine_user_name: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[MachineUserDetails]:
         """
         Get complete machine user information including roles and resource assignments.
 
@@ -1600,39 +1601,24 @@ class CdpIamClient:
         - Assigned resource roles
 
         Returns:
-            Complete machine user information dict, or None if machine user doesn't exist
+            The machine user with its assignments, or None if the machine user doesn't exist
         """
         machine_users = self.list_machine_users(
             machine_user_names=[machine_user_name],
-        ).get("machineUsers", [])
+        )
 
         if not machine_users:
             return None
 
-        machine_user_info = machine_users[0]
-
-        # Get assigned roles
-        roles_response = self.list_machine_user_assigned_roles(
-            machine_user_name=machine_user_name,
+        return MachineUserDetails(
+            **vars(machine_users[0]),
+            roles=self.list_machine_user_assigned_roles(
+                machine_user_name=machine_user_name,
+            ),
+            resourceAssignments=self.list_machine_user_assigned_resource_roles(
+                machine_user_name=machine_user_name,
+            ),
         )
-        roles = roles_response.get("roleCrns", [])
-
-        # Get assigned resource roles
-        resource_roles_response = self.list_machine_user_assigned_resource_roles(
-            machine_user_name=machine_user_name,
-        )
-        resource_assignments = resource_roles_response.get("resourceAssignments", [])
-
-        # Build complete machine user object
-        return {
-            "machineUserName": machine_user_info.get("machineUserName"),
-            "crn": machine_user_info.get("crn"),
-            "creationDate": machine_user_info.get("creationDate"),
-            "status": machine_user_info.get("status"),
-            "workloadUsername": machine_user_info.get("workloadUsername"),
-            "roles": roles,
-            "resourceAssignments": resource_assignments,
-        }
 
     def manage_machine_user_roles(
         self,
@@ -1681,8 +1667,8 @@ class CdpIamClient:
     def manage_machine_user_resource_roles(
         self,
         machine_user_name: str,
-        current_assignments: List[Dict[str, str]],
-        desired_assignments: List[Dict[str, str]],
+        current_assignments: List[ResourceAssignment],
+        desired_assignments: List[ResourceAssignment],
         purge: bool = False,
     ) -> bool:
         """
@@ -1699,52 +1685,29 @@ class CdpIamClient:
         """
         changed = False
 
-        # Normalize current assignments for comparison
-        current_normalized = [
-            {
-                "resource": a.get("resourceCrn"),
-                "role": a.get("resourceRoleCrn"),
-            }
-            for a in current_assignments
-        ]
-
-        # Normalize desired assignments
-        desired_normalized = [
-            {
-                "resource": a.get("resource") or a.get("resourceCrn"),
-                "role": a.get("role") or a.get("resourceRoleCrn"),
-            }
-            for a in desired_assignments
-        ]
+        current_set = {(a.resourceCrn, a.resourceRoleCrn) for a in current_assignments}
+        desired_set = {(a.resourceCrn, a.resourceRoleCrn) for a in desired_assignments}
 
         if purge:
-            # Remove all assignments not in desired list
-            assignments_to_remove = [
-                a for a in current_normalized if a not in desired_normalized
-            ]
-            for assignment in assignments_to_remove:
+            for resource_crn, resource_role_crn in current_set - desired_set:
                 self.unassign_machine_user_resource_role(
                     machine_user_name=machine_user_name,
-                    resource_crn=assignment["resource"],
-                    resource_role_crn=assignment["role"],
+                    resource_crn=resource_crn,
+                    resource_role_crn=resource_role_crn,
                 )
                 changed = True
 
-        # Add missing assignments
-        assignments_to_add = [
-            a for a in desired_normalized if a not in current_normalized
-        ]
-        for assignment in assignments_to_add:
+        for resource_crn, resource_role_crn in desired_set - current_set:
             self.assign_machine_user_resource_role(
                 machine_user_name=machine_user_name,
-                resource_crn=assignment["resource"],
-                resource_role_crn=assignment["role"],
+                resource_crn=resource_crn,
+                resource_role_crn=resource_role_crn,
             )
             changed = True
 
         return changed
 
-    def create_machine_user(self, machine_user_name: str) -> Dict[str, Any]:
+    def create_machine_user(self, machine_user_name: str) -> MachineUser:
         """
         Create a new machine user.
 
@@ -1752,18 +1715,19 @@ class CdpIamClient:
             machine_user_name: The name of the machine user to create
 
         Returns:
-            Response containing the created machine user information
+            The created machine user
         """
         json_data: Dict[str, Any] = {
             "machineUserName": machine_user_name,
         }
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/iam/createMachineUser",
             json_data=json_data,
         )
+        return from_dict(MachineUser, response.get("machineUser", {}))
 
-    def delete_machine_user(self, machine_user_name: str) -> Dict[str, Any]:
+    def delete_machine_user(self, machine_user_name: str) -> DeleteMachineUserResponse:
         """
         Delete a machine user.
 
@@ -1771,16 +1735,17 @@ class CdpIamClient:
             machine_user_name: The name or CRN of the machine user to delete
 
         Returns:
-            Response confirming the machine user was deleted
+            The resources that were released by the deletion
         """
         json_data: Dict[str, Any] = {
             "machineUserName": machine_user_name,
         }
 
-        return self.api_client.post(
+        response = self.api_client.post(
             "/api/v1/iam/deleteMachineUser",
             json_data=json_data,
         )
+        return from_dict(DeleteMachineUserResponse, response or {})
 
     # Machine User Role Assignment Methods
 
@@ -1891,23 +1856,13 @@ class CdpIamClient:
         )
 
     @CdpClient.paginated()
-    def list_machine_user_assigned_roles(
+    def _list_machine_user_assigned_roles_page(
         self,
         machine_user_name: str,
         pageToken: Optional[str] = None,
         pageSize: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        List roles assigned to a machine user with automatic pagination.
-
-        Args:
-            machine_user_name: The machine user name or CRN
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Response with automatic pagination handling containing assigned roles
-        """
+        """Raw listMachineUserAssignedRoles call; pagination is handled by the decorator."""
         json_data: Dict[str, Any] = {
             "machineUserName": machine_user_name,
         }
@@ -1922,24 +1877,29 @@ class CdpIamClient:
             json_data=json_data,
         )
 
+    def list_machine_user_assigned_roles(self, machine_user_name: str) -> List[str]:
+        """
+        List roles assigned to a machine user with automatic pagination.
+
+        Args:
+            machine_user_name: The machine user name or CRN
+
+        Returns:
+            List of role CRNs
+        """
+        result = self._list_machine_user_assigned_roles_page(
+            machine_user_name=machine_user_name,
+        )
+        return result.get("roleCrns", [])
+
     @CdpClient.paginated()
-    def list_machine_user_assigned_resource_roles(
+    def _list_machine_user_assigned_resource_roles_page(
         self,
         machine_user_name: str,
         pageToken: Optional[str] = None,
         pageSize: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        List resource roles assigned to a machine user with automatic pagination.
-
-        Args:
-            machine_user_name: The machine user name or CRN
-            pageToken: Token for pagination (automatically handled by decorator)
-            pageSize: Page size for pagination (automatically handled by decorator)
-
-        Returns:
-            Response with automatic pagination handling containing assigned resource roles
-        """
+        """Raw listMachineUserAssignedResourceRoles call; pagination is handled by the decorator."""
         json_data: Dict[str, Any] = {
             "machineUserName": machine_user_name,
         }
@@ -1953,6 +1913,27 @@ class CdpIamClient:
             "/api/v1/iam/listMachineUserAssignedResourceRoles",
             json_data=json_data,
         )
+
+    def list_machine_user_assigned_resource_roles(
+        self,
+        machine_user_name: str,
+    ) -> List[ResourceAssignment]:
+        """
+        List resource roles assigned to a machine user with automatic pagination.
+
+        Args:
+            machine_user_name: The machine user name or CRN
+
+        Returns:
+            List of resource role assignments
+        """
+        result = self._list_machine_user_assigned_resource_roles_page(
+            machine_user_name=machine_user_name,
+        )
+        return [
+            from_dict(ResourceAssignment, assignment)
+            for assignment in result.get("resourceAssignments", [])
+        ]
 
     def generate_workload_auth_token(
         self,
