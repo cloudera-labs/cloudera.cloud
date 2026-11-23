@@ -484,9 +484,7 @@ class CdpIamClient:
         for user in self.list_users():
             for field, pattern in compiled.items():
                 value = getattr(user, field, NULLABLE)
-                if value is NULLABLE or not (
-                    value and re.search(pattern, str(value))
-                ):
+                if value is NULLABLE or not (value and re.search(pattern, str(value))):
                     break
             else:
                 matched.append(user)
@@ -951,12 +949,8 @@ class CdpIamClient:
         """
         changed = False
 
-        current_set = {
-            (a.resourceCrn, a.resourceRoleCrn) for a in current_assignments
-        }
-        desired_set = {
-            (a.resourceCrn, a.resourceRoleCrn) for a in desired_assignments
-        }
+        current_set = {(a.resourceCrn, a.resourceRoleCrn) for a in current_assignments}
+        desired_set = {(a.resourceCrn, a.resourceRoleCrn) for a in desired_assignments}
 
         if purge:
             assignments_to_remove = current_set - desired_set
@@ -1691,12 +1685,8 @@ class CdpIamClient:
         """
         changed = False
 
-        current_set = {
-            (a.resourceCrn, a.resourceRoleCrn) for a in current_assignments
-        }
-        desired_set = {
-            (a.resourceCrn, a.resourceRoleCrn) for a in desired_assignments
-        }
+        current_set = {(a.resourceCrn, a.resourceRoleCrn) for a in current_assignments}
+        desired_set = {(a.resourceCrn, a.resourceRoleCrn) for a in desired_assignments}
 
         if purge:
             for resource_crn, resource_role_crn in current_set - desired_set:
