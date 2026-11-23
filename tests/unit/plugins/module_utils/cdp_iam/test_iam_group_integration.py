@@ -98,7 +98,7 @@ class TestIamGroupIntegration:
 
             # 2. Get current user to add to group
             current_user = client.get_user()
-            user_crn = current_user.get("crn")
+            user_crn = current_user.crn if current_user else None
 
             if user_crn:
                 # 3. Add user to group
@@ -200,16 +200,11 @@ class TestIamGroupIntegration:
             )
 
             # 2. Get list of machine users
-            machine_users_response = client.list_machine_users()
+            machine_users = client.list_machine_users()
 
-            if (
-                machine_users_response.get("machineUsers")
-                and len(machine_users_response["machineUsers"]) > 0
-            ):
+            if machine_users:
                 # Use first available machine user for testing
-                machine_user_name = machine_users_response["machineUsers"][0][
-                    "machineUserName"
-                ]
+                machine_user_name = machine_users[0].machineUserName
 
                 # 3. Add machine user to group
                 add_response = client.add_machine_user_to_group(

@@ -28,7 +28,7 @@ options:
   email:
     description:
       - The email address for the user.
-      - Required when creating a new user (O(state=present)).
+      - Required only when creating a new user (O(state=present) and the user does not yet exist).
       - Can be used to identify an existing user for updates or deletion.
       - If both O(email) and O(user_id) are provided, O(email) takes precedence for lookup.
     type: str
@@ -43,6 +43,8 @@ options:
       - List of groups the user belongs to.
       - Groups must already exist before adding users to them.
       - Use the M(cloudera.cloud.iam_group) module to create groups first.
+      - If not specified, the user's existing group memberships are left untouched, regardless of O(purge).
+      - If specified, group memberships are reconciled against this list; with O(purge=True), memberships not in this list are removed.
     type: list
     elements: str
     required: False
@@ -63,14 +65,17 @@ options:
     required: False
   purge:
     description:
-      - Flag to replace O(roles) and O(resource_roles) with their specified values.
-      - If True, any roles or resource roles not specified will be removed.
+      - Flag to replace O(roles), O(resource_roles), and O(groups) with their specified values.
+      - If True, any roles, resource roles, or groups not specified will be removed.
+      - Only applies to an attribute (O(roles), O(resource_roles), O(groups)) when that attribute is also specified; an omitted attribute is never purged.
     type: bool
     required: False
     default: False
   resource_roles:
     description:
       - A list of resource role assignments.
+      - If not specified, the user's existing resource role assignments are left untouched, regardless of O(purge).
+      - If specified, assignments are reconciled against this list; with O(purge=True), assignments not in this list are removed.
     type: list
     required: False
     elements: dict
@@ -95,6 +100,8 @@ options:
     description:
       - A single role or list of roles assigned to the user.
       - The role must be identified by its full CRN.
+      - If not specified, the user's existing role assignments are left untouched, regardless of O(purge).
+      - If specified, roles are reconciled against this list; with O(purge=True), roles not in this list are removed.
     type: list
     elements: str
     required: False
@@ -113,6 +120,7 @@ options:
       - The password plaintext is not stored.
       - Only applicable when creating or updating a user (O(state=present)).
       - This parameter is optional and only set if provided.
+      - When provided for an existing user, the password is reset on every run and the task always reports a change, because the current password cannot be read back for comparison.
     type: str
     required: False
     aliases:
@@ -172,6 +180,11 @@ EXAMPLES = r"""
     last_name: Doe
     workload_password: "MySecurePassword123!"
     saml_provider_name: my-saml-provider
+
+# Reset the workload password of an existing user (email is not required)
+- cloudera.cloud.iam_user:
+    user_id: user001
+    workload_password: "MyNewSecurePassword123!"
 
 # Delete a user by user_id
 - cloudera.cloud.iam_user:
@@ -278,17 +291,40 @@ sdk_out_lines:
   elements: str
 """
 
-from typing import Any, Dict
+from dataclasses import replace
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    NULLABLE,
     ServicesModule,
     diff_dict,
+    to_dict,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
     CdpIamClient,
+    ResourceAssignment,
+    UserDetails,
 )
+
+
+def _coerce_list(value: Any) -> List[Any]:
+    """Treat an unset (NULLABLE) or null list field as empty."""
+    return [] if value is NULLABLE or value is None else value
+
+
+def _assignment_pairs(
+    assignments: Optional[List[ResourceAssignment]],
+) -> Set[Tuple[Any, Any]]:
+    return {(a.resourceCrn, a.resourceRoleCrn) for a in assignments or []}
+
+
+def _assignments_from_pairs(pairs: Set[Tuple[Any, Any]]) -> List[ResourceAssignment]:
+    return [
+        ResourceAssignment(resourceCrn=resource, resourceRoleCrn=role)
+        for resource, role in sorted(pairs)
+    ]
 
 
 class IAMUser(ServicesModule):
@@ -331,7 +367,7 @@ class IAMUser(ServicesModule):
                         resource=dict(
                             required=True,
                             type="str",
-                            aliases=["resource_crn"],
+                            aliases=["resource_crn", "resourceCrn"],
                         ),
                         role=dict(
                             required=True,
@@ -345,9 +381,6 @@ class IAMUser(ServicesModule):
             required_one_of=[
                 ["user_id", "email"],
             ],
-            required_if=[
-                ("state", "present", ["email"]),
-            ],
             supports_check_mode=True,
         )
 
@@ -360,220 +393,195 @@ class IAMUser(ServicesModule):
         self.last_name = self.get_param("last_name")
         self.saml_provider_name = self.get_param("saml_provider_name")
         self.workload_password = self.get_param("workload_password")
-        self.groups = self.get_param("groups")
-        self.roles = self.get_param("roles")
-        self.resource_roles = self.get_param("resource_roles")
+        self.groups: Optional[List[str]] = self.get_param("groups")
+        self.roles: Optional[List[str]] = self.get_param("roles")
         self.purge = self.get_param("purge")
 
+        resource_roles = self.get_param("resource_roles")
+        self.resource_roles: Optional[List[ResourceAssignment]] = (
+            [
+                ResourceAssignment(
+                    resourceCrn=item["resource"],
+                    resourceRoleCrn=item["role"],
+                )
+                for item in resource_roles
+            ]
+            if resource_roles is not None
+            else None
+        )
+
         # Initialize return values
-        self.user = {}
+        self.user: Dict[str, Any] = {}
         self.changed = False
-        self.diff = {}
+        self.diff: Dict[str, Any] = {"before": {}, "after": {}}
 
         # Initialize client
         self.client = CdpIamClient(api_client=self.api_client)
 
-    def _find_existing_user(self):
+    @property
+    def _manages_roles(self) -> bool:
+        return self.roles is not None
+
+    @property
+    def _manages_resource_roles(self) -> bool:
+        return self.resource_roles is not None
+
+    def _find_existing_user(self) -> Optional[UserDetails]:
         if self.email:
-            user = self.client.get_user_details_by_email(email=self.email)
-            if user:
-                self.user_id = user.get("userId")
-            return user
+            return self.client.get_user_details_by_email(email=self.email)
         return self.client.get_user_details(user_id=self.user_id)
 
+    def _expected_new_user(self) -> UserDetails:
+        """The user as requested by the task, for the 'after' side of a create diff."""
+        expected = UserDetails(email=self.email)
+        if self.first_name is not None:
+            expected.firstName = self.first_name
+        if self.last_name is not None:
+            expected.lastName = self.last_name
+        if self.groups is not None:
+            expected.groups = self.groups
+        if self.roles is not None:
+            expected.roles = self.roles
+        if self.resource_roles is not None:
+            expected.resourceAssignments = self.resource_roles
+        return expected
+
+    def _plan_update(self, existing: UserDetails) -> Tuple[UserDetails, UserDetails]:
+        """
+        Build comparable (current, desired) views of an existing user.
+
+        Lists are sorted so ordering differences never register as changes, and
+        group CRNs are resolved to names (the form in which groups are requested)
+        whenever groups are managed by the task.
+        """
+        current_roles = _coerce_list(existing.roles)
+        current_pairs = _assignment_pairs(_coerce_list(existing.resourceAssignments))
+
+        current = replace(
+            existing,
+            roles=sorted(current_roles),
+            resourceAssignments=_assignments_from_pairs(current_pairs),
+        )
+        desired = replace(current)
+
+        if self._manages_roles:
+            wanted_roles = set(self.roles or [])
+            desired.roles = sorted(
+                wanted_roles if self.purge else set(current_roles) | wanted_roles,
+            )
+
+        if self._manages_resource_roles:
+            wanted_pairs = _assignment_pairs(self.resource_roles)
+            desired.resourceAssignments = _assignments_from_pairs(
+                wanted_pairs if self.purge else current_pairs | wanted_pairs,
+            )
+
+        if self.groups is not None:
+            current_names = set(
+                self.client.get_group_names(_coerce_list(existing.groups)),
+            )
+            wanted_names = set(self.groups)
+            current.groups = sorted(current_names)
+            desired.groups = sorted(
+                wanted_names if self.purge else current_names | wanted_names,
+            )
+
+        return current, desired
+
+    def _apply(self, user: UserDetails) -> bool:
+        """Reconcile groups, roles, resource roles and workload password. Returns True if anything changed."""
+        changed = False
+
+        if self.groups is not None:
+            if self.client.manage_user_groups(
+                user_id=user.userId,
+                current_groups=_coerce_list(user.groups),
+                desired_groups=self.groups,
+                purge=self.purge,
+            ):
+                changed = True
+
+        if self._manages_roles:
+            if self.client.manage_user_roles(
+                user_id=user.userId,
+                current_roles=_coerce_list(user.roles),
+                desired_roles=self.roles or [],
+                purge=self.purge,
+            ):
+                changed = True
+
+        if self._manages_resource_roles:
+            if self.client.manage_user_resource_roles(
+                user_id=user.userId,
+                current_assignments=_coerce_list(user.resourceAssignments),
+                desired_assignments=self.resource_roles or [],
+                purge=self.purge,
+            ):
+                changed = True
+
+        if self.workload_password is not None:
+            self.client.set_workload_password(
+                password=self.workload_password,
+                actor_crn=user.crn,
+            )
+            changed = True
+
+        return changed
+
     def process(self):
-        existing_user = self._find_existing_user()
+        existing = self._find_existing_user()
+        final: Optional[UserDetails] = None
 
         if self.state == "absent":
-            if existing_user:
-                if self.module._diff:
-                    self.diff = {
-                        "before": camel_dict_to_snake_dict(existing_user),
-                        "after": {},
-                    }
-                if not self.module.check_mode:
-                    self.client.delete_user(user_id=self.user_id)
+            if existing:
                 self.changed = True
-
-        elif self.state == "present":
-            if not existing_user:
-                idp_user_id = self.identity_provider_user_id or self.email
-
                 if self.module._diff:
-                    expected_user = {"email": self.email}
-                    if self.first_name:
-                        expected_user["first_name"] = self.first_name
-                    if self.last_name:
-                        expected_user["last_name"] = self.last_name
-                    if self.groups:
-                        expected_user["groups"] = self.groups
-                    if self.roles:
-                        expected_user["roles"] = self.roles
-                    if self.resource_roles:
-                        expected_user["resource_assignments"] = self.resource_roles
-                    self.diff = {"before": {}, "after": expected_user}
-
+                    self.diff["before"] = camel_dict_to_snake_dict(to_dict(existing))
                 if not self.module.check_mode:
-                    response = self.client.create_user(
-                        email=self.email,
-                        first_name=self.first_name,
-                        identity_provider_user_id=idp_user_id,
-                        last_name=self.last_name,
-                        saml_provider_name=self.saml_provider_name,
-                    )
-                    created_user = self.client.get_user_details(
-                        user_id=response.get("user", {}).get("userId"),
-                    )
+                    self.client.delete_user(user_id=existing.userId)
 
-                    if self.groups is not None or self.purge:
-                        self.client.manage_user_groups(
-                            user_id=created_user.get("userId"),
-                            current_groups=created_user.get("groups", []),
-                            desired_groups=self.groups or [],
-                            purge=self.purge,
-                        )
+        elif not existing:
+            if not self.email:
+                self.module.fail_json(
+                    msg=f"email is required to create a new user; no existing user found for user_id '{self.user_id}'",
+                )
+            self.changed = True
+            if self.module._diff:
+                self.diff["after"] = camel_dict_to_snake_dict(
+                    to_dict(self._expected_new_user()),
+                )
+            if not self.module.check_mode:
+                created = self.client.create_user(
+                    email=self.email,
+                    first_name=self.first_name,
+                    identity_provider_user_id=self.identity_provider_user_id
+                    or self.email,
+                    last_name=self.last_name,
+                    saml_provider_name=self.saml_provider_name,
+                )
+                details = self.client.get_user_details(user_id=created.userId)
+                self._apply(details)
+                final = self.client.get_user_details(user_id=created.userId)
 
-                    if self.roles is not None or self.purge:
-                        self.client.manage_user_roles(
-                            user_id=created_user.get("userId"),
-                            current_roles=created_user.get("roles", []),
-                            desired_roles=self.roles or [],
-                            purge=self.purge,
-                        )
+        else:
+            current, desired = self._plan_update(existing)
+            before, after = diff_dict(current, desired)
 
-                    if self.resource_roles is not None or self.purge:
-                        self.client.manage_user_resource_roles(
-                            user_id=created_user.get("userId"),
-                            current_assignments=created_user.get(
-                                "resourceAssignments",
-                                [],
-                            ),
-                            desired_assignments=self.resource_roles or [],
-                            purge=self.purge,
-                        )
-
-                    if self.workload_password is not None:
-                        self.client.set_workload_password(
-                            password=self.workload_password,
-                            actor_crn=created_user.get("crn"),
-                        )
-
-                    self.user = self.client.get_user_details(
-                        user_id=created_user.get("userId"),
-                    )
-
+            if before or after or self.workload_password is not None:
                 self.changed = True
+                if self.module._diff and (before or after):
+                    self.diff["before"] = camel_dict_to_snake_dict(before)
+                    self.diff["after"] = camel_dict_to_snake_dict(after)
 
-            else:
-                if self.module.check_mode:
-                    expected_user = dict(existing_user)
+            final = existing
+            if not self.module.check_mode:
+                if self._apply(existing):
+                    self.changed = True
+                if self.changed:
+                    final = self.client.get_user_details(user_id=existing.userId)
 
-                    if self.groups is not None:
-                        expected_user["groups"] = (
-                            self.groups
-                            if self.purge
-                            else list(
-                                set(existing_user.get("groups", []) + self.groups),
-                            )
-                        )
-                    elif self.purge:
-                        expected_user["groups"] = []
-
-                    if self.roles is not None:
-                        expected_user["roles"] = (
-                            self.roles
-                            if self.purge
-                            else list(
-                                set(existing_user.get("roles", []) + self.roles),
-                            )
-                        )
-                    elif self.purge:
-                        expected_user["roles"] = []
-
-                    if self.resource_roles is not None:
-                        expected_user["resourceAssignments"] = (
-                            self.resource_roles
-                            if self.purge
-                            else existing_user.get("resourceAssignments", [])
-                            + self.resource_roles
-                        )
-                    elif self.purge:
-                        expected_user["resourceAssignments"] = []
-
-                    exclude_keys = CdpIamClient.get_user_diff_exclude_keys()
-                    prev_diff, next_diff = diff_dict(
-                        camel_dict_to_snake_dict(existing_user),
-                        camel_dict_to_snake_dict(expected_user),
-                        exclude_keys=exclude_keys,
-                    )
-
-                    if prev_diff or next_diff or self.workload_password is not None:
-                        self.changed = True
-                        if self.module._diff and (prev_diff or next_diff):
-                            self.diff = {"before": prev_diff, "after": next_diff}
-
-                    self.user = existing_user
-
-                else:
-                    original_user = dict(existing_user)
-
-                    if self.groups is not None or self.purge:
-                        if self.client.manage_user_groups(
-                            user_id=existing_user.get("userId"),
-                            current_groups=existing_user.get("groups", []),
-                            desired_groups=self.groups or [],
-                            purge=self.purge,
-                        ):
-                            self.changed = True
-
-                    if self.roles is not None or self.purge:
-                        if self.client.manage_user_roles(
-                            user_id=existing_user.get("userId"),
-                            current_roles=existing_user.get("roles", []),
-                            desired_roles=self.roles or [],
-                            purge=self.purge,
-                        ):
-                            self.changed = True
-
-                    if self.resource_roles is not None or self.purge:
-                        if self.client.manage_user_resource_roles(
-                            user_id=existing_user.get("userId"),
-                            current_assignments=existing_user.get(
-                                "resourceAssignments",
-                                [],
-                            ),
-                            desired_assignments=(self.resource_roles or []),
-                            purge=self.purge,
-                        ):
-                            self.changed = True
-
-                    if self.workload_password is not None:
-                        self.client.set_workload_password(
-                            password=self.workload_password,
-                            actor_crn=existing_user.get("crn"),
-                        )
-                        self.changed = True
-
-                    if self.changed:
-                        updated_user = self.client.get_user_details(
-                            user_id=existing_user.get("userId"),
-                        )
-
-                        if self.module._diff:
-                            exclude_keys = CdpIamClient.get_user_diff_exclude_keys()
-                            prev_diff, next_diff = diff_dict(
-                                camel_dict_to_snake_dict(original_user),
-                                camel_dict_to_snake_dict(updated_user),
-                                exclude_keys=exclude_keys,
-                            )
-                            if prev_diff or next_diff:
-                                self.diff = {"before": prev_diff, "after": next_diff}
-
-                        self.user = updated_user
-                    else:
-                        self.user = existing_user
-
-        self.user = camel_dict_to_snake_dict(self.user)
+        if final:
+            self.user = camel_dict_to_snake_dict(to_dict(final))
 
 
 def main():
@@ -584,7 +592,7 @@ def main():
         user=result.user,
     )
 
-    if result.diff:
+    if result.diff["before"] or result.diff["after"]:
         output.update(diff=result.diff)
 
     if result.debug_log:

@@ -32,6 +32,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
     CdpIamClient,
+    User,
 )
 from ansible_collections.cloudera.cloud.plugins.modules import iam_user
 
@@ -109,7 +110,7 @@ def iam_user_delete(
 def iam_user_create(
     iam_client,
     iam_user_delete,
-) -> Callable[[str, str, str], dict]:
+) -> Callable[[str, str, str], User]:
     """Fixture to create IAM users for tests."""
 
     def _iam_user_create(email: str, idp_user_id: str, saml_provider_name: str):
@@ -118,10 +119,46 @@ def iam_user_create(
             identity_provider_user_id=idp_user_id,
             saml_provider_name=saml_provider_name,
         )
-        iam_user_delete(result["user"]["userId"])
-        return result["user"]
+        iam_user_delete(result.userId)
+        return result
 
     return _iam_user_create
+
+
+@pytest.fixture
+def iam_group_delete(iam_client) -> Generator[Callable[[str], None], None, None]:
+    """Fixture to clean up IAM groups created during tests."""
+
+    group_names = []
+
+    def _iam_group_delete(name: str):
+        group_names.append(name)
+        return
+
+    yield _iam_group_delete
+
+    for name in group_names:
+        try:
+            iam_client.delete_group(group_name=name)
+        except CdpError as e:
+            if e.status == 404:
+                continue
+        except Exception as e:
+            if hasattr(e, "code") and e.code == 404:
+                continue
+            pytest.fail(f"Failed to clean up IAM group: {name}. {e}")
+
+
+@pytest.fixture
+def iam_group_create(iam_client, iam_group_delete) -> Callable[[str], None]:
+    """Fixture to create IAM groups for tests."""
+
+    def _iam_group_create(name: str):
+        iam_group_delete(name)
+        iam_client.create_group(group_name=name)
+        return name
+
+    return _iam_group_create
 
 
 @pytest.mark.skip("Utility test, not part of main suite")
@@ -177,13 +214,13 @@ def test_iam_user_delete(iam_module_args, iam_user_create, env_context):
     """Test deleting an IAM user with real API calls using user_id."""
 
     # Create the user to be deleted
-    created_user = iam_user_create(
+    iam_user_create(
         email=USER_EMAIL,
         idp_user_id=IDENTITY_PROVIDER_USER_ID,
         saml_provider_name=env_context["SAML_PROVIDER_NAME"],
     )
 
-    # Execute function - use userId from created user (API returns camelCase)
+    # Execute function - the user is looked up by email
     iam_module_args(
         {
             "email": USER_EMAIL,
@@ -530,7 +567,7 @@ def test_iam_user_check_mode_delete_int(
     # Verify user still exists
     existing_user = iam_client.get_user_details_by_email(email=USER_EMAIL)
     assert existing_user is not None
-    assert existing_user["email"] == USER_EMAIL
+    assert existing_user.email == USER_EMAIL
 
 
 def test_iam_user_check_mode_update_diff_int(
@@ -587,3 +624,157 @@ def test_iam_user_check_mode_update_diff_int(
 
     # Verify roles were NOT actually changed
     assert result.value.user["roles"] == original_roles
+
+
+def test_iam_user_purge_without_groups_preserves_membership_int(
+    iam_module_args,
+    iam_user_delete,
+    iam_group_create,
+    env_context,
+):
+    """Test that purge=True without groups specified leaves group membership untouched."""
+
+    group_one = f"test-group-int-{uuid.uuid4().hex[:8]}"
+    group_two = f"test-group-int-{uuid.uuid4().hex[:8]}"
+    iam_group_create(group_one)
+    iam_group_create(group_two)
+
+    # Create user and assign to both groups
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
+            "saml_provider_name": env_context["SAML_PROVIDER_NAME"],
+            "state": "present",
+            "groups": [group_one, group_two],
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    user_id = result.value.user["user_id"]
+    original_groups = set(result.value.user["groups"])
+    assert len(original_groups) == 2
+
+    # Register for cleanup after the test
+    iam_user_delete(user_id)
+
+    # Update the user with purge=True, but do not specify groups at all
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "state": "present",
+            "roles": [],
+            "purge": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    # Group membership must remain untouched since groups was not specified
+    assert set(result.value.user["groups"]) == original_groups
+
+
+def test_iam_user_purge_groups_int(
+    iam_module_args,
+    iam_user_delete,
+    iam_group_create,
+    env_context,
+):
+    """Test that purge=True with groups specified removes memberships not listed."""
+
+    group_one = f"test-group-int-{uuid.uuid4().hex[:8]}"
+    group_two = f"test-group-int-{uuid.uuid4().hex[:8]}"
+    iam_group_create(group_one)
+    iam_group_create(group_two)
+
+    # Create user and assign to both groups
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
+            "saml_provider_name": env_context["SAML_PROVIDER_NAME"],
+            "state": "present",
+            "groups": [group_one, group_two],
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    user_id = result.value.user["user_id"]
+    assert len(result.value.user["groups"]) == 2
+
+    # Register for cleanup after the test
+    iam_user_delete(user_id)
+
+    # Reconcile group membership down to just group_one
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "state": "present",
+            "groups": [group_one],
+            "purge": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    assert len(result.value.user["groups"]) == 1
+
+
+def test_iam_user_purge_all_groups_with_empty_list_int(
+    iam_module_args,
+    iam_user_delete,
+    iam_group_create,
+    env_context,
+):
+    """Test that purge=True with groups explicitly set to [] removes all group memberships."""
+
+    group_one = f"test-group-int-{uuid.uuid4().hex[:8]}"
+    group_two = f"test-group-int-{uuid.uuid4().hex[:8]}"
+    iam_group_create(group_one)
+    iam_group_create(group_two)
+
+    # Create user and assign to both groups
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "identity_provider_user_id": IDENTITY_PROVIDER_USER_ID,
+            "saml_provider_name": env_context["SAML_PROVIDER_NAME"],
+            "state": "present",
+            "groups": [group_one, group_two],
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    user_id = result.value.user["user_id"]
+    assert len(result.value.user["groups"]) == 2
+
+    # Register for cleanup after the test
+    iam_user_delete(user_id)
+
+    # groups explicitly set to [] with purge=True should remove all memberships
+    iam_module_args(
+        {
+            "email": USER_EMAIL,
+            "state": "present",
+            "groups": [],
+            "purge": True,
+        },
+    )
+
+    with pytest.raises(AnsibleExitJson) as result:
+        iam_user.main()
+
+    assert result.value.changed is True
+    assert result.value.user["groups"] == []

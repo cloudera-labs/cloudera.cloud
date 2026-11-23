@@ -186,14 +186,25 @@ sdk_out_lines:
   elements: str
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     ServicesModule,
+    to_dict,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_iam import (
     CdpIamClient,
+    User,
 )
+
+
+def _to_output(user: User) -> Dict[str, Any]:
+    """Render a user in the module's documented output shape (camelCase keys, with resource_roles)."""
+    output = to_dict(user)
+    resource_roles = output.pop("resourceAssignments", None)
+    if resource_roles is not None:
+        output["resource_roles"] = resource_roles
+    return output
 
 
 class IAMUserInfo(ServicesModule):
@@ -245,46 +256,42 @@ class IAMUserInfo(ServicesModule):
         self.view = self.get_param("view")
 
         # Initialize the return values
-        self.users = []
+        self.users: List[Dict[str, Any]] = []
 
         # Initialize client
         self.client = CdpIamClient(api_client=self.api_client)
 
     def process(self):
+        users: List[User] = []
+
         if self.current_user:
             user = self.client.get_user()
             if user:
-                self.users.append(user)
+                users.append(user)
 
         elif self.user_id:
-            result = self.client.list_users(user_ids=self.user_id)
-            self.users = result.get("users", [])
+            users = self.client.list_users(user_ids=self.user_id)
 
         elif self.name:
-            result = self.client.list_users()
-            user_list = result.get("users", [])
-            for user in user_list:
-                if user.get("workloadUsername") in self.name:
-                    self.users.append(user)
+            users = [
+                user
+                for user in self.client.list_users()
+                if user.workloadUsername in self.name
+            ]
 
         elif self.filter is not None:
-            self.users = self.client.list_users_filtered(self.filter)
+            users = self.client.list_users_filtered(self.filter)
 
         else:
-            result = self.client.list_users()
-            self.users = result.get("users", [])
+            users = self.client.list_users()
 
         if self.view == "full":
-            details = []
-            for user in self.users:
-                uid = user.get("userId")
-                detail = self.client.get_user_details(uid)
-                if detail:
-                    # Rename resourceAssignments to resource_roles for backward compatibility
-                    if "resourceAssignments" in detail:
-                        detail["resource_roles"] = detail.pop("resourceAssignments")
-                    details.append(detail)
-            self.users = details
+            details = [
+                self.client.get_user_details(user_id=user.userId) for user in users
+            ]
+            users = [detail for detail in details if detail]
+
+        self.users = [_to_output(user) for user in users]
 
 
 def main():
