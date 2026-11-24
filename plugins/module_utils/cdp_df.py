@@ -218,6 +218,41 @@ def check_service_updates(
         return {}
 
 
+def format_tags_for_api(
+    tags: Optional[List[Dict[str, Any]]],
+) -> Optional[List[Dict[str, str]]]:
+    """
+    Convert tags from Ansible format to API format.
+
+    Transforms tags from Ansible parameter format (snake_case keys) to
+    API format (camelCase keys), filtering out None values.
+
+    Args:
+        tags: List of tags in Ansible format with keys 'tag_name' and 'tag_color'
+
+    Returns:
+        List of tags in API format with keys 'tagName' and 'tagColor', or None if input is None
+
+    Example:
+        Input:  [{'tag_name': 'production', 'tag_color': 'blue'}, {'tag_name': 'stable'}]
+        Output: [{'tagName': 'production', 'tagColor': 'blue'}, {'tagName': 'stable'}]
+    """
+    if tags is None:
+        return None
+
+    return [
+        {
+            k: v
+            for k, v in {
+                "tagName": tag.get("tag_name"),
+                "tagColor": tag.get("tag_color"),
+            }.items()
+            if v is not None
+        }
+        for tag in tags
+    ]
+
+
 class CdpDfClient:
     """CDP DataFlow API client."""
 
