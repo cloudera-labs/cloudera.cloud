@@ -26,7 +26,6 @@ from ansible_collections.cloudera.cloud.tests.unit import (
     AnsibleExitJson,
 )
 
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_df import CdpDfClient
 from ansible_collections.cloudera.cloud.plugins.modules import df_service_info
 
 
@@ -36,12 +35,6 @@ PRIVATE_KEY = os.getenv("CDP_PRIVATE_KEY", "not set")
 
 # Mark all tests in this module as integration tests requiring API credentials
 pytestmark = pytest.mark.integration_api
-
-
-@pytest.fixture
-def df_client(test_cdp_client) -> CdpDfClient:
-    """Fixture to provide a DataFlow client for tests."""
-    return CdpDfClient(api_client=test_cdp_client)
 
 
 def test_df_service_info_list_all(module_args):
@@ -63,22 +56,15 @@ def test_df_service_info_list_all(module_args):
     assert isinstance(result.value.services, list)
 
 
-def test_df_service_info_list_by_name(module_args, df_client):
-    """Test listing DataFlow services by environment name with real API calls."""
-
-    response = df_client.list_services()
-
-    if len(response.get("services", [])) == 0:
-        pytest.skip("No DataFlow services available for testing")
-
-    service_name = response["services"][0]["name"]
+def test_df_service_info_list_by_name(module_args, existing_df_service):
+    """Test getting a DataFlow service by name with real API calls."""
 
     module_args(
         {
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
-            "name": service_name,
+            "name": existing_df_service.name,
         },
     )
 
@@ -86,25 +72,18 @@ def test_df_service_info_list_by_name(module_args, df_client):
         df_service_info.main()
 
     assert result.value.changed is False
-    assert hasattr(result.value, "services")
+    assert [s["crn"] for s in result.value.services] == [existing_df_service.crn]
 
 
-def test_df_service_info_by_crn(module_args, df_client):
+def test_df_service_info_by_crn(module_args, existing_df_service):
     """Test getting DataFlow service by CRN with real API calls."""
 
-    response = df_client.list_services()
-
-    if len(response.get("services", [])) == 0:
-        pytest.skip("No DataFlow services available for testing")
-
-    service_crn = response["services"][0]["crn"]
-
     module_args(
         {
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
-            "df_crn": service_crn,
+            "df_crn": existing_df_service.crn,
         },
     )
 
@@ -112,25 +91,18 @@ def test_df_service_info_by_crn(module_args, df_client):
         df_service_info.main()
 
     assert result.value.changed is False
-    assert hasattr(result.value, "services")
+    assert [s["crn"] for s in result.value.services] == [existing_df_service.crn]
 
 
-def test_df_service_info_by_env_crn(module_args, df_client):
+def test_df_service_info_by_env_crn(module_args, existing_df_service):
     """Test getting DataFlow service by environment CRN with real API calls."""
 
-    response = df_client.list_services()
-
-    if len(response.get("services", [])) == 0:
-        pytest.skip("No DataFlow services available for testing")
-
-    env_crn = response["services"][0]["environmentCrn"]
-
     module_args(
         {
             "endpoint": BASE_URL,
             "access_key": ACCESS_KEY,
             "private_key": PRIVATE_KEY,
-            "env_crn": env_crn,
+            "env_crn": existing_df_service.environmentCrn,
         },
     )
 
@@ -138,7 +110,7 @@ def test_df_service_info_by_env_crn(module_args, df_client):
         df_service_info.main()
 
     assert result.value.changed is False
-    assert hasattr(result.value, "services")
+    assert [s["crn"] for s in result.value.services] == [existing_df_service.crn]
 
 
 def test_df_service_info_nonexistent(module_args):
