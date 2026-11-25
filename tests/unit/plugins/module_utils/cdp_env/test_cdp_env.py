@@ -24,7 +24,10 @@ from unittest.mock import MagicMock
 
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
+    ComputeClusterConfig,
+    InitializeComputeClusterResponse,
 )
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import NULLABLE
 
 
 ENV_NAME = "test-environment"
@@ -43,69 +46,100 @@ def make_client():
 
 
 def test_initialize_aws_compute_cluster_minimal(mocker):
-    """initialize_aws_compute_cluster with only environment_name sends minimal body."""
+    """initialize_aws_compute_cluster with an empty config sends only environmentName."""
     client, api_client = make_client()
 
     api_client.post.return_value = {"operationId": OPERATION_ID}
 
-    result = client.initialize_aws_compute_cluster(ENV_NAME)
+    result = client.initialize_aws_compute_cluster(ENV_NAME, ComputeClusterConfig())
 
     api_client.post.assert_called_once_with(
         "/api/v1/environments2/initializeAWSComputeCluster",
-        data={"environmentName": ENV_NAME},
+        json_data={"environmentName": ENV_NAME},
     )
-    assert result == {"operationId": OPERATION_ID}
+    assert isinstance(result, InitializeComputeClusterResponse)
+    assert result.operationId == OPERATION_ID
+
+
+def test_initialize_aws_compute_cluster_rejects_outbound_type(mocker):
+    """initialize_aws_compute_cluster raises ValueError for Azure-only outboundType."""
+    client, api_client = make_client()
+
+    with pytest.raises(ValueError, match="outboundType"):
+        client.initialize_aws_compute_cluster(
+            ENV_NAME,
+            ComputeClusterConfig(outboundType="udr"),
+        )
+
+    api_client.post.assert_not_called()
 
 
 def test_initialize_aws_compute_cluster_with_all_options(mocker):
-    """initialize_aws_compute_cluster includes computeClusterConfiguration when options are set."""
+    """initialize_aws_compute_cluster nests every set option under computeClusterConfiguration."""
     client, api_client = make_client()
 
     api_client.post.return_value = {"operationId": OPERATION_ID}
 
     client.initialize_aws_compute_cluster(
-        environment_name=ENV_NAME,
-        worker_node_subnets=["subnet-abc", "subnet-def"],
-        kube_api_authorized_ip_ranges=["10.0.0.0/8", "192.168.0.0/16"],
+        ENV_NAME,
+        ComputeClusterConfig(
+            privateCluster=False,
+            kubeApiAuthorizedIpRanges=["10.0.0.0/8", "192.168.0.0/16"],
+            workerNodeSubnets=["subnet-abc", "subnet-def"],
+        ),
     )
 
-    call_data = api_client.post.call_args[1]["data"]
-    assert call_data["environmentName"] == ENV_NAME
-    assert call_data["computeClusterConfiguration"]["workerNodeSubnets"] == [
-        "subnet-abc",
-        "subnet-def",
-    ]
-    assert call_data["computeClusterConfiguration"]["kubeApiAuthorizedIpRanges"] == [
-        "10.0.0.0/8",
-        "192.168.0.0/16",
-    ]
+    api_client.post.assert_called_once_with(
+        "/api/v1/environments2/initializeAWSComputeCluster",
+        json_data={
+            "environmentName": ENV_NAME,
+            "computeClusterConfiguration": {
+                "privateCluster": False,
+                "kubeApiAuthorizedIpRanges": ["10.0.0.0/8", "192.168.0.0/16"],
+                "workerNodeSubnets": ["subnet-abc", "subnet-def"],
+            },
+        },
+    )
 
 
-def test_initialize_aws_compute_cluster_private(mocker):
-    """initialize_aws_compute_cluster sets privateCluster when requested."""
+def test_initialize_aws_compute_cluster_omits_unset_options(mocker):
+    """Unset (NULLABLE) options are omitted; only the set ones are sent."""
     client, api_client = make_client()
 
     api_client.post.return_value = {"operationId": OPERATION_ID}
 
     client.initialize_aws_compute_cluster(
-        environment_name=ENV_NAME,
-        private_cluster=True,
+        ENV_NAME,
+        ComputeClusterConfig(privateCluster=True),
     )
 
-    call_data = api_client.post.call_args[1]["data"]
-    assert call_data["computeClusterConfiguration"]["privateCluster"] is True
+    config = api_client.post.call_args[1]["json_data"]["computeClusterConfiguration"]
+    assert config == {"privateCluster": True}
 
 
-def test_initialize_aws_compute_cluster_omits_none_options(mocker):
-    """initialize_aws_compute_cluster omits computeClusterConfiguration when all options are None."""
+def test_initialize_aws_compute_cluster_explicit_none_is_sent(mocker):
+    """An explicit None is sent as null, unlike an unset (NULLABLE) field."""
     client, api_client = make_client()
 
     api_client.post.return_value = {"operationId": OPERATION_ID}
 
-    client.initialize_aws_compute_cluster(ENV_NAME)
+    client.initialize_aws_compute_cluster(
+        ENV_NAME,
+        ComputeClusterConfig(workerNodeSubnets=None),
+    )
 
-    call_data = api_client.post.call_args[1]["data"]
-    assert "computeClusterConfiguration" not in call_data
+    config = api_client.post.call_args[1]["json_data"]["computeClusterConfiguration"]
+    assert config == {"workerNodeSubnets": None}
+
+
+def test_compute_cluster_config_defaults_are_unset():
+    """A default ComputeClusterConfig leaves every field NULLABLE."""
+    config = ComputeClusterConfig()
+
+    assert config.privateCluster is NULLABLE
+    assert config.kubeApiAuthorizedIpRanges is NULLABLE
+    assert config.workerNodeSubnets is NULLABLE
+    assert config.outboundType is NULLABLE
 
 
 # ============================================================================
@@ -114,62 +148,76 @@ def test_initialize_aws_compute_cluster_omits_none_options(mocker):
 
 
 def test_initialize_azure_compute_cluster_minimal(mocker):
-    """initialize_azure_compute_cluster with only environment_name sends minimal body."""
+    """initialize_azure_compute_cluster with an empty config sends only environmentName."""
     client, api_client = make_client()
 
     api_client.post.return_value = {"operationId": OPERATION_ID}
 
-    result = client.initialize_azure_compute_cluster(ENV_NAME)
+    result = client.initialize_azure_compute_cluster(ENV_NAME, ComputeClusterConfig())
 
     api_client.post.assert_called_once_with(
         "/api/v1/environments2/initializeAzureComputeCluster",
-        data={"environmentName": ENV_NAME},
+        json_data={"environmentName": ENV_NAME},
     )
-    assert result == {"operationId": OPERATION_ID}
+    assert isinstance(result, InitializeComputeClusterResponse)
+    assert result.operationId == OPERATION_ID
 
 
 def test_initialize_azure_compute_cluster_with_outbound_type(mocker):
-    """initialize_azure_compute_cluster includes outboundType in configuration."""
+    """initialize_azure_compute_cluster sends outboundType in the configuration."""
     client, api_client = make_client()
 
     api_client.post.return_value = {"operationId": OPERATION_ID}
 
     client.initialize_azure_compute_cluster(
-        environment_name=ENV_NAME,
-        outbound_type="udr",
+        ENV_NAME,
+        ComputeClusterConfig(outboundType="udr"),
     )
 
-    call_data = api_client.post.call_args[1]["data"]
-    assert call_data["computeClusterConfiguration"]["outboundType"] == "udr"
+    config = api_client.post.call_args[1]["json_data"]["computeClusterConfiguration"]
+    assert config == {"outboundType": "udr"}
+
+
+def test_initialize_azure_compute_cluster_without_outbound_type(mocker):
+    """initialize_azure_compute_cluster omits outboundType when it is unset."""
+    client, api_client = make_client()
+
+    api_client.post.return_value = {"operationId": OPERATION_ID}
+
+    client.initialize_azure_compute_cluster(
+        ENV_NAME,
+        ComputeClusterConfig(privateCluster=True),
+    )
+
+    config = api_client.post.call_args[1]["json_data"]["computeClusterConfiguration"]
+    assert "outboundType" not in config
 
 
 def test_initialize_azure_compute_cluster_with_all_options(mocker):
-    """initialize_azure_compute_cluster includes all configuration fields when set."""
+    """initialize_azure_compute_cluster nests every set option under computeClusterConfiguration."""
     client, api_client = make_client()
 
     api_client.post.return_value = {"operationId": OPERATION_ID}
 
     client.initialize_azure_compute_cluster(
-        environment_name=ENV_NAME,
-        private_cluster=True,
-        worker_node_subnets=["subnet-abc"],
-        outbound_type="udr",
+        ENV_NAME,
+        ComputeClusterConfig(
+            privateCluster=True,
+            kubeApiAuthorizedIpRanges=["10.0.0.0/8"],
+            workerNodeSubnets=["subnet-abc"],
+            outboundType="udr",
+        ),
     )
 
-    call_data = api_client.post.call_args[1]["data"]
-    config = call_data["computeClusterConfiguration"]
-    assert config["privateCluster"] is True
-    assert config["workerNodeSubnets"] == ["subnet-abc"]
-    assert config["outboundType"] == "udr"
-
-
-def test_initialize_azure_compute_cluster_omits_none_options(mocker):
-    """initialize_azure_compute_cluster omits computeClusterConfiguration when all options are None."""
-    client, api_client = make_client()
-
-    api_client.post.return_value = {"operationId": OPERATION_ID}
-
-    client.initialize_azure_compute_cluster(ENV_NAME)
-
-    call_data = api_client.post.call_args[1]["data"]
-    assert "computeClusterConfiguration" not in call_data
+    api_client.post.assert_called_once_with(
+        "/api/v1/environments2/initializeAzureComputeCluster",
+        json_data={
+            "environmentName": ENV_NAME,
+            "computeClusterConfiguration": {
+                "privateCluster": True,
+                "kubeApiAuthorizedIpRanges": ["10.0.0.0/8"],
+                "workerNodeSubnets": ["subnet-abc"],
+                "outboundType": "udr",
+            },
+        },
+    )

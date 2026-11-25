@@ -685,3 +685,253 @@ def test_wait_for_cluster_state_polls_through_null_status(mocker):
 
 def test_deployment_failed_is_a_failed_status():
     assert "DEPLOYMENT_FAILED" in COMPUTE_CLUSTER_FAILED_STATUSES
+
+
+# ============================================================================
+# get_default_cluster tests
+# ============================================================================
+
+
+def default_summary(**overrides):
+    """A default-cluster ComputeClusterSummary fixture."""
+    values = {
+        "clusterCrn": CLUSTER_CRN,
+        "clusterName": "default-cluster",
+        "status": next(iter(COMPUTE_CLUSTER_ACTIVE_STATUSES)),
+        "isDefault": True,
+        "envName": ENV_NAME,
+    }
+    values.update(overrides)
+    return ComputeClusterSummary(**values)
+
+
+def test_get_default_cluster_none_found():
+    client, _ = make_client()
+    client.get_clusters_by_env = MagicMock(return_value=[])
+
+    assert client.get_default_cluster(ENV_NAME) is None
+    client.get_clusters_by_env.assert_called_once_with(ENV_NAME, default=True)
+
+
+def test_get_default_cluster_returns_running_default():
+    client, _ = make_client()
+    running = default_summary()
+    client.get_clusters_by_env = MagicMock(return_value=[running])
+
+    assert client.get_default_cluster(ENV_NAME) is running
+
+
+def test_get_default_cluster_ignores_non_default_cluster():
+    client, _ = make_client()
+    client.get_clusters_by_env = MagicMock(
+        return_value=[default_summary(isDefault=False)],
+    )
+
+    assert client.get_default_cluster(ENV_NAME) is None
+
+
+@pytest.mark.parametrize("is_default", [None, NULLABLE])
+def test_get_default_cluster_ignores_unset_is_default(is_default):
+    """A null or unset isDefault is not True, so the cluster is not the default."""
+    client, _ = make_client()
+    client.get_clusters_by_env = MagicMock(
+        return_value=[default_summary(isDefault=is_default)],
+    )
+
+    assert client.get_default_cluster(ENV_NAME) is None
+
+
+def test_get_default_cluster_ignores_deleted_default():
+    client, _ = make_client()
+    deleted_status = next(iter(COMPUTE_CLUSTER_DELETED_STATUSES))
+    client.get_clusters_by_env = MagicMock(
+        return_value=[default_summary(status=deleted_status)],
+    )
+
+    assert client.get_default_cluster(ENV_NAME) is None
+
+
+@pytest.mark.parametrize("status", [None, NULLABLE])
+def test_get_default_cluster_unset_status_is_not_deleted(status):
+    """A null or unset status must not be mistaken for DELETED."""
+    client, _ = make_client()
+    unknown = default_summary(status=status)
+    client.get_clusters_by_env = MagicMock(return_value=[unknown])
+
+    assert client.get_default_cluster(ENV_NAME) is unknown
+
+
+def test_get_default_cluster_multiple_prefers_active_then_creating():
+    """More than one default is unexpected; the choice is deterministic, not list order."""
+    client, _ = make_client()
+    failed = default_summary(
+        clusterCrn=CLUSTER_CRN + "-a",
+        status=next(iter(COMPUTE_CLUSTER_FAILED_STATUSES)),
+    )
+    creating = default_summary(
+        clusterCrn=CLUSTER_CRN + "-b",
+        status=next(iter(COMPUTE_CLUSTER_CREATING_STATUSES)),
+    )
+    running = default_summary(clusterCrn=CLUSTER_CRN + "-c")
+    client.get_clusters_by_env = MagicMock(return_value=[failed, creating, running])
+    assert client.get_default_cluster(ENV_NAME) is running
+
+    client.get_clusters_by_env = MagicMock(return_value=[failed, creating])
+    assert client.get_default_cluster(ENV_NAME) is creating
+
+
+def test_get_default_cluster_multiple_same_rank_picks_lowest_crn():
+    client, _ = make_client()
+    first = default_summary(clusterCrn=CLUSTER_CRN + "-a")
+    second = default_summary(clusterCrn=CLUSTER_CRN + "-b")
+
+    client.get_clusters_by_env = MagicMock(return_value=[second, first])
+    assert client.get_default_cluster(ENV_NAME) is first
+
+    client.get_clusters_by_env = MagicMock(return_value=[first, second])
+    assert client.get_default_cluster(ENV_NAME) is first
+
+
+# ============================================================================
+# wait_for_default_cluster tests
+# ============================================================================
+
+
+@pytest.fixture
+def fake_clock(mocker):
+    """Replace time.time / time.sleep with a clock that only sleep() advances."""
+    now = [0.0]
+    mocker.patch("time.time", side_effect=lambda: now[0])
+    sleep = mocker.patch(
+        "time.sleep",
+        side_effect=lambda seconds: now.__setitem__(0, now[0] + seconds),
+    )
+    return sleep
+
+
+def describe_payload(**overrides):
+    """A describeCluster payload for the default cluster."""
+    payload = {
+        "clusterCrn": CLUSTER_CRN,
+        "clusterName": "default-cluster",
+        "status": next(iter(COMPUTE_CLUSTER_ACTIVE_STATUSES)),
+        "isDefault": True,
+        "envName": ENV_NAME,
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_wait_for_default_cluster_none_then_creating_then_running(fake_clock):
+    client, api_client = make_client()
+    creating = sorted(COMPUTE_CLUSTER_CREATING_STATUSES)
+    client.get_clusters_by_env = MagicMock(
+        side_effect=[[], [default_summary(status=creating[0])]],
+    )
+    api_client.post.side_effect = [
+        describe_payload(status=creating[0]),
+        describe_payload(status=creating[1]),
+        describe_payload(),
+    ]
+
+    result = client.wait_for_default_cluster(ENV_NAME, timeout=600, delay=10)
+
+    assert isinstance(result, ComputeCluster)
+    assert result.status in COMPUTE_CLUSTER_ACTIVE_STATUSES
+    assert client.get_clusters_by_env.call_count == 2
+    assert api_client.post.call_count == 3
+
+
+@pytest.mark.parametrize("unset", [None, NULLABLE])
+def test_wait_for_default_cluster_polls_through_unset_status(fake_clock, unset):
+    client, api_client = make_client()
+    client.get_clusters_by_env = MagicMock(
+        side_effect=[
+            [default_summary(status=unset)],
+            [default_summary(status=unset)],
+            [default_summary(status=next(iter(COMPUTE_CLUSTER_CREATING_STATUSES)))],
+        ],
+    )
+    api_client.post.return_value = describe_payload()
+
+    result = client.wait_for_default_cluster(ENV_NAME, timeout=600, delay=10)
+
+    assert result.status in COMPUTE_CLUSTER_ACTIVE_STATUSES
+    assert client.get_clusters_by_env.call_count == 3
+    assert fake_clock.call_count == 2
+
+
+def test_wait_for_default_cluster_raises_on_failed_status(fake_clock):
+    client, api_client = make_client()
+    failed = "DEPLOYMENT_FAILED"
+    assert failed in COMPUTE_CLUSTER_FAILED_STATUSES
+    client.get_clusters_by_env = MagicMock(
+        return_value=[default_summary(status=failed, message="charts failed")],
+    )
+
+    with pytest.raises(CdpError, match="DEPLOYMENT_FAILED.*charts failed"):
+        client.wait_for_default_cluster(ENV_NAME, timeout=600, delay=10)
+
+    api_client.post.assert_not_called()
+
+
+def test_wait_for_default_cluster_failed_without_message(fake_clock):
+    client, _ = make_client()
+    failed = sorted(COMPUTE_CLUSTER_FAILED_STATUSES)[0]
+    client.get_clusters_by_env = MagicMock(
+        return_value=[default_summary(status=failed)],
+    )
+
+    with pytest.raises(CdpError, match=f"{failed}.*Unknown error"):
+        client.wait_for_default_cluster(ENV_NAME, timeout=600, delay=10)
+
+
+def test_wait_for_default_cluster_times_out_when_no_cluster_appears(fake_clock):
+    client, api_client = make_client()
+    client.get_clusters_by_env = MagicMock(return_value=[])
+
+    with pytest.raises(CdpError, match="Timeout.*default.*100 seconds"):
+        client.wait_for_default_cluster(ENV_NAME, timeout=100, delay=30)
+
+    assert fake_clock.call_count == 4
+    api_client.post.assert_not_called()
+
+
+def test_wait_for_default_cluster_hands_over_remaining_time(fake_clock):
+    """Time spent waiting for the cluster to appear is deducted from the handover."""
+    client, _ = make_client()
+    client.get_clusters_by_env = MagicMock(
+        side_effect=[[], [], [default_summary()]],
+    )
+    described = ComputeCluster(status=next(iter(COMPUTE_CLUSTER_ACTIVE_STATUSES)))
+    client.wait_for_cluster_state = MagicMock(return_value=described)
+
+    result = client.wait_for_default_cluster(ENV_NAME, timeout=100, delay=30)
+
+    assert result is described
+    client.wait_for_cluster_state.assert_called_once_with(
+        CLUSTER_CRN,
+        COMPUTE_CLUSTER_ACTIVE_STATUSES,
+        timeout=40,
+        delay=30,
+    )
+
+
+def test_wait_for_default_cluster_handover_timeout_covers_whole_wait(fake_clock):
+    """The handed-over wait must not grant a fresh full timeout."""
+    client, api_client = make_client()
+    client.get_clusters_by_env = MagicMock(
+        side_effect=[
+            [],
+            [default_summary(status=sorted(COMPUTE_CLUSTER_CREATING_STATUSES)[0])],
+        ],
+    )
+    api_client.post.return_value = describe_payload(
+        status=sorted(COMPUTE_CLUSTER_CREATING_STATUSES)[0],
+    )
+
+    with pytest.raises(CdpError, match="Timeout"):
+        client.wait_for_default_cluster(ENV_NAME, timeout=100, delay=30)
+
+    # 30s spent before the cluster appeared, so only ~70s of polling remain.
+    assert fake_clock.call_count <= 1 + 3

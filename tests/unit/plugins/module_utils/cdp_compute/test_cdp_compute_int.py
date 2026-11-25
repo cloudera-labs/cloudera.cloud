@@ -25,6 +25,11 @@ session (~15 min). No extra environment variables are needed. The create/delete
 test creates its own cluster, is slow (~50 min) and bills real cloud resources;
 it is marked ``slow``.
 
+The default-cluster tests (``TestComputeDefaultClusterIntegration``) are read-only:
+they create, modify and delete nothing, never use ``existing_compute_cluster`` and
+skip when the environment has no default cluster. There is no test for
+``initialize_*``: it creates a billable cluster that cannot be deleted.
+
 Required environment variables:
     CDP_API_ENDPOINT, CDP_ACCESS_KEY_ID, CDP_PRIVATE_KEY
     CDP_ENVIRONMENT_NAME
@@ -150,6 +155,82 @@ class TestComputeReadIntegration:
             )
             is None
         )
+
+
+class TestComputeDefaultClusterIntegration:
+    """Read-only tests for the environment's default cluster.
+
+    No test here creates, modifies or deletes a resource. ``initialize_aws_compute_cluster``
+    and ``initialize_azure_compute_cluster`` are deliberately not tested: they create
+    a billable default cluster that cannot be deleted. These tests do not use
+    ``existing_compute_cluster`` and so never provision a cluster. They derive the
+    environment from ``CDP_ENVIRONMENT_NAME`` and skip when it has no default cluster.
+    """
+
+    @pytest.fixture
+    def env_name(self) -> str:
+        return required_or_skip("CDP_ENVIRONMENT_NAME")
+
+    @pytest.fixture
+    def default_cluster(self, compute_client, env_name) -> ComputeClusterSummary:
+        cluster = compute_client.get_default_cluster(env_name)
+        if cluster is None:
+            pytest.skip(f"No default compute cluster in environment '{env_name}'")
+        return cluster
+
+    def test_get_default_cluster(self, compute_client, env_name):
+        """Returns the default summary (not DELETED), or None if there is none."""
+        cluster = compute_client.get_default_cluster(env_name)
+
+        if cluster is None:
+            pytest.skip(f"No default compute cluster in environment '{env_name}'")
+        assert isinstance(cluster, ComputeClusterSummary)
+        assert cluster.isDefault is True
+        assert cluster.status not in COMPUTE_CLUSTER_DELETED_STATUSES
+        assert isinstance(cluster.clusterCrn, str)
+
+    def test_get_default_cluster_matches_environment_listing(
+        self,
+        compute_client,
+        env_name,
+        default_cluster,
+    ):
+        """The default cluster is one of the environment's listed clusters."""
+        listed = compute_client.get_clusters_by_env(env_name)
+
+        assert any(c.clusterCrn == default_cluster.clusterCrn for c in listed)
+
+    def test_describe_default_cluster(self, compute_client, default_cluster):
+        """The summary's CRN can be described, and describes the same cluster."""
+        cluster = compute_client.describe_cluster(default_cluster.clusterCrn)
+
+        assert isinstance(cluster, ComputeCluster)
+        assert cluster.clusterCrn == default_cluster.clusterCrn
+        assert cluster.isDefault is True
+        assert cluster.status not in COMPUTE_CLUSTER_DELETED_STATUSES
+
+    def test_wait_for_default_cluster_returns_at_once_when_running(
+        self,
+        compute_client,
+        env_name,
+        default_cluster,
+    ):
+        """An existing RUNNING default cluster is returned described, without waiting."""
+        if default_cluster.status not in COMPUTE_CLUSTER_ACTIVE_STATUSES:
+            pytest.skip(
+                f"Default compute cluster is '{default_cluster.status}', not RUNNING",
+            )
+
+        # A short timeout: this must not poll, and must fail fast if it would.
+        cluster = compute_client.wait_for_default_cluster(
+            env_name,
+            timeout=120,
+            delay=5,
+        )
+
+        assert isinstance(cluster, ComputeCluster)
+        assert cluster.clusterCrn == default_cluster.clusterCrn
+        assert cluster.status in COMPUTE_CLUSTER_ACTIVE_STATUSES
 
 
 class TestComputeCreateDeleteIntegration:

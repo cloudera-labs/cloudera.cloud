@@ -24,20 +24,25 @@ description:
   - The cloud provider is detected automatically from the environment's
     C(cloudPlatform) field.
   - The module is idempotent. If a default compute cluster already exists for
-    the environment it returns the existing cluster details without making any
-    API calls.
+    the environment, no new initialization is requested and the existing
+    cluster is returned. A cluster that is still being created is not
+    initialized again; the module waits for it if O(wait=true).
+  - If the existing default cluster is in a failed state, the module fails
+    and does not retry the initialization.
   - Deletion of default compute clusters is not supported by the CDP API.
     This module only supports O(state=present).
-  - The module supports check_mode.
+  - The module supports check_mode and diff mode.
+  - Check mode never initializes a cluster and never waits.
 author:
     - "Jim Enright (@jimright)"
 version_added: "3.6.0"
 options:
   environment:
     description:
-      - The name of the CDP environment.
-      - The environment name (not CRN) is required; the CDP environments API
-        accepts only an environment name for this operation.
+      - Name or CRN of the CDP environment.
+      - A CRN is resolved to the environment name, because the CDP
+        environments API accepts only a name for this operation.
+      - The module fails if the environment does not exist, also in check mode.
     type: str
     required: true
     aliases:
@@ -66,8 +71,8 @@ options:
       - Customize the cluster egress with a defined outbound type in Azure
         Kubernetes Service.
       - Valid values are C(udr) (User-Defined Routing).
-      - This parameter applies to Azure environments only and is ignored
-        for AWS environments.
+      - This parameter applies to Azure environments only. The module fails
+        if it is set for an AWS environment, also in check mode.
     type: str
     required: false
     choices:
@@ -78,6 +83,9 @@ options:
         before returning.
       - If C(false), return immediately after issuing the initialization
         request with the operation ID.
+      - This also applies when a default cluster is already being created, in
+        which case the module returns its current summary without waiting.
+      - Check mode never waits, even if a default cluster is being created.
     type: bool
     required: false
     default: true
@@ -103,7 +111,9 @@ options:
     description:
       - Desired state of the default compute cluster.
       - Only C(present) is supported. The CDP API does not provide a delete
-        operation for default compute clusters.
+        operation for default compute clusters, so there is no C(absent).
+      - To delete an externalized cluster use M(cloudera.cloud.compute); it
+        refuses to delete a default cluster.
     type: str
     required: false
     choices:
@@ -116,7 +126,7 @@ attributes:
   check_mode:
     support: full
   diff_mode:
-    support: none
+    support: full
   platform:
     platforms: all
 """
@@ -124,54 +134,83 @@ attributes:
 EXAMPLES = r"""
 # Note: These examples do not set authentication details.
 
-# Initialize the default compute cluster for an AWS environment
-# The cloud provider is detected automatically from the environment
-- cloudera.cloud.compute_default:
+# Initialize the default compute cluster for an AWS environment and wait for it.
+# The cloud provider is detected automatically from the environment.
+- name: Initialize the default compute cluster
+  cloudera.cloud.compute_default:
     environment: my-aws-environment
-    state: present
 
-# Initialize with specific worker node subnets on AWS
-- cloudera.cloud.compute_default:
+# Initialize on AWS with specific worker node subnets and API access ranges
+- name: Initialize with subnets and authorized IP ranges
+  cloudera.cloud.compute_default:
     environment: my-aws-environment
     worker_node_subnets:
       - subnet-0abc123def456789a
       - subnet-0abc123def456789b
-    state: present
+    kube_api_authorized_ip_ranges:
+      - 10.0.0.0/8
 
 # Initialize as a private cluster on AWS
-- cloudera.cloud.compute_default:
+- name: Initialize a private default compute cluster
+  cloudera.cloud.compute_default:
     environment: my-aws-environment
     private_cluster: true
-    state: present
 
-# Initialize the default compute cluster for an Azure environment with UDR egress
-- cloudera.cloud.compute_default:
+# Initialize on Azure with user-defined routing for egress
+- name: Initialize the default compute cluster on Azure
+  cloudera.cloud.compute_default:
     environment: my-azure-environment
     outbound_type: udr
-    state: present
+
+# Do not wait; use the returned operation ID
+- name: Request the default compute cluster without waiting
+  cloudera.cloud.compute_default:
+    environment: my-aws-environment
+    wait: false
+  register: default_cluster
+
+# Identify the environment by CRN
+- name: Initialize the default compute cluster by environment CRN
+  cloudera.cloud.compute_default:
+    environment: crn:cdp:environments:us-west-1:tenant-uuid:environment:env-uuid
 """
 
 RETURN = r"""
 cluster:
-  description: Details of the default compute cluster after initialization.
-  returned: when O(wait=true) and cluster is running
+  description:
+    - Details of the default compute cluster. The fields depend on the path taken.
+    - A full cluster description is returned when the default cluster is already
+      running, and when the module waited for it (O(wait=true), not in check mode).
+      It then holds more fields than are listed here.
+    - Only a summary of the cluster, with the fields listed here, is returned
+      when a default cluster is still being created and the module did not wait
+      (O(wait=false), or check mode).
+    - An empty dictionary is returned after an initialization with O(wait=false),
+      and in check mode when the cluster would be initialized.
+    - If the default cluster is in a failed state the module fails and returns no
+      cluster; the failure message is in C(msg).
+  returned: always
   type: dict
   contains:
     cluster_crn:
       description: Compute cluster CRN.
-      returned: always
+      returned: when available
       type: str
     cluster_id:
       description: Compute cluster ID.
-      returned: always
+      returned: when available
       type: str
     cluster_name:
       description: Compute cluster name.
-      returned: always
+      returned: when available
       type: str
     status:
-      description: Current cluster status.
-      returned: always
+      description: Current cluster status (for example C(CREATING), C(RUNNING)).
+      returned: when available
+      type: str
+    message:
+      description: Additional message about the cluster status.
+      returned: when available
       type: str
     env_crn:
       description: CRN of the CDP environment.
@@ -182,7 +221,7 @@ cluster:
       returned: when available
       type: str
     compute_platform:
-      description: Underlying compute platform (e.g. C(EKS), C(AKS)).
+      description: Underlying compute platform (for example C(EKS), C(AKS)).
       returned: when available
       type: str
     is_default:
@@ -195,8 +234,25 @@ cluster:
       type: str
 operation_id:
   description: The ID of the initialization operation.
-  returned: when O(wait=false) and the cluster was initialized
+  returned: when O(wait=false) and a cluster was initialized
   type: str
+diff:
+  description:
+    - The initialization request when run with C(--diff), also in check mode.
+    - Both parts are empty if nothing changes.
+  returned: always
+  type: dict
+  contains:
+    before:
+      description: Always empty; the default cluster did not exist.
+      type: dict
+    after:
+      description:
+        - The initialization request.
+        - Holds C(environmentName), the environment name (a CRN given in O(environment) is shown as the name),
+          and the options that were set, using the API names (for example C(privateCluster),
+          C(workerNodeSubnets), C(kubeApiAuthorizedIpRanges), C(outboundType)).
+      type: dict
 sdk_out:
   description: Returns the captured CDP SDK log.
   returned: when supported
@@ -208,23 +264,25 @@ sdk_out_lines:
   elements: str
 """
 
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional, Tuple
 
-from ansible.module_utils.common.dict_transformations import camel_dict_to_snake_dict
-
-from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
-    ServicesModule,
+from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_compute import (
+    COMPUTE_CLUSTER_ACTIVE_STATUSES,
+    COMPUTE_CLUSTER_FAILED_STATUSES,
+    CdpComputeClient,
+    cluster_to_result,
 )
 from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_env import (
     CdpEnvClient,
+    ComputeClusterConfig,
 )
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_compute import (
-    CdpComputeClient,
+from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
+    ServicesModule,
+    to_dict,
 )
-from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
-    CdpError,
-)
+
+PLATFORM_AWS = "AWS"
+PLATFORM_AZURE = "AZURE"
 
 
 class ComputeDefaultCluster(ServicesModule):
@@ -287,111 +345,123 @@ class ComputeDefaultCluster(ServicesModule):
         # Initialize return values
         self.cluster: Dict[str, Any] = {}
         self.operation_id: Optional[str] = None
+        self.diff: Dict[str, Any] = {"before": {}, "after": {}}
         self.changed = False
 
-    def process(self):
-        compute_client = CdpComputeClient(self.api_client)
-        env_client = CdpEnvClient(self.api_client)
+    def _resolve_environment(self, env_client: CdpEnvClient) -> Tuple[str, str]:
+        """
+        Resolve the environment option (name or CRN) to (name, platform).
 
-        # Resolve the environment to detect cloud platform
-        env_summary = env_client.get_environment_by_name(self.environment)
-        if env_summary is None:
-            self.module.fail_json(
-                msg=f"Environment '{self.environment}' not found.",
-            )
+        The initialize API takes a name only, so a CRN is resolved to the name.
+        Fails for an unknown environment or a platform other than AWS/Azure.
+        """
+        env = env_client.describe_environment(self.environment)
+        if not env:
+            self.module.fail_json(msg=f"Environment '{self.environment}' not found")
 
-        cloud_platform = env_summary.get("cloudPlatform", "").upper()
-        if cloud_platform not in ("AWS", "AZURE"):
+        name = env.get("environmentName") or self.environment
+        platform = str(env.get("cloudPlatform") or "").upper()
+        if platform not in (PLATFORM_AWS, PLATFORM_AZURE):
             self.module.fail_json(
                 msg=(
-                    f"Unsupported cloud platform '{cloud_platform}' for environment "
-                    f"'{self.environment}'. Only AWS and AZURE are supported."
+                    f"Unsupported cloud platform '{platform}' for environment "
+                    f"'{name}'. Only AWS and AZURE are supported."
+                ),
+            )
+        return name, platform
+
+    def _build_config(self) -> ComputeClusterConfig:
+        """Build the config from the options; unset options stay NULLABLE."""
+        mapping = {
+            "private_cluster": "privateCluster",
+            "kube_api_authorized_ip_ranges": "kubeApiAuthorizedIpRanges",
+            "worker_node_subnets": "workerNodeSubnets",
+            "outbound_type": "outboundType",
+        }
+        values = {
+            api_name: getattr(self, option)
+            for option, api_name in mapping.items()
+            if getattr(self, option) is not None
+        }
+        return ComputeClusterConfig(**values)
+
+    def process(self):
+        env_client = CdpEnvClient(self.api_client)
+        client = CdpComputeClient(self.api_client)
+
+        environment, platform = self._resolve_environment(env_client)
+
+        if self.outbound_type is not None and platform == PLATFORM_AWS:
+            self.module.fail_json(
+                msg=(
+                    f"outbound_type is only supported for Azure environments; "
+                    f"environment '{environment}' is on AWS"
                 ),
             )
 
-        # Check for an existing default cluster in this environment
-        existing_clusters = compute_client.get_clusters_by_env(
-            self.environment,
-            default=True,
-        )
-        active_existing = [
-            c
-            for c in existing_clusters
-            if c.get("status") in CdpComputeClient.ACTIVE_STATES
-        ]
+        existing = client.get_default_cluster(environment)
 
-        if active_existing:
-            # Default cluster already exists — idempotent
-            self.cluster = camel_dict_to_snake_dict(active_existing[0])
-            return
+        if existing is not None:
+            status = existing.status
+            if status in COMPUTE_CLUSTER_ACTIVE_STATUSES:
+                # Describe for the full result; if the cluster vanished since
+                # the list call, report what was listed.
+                described = client.describe_cluster(existing.clusterCrn)
+                self.cluster = cluster_to_result(described or existing)
+                return
 
-        # No active default cluster — initialize one
-        self.changed = True
+            if status in COMPUTE_CLUSTER_FAILED_STATUSES:
+                message = existing.message
+                if not isinstance(message, str):
+                    message = "Unknown error"
+                self.module.fail_json(
+                    msg=(
+                        f"Default compute cluster of environment '{environment}' "
+                        f"is in failed state '{status}': {message}"
+                    ),
+                )
 
-        if not self.module.check_mode:
-            if cloud_platform == "AWS":
-                response = env_client.initialize_aws_compute_cluster(
-                    environment_name=self.environment,
-                    private_cluster=self.private_cluster,
-                    kube_api_authorized_ip_ranges=self.kube_api_authorized_ip_ranges,
-                    worker_node_subnets=self.worker_node_subnets,
+            # In progress: a creating status, or a null/unset/unrecognised one.
+            # Never initialize again over an existing default cluster.
+            if self.wait and not self.module.check_mode:
+                self.cluster = cluster_to_result(
+                    client.wait_for_default_cluster(
+                        environment,
+                        self.timeout,
+                        self.delay,
+                    ),
                 )
             else:
-                # AZURE — outbound_type only applies to Azure; not passed for AWS
-                response = env_client.initialize_azure_compute_cluster(
-                    environment_name=self.environment,
-                    private_cluster=self.private_cluster,
-                    kube_api_authorized_ip_ranges=self.kube_api_authorized_ip_ranges,
-                    worker_node_subnets=self.worker_node_subnets,
-                    outbound_type=self.outbound_type,
-                )
+                self.cluster = cluster_to_result(existing)
+            return
 
-            self.operation_id = response.get("operationId")
+        # No default cluster: initialize one
+        config = self._build_config()
 
-            if self.wait:
-                self.cluster = self._wait_for_default_cluster(compute_client)
-            # wait=False: cluster and operation_id both returned via main()
+        self.changed = True
+        if self.module._diff:
+            # The request: the target environment plus the requested config
+            self.diff["after"] = {"environmentName": environment, **to_dict(config)}
 
-    def _wait_for_default_cluster(
-        self,
-        compute_client: CdpComputeClient,
-    ) -> Dict[str, Any]:
-        """
-        Poll list_clusters(default=True) until a cluster in ACTIVE_STATES appears.
+        if self.module.check_mode:
+            return
 
-        No CRN is returned by the initialize API so we cannot use
-        wait_for_cluster_state directly. Instead we poll the list endpoint.
-        """
-        start_time = time.time()
+        if platform == PLATFORM_AWS:
+            response = env_client.initialize_aws_compute_cluster(environment, config)
+        else:
+            response = env_client.initialize_azure_compute_cluster(environment, config)
 
-        while True:
-            elapsed = time.time() - start_time
-            if elapsed > self.timeout:
-                raise CdpError(
-                    f"Timeout waiting for default compute cluster in environment "
-                    f"'{self.environment}' to reach a running state after "
-                    f"{self.timeout} seconds",
-                )
+        operation_id = response.operationId
+        self.operation_id = operation_id if isinstance(operation_id, str) else None
 
-            clusters = compute_client.get_clusters_by_env(
-                self.environment,
-                default=True,
+        if self.wait:
+            self.cluster = cluster_to_result(
+                client.wait_for_default_cluster(
+                    environment,
+                    self.timeout,
+                    self.delay,
+                ),
             )
-
-            for cluster in clusters:
-                current_state = cluster.get("status")
-
-                if current_state in CdpComputeClient.ACTIVE_STATES:
-                    return camel_dict_to_snake_dict(cluster)
-
-                if current_state in CdpComputeClient.FAILED_STATES:
-                    msg = cluster.get("statusMessage", "Unknown error")
-                    raise CdpError(
-                        f"Default compute cluster entered failed state "
-                        f"'{current_state}': {msg}",
-                    )
-
-            time.sleep(self.delay)
 
 
 def main():
@@ -400,6 +470,7 @@ def main():
     output: Dict[str, Any] = dict(
         changed=result.changed,
         cluster=result.cluster,
+        diff=result.diff,
     )
 
     # operation_id is only surfaced when wait=False (per RETURN docs).

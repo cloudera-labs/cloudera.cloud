@@ -371,6 +371,110 @@ class CdpComputeClient:
                 return cluster
         return None
 
+    def get_default_cluster(
+        self,
+        environment: str,
+    ) -> Optional[ComputeClusterSummary]:
+        """
+        Find the default compute cluster of an environment.
+
+        The server-side ``default`` filter is not trusted on its own: the result
+        is filtered client-side to ``isDefault is True`` and a status that is not
+        DELETED. An unset (NULLABLE) or null ``isDefault`` is not a default
+        cluster, and an unset or null status is not DELETED.
+
+        The API is expected to hold at most one default cluster per environment.
+        If several match anyway, the choice is deterministic rather than list
+        order: an active (RUNNING) cluster is preferred, then a creating one, then
+        any other; ties are broken by the lowest ``clusterCrn``. The ranking is a
+        convention of this client, not an API guarantee.
+
+        Args:
+            environment: Environment name or CRN
+
+        Returns:
+            The default ComputeClusterSummary, or None if there is none
+        """
+        clusters = self.get_clusters_by_env(environment, default=True)
+        candidates = [
+            c
+            for c in clusters
+            if c.isDefault is True and c.status not in COMPUTE_CLUSTER_DELETED_STATUSES
+        ]
+        if not candidates:
+            return None
+
+        def rank(cluster: ComputeClusterSummary) -> Any:
+            if cluster.status in COMPUTE_CLUSTER_ACTIVE_STATUSES:
+                order = 0
+            elif cluster.status in COMPUTE_CLUSTER_CREATING_STATUSES:
+                order = 1
+            else:
+                order = 2
+            crn = cluster.clusterCrn
+            return (order, crn if isinstance(crn, str) else "")
+
+        return min(candidates, key=rank)
+
+    def wait_for_default_cluster(
+        self,
+        environment: str,
+        timeout: int = 3600,
+        delay: int = 15,
+    ) -> ComputeCluster:
+        """
+        Wait for the default compute cluster of an environment to be active.
+
+        Phase 1 polls ``get_default_cluster`` while no default cluster exists
+        yet, or while its status is still null/unset (the API can return a
+        cluster before it reports a status). Phase 2 hands over to
+        ``wait_for_cluster_state`` for the cluster CRN. ``timeout`` covers both
+        phases: the handover receives only the time that is left.
+
+        Args:
+            environment: Environment name or CRN
+            timeout: Maximum seconds for the whole wait, including the wait for
+                the cluster to appear
+            delay: Polling interval in seconds
+
+        Returns:
+            ComputeCluster (from describeCluster) in an active status
+
+        Raises:
+            CdpError: On timeout or when the cluster enters a failed status
+        """
+        start_time = time.time()
+        while True:
+            elapsed = time.time() - start_time
+            if elapsed > timeout:
+                raise CdpError(
+                    f"Timeout waiting for the default compute cluster of "
+                    f"environment '{environment}' to appear after {timeout} seconds",
+                )
+
+            cluster = self.get_default_cluster(environment)
+            if cluster is not None and isinstance(cluster.clusterCrn, str):
+                status = cluster.status
+                if status in COMPUTE_CLUSTER_FAILED_STATUSES:
+                    msg = cluster.message
+                    if not isinstance(msg, str):
+                        msg = "Unknown error"
+                    raise CdpError(
+                        f"Default compute cluster entered failed state "
+                        f"'{status}': {msg}",
+                    )
+                if isinstance(status, str):
+                    break
+            time.sleep(delay)
+
+        remaining = max(0, timeout - (time.time() - start_time))
+        return self.wait_for_cluster_state(
+            cluster.clusterCrn,
+            COMPUTE_CLUSTER_ACTIVE_STATUSES,
+            timeout=remaining,
+            delay=delay,
+        )
+
     def create_cluster(
         self,
         name: str,
