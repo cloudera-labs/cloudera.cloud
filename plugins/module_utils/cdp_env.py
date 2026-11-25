@@ -32,6 +32,7 @@ from ansible_collections.cloudera.cloud.plugins.module_utils.cdp_client import (
 from ansible_collections.cloudera.cloud.plugins.module_utils.common import (
     NULLABLE,
     from_dict,
+    to_dict,
 )
 
 
@@ -223,6 +224,23 @@ class EnvironmentUserSyncState:
 
     state: Union[str, None, NULLABLE] = NULLABLE
     userSyncOperationId: Union[str, None, NULLABLE] = NULLABLE
+
+
+@dataclass
+class ComputeClusterConfig:
+    """Configuration for initializing an environment's default compute cluster."""
+
+    privateCluster: Union[bool, None, NULLABLE] = NULLABLE
+    kubeApiAuthorizedIpRanges: Union[List[str], None, NULLABLE] = NULLABLE
+    workerNodeSubnets: Union[List[str], None, NULLABLE] = NULLABLE
+    outboundType: Union[str, None, NULLABLE] = NULLABLE  # Azure only
+
+
+@dataclass
+class InitializeComputeClusterResponse:
+    """Response of the initialize{AWS,Azure}ComputeCluster operations."""
+
+    operationId: Union[str, None, NULLABLE] = NULLABLE
 
 
 SYNC_COMPLETED_STATUSES: Set[str] = frozenset({"COMPLETED"})
@@ -563,3 +581,75 @@ class CdpEnvClient:
                 )
 
             time.sleep(delay)
+
+    # ========================================================================
+    # Default Compute Cluster Initialization Methods
+    # ========================================================================
+
+    def _initialize_compute_cluster(
+        self,
+        path: str,
+        environment_name: str,
+        config: ComputeClusterConfig,
+    ) -> InitializeComputeClusterResponse:
+        """POST an initialize request; omit the configuration key when nothing is set."""
+        json_data: Dict[str, Any] = {"environmentName": environment_name}
+        config_dict = to_dict(config)
+        if config_dict:
+            json_data["computeClusterConfiguration"] = config_dict
+
+        response = self.api_client.post(path, json_data=json_data)
+        return from_dict(InitializeComputeClusterResponse, response)
+
+    def initialize_aws_compute_cluster(
+        self,
+        environment_name: str,
+        config: ComputeClusterConfig,
+    ) -> InitializeComputeClusterResponse:
+        """
+        Initialize the default compute cluster for an AWS environment.
+
+        Args:
+            environment_name: Name of the CDP environment (name, not CRN)
+            config: Cluster configuration. ``privateCluster`` and
+                ``kubeApiAuthorizedIpRanges`` are mutually exclusive.
+                ``outboundType`` is Azure only.
+
+        Returns:
+            InitializeComputeClusterResponse with the operationId.
+
+        Raises:
+            ValueError: If ``config.outboundType`` is set (Azure only).
+        """
+        if config.outboundType is not NULLABLE:
+            raise ValueError(
+                "outboundType is only supported for Azure environments.",
+            )
+        return self._initialize_compute_cluster(
+            "/api/v1/environments2/initializeAWSComputeCluster",
+            environment_name,
+            config,
+        )
+
+    def initialize_azure_compute_cluster(
+        self,
+        environment_name: str,
+        config: ComputeClusterConfig,
+    ) -> InitializeComputeClusterResponse:
+        """
+        Initialize the default compute cluster for an Azure environment.
+
+        Args:
+            environment_name: Name of the CDP environment (name, not CRN)
+            config: Cluster configuration. ``privateCluster`` and
+                ``kubeApiAuthorizedIpRanges`` are mutually exclusive.
+                ``outboundType`` valid values: "udr".
+
+        Returns:
+            InitializeComputeClusterResponse with the operationId.
+        """
+        return self._initialize_compute_cluster(
+            "/api/v1/environments2/initializeAzureComputeCluster",
+            environment_name,
+            config,
+        )
